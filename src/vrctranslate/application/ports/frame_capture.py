@@ -1,0 +1,24 @@
+from __future__ import annotations
+
+from typing import Protocol
+
+from vrctranslate.domain.ocr import CapturedFrame, CaptureRegion, WindowInfo
+
+
+class FrameCapture(Protocol):
+    @property
+    def backend_name(self) -> str: ...
+
+    @property
+    def semantics(self) -> str: ...
+
+    @property
+    def uses_screen_coordinates(self) -> bool: ...
+
+    def set_mode(self, mode: str) -> None: ...
+
+    def list_windows(self) -> list[WindowInfo]: ...
+
+    def get_window(self, hwnd: int) -> WindowInfo | None: ...
+
+    def capture(self, hwnd: int, region: CaptureRegion) -> CapturedFrame: ...

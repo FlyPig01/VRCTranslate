@@ -1,0 +1,2 @@
+"""Settings persistence adapters."""
+

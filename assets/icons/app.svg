@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="512"
+  height="512"
+  viewBox="0 0 512 512"
+  fill="none"
+>
+  <title>VRCTranslate application icon</title>
+  <desc>Two overlapping speech bubbles containing stylized A and 文 symbols.</desc>
+
+  <!-- Rear language bubble -->
+  <path
+    d="M230 64H416C438.091 64 456 81.9086 456 104V272C456 294.091 438.091 312 416 312H398V352L348 312H230C207.909 312 190 294.091 190 272V104C190 81.9086 207.909 64 230 64Z"
+    fill="#7357E8"
+    stroke="#19233C"
+    stroke-width="16"
+    stroke-linejoin="round"
+  />
+
+  <!-- Stylized 文 symbol; paths avoid external font dependencies. -->
+  <g
+    stroke="#FFFFFF"
+    stroke-width="18"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <path d="M324 102L338 124" />
+    <path d="M270 146H404" />
+    <path d="M292 178C306 221 343 254 399 278" />
+    <path d="M382 178C365 224 331 259 278 282" />
+  </g>
+
+  <!-- Front language bubble -->
+  <path
+    d="M78 178H314C336.091 178 354 195.909 354 218V366C354 388.091 336.091 406 314 406H160L104 452V406H78C55.9086 406 38 388.091 38 366V218C38 195.909 55.9086 178 78 178Z"
+    fill="#35BDF2"
+    stroke="#19233C"
+    stroke-width="16"
+    stroke-linejoin="round"
+  />
+
+  <!-- Stylized A symbol; paths avoid external font dependencies. -->
+  <g
+    stroke="#FFFFFF"
+    stroke-width="20"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <path d="M126 356L196 232L266 356" />
+    <path d="M153 310H239" />
+  </g>
+
+  <!-- Small highlights keep the flat icon readable without gradients. -->
+  <path
+    d="M86 214H126"
+    stroke="#A9E8FF"
+    stroke-width="12"
+    stroke-linecap="round"
+  />
+  <path
+    d="M238 98H274"
+    stroke="#BEB1FF"
+    stroke-width="12"
+    stroke-linecap="round"
+  />
+</svg>

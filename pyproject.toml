@@ -1,0 +1,58 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "vrctranslate"
+version = "0.2.0"
+description = "VRChat 桌面文字翻译与 OSC Chatbox 工具"
+readme = "README.md"
+requires-python = ">=3.11,<3.12"
+dependencies = [
+    "PySide6>=6.7,<7",
+    "httpx>=0.27,<1",
+    "python-osc>=1.9,<2",
+    "mss>=9,<11",
+    "numpy>=1.26,<3",
+    "rapidocr-onnxruntime>=1.3,<2",
+    "windows-capture>=1.4,<2; sys_platform == 'win32'",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8,<9",
+    "pytest-qt>=4.4,<5",
+]
+offline = [
+    "argostranslate>=1.9,<2",
+]
+build = [
+    "pyinstaller>=6.10,<7",
+]
+
+[project.scripts]
+vrctranslate = "vrctranslate.bootstrap:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"vrctranslate.presentation.qt" = [
+    "resources/icons/*.ico",
+    "resources/icons/*.png",
+    "resources/icons/ui/*.svg",
+    "resources/styles/*.qss",
+]
+"vrctranslate.presentation.qt.i18n" = [
+    "locales/*.json",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q -m 'not argos'"
+markers = [
+    "argos: real Argos component/model integration tests",
+]

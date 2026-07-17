@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" fill="none">
+  <title>VRCTranslate error tray icon</title>
+  <path
+    d="M14 3H25C27.2091 3 29 4.79086 29 7V16C29 18.2091 27.2091 20 25 20H24V24L19.5 20H14C11.7909 20 10 18.2091 10 16V7C10 4.79086 11.7909 3 14 3Z"
+    fill="#7357E8"
+    stroke="#19233C"
+    stroke-width="2"
+    stroke-linejoin="round"
+  />
+  <path
+    d="M5 10H19C21.2091 10 23 11.7909 23 14V22C23 24.2091 21.2091 26 19 26H11L6 30V26H5C2.79086 26 1 24.2091 1 22V14C1 11.7909 2.79086 10 5 10Z"
+    fill="#35BDF2"
+    stroke="#19233C"
+    stroke-width="2"
+    stroke-linejoin="round"
+  />
+  <path d="M5 14H9" stroke="#A9E8FF" stroke-width="2" stroke-linecap="round" />
+  <path d="M15 7H19" stroke="#BEB1FF" stroke-width="2" stroke-linecap="round" />
+  <circle cx="26" cy="26" r="5" fill="#EF4444" stroke="#19233C" stroke-width="2" />
+</svg>

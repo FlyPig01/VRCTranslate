@@ -1,0 +1,26 @@
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+build/
+dist/
+*.egg-info/
+
+# 本文件包含明文 API 密钥，禁止提交。
+config.json
+config.json.broken-*
+logs/
+data/
+tmp/
+
+# 应用不应生成截图；若调试时意外生成，也不提交。
+*.bmp
+*.png
+*.jpg
+*.jpeg
+
+# 程序 UI 图标是正式资源，需要纳入版本控制。
+!src/vrctranslate/presentation/qt/resources/icons/*.png
+!src/vrctranslate/presentation/qt/resources/icons/*.ico

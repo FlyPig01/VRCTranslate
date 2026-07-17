@@ -17,6 +17,7 @@ from vrctranslate.application.use_cases.translate_text import TranslateText
 from vrctranslate.domain.errors import VrcTranslateError
 from vrctranslate.domain.ocr import CaptureRegion, OcrText
 from vrctranslate.domain.translation import TranslationRequest
+from vrctranslate.infrastructure.ocr.rapidocr_engine import RapidOcrEngine
 from vrctranslate.presentation.qt.controllers.ocr import (
     OcrCaptureSession,
     OcrTargetController,
@@ -39,6 +40,7 @@ class OcrController(QObject):
         overlay: OcrOverlayWindow,
         capture: FrameCapture,
         processor: ProcessOcrFrame,
+        ocr_engine: RapidOcrEngine,
         translate_text: TranslateText,
         settings: ManageSettings,
         logger: logging.Logger,
@@ -49,6 +51,7 @@ class OcrController(QObject):
         self._page = page
         self._overlay = overlay
         self._capture = capture
+        self._ocr_engine = ocr_engine
         self._settings = settings
         self._logger = logger
         self._i18n = i18n
@@ -99,6 +102,10 @@ class OcrController(QObject):
             self._overlay.apply_settings(settings.ui)
         if hasattr(settings, "ocr"):
             self._capture.set_mode(settings.ocr.capture_backend)
+        if hasattr(settings, "translation"):
+            self._ocr_engine.set_source_language(
+                settings.translation.ocr_route.source_language
+            )
         self._update_capture_status()
 
     def _update_capture_status(self) -> None:

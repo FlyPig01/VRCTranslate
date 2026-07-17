@@ -76,7 +76,8 @@ def build_main_window() -> MainWindow:
         MssScreenCapture(windows_api),
     )
     capture.set_mode(settings.current.ocr.capture_backend)
-    process_ocr = ProcessOcrFrame(RapidOcrEngine())
+    ocr_engine = RapidOcrEngine(settings.current.translation.ocr_route.source_language)
+    process_ocr = ProcessOcrFrame(ocr_engine)
 
     i18n = I18nManager(settings.current.ui.language)
 
@@ -112,6 +113,7 @@ def build_main_window() -> MainWindow:
         ocr_overlay,
         capture,
         process_ocr,
+        ocr_engine,
         translate_text,
         settings,
         logger,

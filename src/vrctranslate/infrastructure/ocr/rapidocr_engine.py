@@ -1,14 +1,27 @@
 from __future__ import annotations
 
+import os
+from pathlib import Path
 from typing import Any
 
 from vrctranslate.domain.errors import OcrUnavailable
 from vrctranslate.domain.ocr import OcrText
 
+_JAPANESE_MODEL_FILENAME = "PP-OCRv4_rec/japan_PP-OCRv4_rec_infer.onnx"
+
+
+def _get_models_dir() -> Path:
+    import rapidocr_onnxruntime
+
+    return Path(rapidocr_onnxruntime.__file__).parent / "models"
+
 
 class RapidOcrEngine:
-    def __init__(self) -> None:
+    """Thin wrapper around RapidOCR that switches recognition model by source language."""
+
+    def __init__(self, source_language: str = "zh") -> None:
         self._engine: Any = None
+        self._source_language = source_language
 
     def recognize(self, frame: object) -> list[OcrText]:
         engine = self._get_engine()
@@ -39,14 +52,27 @@ class RapidOcrEngine:
             items.append(OcrText(text, confidence, box))
         return items
 
+    def set_source_language(self, source_language: str) -> None:
+        if source_language == self._source_language:
+            return
+        self._source_language = source_language
+        self._engine = None  # Force rebuild with new model
+
     def _get_engine(self) -> Any:
         if self._engine is not None:
             return self._engine
         try:
             from rapidocr_onnxruntime import RapidOCR
-
-            self._engine = RapidOCR()
         except Exception as exc:
             raise OcrUnavailable(f"无法加载本地 OCR：{type(exc).__name__}") from exc
+
+        kwargs: dict[str, str] = {}
+        if self._source_language in ("ja", "auto"):
+            model_path = _get_models_dir() / _JAPANESE_MODEL_FILENAME
+            model_path = Path(os.path.normpath(model_path))
+            if model_path.exists():
+                kwargs["rec_model_path"] = str(model_path)
+
+        self._engine = RapidOCR(**kwargs) if kwargs else RapidOCR()
         return self._engine
 

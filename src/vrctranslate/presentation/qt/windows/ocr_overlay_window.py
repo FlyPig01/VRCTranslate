@@ -88,7 +88,7 @@ class OcrOverlayWindow(QWidget):
         item_id = uuid4().hex
         self._items.append((item_id, original.strip(), text))
         while len(self._items) > self._maximum_items:
-            removed_id, _ = self._items.popleft()
+            removed_id, _, _ = self._items.popleft()
             self._stop_expiry_timer(removed_id)
         timer = QTimer(self)
         timer.setSingleShot(True)
@@ -121,7 +121,7 @@ class OcrOverlayWindow(QWidget):
             self.move(settings.ocr_overlay_x, settings.ocr_overlay_y)
         self.card.setStyleSheet(f"font-size: {settings.ocr_overlay_font_size}px;")
         while len(self._items) > self._maximum_items:
-            removed_id, _ = self._items.popleft()
+            removed_id, _, _ = self._items.popleft()
             self._stop_expiry_timer(removed_id)
         self._render()
         if visible:

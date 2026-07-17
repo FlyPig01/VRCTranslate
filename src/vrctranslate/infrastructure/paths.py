@@ -13,24 +13,12 @@ class AppPaths:
     config_file: Path
     logs_dir: Path
     cache_dir: Path
-    downloads_dir: Path
-    third_party_cache_dir: Path
-    third_party_data_dir: Path
-    third_party_config_dir: Path
-    models_dir: Path
-    argos_models_dir: Path
 
     def ensure_writable(self) -> None:
         directories = (
             self.data_root,
             self.logs_dir,
             self.cache_dir,
-            self.downloads_dir,
-            self.third_party_cache_dir,
-            self.third_party_data_dir,
-            self.third_party_config_dir,
-            self.models_dir,
-            self.argos_models_dir,
         )
         for directory in directories:
             directory.mkdir(parents=True, exist_ok=True)
@@ -64,10 +52,4 @@ def discover_app_paths() -> AppPaths:
         config_file=data_root / "config.json",
         logs_dir=data_root / "logs",
         cache_dir=data_root / "cache",
-        downloads_dir=data_root / "cache" / "downloads",
-        third_party_cache_dir=data_root / "cache" / "third_party",
-        third_party_data_dir=data_root / "third_party" / "data",
-        third_party_config_dir=data_root / "third_party" / "config",
-        models_dir=data_root / "models",
-        argos_models_dir=data_root / "models" / "argos",
     )

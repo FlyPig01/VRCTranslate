@@ -125,6 +125,36 @@ def test_process_ocr_frame_filters_changes_confidence_and_duplicates() -> None:
     assert engine.calls == 2
 
 
+def test_continuous_ocr_keeps_static_region_quiet_when_another_region_changes() -> None:
+    class SequencedEngine:
+        def __init__(self) -> None:
+            self.index = 0
+
+        def recognize(self, _frame):
+            frames = (
+                [
+                    OcrText("固定标题", 0.95, ((0, 0), (80, 0), (80, 20), (0, 20))),
+                    OcrText("第一句", 0.95, ((0, 25), (80, 25), (80, 45), (0, 45))),
+                ],
+                [
+                    OcrText("固定标题", 0.95, ((1, 0), (81, 0), (81, 20), (1, 20))),
+                    OcrText("第二句", 0.95, ((0, 25), (80, 25), (80, 45), (0, 45))),
+                ],
+            )
+            result = frames[min(self.index, 1)]
+            self.index += 1
+            return result
+
+    use_case = ProcessOcrFrame(SequencedEngine())
+    settings = OcrSettings(confidence=0.5, change_threshold=1, recognition_mode="continuous")
+
+    first = use_case.execute(CapturedFrame(object(), b"\x00\x00"), settings)
+    second = use_case.execute(CapturedFrame(object(), b"\x10\x10"), settings)
+
+    assert [item.text for item in first] == ["固定标题第一句"]
+    assert [item.text for item in second] == ["第二句"]
+
+
 def test_manage_settings_uses_repository_port() -> None:
     repository = MemorySettingsRepository()
     service = ManageSettings(repository)

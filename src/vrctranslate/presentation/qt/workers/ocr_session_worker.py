@@ -56,6 +56,8 @@ class OcrSessionWorker(QThread):
                 if items:
                     self.texts_ready.emit(items)
                 del frame
+                if self._settings.recognition_mode == "single":
+                    break
                 self.msleep(self._settings.interval_ms)
         except VrcTranslateError as exc:
             self.failed.emit(exc.user_message)

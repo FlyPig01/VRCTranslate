@@ -9,13 +9,10 @@ from PyInstaller.utils.hooks import collect_all, collect_data_files
 
 
 ROOT = Path(SPECPATH)
-include_argos = os.environ.get("VRC_TRANSLATE_BUILD_ARGOS") == "1"
 debug_console = os.environ.get("VRC_TRANSLATE_BUILD_CONSOLE") == "1"
 product_name = (
     "VRCTranslate-Debug"
     if debug_console
-    else "VRCTranslate-Offline"
-    if include_argos
     else "VRCTranslate"
 )
 
@@ -73,15 +70,7 @@ excludes = [
     "PySide6.QtLabsSettings",
     "PySide6.QtLabsSharedImage",
     "PySide6.QtLabsWavefrontMesh",
-] + ([] if include_argos else [
-    "argostranslate",
-    "ctranslate2",
-    "sacremoses",
-    "sentencepiece",
-    "spacy",
-    "stanza",
-    "torch",
-])
+]
 
 datas += collect_data_files(
     "vrctranslate.presentation.qt",
@@ -91,14 +80,6 @@ datas += collect_data_files(
 # OCR models and package resources are loaded dynamically at runtime.
 for package_name in ("rapidocr_onnxruntime",):
     package_datas, package_binaries, package_hidden = collect_all(package_name)
-    datas += package_datas
-    binaries += package_binaries
-    hiddenimports += package_hidden
-
-# The normal build remains small. The offline build bundles the Argos runtime;
-# language models are still downloaded separately into portable data/models.
-if include_argos:
-    package_datas, package_binaries, package_hidden = collect_all("argostranslate")
     datas += package_datas
     binaries += package_binaries
     hiddenimports += package_hidden

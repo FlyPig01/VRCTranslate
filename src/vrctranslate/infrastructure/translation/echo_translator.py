@@ -7,7 +7,7 @@ from vrctranslate.domain.translation import TranslationRequest, TranslationResul
 
 
 class EchoTranslator:
-    """Offline adapter for verifying UI and OSC without claiming translation."""
+    """Local test adapter for verifying UI and OSC without claiming translation."""
 
     def capabilities(self) -> TranslationCapabilities:
         return TranslationCapabilities(

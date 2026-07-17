@@ -1,0 +1,63 @@
+QWidget#ocrOverlayWindow,
+QWidget#ocrOverlayWindow QWidget#ocrOverlaySurface,
+QWidget#ocrOverlayWindow QWidget#ocrOverlayContent {
+    background: transparent;
+    border: none;
+}
+QWidget#ocrOverlayWindow QFrame#ocrOverlayDragHandle {
+    background: rgba(8, 18, 32, 218);
+    border: 1px solid rgba(112, 210, 230, 150);
+    border-radius: 7px;
+}
+QWidget#ocrOverlayWindow QLabel#ocrOverlayHandleText {
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 600;
+}
+QWidget#ocrOverlayWindow QLabel#ocrOverlayHandleHint {
+    color: #c7edf5;
+    font-size: 13px;
+}
+QWidget#ocrOverlayWindow QWidget#ocrTranslationItem {
+    background: rgba(8, 18, 32, 218);
+    border: 1px solid rgba(112, 210, 230, 165);
+    border-radius: 8px;
+}
+QWidget#ocrOverlayWindow QLabel#ocrOriginal {
+    color: #d8e8f6;
+    background: transparent;
+    border: none;
+}
+QWidget#ocrOverlayWindow QLabel#ocrTranslation {
+    color: #ffffff;
+    background: transparent;
+    border: none;
+    font-weight: 600;
+}
+QWidget#ocrOverlayWindow QScrollArea#ocrScrollArea,
+QWidget#ocrOverlayWindow QScrollArea#ocrScrollArea > QWidget > QWidget {
+    background: transparent;
+    border: none;
+}
+QWidget#ocrOverlayWindow QScrollArea#ocrScrollArea QScrollBar:vertical {
+    background: transparent;
+    width: 7px;
+    margin: 4px 2px 4px 0;
+}
+QWidget#ocrOverlayWindow QScrollArea#ocrScrollArea QScrollBar::handle:vertical {
+    background: rgba(82, 195, 218, 120);
+    border-radius: 4px;
+    min-height: 24px;
+}
+QWidget#ocrOverlayWindow QScrollArea#ocrScrollArea QScrollBar::handle:vertical:hover {
+    background: rgba(82, 195, 218, 180);
+}
+QWidget#ocrOverlayWindow QScrollArea#ocrScrollArea QScrollBar::add-line:vertical,
+QWidget#ocrOverlayWindow QScrollArea#ocrScrollArea QScrollBar::sub-line:vertical {
+    height: 0;
+    background: transparent;
+}
+QWidget#ocrOverlayWindow QScrollArea#ocrScrollArea QScrollBar::add-page:vertical,
+QWidget#ocrOverlayWindow QScrollArea#ocrScrollArea QScrollBar::sub-page:vertical {
+    background: transparent;
+}

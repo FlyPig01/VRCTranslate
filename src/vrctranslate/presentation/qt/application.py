@@ -6,6 +6,7 @@ from importlib.resources import files
 
 from PySide6.QtWidgets import QApplication, QMainWindow, QMessageBox
 
+from vrctranslate.presentation.qt.app_style import VrcTranslateStyle
 from vrctranslate.presentation.qt.icon_resources import load_icon
 
 
@@ -15,8 +16,24 @@ def run_qt_application(window_factory: Callable[[], QMainWindow]) -> int:
     application.setOrganizationName("VRCTranslate")
     application.setWindowIcon(load_icon("app.ico"))
     application.setQuitOnLastWindowClosed(True)
-    theme = files("vrctranslate.presentation.qt").joinpath("resources", "styles", "theme.qss")
-    application.setStyleSheet(theme.read_text(encoding="utf-8"))
+    application.setStyle(VrcTranslateStyle(application.style()))
+    styles = files("vrctranslate.presentation.qt").joinpath("resources", "styles")
+    style_order = (
+        "base.qss",
+        "main_window.qss",
+        "forms.qss",
+        "tables.qss",
+        "settings.qss",
+        "quick_input.qss",
+        "ocr_overlay.qss",
+        "ocr_tools.qss",
+    )
+    application.setStyleSheet(
+        "\n".join(
+            styles.joinpath(filename).read_text(encoding="utf-8")
+            for filename in style_order
+        )
+    )
     try:
         window = window_factory()
     except OSError:

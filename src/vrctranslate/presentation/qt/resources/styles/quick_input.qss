@@ -1,0 +1,25 @@
+QWidget#quickInputWindow {
+    background: transparent;
+}
+QWidget#quickInputWindow QFrame#overlayCard {
+    background: rgba(18, 30, 48, 238);
+    border: 1.5px solid rgba(82, 195, 218, 165);
+    border-radius: 14px;
+}
+QWidget#quickInputWindow QLineEdit#quickInput {
+    color: #f0f5ff;
+    background: transparent;
+    border: none;
+    font-size: 16px;
+    min-height: 30px;
+    padding: 0 6px;
+}
+QWidget#quickInputWindow QLineEdit#quickInput::placeholder { color: #8d9eb8; }
+QWidget#quickInputWindow QLabel#quickStatus {
+    color: #7d95b8;
+    font-size: 11px;
+    padding-left: 6px;
+}
+QWidget#quickInputWindow[state="success"] QFrame#overlayCard { border-color: #3db88b; }
+QWidget#quickInputWindow[state="error"] QFrame#overlayCard { border-color: #e65a63; }
+QWidget#quickInputWindow[state="busy"] QFrame#overlayCard { border-color: #8f6bd4; }

@@ -7,6 +7,9 @@ from vrctranslate.application.ports.translator import TranslationCapabilities
 from vrctranslate.domain.errors import TranslationError
 from vrctranslate.domain.text_rules import normalize_text
 from vrctranslate.domain.translation import TranslationRequest, TranslationResult
+from vrctranslate.infrastructure.translation.llm_prompt import (
+    build_translation_messages,
+)
 
 
 class OpenAICompatibleTranslator:
@@ -34,26 +37,10 @@ class OpenAICompatibleTranslator:
             raise TranslationError("configuration", "未填写翻译服务地址")
 
         endpoint = f"{profile.base_url.rstrip('/')}/chat/completions"
-        source = "自动识别" if request.source_language == "auto" else request.source_language
         payload = {
             "model": profile.model,
             "temperature": 0,
-            "messages": [
-                {
-                    "role": "system",
-                    "content": (
-                        "你是文字翻译器。只输出译文，不解释、不扩写、不加引号。"
-                        "保留用户名、URL、表情符号和原有语气。"
-                    ),
-                },
-                {
-                    "role": "user",
-                    "content": (
-                        f"源语言：{source}\n目标语言：{request.target_language}\n"
-                        f"待翻译文本：\n{normalize_text(request.text)}"
-                    ),
-                },
-            ],
+            "messages": build_translation_messages(request),
         }
         try:
             with httpx.Client(timeout=profile.timeout_seconds) as client:

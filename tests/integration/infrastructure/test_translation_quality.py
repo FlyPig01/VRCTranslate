@@ -21,15 +21,12 @@ from vrctranslate.application.text_preprocessing.japanese_romaji import (
     romaji_to_hiragana,
 )
 from vrctranslate.domain.translation import TranslationRequest
-from vrctranslate.infrastructure.translation.argos_translator import ArgosTranslator
 from vrctranslate.infrastructure.translation.google_free_translator import (
     GoogleFreeTranslator,
 )
 from vrctranslate.infrastructure.translation.tencent_translator import (
     TencentTranslator,
 )
-from vrctranslate.infrastructure.paths import discover_app_paths
-from vrctranslate.infrastructure.translation.argos_model_manager import ArgosModelManager
 
 # ── 测试句 ──────────────────────────────────────────
 
@@ -71,8 +68,6 @@ def _make_profile(provider: str) -> TranslationProfile:
             api_key=os.environ.get("TENCENT_SECRET_ID", ""),
             model=os.environ.get("TENCENT_SECRET_KEY", ""),
         )
-    if provider == "argos":
-        return TranslationProfile(provider="argos", timeout_seconds=30)
     return TranslationProfile(provider=provider, timeout_seconds=15)
 
 
@@ -193,54 +188,6 @@ def test_ja_to_zh_tencent() -> None:
         print(f"{sid:<8} {text:<28} {translated}")
 
 
-# ── Argos ────────────────────────────────────────────
-
-@pytest.mark.argos
-def test_zh_to_ja_argos() -> None:
-    """中文 → 日语 (Argos 离线)"""
-    manager = ArgosModelManager(discover_app_paths())
-    if not manager.component_available:
-        pytest.skip("Argos 组件未安装")
-    installed = {
-        (m.source_language, m.target_language)
-        for m in manager.installed_models()
-    }
-    if ("zh", "en") not in installed or ("en", "ja") not in installed:
-        pytest.skip("Argos zh→en 或 en→ja 模型未安装（需要中转）")
-    translator = ArgosTranslator(manager)
-    profile = _make_profile("argos")
-    _print_header("中文 → 日语 [Argos 中转]")
-    print(f"{'ID':<8} {'原文':<28} {'译文'}")
-    print("-" * 80)
-    for sid, text in ZH_SENTENCES:
-        req = TranslationRequest(sid, text, "zh-CN", "ja", "self")
-        translated = _try_translate(translator, req, profile)
-        print(f"{sid:<8} {text:<28} {translated}")
-
-
-@pytest.mark.argos
-def test_ja_to_zh_argos() -> None:
-    """日语 → 中文 (Argos 离线)"""
-    manager = ArgosModelManager(discover_app_paths())
-    if not manager.component_available:
-        pytest.skip("Argos 组件未安装")
-    installed = {
-        (m.source_language, m.target_language)
-        for m in manager.installed_models()
-    }
-    if ("ja", "en") not in installed or ("en", "zh") not in installed:
-        pytest.skip("Argos ja→en 或 en→zh 模型未安装（需要中转）")
-    translator = ArgosTranslator(manager)
-    profile = _make_profile("argos")
-    _print_header("日语 → 中文 [Argos 中转]")
-    print(f"{'ID':<8} {'原文':<28} {'译文'}")
-    print("-" * 80)
-    for sid, text in JA_SENTENCES:
-        req = TranslationRequest(sid, text, "ja", "zh-CN", "self")
-        translated = _try_translate(translator, req, profile)
-        print(f"{sid:<8} {text:<28} {translated}")
-
-
 # ── 横向对比 ─────────────────────────────────────────
 
 def test_summary_comparison() -> None:
@@ -272,20 +219,6 @@ def test_summary_comparison() -> None:
             print(f"{'腾讯 TMT':<20} {r.translated}")
         except Exception as e:
             print(f"{'腾讯 TMT':<20} ERR: {e}")
-
-    # Argos
-    manager = ArgosModelManager(discover_app_paths())
-    if manager.component_available:
-        installed = {(m.source_language, m.target_language) for m in manager.installed_models()}
-        if ("zh", "en") in installed and ("en", "ja") in installed:
-            try:
-                r = ArgosTranslator(manager).translate(
-                    TranslationRequest("x", text, "zh-CN", "ja", "self"),
-                    _make_profile("argos"),
-                )
-                print(f"{'Argos 中转':<20} {r.translated}")
-            except Exception as e:
-                print(f"{'Argos 中转':<20} ERR: {e}")
 
     # 罗马音 → 假名 → 中文 对比
     _print_header("横向对比：罗马音 → 中文")

@@ -10,6 +10,7 @@ class TranslationRequest:
     source_language: str
     target_language: str
     purpose: str = "self"
+    context: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -20,4 +21,3 @@ class TranslationResult:
     source_language: str
     target_language: str
     purpose: str
-

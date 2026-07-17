@@ -5,12 +5,13 @@ from typing import Any
 from vrctranslate.application.dto import (
     CONFIG_VERSION,
     AppSettings,
+    SUPPORTED_TRANSLATION_PROVIDERS,
     TranslationProfile,
     TranslationRouteSettings,
     TranslationSettings,
     UiSettings,
 )
-from vrctranslate.infrastructure.settings.schema_v2 import (
+from vrctranslate.infrastructure.settings.schema_v3 import (
     float_in_range,
     mapping,
     ocr_from_dict,
@@ -22,6 +23,8 @@ def migrate_v1(raw: dict[str, Any]) -> AppSettings:
     old_translation = mapping(raw.get("translation"))
     old_ui = mapping(raw.get("ui"))
     provider = str(old_translation.get("provider", "test"))
+    if provider not in SUPPORTED_TRANSLATION_PROVIDERS:
+        provider = "test"
     profile_id = "legacy-openai" if provider == "openai_compatible" else "test"
     profile_name = "旧 OpenAI 兼容配置" if provider == "openai_compatible" else "测试回显"
     profile = TranslationProfile(

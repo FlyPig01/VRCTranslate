@@ -65,12 +65,14 @@ class RepositoryFake:
     def __init__(self):
         self.value = AppSettings()
         self.value.osc.min_interval_seconds = 0.1
+        self.save_count = 0
 
     def load(self):
         return self.value
 
     def save(self, settings):
         self.value = settings
+        self.save_count += 1
 
 
 def _controller(qtbot, translator):
@@ -79,22 +81,23 @@ def _controller(qtbot, translator):
     qtbot.addWidget(page)
     qtbot.addWidget(quick)
     gateway = GatewayFake()
+    repository = RepositoryFake()
     controller = SelfMessageController(
         page,
         quick,
         TranslateText(translator),
         PrepareChatboxMessage(),
         ChatboxSendQueue(gateway),
-        ManageSettings(RepositoryFake()),
+        ManageSettings(repository),
         logging.getLogger("presentation-test"),
         _FAKE_I18N,
         None,
     )
-    return page, quick, gateway, controller
+    return page, quick, gateway, controller, repository
 
 
 def test_enter_translates_and_sends_without_edit_or_buttons(qtbot) -> None:
-    page, quick, gateway, controller = _controller(qtbot, EchoFake())
+    page, quick, gateway, controller, _ = _controller(qtbot, EchoFake())
     assert quick.input.placeholderText() == "quick_input.placeholder"
     quick.input.setText("hello")
     qtbot.keyPress(quick.input, Qt.Key.Key_Return)
@@ -107,11 +110,24 @@ def test_enter_translates_and_sends_without_edit_or_buttons(qtbot) -> None:
 
 
 def test_translation_failure_restores_original(qtbot) -> None:
-    _, quick, _, controller = _controller(qtbot, FailingFake())
+    _, quick, _, controller, _ = _controller(qtbot, FailingFake())
     quick.input.setText("restore me")
     qtbot.keyPress(quick.input, Qt.Key.Key_Return)
     qtbot.waitUntil(lambda: "restore me" in quick.text, timeout=3000)
     assert "fail" in quick.status.text().lower()
+    controller.shutdown()
+
+
+def test_quick_input_page_settings_are_saved_automatically(qtbot) -> None:
+    page, _, _, controller, repository = _controller(qtbot, EchoFake())
+
+    page.input_width_edit.setValue(640)
+    page.input_topmost_check.setChecked(False)
+    qtbot.waitUntil(lambda: repository.save_count > 0, timeout=1500)
+
+    assert repository.value.ui.input_width == 640
+    assert repository.value.ui.input_topmost is False
+    assert not hasattr(page, "save_bar")
     controller.shutdown()
 
 

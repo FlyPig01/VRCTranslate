@@ -1,0 +1,57 @@
+QWidget#ocrOrbWindow {
+    background: transparent;
+}
+QToolButton#ocrOrbButton {
+    background: transparent;
+    border: none;
+    padding: 0;
+}
+
+QWidget#ocrRegionWindow {
+    background: transparent;
+}
+QWidget#ocrRegionControlBar {
+    background: rgba(7, 21, 38, 238);
+    border: 1px solid rgba(120, 218, 238, 190);
+    border-radius: 7px;
+}
+QLabel#ocrRegionTitle {
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 12px;
+}
+QLabel#ocrRegionState {
+    color: #b9eafa;
+    font-size: 11px;
+}
+QPushButton#ocrRegionModeButton {
+    min-height: 25px;
+    min-width: 46px;
+    padding: 0 8px;
+    border: 1px solid #42617a;
+    border-radius: 6px;
+    color: #d7e8f4;
+    background: #18314a;
+}
+QPushButton#ocrRegionModeButton:hover {
+    background: #244864;
+}
+QPushButton#ocrRegionModeButton:checked {
+    color: #ffffff;
+    background: #1e788b;
+    border-color: #78d8e8;
+}
+QToolButton#ocrRegionCloseButton {
+    min-width: 27px;
+    max-width: 27px;
+    min-height: 27px;
+    color: #ffffff;
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    font-size: 18px;
+    font-weight: 700;
+}
+QToolButton#ocrRegionCloseButton:hover {
+    background: #b53b4b;
+}

@@ -55,6 +55,19 @@ class WindowsApi:
         except (AttributeError, OSError):
             return False
 
+    def activate_window(self, hwnd: int) -> bool:
+        """Foreground a target without changing its maximized/fullscreen state."""
+
+        try:
+            handle = wintypes.HWND(hwnd)
+            # SW_RESTORE also turns a maximized window back into a normal window.
+            # It is only appropriate for a genuinely minimized target.
+            if self._user32.IsIconic(handle):
+                self._user32.ShowWindow(handle, 9)  # SW_RESTORE
+            return bool(self._user32.SetForegroundWindow(handle))
+        except (AttributeError, OSError):
+            return False
+
     def list_windows(self) -> list[WindowInfo]:
         windows: list[WindowInfo] = []
         callback_type = ctypes.WINFUNCTYPE(

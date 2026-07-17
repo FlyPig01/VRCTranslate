@@ -8,10 +8,11 @@ from pathlib import Path
 from vrctranslate.application.dto import CONFIG_VERSION, AppSettings
 from vrctranslate.infrastructure.paths import AppPaths, discover_app_paths
 from vrctranslate.infrastructure.settings.migration_v1 import migrate_v1
-from vrctranslate.infrastructure.settings.schema_v2 import (
+from vrctranslate.infrastructure.settings.migration_v2 import migrate_v2
+from vrctranslate.infrastructure.settings.schema_v3 import (
     int_in_range,
-    settings_v2_from_dict,
-    settings_v2_to_dict,
+    settings_v3_from_dict,
+    settings_v3_to_dict,
 )
 
 
@@ -48,12 +49,17 @@ class JsonSettingsRepository:
             if not isinstance(raw, dict):
                 raise ValueError("配置根节点必须是对象")
             version = int_in_range(raw.get("version"), 1, 1, CONFIG_VERSION)
-            if version < CONFIG_VERSION:
+            if version == 1:
                 settings = migrate_v1(raw)
-                self._backup_v1()
+                self._backup_version(1)
                 self.save(settings)
                 return settings
-            return settings_v2_from_dict(raw)
+            if version == 2:
+                settings = migrate_v2(raw)
+                self._backup_version(2)
+                self.save(settings)
+                return settings
+            return settings_v3_from_dict(raw)
         except (OSError, ValueError, json.JSONDecodeError):
             timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
             broken = self._path.with_name(f"{self._path.name}.broken-{timestamp}")
@@ -72,7 +78,7 @@ class JsonSettingsRepository:
         self._path.parent.mkdir(parents=True, exist_ok=True)
         temporary = self._path.with_suffix(self._path.suffix + ".tmp")
         temporary.write_text(
-            json.dumps(settings_v2_to_dict(settings), ensure_ascii=False, indent=2),
+            json.dumps(settings_v3_to_dict(settings), ensure_ascii=False, indent=2),
             encoding="utf-8",
         )
         temporary.replace(self._path)
@@ -89,7 +95,7 @@ class JsonSettingsRepository:
         self._path.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(legacy, self._path)
 
-    def _backup_v1(self) -> None:
-        backup = self._path.with_name(f"{self._path.name}.v1-backup")
+    def _backup_version(self, version: int) -> None:
+        backup = self._path.with_name(f"{self._path.name}.v{version}-backup")
         if not backup.exists():
             shutil.copy2(self._path, backup)

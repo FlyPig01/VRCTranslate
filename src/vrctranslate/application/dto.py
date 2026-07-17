@@ -4,7 +4,17 @@ from dataclasses import dataclass, field
 from typing import Any
 
 
-CONFIG_VERSION = 2
+CONFIG_VERSION = 3
+SUPPORTED_TRANSLATION_PROVIDERS = frozenset(
+    {
+        "test",
+        "deepl",
+        "google_cloud",
+        "google_free",
+        "tencent",
+        "openai_compatible",
+    }
+)
 
 
 @dataclass(slots=True)
@@ -60,6 +70,11 @@ class TranslationSettings:
         return self.profile(route.profile_id)
 
     def ensure_routes(self) -> None:
+        self.profiles = [
+            profile
+            for profile in self.profiles
+            if profile.provider in SUPPORTED_TRANSLATION_PROVIDERS
+        ]
         ids = {profile.id for profile in self.profiles}
         if not ids:
             self.profiles.append(TranslationProfile())
@@ -82,10 +97,10 @@ class OscSettings:
 @dataclass(slots=True)
 class OcrSettings:
     capture_backend: str = "auto"
+    recognition_mode: str = "continuous"
     interval_ms: int = 900
     confidence: float = 0.8
     change_threshold: float = 0.0
-    duplicate_seconds: float = 4.0
     region_x: int = 0
     region_y: int = 0
     region_width: int = 0
@@ -106,11 +121,15 @@ class UiSettings:
     ocr_overlay_width: int = 420
     ocr_overlay_height: int = 220
     ocr_overlay_opacity: float = 0.88
+    ocr_overlay_show_original: bool = True
     ocr_overlay_font_size: int = 16
     ocr_overlay_max_items: int = 5
     ocr_overlay_display_seconds: float = 12.0
-    main_width: int = 820
-    main_height: int = 600
+    ocr_orb_topmost: bool = True
+    ocr_orb_x: int = -1
+    ocr_orb_y: int = -1
+    main_width: int = 960
+    main_height: int = 660
     main_x: int = -1
     main_y: int = -1
     language: str = "zh_CN"

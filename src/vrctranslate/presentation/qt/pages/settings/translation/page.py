@@ -1,0 +1,113 @@
+from __future__ import annotations
+
+from copy import deepcopy
+
+from PySide6.QtCore import Signal
+from PySide6.QtWidgets import QTabWidget, QVBoxLayout, QWidget
+
+from vrctranslate.application.dto import AppSettings, TranslationProfile
+from vrctranslate.presentation.qt.i18n import I18nManager
+
+from .profile_editor import ProfileEditor
+from .routes_tab import RoutesTab
+
+
+class TranslationSettingsPage(QWidget):
+    """Stable facade for translation profiles and independent routes."""
+
+    test_translation_requested = Signal()
+
+    def __init__(self, i18n: I18nManager) -> None:
+        super().__init__()
+        self._i18n = i18n
+        self._working = AppSettings()
+        self.profile_editor = ProfileEditor(i18n)
+        self.routes_tab = RoutesTab(i18n)
+        self._build_ui()
+        self._expose_compatibility_widgets()
+        self._connect_components()
+        self._retranslate()
+        i18n.language_changed.connect(lambda _: self._retranslate())
+
+    def _build_ui(self) -> None:
+        root = QVBoxLayout(self)
+        root.setContentsMargins(0, 0, 0, 0)
+        self.tabs = QTabWidget()
+        self.tabs.setObjectName("settingsSubTabs")
+        self.tabs.addTab(self.profile_editor, "")
+        self.tabs.addTab(self.routes_tab, "")
+        root.addWidget(self.tabs)
+
+    def _connect_components(self) -> None:
+        self.profile_editor.profiles_changed.connect(self._sync_profiles)
+        self.profile_editor.test_requested.connect(
+            self.test_translation_requested.emit
+        )
+
+    def _expose_compatibility_widgets(self) -> None:
+        """Keep attributes consumed by SettingsPage and older UI tests stable."""
+        for name in (
+            "profile_combo",
+            "new_profile_button",
+            "delete_profile_button",
+            "profile_name_edit",
+            "provider_combo",
+            "base_url_edit",
+            "api_key_edit",
+            "model_edit",
+            "timeout_spin",
+            "base_url_label",
+            "api_key_label",
+            "model_label",
+            "profile_help",
+            "test_button",
+            "test_status",
+        ):
+            setattr(self, name, getattr(self.profile_editor, name))
+        for name in (
+            "self_profile_combo",
+            "self_source_combo",
+            "self_target_combo",
+            "ocr_profile_combo",
+            "ocr_source_combo",
+            "ocr_target_combo",
+            "format_combo",
+            "overflow_combo",
+            "self_romaji_check",
+            "ocr_romaji_check",
+            "ocr_route_warning",
+        ):
+            setattr(self, name, getattr(self.routes_tab, name))
+
+    def _retranslate(self) -> None:
+        self.tabs.setTabText(0, self._i18n.tr("settings.subtab.profiles"))
+        self.tabs.setTabText(1, self._i18n.tr("settings.subtab.routes"))
+        self.profile_editor.retranslate()
+        self.routes_tab.retranslate()
+
+    def _sync_profiles(self) -> None:
+        self._working.translation.profiles = self.profile_editor.profiles()
+        self._working.translation.ensure_routes()
+        self.routes_tab.set_profiles(
+            self._working.translation.profiles,
+            preserve=True,
+        )
+
+    def load_settings(self, settings: AppSettings) -> None:
+        self._working = deepcopy(settings)
+        self._working.translation.ensure_routes()
+        self.profile_editor.load_profiles(self._working.translation.profiles)
+        self.routes_tab.load_settings(self._working.translation)
+
+    def collect_settings(self, settings: AppSettings) -> None:
+        self._working.translation.profiles = self.profile_editor.profiles()
+        self._working.translation.ensure_routes()
+        self.routes_tab.collect_settings(self._working.translation)
+        self._working.translation.ensure_routes()
+        settings.translation = deepcopy(self._working.translation)
+
+    def selected_profile(self) -> TranslationProfile:
+        return self.profile_editor.selected_profile()
+
+    def set_test_status(self, message: str, failed: bool = False) -> None:
+        self.profile_editor.set_test_status(message, failed)

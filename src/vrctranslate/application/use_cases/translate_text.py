@@ -27,6 +27,7 @@ class TranslateText:
             source_language="ja" if request.source_language in ("ja", "auto") else request.source_language,
             target_language=request.target_language,
             purpose=request.purpose,
+            context=request.context,
         )
 
     def execute(

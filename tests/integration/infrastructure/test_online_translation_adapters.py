@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+
 import httpx
 import pytest
 
@@ -8,6 +10,9 @@ from vrctranslate.domain.errors import TranslationError
 from vrctranslate.domain.translation import TranslationRequest
 from vrctranslate.infrastructure.translation.deepl_translator import DeepLTranslator
 from vrctranslate.infrastructure.translation.google_cloud_translator import GoogleCloudTranslator
+from vrctranslate.infrastructure.translation.openai_compatible import (
+    OpenAICompatibleTranslator,
+)
 
 
 class FakeResponse:
@@ -99,3 +104,40 @@ def test_google_decodes_response_and_maps_quota_error(monkeypatch) -> None:
             TranslationRequest("2", "text", "auto", "en"), profile
         )
     assert raised.value.category == "quota"
+
+
+def test_openai_compatible_sends_fixed_purpose_specific_messages(monkeypatch) -> None:
+    from vrctranslate.infrastructure.translation import openai_compatible
+
+    monkeypatch.setattr(openai_compatible.httpx, "Client", FakeClient)
+    FakeClient.response = FakeResponse(
+        {"choices": [{"message": {"content": "你现在在哪里？"}}]}
+    )
+    profile = TranslationProfile(
+        provider="openai_compatible",
+        base_url="https://example.invalid/v1",
+        api_key="secret",
+        model="chat-model",
+        timeout_seconds=4,
+    )
+
+    result = OpenAICompatibleTranslator().translate(
+        TranslationRequest(
+            "1",
+            "今どこ？",
+            "ja",
+            "zh-CN",
+            "ocr",
+            ("さっきのワールドにいるよ",),
+        ),
+        profile,
+    )
+
+    endpoint, kwargs, timeout = FakeClient.last_call
+    assert endpoint == "https://example.invalid/v1/chat/completions"
+    assert kwargs["json"]["temperature"] == 0
+    assert "OCR 翻译器" in kwargs["json"]["messages"][0]["content"]
+    user_data = json.loads(kwargs["json"]["messages"][1]["content"])
+    assert user_data["recent_context"] == ["さっきのワールドにいるよ"]
+    assert timeout == 4
+    assert result.translated == "你现在在哪里？"

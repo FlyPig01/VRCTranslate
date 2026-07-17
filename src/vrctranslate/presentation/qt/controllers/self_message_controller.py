@@ -71,8 +71,12 @@ class SelfMessageController(QObject):
         self._geometry_timer.setSingleShot(True)
         self._geometry_timer.setInterval(400)
         self._geometry_timer.timeout.connect(self._save_geometry)
+        self._input_settings_timer = QTimer(self)
+        self._input_settings_timer.setSingleShot(True)
+        self._input_settings_timer.setInterval(350)
+        self._input_settings_timer.timeout.connect(self._save_input_settings)
 
-        page.show_input_requested.connect(quick_window.show_and_focus)
+        page.input_settings_changed.connect(self._preview_input_settings)
         quick_window.submitted.connect(self._submitted)
         quick_window.text_activity.connect(self._text_activity)
         quick_window.hidden_by_user.connect(lambda: self._set_typing(False))
@@ -96,6 +100,22 @@ class SelfMessageController(QObject):
         profile = app_settings.translation.profile_for_purpose("self")
         self._page.set_profile(profile.name)
         self._window.apply_settings(app_settings.ui)
+        self._page.load_ui_settings(app_settings.ui)
+
+    def _preview_input_settings(self, topmost: bool, width: int) -> None:
+        ui = self._settings.current.ui
+        ui.input_topmost = topmost
+        ui.input_width = width
+        self._window.apply_settings(ui)
+        self._input_settings_timer.start()
+
+    def _save_input_settings(self) -> None:
+        try:
+            self._settings.save(self._settings.current)
+        except OSError as exc:
+            self.status_bar_message.emit(
+                self._tr("ctrl.settings.save_failed", error=str(exc)), 6000
+            )
 
     def _submitted(self, text: str) -> None:
         original = self._window.take_text()
@@ -223,13 +243,15 @@ class SelfMessageController(QObject):
         ui = self._settings.current.ui
         ui.input_x = self._window.x()
         ui.input_y = self._window.y()
-        ui.input_width = self._window.width()
         self._settings.save(self._settings.current)
 
     def shutdown(self) -> None:
         self._queue_timer.stop()
         self._typing_timer.stop()
         self._geometry_timer.stop()
+        if self._input_settings_timer.isActive():
+            self._input_settings_timer.stop()
+            self._save_input_settings()
         self._set_typing(False)
         self._send_queue.shutdown(self._settings.current.osc)
         self._window.close_permanently()

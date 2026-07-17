@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import re
 from pathlib import Path
 from typing import Any
 
@@ -11,6 +12,11 @@ from vrctranslate.domain.errors import OcrUnavailable
 from vrctranslate.domain.ocr import OcrText
 
 _JAPANESE_MODEL_FILENAME = "PP-OCRv4_rec/japan_PP-OCRv4_rec_infer.onnx"
+_HIRAGANA = r"[\u3040-\u309F\u30A0-\u30FF]"
+_JAPANESE_CORRECTIONS: list[tuple[str, str]] = [
+    ("二", "こ"),
+    ("三", "み"),
+]
 
 
 def _get_models_dir() -> Path:
@@ -33,6 +39,19 @@ class RapidOcrEngine:
         w, h = img.size
         img = img.resize((int(w * 1.5), int(h * 1.5)), Image.LANCZOS)
         return np.array(img)
+
+    @staticmethod
+    def _correct_japanese(item: OcrText) -> OcrText:
+        text = item.text
+        for wrong, correct in _JAPANESE_CORRECTIONS:
+            text = re.sub(
+                rf"(?<={_HIRAGANA}){re.escape(wrong)}|{re.escape(wrong)}(?={_HIRAGANA})",
+                correct,
+                text,
+            )
+        if text == item.text:
+            return item
+        return OcrText(text, item.confidence, item.box)
 
     def recognize(self, frame: object) -> list[OcrText]:
         engine = self._get_engine()
@@ -61,6 +80,8 @@ class RapidOcrEngine:
             except (TypeError, ValueError, IndexError):
                 pass
             items.append(OcrText(text, confidence, box))
+        if self._source_language == "ja":
+            items = [self._correct_japanese(item) for item in items]
         return items
 
     def set_source_language(self, source_language: str) -> None:

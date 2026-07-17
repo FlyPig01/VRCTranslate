@@ -69,7 +69,9 @@ class OcrCaptureSession(QObject):
 
     def _worker_finished(self) -> None:
         self._worker = None
-        self.finished.emit()
+        # Let queued texts_ready deliveries reach the coordinator before a
+        # single-shot session is finalized and its translation scheduler stops.
+        QTimer.singleShot(0, self.finished.emit)
 
     def shutdown(self, timeout_ms: int) -> bool:
         self._pending_start = False

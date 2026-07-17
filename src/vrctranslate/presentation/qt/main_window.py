@@ -20,6 +20,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from vrctranslate import __version__
 from vrctranslate.application.dto import AppSettings
 from vrctranslate.application.use_cases.manage_settings import ManageSettings
 from vrctranslate.presentation.qt.controllers.ocr_controller import OcrController
@@ -58,9 +59,11 @@ class MainWindow(QMainWindow):
         self._first_show = True
         self._closing = False
         self._changing_navigation = False
+        self._self_page = self_page
+        self._ocr_page = ocr_page
         self.setWindowTitle("VRCTranslate")
         self.setWindowIcon(load_icon("app.ico"))
-        self.setMinimumSize(720, 520)
+        self.setMinimumSize(900, 560)
         self.resize(settings.current.ui.main_width, settings.current.ui.main_height)
         if settings.current.ui.main_x >= 0 and settings.current.ui.main_y >= 0:
             self.move(settings.current.ui.main_x, settings.current.ui.main_y)
@@ -88,15 +91,19 @@ class MainWindow(QMainWindow):
         sidebar = QFrame()
         sidebar.setObjectName("sidebar")
         sidebar.setFixedWidth(176)
+        self._sidebar = sidebar
         side_layout = QVBoxLayout(sidebar)
+        self._side_layout = side_layout
         side_layout.setContentsMargins(16, 20, 16, 16)
         side_layout.setSpacing(0)
         brand = QHBoxLayout()
         brand.setSpacing(8)
         logo_icon = QLabel()
         logo_icon.setPixmap(load_icon("app.ico").pixmap(30, 30))
+        self._brand_icon = logo_icon
         logo = QLabel("VRCTranslate")
         logo.setObjectName("appName")
+        self._brand_name = logo
         brand.addWidget(logo_icon)
         brand.addWidget(logo, 1)
         self._tagline = QLabel()
@@ -140,7 +147,7 @@ class MainWindow(QMainWindow):
     def _retranslate_ui(self) -> None:
         t = self._i18n.tr
         self._tagline.setText(t("app.tagline"))
-        self._version_label.setText("v0.3.1 · PC Only")
+        self._version_label.setText(f"v{__version__} · PC Only")
         for i, key in enumerate(self._nav_keys):
             item = self.navigation.item(i)
             if item:
@@ -154,7 +161,8 @@ class MainWindow(QMainWindow):
         if self._changing_navigation:
             return
         previous = self.pages.currentIndex()
-        if previous == 2 and index != 2 and not self._settings_page.confirm_leave():
+        previous_page = self.pages.widget(previous)
+        if index != previous and not self._confirm_page_leave(previous_page):
             self._changing_navigation = True
             self.navigation.setCurrentRow(previous)
             self._changing_navigation = False
@@ -242,6 +250,44 @@ class MainWindow(QMainWindow):
         if hasattr(self, "_geometry_timer"):
             self._geometry_timer.start()
 
+    def _update_sidebar_mode(self) -> None:
+        """Compatibility hook: the sidebar is intentionally always complete."""
+
+        self._sidebar.setFixedWidth(176)
+        self._side_layout.setContentsMargins(16, 20, 16, 16)
+        self._brand_name.setVisible(True)
+        self._tagline.setVisible(True)
+        self._version_label.setVisible(True)
+        self._sidebar.setProperty("compact", False)
+        for index, key in enumerate(self._nav_keys):
+            item = self.navigation.item(index)
+            if item is not None:
+                item.setText(self._i18n.tr(key))
+                item.setTextAlignment(Qt.AlignmentFlag.AlignVCenter)
+
+    def _confirm_page_leave(self, page: object) -> bool:
+        if page is self._settings_page:
+            return self._settings_page.confirm_leave()
+        if not bool(getattr(page, "has_unsaved_changes", False)):
+            return True
+        t = self._i18n.tr
+        box = QMessageBox(self)
+        box.setWindowTitle(t("page.settings.leave_title"))
+        box.setText(t("page.settings.leave_text"))
+        box.setInformativeText(t("page.settings.leave_info"))
+        save = box.addButton(t("page.settings.leave_save"), QMessageBox.ButtonRole.AcceptRole)
+        discard = box.addButton(t("page.settings.leave_discard"), QMessageBox.ButtonRole.DestructiveRole)
+        box.addButton(t("page.settings.leave_cancel"), QMessageBox.ButtonRole.RejectRole)
+        box.exec()
+        clicked = box.clickedButton()
+        if clicked is save:
+            getattr(page, "save_requested").emit()
+            return not bool(getattr(page, "has_unsaved_changes", False))
+        if clicked is discard:
+            getattr(page, "discard_requested").emit()
+            return True
+        return False
+
     def moveEvent(self, event) -> None:  # type: ignore[no-untyped-def]
         super().moveEvent(event)
         if hasattr(self, "_geometry_timer"):
@@ -258,9 +304,10 @@ class MainWindow(QMainWindow):
         self._settings.save(self._settings.current)
 
     def closeEvent(self, event: QCloseEvent) -> None:
-        if not self._settings_page.confirm_leave():
-            event.ignore()
-            return
+        for page in (self._self_page, self._ocr_page, self._settings_page):
+            if not self._confirm_page_leave(page):
+                event.ignore()
+                return
         self._closing = True
         if self._ocr_controller and not self._ocr_controller.shutdown():
             self._closing = False

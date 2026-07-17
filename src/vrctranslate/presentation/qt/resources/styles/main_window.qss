@@ -1,0 +1,83 @@
+QWidget#mainSurface,
+QWidget#mainSurface QScrollArea,
+QWidget#mainSurface QScrollArea > QWidget > QWidget {
+    background: #f2f5fa;
+}
+QWidget#mainSurface QScrollArea { border: none; }
+
+QFrame#sidebar {
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+        stop:0 #121f33, stop:1 #1a2d47);
+    border: none;
+}
+QLabel#appName { color: #f0f5ff; font-size: 19px; font-weight: 700; }
+QLabel#appTagline { color: #7d95b8; font-size: 12px; }
+QListWidget#navigation {
+    background: transparent;
+    border: none;
+    outline: none;
+    color: #bcc8db;
+}
+QListWidget#navigation::item {
+    color: #bcc8db;
+    min-height: 40px;
+    padding: 0 12px;
+    margin: 2px 0;
+    border-radius: 9px;
+}
+QListWidget#navigation::item:hover {
+    background: rgba(255, 255, 255, 0.07);
+    color: #dfe7f3;
+}
+QListWidget#navigation::item:selected {
+    background: #1e6883;
+    color: #ffffff;
+    font-weight: 600;
+}
+
+QLabel#pageTitle { font-size: 25px; font-weight: 700; color: #121f33; }
+QLabel#pageSubtitle { color: #56657c; font-size: 13px; }
+
+QFrame#card {
+    background: #ffffff;
+    border: 1px solid #dce3ee;
+    border-radius: 12px;
+}
+QLabel#cardTitle { font-size: 16px; font-weight: 700; color: #1a2a40; }
+QFrame#previewCard {
+    background: #f6f9fd;
+    border: 1px solid #dfe6f0;
+    border-radius: 10px;
+}
+QLabel#previewOriginal { color: #56657c; font-size: 13px; }
+QLabel#previewTranslated { color: #1e788b; font-size: 13px; font-weight: 600; }
+
+QLabel#inlineNotice {
+    background: #d4ebf5;
+    color: #0d4056;
+    padding: 10px 14px;
+    border: 1px solid #78b8cf;
+    border-radius: 8px;
+    font-size: 13px;
+}
+QLabel#warningNotice {
+    background: #fef3dc;
+    color: #6a3f08;
+    padding: 10px 14px;
+    border: 1px solid #e4b862;
+    border-radius: 8px;
+    font-size: 13px;
+}
+QLabel#statusPill {
+    color: #1e6883;
+    font-weight: 600;
+    font-size: 13px;
+}
+
+QStatusBar {
+    background: #f7f9fc;
+    color: #56657c;
+    border-top: 1px solid #dfe6f0;
+    padding: 2px 10px;
+    font-size: 12px;
+}

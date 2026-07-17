@@ -1,6 +1,14 @@
 from __future__ import annotations
 
-from PySide6.QtWidgets import QFrame, QLabel, QScrollArea, QVBoxLayout, QWidget
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import (
+    QFormLayout,
+    QFrame,
+    QLabel,
+    QScrollArea,
+    QVBoxLayout,
+    QWidget,
+)
 
 
 def card(title: str) -> tuple[QFrame, QVBoxLayout]:
@@ -26,3 +34,16 @@ def scroll_page() -> tuple[QScrollArea, QWidget, QVBoxLayout]:
     layout.setSpacing(14)
     scroll.setWidget(content)
     return scroll, content, layout
+
+
+def form_layout() -> QFormLayout:
+    """Create a settings form that wraps cleanly instead of overlapping."""
+    layout = QFormLayout()
+    layout.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.AllNonFixedFieldsGrow)
+    layout.setRowWrapPolicy(QFormLayout.RowWrapPolicy.WrapLongRows)
+    layout.setLabelAlignment(
+        Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
+    )
+    layout.setHorizontalSpacing(18)
+    layout.setVerticalSpacing(12)
+    return layout

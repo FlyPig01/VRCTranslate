@@ -1,0 +1,89 @@
+QListWidget#settingsSectionNav {
+    background: #ffffff;
+    border: 1px solid #dce3ee;
+    border-radius: 10px;
+    outline: none;
+    padding: 6px;
+}
+QListWidget#settingsSectionNav::item {
+    color: #4a5c76;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    padding: 0 10px;
+}
+QListWidget#settingsSectionNav::item:hover {
+    background: #f0f5fa;
+    color: #1a2a40;
+}
+QListWidget#settingsSectionNav::item:selected {
+    color: #16647a;
+    font-weight: 700;
+    background: #e2f0f6;
+    border-color: #c9dee8;
+}
+QTabWidget#settingsSubTabs::pane {
+    border: 1px solid #dce3ee;
+    border-radius: 10px;
+    background: #f2f5fa;
+}
+QTabWidget#settingsSubTabs QTabBar { background: transparent; }
+QTabWidget#settingsSubTabs QTabBar::tab {
+    min-height: 34px;
+    padding: 0 16px;
+    color: #4a5c76;
+    background: transparent;
+    border: 1px solid transparent;
+    border-bottom: 3px solid transparent;
+    font-size: 13px;
+}
+QTabWidget#settingsSubTabs QTabBar::tab:hover {
+    background: #e7eef5;
+    color: #1a2a40;
+}
+QTabWidget#settingsSubTabs QTabBar::tab:selected {
+    color: #16647a;
+    font-weight: 600;
+    background: #eef6f9;
+    border-bottom-color: #1e788b;
+}
+QLabel#settingsSaveState { color: #5c6c82; font-size: 13px; }
+QLabel#settingsSaveState[dirty="true"] { color: #b16615; font-weight: 600; }
+QPushButton#languageToggle {
+    min-height: 30px;
+    padding: 0 10px;
+    color: #1e6883;
+    background: #eef5f8;
+    border-color: #c9dee8;
+}
+QLabel#capturePreview {
+    background: #141f32;
+    color: #8d9eb8;
+    border: 2px dashed #5c7a96;
+    border-radius: 10px;
+    font-size: 12px;
+}
+QScrollArea#settingsContentScroll { background: transparent; border: none; }
+
+QWidget#settingsChoicePanel {
+    background: #f7f9fc;
+    border: 1px solid #dce3ee;
+    border-radius: 10px;
+}
+QWidget#settingsChoicePanel QCheckBox {
+    color: #24364d;
+    font-size: 14px;
+}
+QWidget#overlayStylePreview QWidget#overlayPreviewItem {
+    background: rgba(8, 18, 32, 218);
+    border: 1px solid rgba(112, 210, 230, 165);
+    border-radius: 8px;
+}
+QWidget#overlayStylePreview QLabel#ocrOriginal {
+    color: #d8e8f6;
+    background: transparent;
+}
+QWidget#overlayStylePreview QLabel#ocrTranslation {
+    color: #ffffff;
+    background: transparent;
+    font-weight: 600;
+}

@@ -12,6 +12,12 @@ from vrctranslate.application.use_cases.ocr.session_cache import (
     CacheKey,
     SessionTranslationCache,
 )
+from vrctranslate.application.use_cases.ocr.completion_buffer import (
+    OrderedCompletionBuffer,
+)
+from vrctranslate.application.use_cases.ocr.execution_policy import (
+    OcrExecutionPolicy,
+)
 from vrctranslate.application.use_cases.ocr.task_queue import BoundedTaskQueue
 from vrctranslate.application.use_cases.translate_text import TranslateText
 from vrctranslate.domain.text_rules import normalize_text
@@ -39,13 +45,13 @@ class OcrTranslationScheduler:
         self._lock = Lock()
         self._generation = 0
         self._sequence = 0
-        self._next_to_emit = 0
         self._profile: TranslationProfile | None = None
+        self._policy: OcrExecutionPolicy | None = None
         self._ttl = 4.0
         self._executor: ThreadPoolExecutor | None = None
         self._queue: BoundedTaskQueue | None = None
         self._futures: set[Future[object]] = set()
-        self._completed: dict[int, OcrTranslationOutcome | None] = {}
+        self._completion_buffer = OrderedCompletionBuffer[OcrTranslationOutcome]()
         self._cache = SessionTranslationCache()
 
     @property
@@ -59,23 +65,19 @@ class OcrTranslationScheduler:
         route = settings.ocr_route
         profile = deepcopy(settings.profile(route.profile_id))
         profile.timeout_seconds = min(profile.timeout_seconds, route.timeout_seconds)
-        workers = 1 if profile.provider in {"openai_compatible", "argos"} else 2
-        capacity = (
-            min(route.queue_limit, 2)
-            if profile.provider == "openai_compatible"
-            else route.queue_limit
-        )
+        policy = OcrExecutionPolicy.create(profile, route)
         with self._lock:
             self._generation += 1
             self._sequence = 0
-            self._next_to_emit = 0
             self._profile = profile
+            self._policy = policy
             self._ttl = route.task_ttl_seconds
-            self._queue = BoundedTaskQueue(capacity)
+            self._queue = BoundedTaskQueue(policy.queue_capacity)
             self._executor = ThreadPoolExecutor(
-                max_workers=workers, thread_name_prefix="ocr-translation"
+                max_workers=policy.max_workers,
+                thread_name_prefix="ocr-translation",
             )
-            self._completed.clear()
+            self._completion_buffer.reset()
             self._cache.clear()
             return self._generation
 
@@ -85,10 +87,12 @@ class OcrTranslationScheduler:
     def submit_many(self, requests: list[TranslationRequest]) -> set[str]:
         with self._lock:
             profile = self._profile
+            policy = self._policy
         if (
             len(requests) >= 2
             and profile is not None
-            and profile.provider in {"test", "deepl", "google_cloud"}
+            and policy is not None
+            and policy.batch_enabled
         ):
             return self._submit_batch(requests)
         return {
@@ -310,12 +314,7 @@ class OcrTranslationScheduler:
         with self._lock:
             if generation != self._generation:
                 return
-            self._completed[sequence] = outcome
-            while self._next_to_emit in self._completed:
-                current = self._completed.pop(self._next_to_emit)
-                self._next_to_emit += 1
-                if current is not None:
-                    ready.append(current)
+            ready = self._completion_buffer.add(sequence, outcome)
         for current in ready:
             self._callback(current)
 
@@ -327,8 +326,9 @@ class OcrTranslationScheduler:
             self._executor = None
             self._queue = None
             self._profile = None
+            self._policy = None
             self._futures.clear()
-            self._completed.clear()
+            self._completion_buffer.reset()
             self._cache.clear()
         for future in futures:
             future.cancel()

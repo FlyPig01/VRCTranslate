@@ -1,0 +1,103 @@
+QLineEdit, QComboBox, QSpinBox, QDoubleSpinBox {
+    min-height: 36px;
+    background: #fbfcfe;
+    border: 1px solid #cdd7e4;
+    border-radius: 8px;
+    padding: 0 10px;
+    selection-background-color: #1e788b;
+    selection-color: #ffffff;
+}
+QLineEdit:focus, QComboBox:focus, QSpinBox:focus, QDoubleSpinBox:focus {
+    border: 2px solid #2388a0;
+    background: #ffffff;
+}
+QLineEdit:hover, QComboBox:hover, QSpinBox:hover, QDoubleSpinBox:hover {
+    border-color: #b0c0d4;
+}
+QLineEdit:disabled, QComboBox:disabled, QSpinBox:disabled, QDoubleSpinBox:disabled {
+    background: #eef1f6;
+    color: #8d99a8;
+    border-color: #dce3ee;
+}
+QComboBox::drop-down {
+    subcontrol-origin: padding;
+    subcontrol-position: top right;
+    width: 24px;
+    border-left: 1px solid #dfe6f0;
+    border-top-right-radius: 7px;
+    border-bottom-right-radius: 7px;
+}
+QComboBox QAbstractItemView {
+    background: #ffffff;
+    border: 1px solid #cdd7e4;
+    border-radius: 6px;
+    padding: 4px;
+    selection-background-color: #e3f1f7;
+    selection-color: #1a2a40;
+    outline: none;
+}
+QComboBox QAbstractItemView::item {
+    min-height: 30px;
+    padding: 4px 10px;
+    border-radius: 4px;
+}
+QComboBox QAbstractItemView::item:hover { background: #f0f5fa; }
+QLineEdit[invalid="true"] {
+    border: 2px solid #d4545f;
+    background: #fff8f8;
+}
+
+QCheckBox {
+    spacing: 10px;
+    min-height: 30px;
+    padding: 1px 2px;
+}
+
+QPushButton {
+    min-height: 36px;
+    padding: 0 16px;
+    border: 1px solid #c5d2e2;
+    border-radius: 8px;
+    background: #f7f9fc;
+    font-weight: 500;
+}
+QPushButton:hover {
+    background: #ecf2f8;
+    border-color: #9aafc7;
+}
+QPushButton:pressed { background: #dde6f1; }
+QPushButton:disabled {
+    color: #95a2b2;
+    background: #edf0f5;
+    border-color: #dce3ee;
+}
+QPushButton#primaryButton {
+    background: #1e708b;
+    border-color: #1e708b;
+    color: #ffffff;
+    font-weight: 600;
+}
+QPushButton#primaryButton:hover {
+    background: #1a6078;
+    border-color: #1a6078;
+}
+QPushButton#primaryButton:pressed { background: #155267; }
+QPushButton#primaryButton:disabled {
+    background: #7daebf;
+    border-color: #7daebf;
+    color: #e8f2f6;
+}
+
+QProgressBar {
+    background: #e8edf4;
+    border: 1px solid #cdd7e4;
+    border-radius: 6px;
+    height: 22px;
+    text-align: center;
+    font-size: 12px;
+    color: #1a2a40;
+}
+QProgressBar::chunk {
+    background: #2388a0;
+    border-radius: 5px;
+}

@@ -22,8 +22,6 @@ from vrctranslate.infrastructure.ocr.rapidocr_engine import RapidOcrEngine
 from vrctranslate.infrastructure.osc.pythonosc_gateway import PythonOscGateway
 from vrctranslate.infrastructure.paths import discover_app_paths
 from vrctranslate.infrastructure.settings.json_repository import JsonSettingsRepository
-from vrctranslate.infrastructure.translation.argos_model_manager import ArgosModelManager
-from vrctranslate.infrastructure.translation.argos_translator import ArgosTranslator
 from vrctranslate.infrastructure.translation.deepl_translator import DeepLTranslator
 from vrctranslate.infrastructure.translation.echo_translator import EchoTranslator
 from vrctranslate.infrastructure.translation.google_cloud_translator import GoogleCloudTranslator
@@ -45,6 +43,8 @@ from vrctranslate.presentation.qt.pages.ocr_page import OcrPage
 from vrctranslate.presentation.qt.pages.self_message_page import SelfMessagePage
 from vrctranslate.presentation.qt.pages.settings_page import SettingsPage
 from vrctranslate.presentation.qt.windows.ocr_overlay_window import OcrOverlayWindow
+from vrctranslate.presentation.qt.windows.ocr_orb import OcrOrbWindow
+from vrctranslate.presentation.qt.windows.ocr_region import OcrRegionWindow
 from vrctranslate.presentation.qt.windows.quick_input_window import QuickInputWindow
 
 
@@ -55,7 +55,6 @@ def build_main_window() -> MainWindow:
     settings = ManageSettings(JsonSettingsRepository(app_paths=paths))
     settings.load()
 
-    model_manager = ArgosModelManager(paths)
     router = TranslationRouter(
         [
             EchoTranslator(),
@@ -63,7 +62,6 @@ def build_main_window() -> MainWindow:
             GoogleCloudTranslator(),
             GoogleFreeTranslator(),
             TencentTranslator(),
-            ArgosTranslator(model_manager),
             OpenAICompatibleTranslator(),
         ]
     )
@@ -86,6 +84,8 @@ def build_main_window() -> MainWindow:
     settings_page = SettingsPage(i18n)
     quick_window = QuickInputWindow(windows_api, i18n)
     ocr_overlay = OcrOverlayWindow(windows_api, i18n)
+    ocr_region = OcrRegionWindow(windows_api, i18n)
+    ocr_orb = OcrOrbWindow(windows_api, i18n)
     window = MainWindow(
         self_page,
         ocr_page,
@@ -111,11 +111,14 @@ def build_main_window() -> MainWindow:
     ocr_controller = OcrController(
         ocr_page,
         ocr_overlay,
+        ocr_region,
+        ocr_orb,
         capture,
         process_ocr,
         ocr_engine,
         translate_text,
         settings,
+        windows_api,
         logger,
         i18n,
         window,
@@ -124,7 +127,6 @@ def build_main_window() -> MainWindow:
         settings_page,
         settings,
         translate_text,
-        model_manager,
         lambda: clear_application_logs(logger),
         logger,
         window,

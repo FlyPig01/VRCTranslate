@@ -7,9 +7,10 @@ from PySide6.QtGui import QWheelEvent
 from PySide6.QtWidgets import QApplication, QSpinBox
 
 from vrctranslate.application.dto import AppSettings
-from vrctranslate.application.ports.local_models import LocalTranslationModel
 from vrctranslate.presentation.qt.icon_resources import load_icon
 from vrctranslate.presentation.qt.pages.settings_page import SettingsPage
+from vrctranslate.presentation.qt.pages.self_message_page import SelfMessagePage
+from vrctranslate.presentation.qt.widgets.no_wheel_combobox import NoWheelComboBox
 from vrctranslate.presentation.qt.widgets.numeric_line_edit import NumericLineEdit
 
 
@@ -37,8 +38,6 @@ def test_settings_has_four_discoverable_sections_and_fixed_save(qtbot, tmp_path)
     page.load_settings(
         AppSettings(),
         str(tmp_path / "data" / "config.json"),
-        False,
-        str(tmp_path / "data" / "models" / "argos"),
     )
     page.show()
     qtbot.waitExposed(page)
@@ -77,6 +76,24 @@ def test_numeric_input_has_no_wheel_or_arrow_stepping(qtbot) -> None:
     assert edit.value() == 25
 
 
+def test_combobox_draws_a_visible_down_arrow(qtbot) -> None:
+    combo = NoWheelComboBox()
+    qtbot.addWidget(combo)
+    combo.addItems(["VRChat", "Another application"])
+    combo.resize(240, 38)
+    combo.show()
+    qtbot.waitExposed(combo)
+
+    image = combo.grab().toImage()
+    arrow_pixels = 0
+    for y in range(image.height()):
+        for x in range(max(0, image.width() - 32), image.width()):
+            color = image.pixelColor(x, y)
+            if color.blue() - color.red() > 50 and color.green() - color.red() > 40:
+                arrow_pixels += 1
+    assert arrow_pixels > 0
+
+
 def test_ui_svg_icons_are_runtime_resources() -> None:
     for name in (
         "ui/nav_input.svg",
@@ -87,6 +104,10 @@ def test_ui_svg_icons_are_runtime_resources() -> None:
         "ui/settings_ocr.svg",
         "ui/settings_data.svg",
         "ui/action_save.svg",
+        "ui/ocr_orb_idle.svg",
+        "ui/ocr_orb_running.svg",
+        "ui/ocr_orb_waiting.svg",
+        "ui/ocr_orb_error.svg",
     ):
         assert not load_icon(name).isNull(), name
 
@@ -100,26 +121,26 @@ def test_runtime_svg_files_match_editable_design_sources() -> None:
             assert target.read_text(encoding="utf-8") == source.read_text(encoding="utf-8")
 
 
-def test_argos_catalog_uses_readable_language_names_and_route_target(qtbot, tmp_path) -> None:
-    page = SettingsPage(_FAKE_I18N)
+def test_quick_input_overlay_settings_live_on_quick_input_page(qtbot) -> None:
+    page = SelfMessagePage(_FAKE_I18N)
     qtbot.addWidget(page)
     settings = AppSettings()
-    settings.translation.ocr_route.target_language = "zh-CN"
-    page.load_settings(
-        settings,
-        str(tmp_path / "data" / "config.json"),
-        True,
-        str(tmp_path / "data" / "models" / "argos"),
+    settings.ui.input_width = 510
+    page.load_ui_settings(settings.ui)
+
+    assert page.input_width_edit.value() == 510
+    assert not page.has_unsaved_changes
+    changes: list[tuple[bool, int]] = []
+    page.input_settings_changed.connect(
+        lambda topmost, width: changes.append((topmost, width))
     )
-    models = [
-        LocalTranslationModel("en", "zh", "1.0"),
-        LocalTranslationModel("ja", "en", "1.1"),
-    ]
+    page.input_width_edit.setValue(620)
+    assert changes[-1] == (settings.ui.input_topmost, 620)
+    assert not page.has_unsaved_changes
+    assert not hasattr(page, "save_bar")
+    assert not hasattr(page, "_show_button")
 
-    page.set_model_catalog("ready", [], models, 0)
-    translation = page.translation_page
-
-    assert translation.argos_target_filter.currentData() == "zh"
-    assert "argos_lang.zh（zh）" in translation.argos_target_filter.currentText()
-    assert "argos_lang.en（en） → argos_lang.zh（zh）" in translation.available_model_combo.currentText()
-    assert "argos.ready_install" in translation.argos_selection_summary.text()
+    settings_page = SettingsPage(_FAKE_I18N)
+    qtbot.addWidget(settings_page)
+    assert not hasattr(settings_page.osc_page, "input_width_spin")
+    assert not hasattr(settings_page.ocr_page, "overlay_opacity_spin")

@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 from PySide6.QtCore import QPoint, QPointF, Qt
 from PySide6.QtGui import QWheelEvent
 from PySide6.QtWidgets import QApplication, QSpinBox
-from pathlib import Path
 
 from vrctranslate.application.dto import AppSettings
 from vrctranslate.application.ports.local_models import LocalTranslationModel
@@ -12,8 +13,25 @@ from vrctranslate.presentation.qt.pages.settings_page import SettingsPage
 from vrctranslate.presentation.qt.widgets.numeric_line_edit import NumericLineEdit
 
 
+class _FakeI18n:
+    def tr(self, key: str, **kwargs) -> str:
+        return key
+
+    @property
+    def language_changed(self):
+        return _FakeSignal()
+
+
+class _FakeSignal:
+    def connect(self, *args):
+        pass
+
+
+_FAKE_I18N = _FakeI18n()
+
+
 def test_settings_has_four_discoverable_sections_and_fixed_save(qtbot, tmp_path) -> None:
-    page = SettingsPage()
+    page = SettingsPage(_FAKE_I18N)
     qtbot.addWidget(page)
     page.resize(720, 520)
     page.load_settings(
@@ -27,12 +45,12 @@ def test_settings_has_four_discoverable_sections_and_fixed_save(qtbot, tmp_path)
 
     assert page.section_nav.count() == 4
     assert [page.section_nav.tabText(i) for i in range(4)] == [
-        "翻译模型",
-        "OSC",
-        "OCR",
-        "便携数据与诊断",
+        "settings.section.translation",
+        "settings.section.osc",
+        "settings.section.ocr",
+        "settings.section.data",
     ]
-    assert page.save_button.isVisible()
+    assert page._save_button.isVisible()
     assert not page.findChildren(QSpinBox)
 
 
@@ -83,7 +101,7 @@ def test_runtime_svg_files_match_editable_design_sources() -> None:
 
 
 def test_argos_catalog_uses_readable_language_names_and_route_target(qtbot, tmp_path) -> None:
-    page = SettingsPage()
+    page = SettingsPage(_FAKE_I18N)
     qtbot.addWidget(page)
     settings = AppSettings()
     settings.translation.ocr_route.target_language = "zh-CN"
@@ -102,6 +120,6 @@ def test_argos_catalog_uses_readable_language_names_and_route_target(qtbot, tmp_
     translation = page.translation_page
 
     assert translation.argos_target_filter.currentData() == "zh"
-    assert "中文（zh）" in translation.argos_target_filter.currentText()
-    assert "英语（en） → 中文（zh）" in translation.available_model_combo.currentText()
-    assert "准备下载并安装" in translation.argos_selection_summary.text()
+    assert "argos_lang.zh（zh）" in translation.argos_target_filter.currentText()
+    assert "argos_lang.en（en） → argos_lang.zh（zh）" in translation.available_model_combo.currentText()
+    assert "argos.ready_install" in translation.argos_selection_summary.text()

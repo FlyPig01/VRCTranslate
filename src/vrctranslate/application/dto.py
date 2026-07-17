@@ -83,9 +83,9 @@ class OscSettings:
 class OcrSettings:
     capture_backend: str = "auto"
     interval_ms: int = 900
-    confidence: float = 0.65
-    change_threshold: float = 2.0
-    duplicate_seconds: float = 8.0
+    confidence: float = 0.8
+    change_threshold: float = 0.0
+    duplicate_seconds: float = 4.0
     region_x: int = 0
     region_y: int = 0
     region_width: int = 0

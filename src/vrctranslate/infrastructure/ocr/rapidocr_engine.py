@@ -4,6 +4,9 @@ import os
 from pathlib import Path
 from typing import Any
 
+import numpy as np
+from PIL import Image, ImageFilter
+
 from vrctranslate.domain.errors import OcrUnavailable
 from vrctranslate.domain.ocr import OcrText
 
@@ -23,10 +26,18 @@ class RapidOcrEngine:
         self._engine: Any = None
         self._source_language = source_language
 
+    @staticmethod
+    def _preprocess(pixels: np.ndarray) -> np.ndarray:
+        img = Image.fromarray(pixels)
+        img = img.filter(ImageFilter.SHARPEN)
+        w, h = img.size
+        img = img.resize((int(w * 1.5), int(h * 1.5)), Image.LANCZOS)
+        return np.array(img)
+
     def recognize(self, frame: object) -> list[OcrText]:
         engine = self._get_engine()
         try:
-            output = engine(frame)
+            output = engine(self._preprocess(frame))
         except Exception as exc:
             raise OcrUnavailable(f"OCR 识别失败：{type(exc).__name__}") from exc
         result = output[0] if isinstance(output, tuple) else output
@@ -73,6 +84,10 @@ class RapidOcrEngine:
             if model_path.exists():
                 kwargs["rec_model_path"] = str(model_path)
 
-        self._engine = RapidOCR(**kwargs) if kwargs else RapidOCR()
+        self._engine = RapidOCR(
+            box_thresh=0.4,
+            unclip_ratio=2.0,
+            **kwargs,
+        )
         return self._engine
 

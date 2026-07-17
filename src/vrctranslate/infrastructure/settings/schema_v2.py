@@ -127,9 +127,9 @@ def ocr_from_dict(raw: dict[str, Any]) -> OcrSettings:
     return OcrSettings(
         capture_backend=backend if backend in {"auto", "windows", "screen"} else "auto",
         interval_ms=int_in_range(raw.get("interval_ms"), 900, 250, 10000),
-        confidence=float_in_range(raw.get("confidence"), 0.65, 0, 1),
-        change_threshold=float_in_range(raw.get("change_threshold"), 2.0, 0, 255),
-        duplicate_seconds=float_in_range(raw.get("duplicate_seconds"), 8.0, 0, 300),
+        confidence=float_in_range(raw.get("confidence"), 0.8, 0, 1),
+        change_threshold=float_in_range(raw.get("change_threshold"), 0.0, 0, 255),
+        duplicate_seconds=float_in_range(raw.get("duplicate_seconds"), 4.0, 0, 300),
         region_x=int_in_range(raw.get("region_x"), 0, 0, 100000),
         region_y=int_in_range(raw.get("region_y"), 0, 0, 100000),
         region_width=int_in_range(raw.get("region_width"), 0, 0, 100000),

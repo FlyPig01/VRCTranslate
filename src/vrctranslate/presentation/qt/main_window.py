@@ -140,7 +140,7 @@ class MainWindow(QMainWindow):
     def _retranslate_ui(self) -> None:
         t = self._i18n.tr
         self._tagline.setText(t("app.tagline"))
-        self._version_label.setText("v0.2 · PC Only")
+        self._version_label.setText("v0.3 · PC Only")
         for i, key in enumerate(self._nav_keys):
             item = self.navigation.item(i)
             if item:

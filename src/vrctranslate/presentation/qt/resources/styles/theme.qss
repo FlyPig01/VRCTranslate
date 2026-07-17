@@ -371,6 +371,18 @@ QWidget#quickInputWindow[state="busy"] QFrame#overlayCard {
 }
 
 /* ===== OCR 译文浮窗 ===== */
+QLabel#ocrOriginal {
+    font-size: 0.78em;
+    color: #7b94b8;
+    background: rgba(20, 32, 48, 180);
+    border-radius: 9px 9px 0 0;
+    padding: 6px 12px 3px 12px;
+    margin-bottom: -3px;
+}
+QLabel#ocrOriginal + QLabel#ocrTranslation {
+    border-radius: 0 0 9px 9px;
+    padding-top: 3px;
+}
 QLabel#ocrTranslation {
     color: #f0f5ff;
     background: rgba(28, 44, 66, 195);

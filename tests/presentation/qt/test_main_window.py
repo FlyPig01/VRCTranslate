@@ -13,6 +13,23 @@ from vrctranslate.presentation.qt.pages.self_message_page import SelfMessagePage
 from vrctranslate.presentation.qt.windows.quick_input_window import QuickInputWindow
 
 
+class _FakeI18n:
+    def tr(self, key: str, **kwargs) -> str:
+        return key
+
+    @property
+    def language_changed(self):
+        return _FakeSignal()
+
+
+class _FakeSignal:
+    def connect(self, *args):
+        pass
+
+
+_FAKE_I18N = _FakeI18n()
+
+
 class EchoFake:
     def translate(self, request, profile):
         return TranslationResult(
@@ -57,8 +74,8 @@ class RepositoryFake:
 
 
 def _controller(qtbot, translator):
-    page = SelfMessagePage()
-    quick = QuickInputWindow()
+    page = SelfMessagePage(_FAKE_I18N)
+    quick = QuickInputWindow(i18n=_FAKE_I18N)
     qtbot.addWidget(page)
     qtbot.addWidget(quick)
     gateway = GatewayFake()
@@ -70,14 +87,15 @@ def _controller(qtbot, translator):
         ChatboxSendQueue(gateway),
         ManageSettings(RepositoryFake()),
         logging.getLogger("presentation-test"),
-        page,
+        _FAKE_I18N,
+        None,
     )
     return page, quick, gateway, controller
 
 
 def test_enter_translates_and_sends_without_edit_or_buttons(qtbot) -> None:
     page, quick, gateway, controller = _controller(qtbot, EchoFake())
-    assert quick.input.placeholderText() == "按Enter发送消息至VRChat"
+    assert quick.input.placeholderText() == "quick_input.placeholder"
     quick.input.setText("hello")
     qtbot.keyPress(quick.input, Qt.Key.Key_Return)
     qtbot.waitUntil(lambda: gateway.messages == ["你好"], timeout=3000)
@@ -93,7 +111,7 @@ def test_translation_failure_restores_original(qtbot) -> None:
     quick.input.setText("restore me")
     qtbot.keyPress(quick.input, Qt.Key.Key_Return)
     qtbot.waitUntil(lambda: "restore me" in quick.text, timeout=3000)
-    assert "翻译失败" in quick.status.text()
+    assert "fail" in quick.status.text().lower()
     controller.shutdown()
 
 
@@ -107,12 +125,12 @@ def test_bootstrap_composes_three_pages_and_non_topmost_main(qtbot, monkeypatch,
     assert window.windowTitle() == "VRCTranslate"
     assert not window.windowIcon().isNull()
     assert not bool(window.windowFlags() & Qt.WindowType.WindowStaysOnTopHint)
-    assert window._quick_window.input.placeholderText() == "按Enter发送消息至VRChat"
+    assert "quick_input" in window._quick_window.input.placeholderText() or "Enter" in window._quick_window.input.placeholderText()
     assert not hasattr(window, "_capture_excluder")
     assert [window.navigation.item(i).sizeHint().height() for i in range(3)] == [
-        42,
-        42,
-        42,
+        44,
+        44,
+        44,
     ]
     assert all(not window.navigation.item(i).icon().isNull() for i in range(3))
     window.close()

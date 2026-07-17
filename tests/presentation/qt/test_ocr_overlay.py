@@ -15,8 +15,8 @@ def test_overlay_contains_only_translation_and_expires(qtbot) -> None:
     overlay = OcrOverlayWindow()
     overlay._display_seconds = 0.03
     qtbot.addWidget(overlay)
-    overlay.add_translation("translated only")
-    assert [text for _, text in overlay._items] == ["translated only"]
+    overlay.add_translation("hello", "こんにちは")
+    assert [(orig, trans) for _, orig, trans in overlay._items] == [("hello", "こんにちは")]
     qtbot.waitUntil(lambda: not overlay._items, timeout=1000)
     overlay.close_permanently()
 

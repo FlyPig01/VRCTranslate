@@ -203,12 +203,15 @@ class SettingsPage(QWidget):
         self._dirty_label.setText(self._i18n.tr("page.settings.just_saved"))
         self._dirty_label.setProperty("dirty", False)
         self._save_button.setEnabled(False)
-        QTimer.singleShot(
-            1800,
-            lambda: self._dirty_label.setText(self._i18n.tr("page.settings.saved"))
-            if not self._dirty
-            else None,
-        )
+        timer = QTimer(self)
+        timer.setSingleShot(True)
+        timer.setInterval(1800)
+        timer.timeout.connect(self._reset_saved_label)
+        timer.start()
+
+    def _reset_saved_label(self) -> None:
+        if not self._dirty:
+            self._dirty_label.setText(self._i18n.tr("page.settings.saved"))
 
     def load_settings(
         self,

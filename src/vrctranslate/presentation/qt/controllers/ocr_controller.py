@@ -211,8 +211,9 @@ class OcrController(QObject):
             return
         if value.result is not None:
             translated = value.result.translated
+            original = value.result.original
             self._page.set_translation(value.request_id, translated)
-            self._overlay.add_translation(translated)
+            self._overlay.add_translation(original, translated)
             if not self._overlay.isVisible():
                 self._overlay.show()
             return

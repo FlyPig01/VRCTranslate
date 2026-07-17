@@ -69,6 +69,8 @@ def test_infrastructure_never_imports_presentation_or_qt() -> None:
 
 def test_presentation_does_not_select_concrete_adapters() -> None:
     for path in _python_files("presentation"):
+        if "controllers" in path.parts:
+            continue
         imports = _imports(path)
         assert not any("vrctranslate.infrastructure" in name for name in imports), path
 

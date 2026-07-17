@@ -24,10 +24,11 @@ class OcrOverlayWindow(QWidget):
         super().__init__(None)
         self._capture_excluder = capture_excluder
         self._i18n = i18n
-        self._items: deque[tuple[str, str]] = deque()
+        self._items: deque[tuple[str, str, str]] = deque()
         self._expiry_timers: dict[str, QTimer] = {}
         self._maximum_items = 5
         self._display_seconds = 12.0
+        self._show_original = True
         self._capture_warning_emitted = False
         self._allow_close = False
         self._has_saved_position = False
@@ -50,7 +51,7 @@ class OcrOverlayWindow(QWidget):
             | Qt.WindowType.FramelessWindowHint
             | Qt.WindowType.WindowStaysOnTopHint
         )
-        self.resize(420, 220)
+        self.resize(420, 320)
         self.setMinimumSize(260, 100)
         outer = QVBoxLayout(self)
         outer.setContentsMargins(8, 8, 8, 8)
@@ -80,12 +81,12 @@ class OcrOverlayWindow(QWidget):
         card_layout.addWidget(self.scroll_area)
         outer.addWidget(self.card)
 
-    def add_translation(self, translated: str) -> None:
+    def add_translation(self, original: str, translated: str) -> None:
         text = translated.strip()
         if not text:
             return
         item_id = uuid4().hex
-        self._items.append((item_id, text))
+        self._items.append((item_id, original.strip(), text))
         while len(self._items) > self._maximum_items:
             removed_id, _ = self._items.popleft()
             self._stop_expiry_timer(removed_id)
@@ -137,8 +138,16 @@ class OcrOverlayWindow(QWidget):
             widget = item.widget()
             if widget is not None:
                 widget.deleteLater()
-        for _, text in self._items:
-            label = QLabel(text)
+        for _, original, translated in self._items:
+            if self._show_original and original:
+                src_label = QLabel(original)
+                src_label.setObjectName("ocrOriginal")
+                src_label.setWordWrap(True)
+                src_label.setTextInteractionFlags(Qt.TextInteractionFlag.NoTextInteraction)
+                src_label.installEventFilter(self)
+                src_label.setMouseTracking(True)
+                self.items_layout.insertWidget(self.items_layout.count() - 1, src_label)
+            label = QLabel(translated)
             label.setObjectName("ocrTranslation")
             label.setWordWrap(True)
             label.setTextInteractionFlags(Qt.TextInteractionFlag.NoTextInteraction)

@@ -1,7 +1,13 @@
 from __future__ import annotations
 
 from PySide6.QtCore import QPoint, QSize, Qt, Signal
-from PySide6.QtGui import QAction, QContextMenuEvent, QGuiApplication, QMouseEvent
+from PySide6.QtGui import (
+    QAction,
+    QActionGroup,
+    QContextMenuEvent,
+    QGuiApplication,
+    QMouseEvent,
+)
 from PySide6.QtWidgets import QMenu, QToolButton, QVBoxLayout, QWidget
 
 from vrctranslate.application.dto import UiSettings
@@ -16,6 +22,7 @@ class OcrOrbWindow(QWidget):
     continuous_requested = Signal()
     region_requested = Signal()
     region_visibility_requested = Signal()
+    display_mode_requested = Signal(str)
     exit_requested = Signal()
     geometry_changed = Signal(int, int)
 
@@ -63,6 +70,19 @@ class OcrOrbWindow(QWidget):
         self.region_action = QAction(self)
         self.single_action = QAction(self)
         self.continuous_action = QAction(self)
+        self.display_menu = QMenu(self)
+        self.display_group = QActionGroup(self)
+        self.display_group.setExclusive(True)
+        self.display_actions: dict[str, QAction] = {}
+        for mode in ("overlay", "inline", "both"):
+            action = QAction(self.display_menu)
+            action.setCheckable(True)
+            action.triggered.connect(
+                lambda _checked=False, value=mode: self._request_display_mode(value)
+            )
+            self.display_group.addAction(action)
+            self.display_menu.addAction(action)
+            self.display_actions[mode] = action
         self.visibility_action = QAction(self)
         self.pause_action = QAction(self)
         self.exit_action = QAction(self)
@@ -76,10 +96,12 @@ class OcrOrbWindow(QWidget):
         self.menu.addSeparator()
         self.menu.addAction(self.single_action)
         self.menu.addAction(self.continuous_action)
+        self.menu.addMenu(self.display_menu)
         self.menu.addAction(self.pause_action)
         self.menu.addSeparator()
         self.menu.addAction(self.visibility_action)
         self.menu.addAction(self.exit_action)
+        self.set_display_mode("overlay")
 
     def _retranslate(self) -> None:
         if self._i18n is None:
@@ -88,6 +110,13 @@ class OcrOrbWindow(QWidget):
         self.region_action.setText(t("ocr_orb.select_region"))
         self.single_action.setText(t("ocr_orb.single"))
         self.continuous_action.setText(t("ocr_orb.continuous"))
+        self.display_menu.setTitle(t("ocr_orb.display_mode"))
+        for mode, key in (
+            ("overlay", "ocr_display.overlay"),
+            ("inline", "ocr_display.inline"),
+            ("both", "ocr_display.both"),
+        ):
+            self.display_actions[mode].setText(t(key))
         self.pause_action.setText(t("ocr_orb.toggle"))
         self.visibility_action.setText(t("ocr_orb.toggle_region"))
         self.exit_action.setText(t("ocr_orb.exit"))
@@ -101,6 +130,10 @@ class OcrOrbWindow(QWidget):
         self.setProperty("state", state)
         self.style().unpolish(self)
         self.style().polish(self)
+
+    def set_display_mode(self, mode: str) -> None:
+        normalized = mode if mode in {"overlay", "inline", "both"} else "overlay"
+        self.display_actions[normalized].setChecked(True)
 
     def apply_settings(self, settings: UiSettings) -> None:
         visible = self.isVisible()
@@ -170,3 +203,7 @@ class OcrOrbWindow(QWidget):
     def _exclude_from_capture(self) -> None:
         if self._capture_excluder is not None and self.isVisible():
             self._capture_excluder.exclude_from_capture(int(self.winId()))
+
+    def _request_display_mode(self, mode: str) -> None:
+        self.set_display_mode(mode)
+        self.display_mode_requested.emit(mode)

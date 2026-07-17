@@ -54,7 +54,7 @@ def migrate_v1(raw: dict[str, Any]) -> AppSettings:
             ),
             ocr_route=TranslationRouteSettings(
                 profile_id=profile_id,
-                source_language="auto",
+                source_language="ja",
                 target_language=target,
                 timeout_seconds=min(profile.timeout_seconds, 4.0),
             ),

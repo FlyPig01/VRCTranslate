@@ -9,10 +9,11 @@ from vrctranslate.application.dto import CONFIG_VERSION, AppSettings
 from vrctranslate.infrastructure.paths import AppPaths, discover_app_paths
 from vrctranslate.infrastructure.settings.migration_v1 import migrate_v1
 from vrctranslate.infrastructure.settings.migration_v2 import migrate_v2
-from vrctranslate.infrastructure.settings.schema_v3 import (
-    int_in_range,
-    settings_v3_from_dict,
-    settings_v3_to_dict,
+from vrctranslate.infrastructure.settings.migration_v3 import migrate_v3
+from vrctranslate.infrastructure.settings.schema_v3 import int_in_range
+from vrctranslate.infrastructure.settings.schema_v4 import (
+    settings_v4_from_dict,
+    settings_v4_to_dict,
 )
 
 
@@ -59,7 +60,12 @@ class JsonSettingsRepository:
                 self._backup_version(2)
                 self.save(settings)
                 return settings
-            return settings_v3_from_dict(raw)
+            if version == 3:
+                settings = migrate_v3(raw)
+                self._backup_version(3)
+                self.save(settings)
+                return settings
+            return settings_v4_from_dict(raw)
         except (OSError, ValueError, json.JSONDecodeError):
             timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
             broken = self._path.with_name(f"{self._path.name}.broken-{timestamp}")
@@ -78,7 +84,7 @@ class JsonSettingsRepository:
         self._path.parent.mkdir(parents=True, exist_ok=True)
         temporary = self._path.with_suffix(self._path.suffix + ".tmp")
         temporary.write_text(
-            json.dumps(settings_v3_to_dict(settings), ensure_ascii=False, indent=2),
+            json.dumps(settings_v4_to_dict(settings), ensure_ascii=False, indent=2),
             encoding="utf-8",
         )
         temporary.replace(self._path)

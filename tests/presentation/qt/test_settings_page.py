@@ -51,6 +51,11 @@ def test_settings_has_four_discoverable_sections_and_fixed_save(qtbot, tmp_path)
     ]
     assert page._save_button.isVisible()
     assert not page.findChildren(QSpinBox)
+    assert [
+        page.translation_page.routes_tab.ocr_source_combo.itemData(index)
+        for index in range(page.translation_page.routes_tab.ocr_source_combo.count())
+    ] == ["zh-CN", "ja"]
+    assert set(page.ocr_page._model_install_buttons) == {"zh-CN", "ja"}
 
 
 def test_numeric_input_has_no_wheel_or_arrow_stepping(qtbot) -> None:

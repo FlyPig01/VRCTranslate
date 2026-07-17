@@ -55,3 +55,18 @@ QToolButton#ocrRegionCloseButton {
 QToolButton#ocrRegionCloseButton:hover {
     background: #b53b4b;
 }
+QToolButton#ocrRegionDisplayButton {
+    min-width: 48px;
+    min-height: 27px;
+    padding: 0 7px;
+    color: #ffffff;
+    background: #24445d;
+    border: 1px solid #557993;
+    border-radius: 6px;
+    font-weight: 600;
+}
+QToolButton#ocrRegionDisplayButton:hover,
+QToolButton#ocrRegionDisplayButton:pressed {
+    background: #2d5b74;
+    border-color: #79d7e8;
+}

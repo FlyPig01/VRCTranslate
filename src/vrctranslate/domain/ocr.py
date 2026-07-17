@@ -8,6 +8,9 @@ class OcrText:
     text: str
     confidence: float
     box: tuple[tuple[int, int], ...] = ()
+    line_boxes: tuple[tuple[tuple[int, int], ...], ...] = ()
+    canvas_size: tuple[int, int] = (0, 0)
+    background_luminance: float = 0.5
 
 
 @dataclass(frozen=True, slots=True)

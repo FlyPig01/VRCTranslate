@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 
-CONFIG_VERSION = 3
+CONFIG_VERSION = 4
 SUPPORTED_TRANSLATION_PROVIDERS = frozenset(
     {
         "test",
@@ -53,6 +53,7 @@ class TranslationSettings:
     )
     ocr_route: TranslationRouteSettings = field(
         default_factory=lambda: TranslationRouteSettings(
+            source_language="ja",
             timeout_seconds=4.0,
             queue_limit=8,
             task_ttl_seconds=4.0,
@@ -85,6 +86,7 @@ class TranslationSettings:
         if self.ocr_route.profile_id not in ids:
             self.ocr_route.profile_id = fallback
 
+
 @dataclass(slots=True)
 class OscSettings:
     host: str = "127.0.0.1"
@@ -99,7 +101,7 @@ class OcrSettings:
     capture_backend: str = "auto"
     recognition_mode: str = "continuous"
     interval_ms: int = 900
-    confidence: float = 0.8
+    confidence: float = 0.68
     change_threshold: float = 0.0
     region_x: int = 0
     region_y: int = 0
@@ -125,6 +127,9 @@ class UiSettings:
     ocr_overlay_font_size: int = 16
     ocr_overlay_max_items: int = 5
     ocr_overlay_display_seconds: float = 12.0
+    ocr_display_mode: str = "overlay"
+    ocr_inline_opacity: float = 0.9
+    ocr_inline_auto_contrast: bool = True
     ocr_orb_topmost: bool = True
     ocr_orb_x: int = -1
     ocr_orb_y: int = -1

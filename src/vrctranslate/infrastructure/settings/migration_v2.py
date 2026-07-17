@@ -14,4 +14,7 @@ def migrate_v2(raw: dict[str, Any]) -> AppSettings:
     ocr.pop("duplicate_seconds", None)
     ocr["recognition_mode"] = "continuous"
     migrated["ocr"] = ocr
-    return settings_v3_from_dict(migrated)
+    settings = settings_v3_from_dict(migrated)
+    if settings.translation.ocr_route.source_language == "auto":
+        settings.translation.ocr_route.source_language = "ja"
+    return settings

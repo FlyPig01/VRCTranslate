@@ -182,7 +182,6 @@ class RoutesTab(QWidget):
         for combo, include_auto in (
             (self.self_source_combo, True),
             (self.self_target_combo, False),
-            (self.ocr_source_combo, True),
             (self.ocr_target_combo, False),
         ):
             current = str(combo.currentData() or "")
@@ -193,6 +192,17 @@ class RoutesTab(QWidget):
                     combo.addItem(label, value)
             set_combo(combo, current)
             combo.blockSignals(False)
+        current = str(self.ocr_source_combo.currentData() or "")
+        self.ocr_source_combo.blockSignals(True)
+        self.ocr_source_combo.clear()
+        for label, value in languages(self._i18n):
+            if value in {"zh-CN", "ja"}:
+                self.ocr_source_combo.addItem(label, value)
+        set_combo(
+            self.ocr_source_combo,
+            current if current in {"zh-CN", "ja"} else "ja",
+        )
+        self.ocr_source_combo.blockSignals(False)
 
     def _rebuild_formats(self) -> None:
         current = str(self.format_combo.currentData() or "")

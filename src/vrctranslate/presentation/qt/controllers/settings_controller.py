@@ -3,10 +3,11 @@ from __future__ import annotations
 import logging
 from collections.abc import Callable
 
-from PySide6.QtCore import QObject, QUrl, Signal
+from PySide6.QtCore import QObject, QThreadPool, QUrl, Signal
 from PySide6.QtGui import QDesktopServices
 
 from vrctranslate.application.dto import AppSettings
+from vrctranslate.application.ports.ocr_models import OcrModelManagement
 from vrctranslate.application.use_cases.manage_settings import ManageSettings
 from vrctranslate.application.use_cases.translate_text import TranslateText
 from vrctranslate.presentation.qt.controllers.settings import (
@@ -14,6 +15,7 @@ from vrctranslate.presentation.qt.controllers.settings import (
 )
 from vrctranslate.presentation.qt.i18n import I18nManager
 from vrctranslate.presentation.qt.pages.settings_page import SettingsPage
+from vrctranslate.presentation.qt.workers.task_worker import TaskWorker
 
 
 class SettingsController(QObject):
@@ -31,6 +33,7 @@ class SettingsController(QObject):
         logger: logging.Logger,
         parent: QObject | None = None,
         i18n: I18nManager | None = None,
+        ocr_models: OcrModelManagement | None = None,
     ) -> None:
         super().__init__(parent)
         self._page = page
@@ -38,6 +41,8 @@ class SettingsController(QObject):
         self._clear_logs = clear_logs
         self._logger = logger
         self._i18n = i18n
+        self._ocr_models = ocr_models
+        self._model_workers: set[TaskWorker] = set()
         self._translation_tester = TranslationProfileTester(
             page,
             translate_text,
@@ -50,7 +55,10 @@ class SettingsController(QObject):
         page.clear_logs_requested.connect(self._clear_log_files)
         page.open_path_requested.connect(self._open_path)
         page.discard_requested.connect(self._discard_changes)
+        page.ocr_model_install_requested.connect(self._install_ocr_model)
+        page.ocr_model_remove_requested.connect(self._remove_ocr_model)
         self._load_page()
+        self._refresh_ocr_models()
 
     def _load_page(self) -> None:
         self._page.load_settings(
@@ -118,3 +126,71 @@ class SettingsController(QObject):
             else "运行日志已清空"
         )
         self.status_bar_message.emit(message, 4000)
+
+    def _refresh_ocr_models(self) -> None:
+        if self._ocr_models is None:
+            return
+        for status in self._ocr_models.statuses():
+            self._page.set_ocr_model_status(
+                status.language,
+                status.installed,
+                status.version,
+                status.installed_size,
+            )
+
+    def _install_ocr_model(self, language: str) -> None:
+        if self._ocr_models is None:
+            return
+        current = self._ocr_models.status(language)
+        self._page.set_ocr_model_status(
+            language,
+            current.installed,
+            current.version,
+            current.installed_size,
+            busy=True,
+        )
+        worker = TaskWorker(lambda: self._ocr_models.install(language))
+        self._model_workers.add(worker)
+        worker.signals.succeeded.connect(lambda _value: self._model_task_finished())
+        worker.signals.failed.connect(
+            lambda error, value=language: self._model_task_failed(value, error)
+        )
+        worker.signals.finished.connect(lambda: self._model_workers.discard(worker))
+        QThreadPool.globalInstance().start(worker)
+
+    def _remove_ocr_model(self, language: str) -> None:
+        if self._ocr_models is None:
+            return
+        try:
+            self._ocr_models.remove(language)
+        except OSError as exc:
+            self._model_task_failed(language, exc)
+            return
+        self._model_task_finished()
+
+    def _model_task_finished(self) -> None:
+        self._refresh_ocr_models()
+        self.settings_changed.emit(self._settings.current)
+        message = (
+            self._i18n.tr("ocr_models.ready")
+            if self._i18n is not None
+            else "OCR 模型状态已更新"
+        )
+        self.status_bar_message.emit(message, 5000)
+
+    def _model_task_failed(self, language: str, error: object) -> None:
+        if self._ocr_models is None:
+            return
+        status = self._ocr_models.status(language)
+        self._page.set_ocr_model_status(
+            language,
+            status.installed,
+            status.version,
+            status.installed_size,
+            error=type(error).__name__,
+        )
+        self._logger.warning(
+            "ocr_model_operation_failed language=%s error=%s",
+            language,
+            type(error).__name__,
+        )

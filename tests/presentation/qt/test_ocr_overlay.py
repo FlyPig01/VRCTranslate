@@ -62,6 +62,8 @@ def test_translation_labels_are_parented_before_becoming_visible(qtbot) -> None:
         original = overlay.findChild(QLabel, "ocrOriginal")
         translated = overlay.findChild(QLabel, "ocrTranslation")
         assert original is not None and translated is not None
+        assert original.font().pointSizeF() > 0
+        assert translated.font().pointSizeF() > 0
         assert original.parentWidget() is not None
         assert translated.parentWidget() is not None
         assert not original.isWindow()

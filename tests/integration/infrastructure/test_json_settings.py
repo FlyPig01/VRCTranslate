@@ -11,7 +11,7 @@ def test_config_round_trip_keeps_plain_text_api_key(tmp_path) -> None:
     settings.translation.profiles[0].api_key = "plain-test-key"
     repository.save(settings)
     raw = json.loads(path.read_text(encoding="utf-8"))
-    assert raw["version"] == 3
+    assert raw["version"] == 4
     assert raw["translation"]["profiles"][0]["api_key"] == "plain-test-key"
     assert repository.load().translation.profiles[0].api_key == "plain-test-key"
     assert "sync_typing" not in raw["osc"]
@@ -20,6 +20,7 @@ def test_config_round_trip_keeps_plain_text_api_key(tmp_path) -> None:
     assert "duplicate_seconds" not in raw["ocr"]
     assert raw["ui"]["ocr_orb_topmost"] is True
     assert raw["ui"]["ocr_overlay_show_original"] is True
+    assert raw["ui"]["ocr_display_mode"] == "overlay"
 
 
 def test_invalid_values_are_clamped(tmp_path) -> None:
@@ -70,7 +71,7 @@ def test_broken_config_is_renamed_and_replaced_with_defaults(tmp_path) -> None:
     settings = JsonSettingsRepository(path).load()
     assert settings == AppSettings()
     assert path.exists()
-    assert json.loads(path.read_text(encoding="utf-8"))["version"] == 3
+    assert json.loads(path.read_text(encoding="utf-8"))["version"] == 4
     assert list(tmp_path.glob("config.json.broken-*"))
 
 
@@ -93,7 +94,7 @@ def test_version_one_is_migrated_to_profiles_and_independent_routes(tmp_path) ->
         encoding="utf-8",
     )
     settings = JsonSettingsRepository(path).load()
-    assert settings.version == 3
+    assert settings.version == 4
     assert settings.translation.profiles[0].api_key == "legacy-key"
     assert settings.translation.self_route.target_language == "ja"
     assert settings.translation.ocr_route.target_language == "ja"
@@ -122,8 +123,32 @@ def test_version_two_migrates_to_continuous_mode_without_duplicate_cooldown(tmp_
     settings = JsonSettingsRepository(path).load()
     raw = json.loads(path.read_text(encoding="utf-8"))
 
-    assert settings.version == 3
+    assert settings.version == 4
     assert settings.ocr.recognition_mode == "continuous"
     assert settings.ocr.change_threshold == 6
     assert "duplicate_seconds" not in raw["ocr"]
     assert path.with_name("config.json.v2-backup").exists()
+
+
+def test_version_three_adds_inline_defaults_and_explicit_ocr_language(tmp_path) -> None:
+    path = tmp_path / "config.json"
+    path.write_text(
+        json.dumps(
+            {
+                "version": 3,
+                "translation": {"ocr_route": {"source_language": "auto"}},
+                "ui": {"ocr_overlay_opacity": 0.7},
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    settings = JsonSettingsRepository(path).load()
+    raw = json.loads(path.read_text(encoding="utf-8"))
+
+    assert settings.version == 4
+    assert settings.translation.ocr_route.source_language == "ja"
+    assert settings.ui.ocr_display_mode == "overlay"
+    assert settings.ui.ocr_inline_opacity == 0.9
+    assert raw["version"] == 4
+    assert path.with_name("config.json.v3-backup").exists()

@@ -19,6 +19,7 @@ from PySide6.QtWidgets import (
 
 from vrctranslate.application.dto import AppSettings, UiSettings
 from vrctranslate.domain.ocr import WindowInfo
+from vrctranslate.presentation.qt.font_utils import font_with_pixel_height
 from vrctranslate.presentation.qt.i18n import I18nManager
 from vrctranslate.presentation.qt.icon_resources import load_icon
 from vrctranslate.presentation.qt.widgets import NoWheelComboBox, NumericLineEdit
@@ -144,6 +145,17 @@ class OcrPage(QWidget):
 
         self._overlay_card, overlay_layout = self._card()
         self._overlay_title = self._card_title(overlay_layout)
+        display_form = QFormLayout()
+        display_form.setFieldGrowthPolicy(
+            QFormLayout.FieldGrowthPolicy.AllNonFixedFieldsGrow
+        )
+        self.display_mode_combo = NoWheelComboBox()
+        self.inline_opacity_spin = NumericLineEdit(50, 100)
+        self._display_mode_label = QLabel()
+        self._inline_opacity_label = QLabel()
+        display_form.addRow(self._display_mode_label, self.display_mode_combo)
+        display_form.addRow(self._inline_opacity_label, self.inline_opacity_spin)
+        overlay_layout.addLayout(display_form)
         choices = QWidget()
         choices.setObjectName("settingsChoicePanel")
         self.overlay_choice_panel = choices
@@ -152,9 +164,11 @@ class OcrPage(QWidget):
         self.ocr_topmost_check = QCheckBox()
         self.ocr_passthrough_check = QCheckBox()
         self.ocr_show_original_check = QCheckBox()
+        self.inline_auto_contrast_check = QCheckBox()
         self._choice_layout.addWidget(self.ocr_topmost_check)
         self._choice_layout.addWidget(self.ocr_passthrough_check)
         self._choice_layout.addWidget(self.ocr_show_original_check)
+        self._choice_layout.addWidget(self.inline_auto_contrast_check)
         self._choice_layout.addStretch()
         overlay_layout.addWidget(choices)
 
@@ -227,6 +241,7 @@ class OcrPage(QWidget):
             self.ocr_topmost_check,
             self.ocr_passthrough_check,
             self.ocr_show_original_check,
+            self.inline_auto_contrast_check,
         ):
             check.checkStateChanged.connect(self._settings_edited)
         for edit in (
@@ -234,8 +249,10 @@ class OcrPage(QWidget):
             self.overlay_font_spin,
             self.overlay_items_spin,
             self.overlay_duration_spin,
+            self.inline_opacity_spin,
         ):
             edit.textChanged.connect(self._settings_edited)
+        self.display_mode_combo.currentIndexChanged.connect(self._settings_edited)
 
     @staticmethod
     def _card() -> tuple[QFrame, QVBoxLayout]:
@@ -267,6 +284,10 @@ class OcrPage(QWidget):
         self.ocr_topmost_check.setText(t("ocr_settings.topmost"))
         self.ocr_passthrough_check.setText(t("ocr_settings.passthrough"))
         self.ocr_show_original_check.setText(t("ocr_settings.show_original"))
+        self._display_mode_label.setText(t("ocr_display.mode"))
+        self._inline_opacity_label.setText(t("ocr_display.inline_opacity"))
+        self.inline_auto_contrast_check.setText(t("ocr_display.auto_contrast"))
+        self._rebuild_display_modes()
         self._opacity_label.setText(t("ocr_settings.opacity"))
         self._font_label.setText(t("ocr_settings.font_size"))
         self._items_label.setText(t("ocr_settings.max_items"))
@@ -276,6 +297,20 @@ class OcrPage(QWidget):
         self._refresh_runtime_labels()
         self._refresh_recent_translation()
         self._update_geometry_summary()
+
+    def _rebuild_display_modes(self) -> None:
+        current = self.display_mode_combo.currentData()
+        self.display_mode_combo.blockSignals(True)
+        self.display_mode_combo.clear()
+        for key, value in (
+            ("ocr_display.overlay", "overlay"),
+            ("ocr_display.inline", "inline"),
+            ("ocr_display.both", "both"),
+        ):
+            self.display_mode_combo.addItem(self._i18n.tr(key), value)
+        index = self.display_mode_combo.findData(current)
+        self.display_mode_combo.setCurrentIndex(index if index >= 0 else 0)
+        self.display_mode_combo.blockSignals(False)
 
     @property
     def has_unsaved_changes(self) -> bool:
@@ -319,6 +354,10 @@ class OcrPage(QWidget):
             self.ocr_topmost_check.setChecked(ui.ocr_topmost)
             self.ocr_passthrough_check.setChecked(ui.ocr_mouse_passthrough)
             self.ocr_show_original_check.setChecked(ui.ocr_overlay_show_original)
+            mode_index = self.display_mode_combo.findData(ui.ocr_display_mode)
+            self.display_mode_combo.setCurrentIndex(mode_index if mode_index >= 0 else 0)
+            self.inline_opacity_spin.setValue(round(ui.ocr_inline_opacity * 100))
+            self.inline_auto_contrast_check.setChecked(ui.ocr_inline_auto_contrast)
             self.overlay_opacity_spin.setValue(round(ui.ocr_overlay_opacity * 100))
             self.overlay_font_spin.setValue(ui.ocr_overlay_font_size)
             self.overlay_items_spin.setValue(ui.ocr_overlay_max_items)
@@ -338,6 +377,9 @@ class OcrPage(QWidget):
         ui.ocr_topmost = self.ocr_topmost_check.isChecked()
         ui.ocr_mouse_passthrough = self.ocr_passthrough_check.isChecked()
         ui.ocr_overlay_show_original = self.ocr_show_original_check.isChecked()
+        ui.ocr_display_mode = str(self.display_mode_combo.currentData() or "overlay")
+        ui.ocr_inline_opacity = float(self.inline_opacity_spin.value()) / 100
+        ui.ocr_inline_auto_contrast = self.inline_auto_contrast_check.isChecked()
         ui.ocr_overlay_opacity = float(self.overlay_opacity_spin.value()) / 100
         ui.ocr_overlay_font_size = int(self.overlay_font_spin.value())
         ui.ocr_overlay_max_items = int(self.overlay_items_spin.value())
@@ -442,12 +484,20 @@ class OcrPage(QWidget):
         show_original = self.ocr_show_original_check.isChecked()
         self.overlay_style_preview.set_background_opacity(opacity)
         self._preview_original.setVisible(show_original)
-        original_font = self._preview_original.font()
-        original_font.setPixelSize(max(10, round(font_size * 0.76)))
-        self._preview_original.setFont(original_font)
-        translated_font = self._preview_translation.font()
-        translated_font.setPixelSize(font_size)
-        self._preview_translation.setFont(translated_font)
+        self._preview_original.setFont(
+            font_with_pixel_height(
+                self._preview_original,
+                self._preview_original.font(),
+                max(10, round(font_size * 0.76)),
+            )
+        )
+        self._preview_translation.setFont(
+            font_with_pixel_height(
+                self._preview_translation,
+                self._preview_translation.font(),
+                font_size,
+            )
+        )
         if not self._loading_settings:
             self.overlay_preview_changed.emit(opacity, font_size, show_original)
 

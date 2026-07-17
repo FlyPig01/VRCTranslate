@@ -65,6 +65,61 @@ def test_composer_preserves_items_without_geometry() -> None:
     assert compose_ocr_texts(source) == source
 
 
+def test_composer_keeps_source_line_boxes_for_inline_rendering() -> None:
+    first = ((10, 10), (90, 10), (90, 28), (10, 28))
+    second = ((10, 32), (110, 32), (110, 50), (10, 50))
+    source = [
+        OcrText("第一行", 0.9, first, (first,), (300, 150), 0.2),
+        OcrText("第二行", 0.8, second, (second,), (300, 150), 0.4),
+    ]
+
+    result = compose_ocr_texts(source)
+
+    assert len(result) == 1
+    assert result[0].line_boxes == (first, second)
+    assert result[0].canvas_size == (300, 150)
+    assert 0.2 < result[0].background_luminance < 0.4
+
+
+def test_composer_separates_heading_paragraph_and_list_items_for_inline_layout() -> None:
+    result = compose_ocr_texts(
+        [
+            _text("12.10 UI 与配置", 20, 10, 220, 42),
+            _text(
+                "OCR 页面在译文显示区域增加显示方式，推荐提供：",
+                20,
+                58,
+                520,
+                82,
+            ),
+            _text("• 独立译文浮窗。", 45, 98, 250, 122),
+            _text("• 识别区域嵌字。", 45, 136, 250, 160),
+            _text("• 两者同时显示。", 45, 174, 250, 198),
+        ]
+    )
+
+    assert [item.text for item in result] == [
+        "12.10 UI 与配置",
+        "OCR 页面在译文显示区域增加显示方式，推荐提供：",
+        "• 独立译文浮窗。",
+        "• 识别区域嵌字。",
+        "• 两者同时显示。",
+    ]
+
+
+def test_composer_keeps_wrapped_lines_in_the_same_paragraph() -> None:
+    result = compose_ocr_texts(
+        [
+            _text("This is a paragraph that continues", 20, 20, 420, 44),
+            _text("onto a second wrapped line.", 20, 50, 330, 74),
+        ]
+    )
+
+    assert [item.text for item in result] == [
+        "This is a paragraph that continues onto a second wrapped line."
+    ]
+
+
 def test_recent_context_is_bounded_expires_and_never_persists() -> None:
     context = RecentOcrContext(max_items=2, ttl_seconds=5, max_characters=20)
 

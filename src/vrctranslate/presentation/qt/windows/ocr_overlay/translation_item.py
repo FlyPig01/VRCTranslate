@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from PySide6.QtGui import QFont
 from PySide6.QtWidgets import QLabel, QVBoxLayout, QWidget
 
+from vrctranslate.presentation.qt.font_utils import font_with_pixel_height
 from vrctranslate.presentation.qt.windows.ocr_overlay.content_model import OverlayEntry
 
 
@@ -34,12 +34,20 @@ class TranslationItem(QWidget):
 
     def apply_style(self, font_size: int, show_original: bool) -> None:
         if self._font_size != font_size:
-            original_font = QFont(self.original_label.font())
-            original_font.setPixelSize(max(10, round(font_size * 0.76)))
-            self.original_label.setFont(original_font)
-            translated_font = QFont(self.translation_label.font())
-            translated_font.setPixelSize(font_size)
-            self.translation_label.setFont(translated_font)
+            self.original_label.setFont(
+                font_with_pixel_height(
+                    self.original_label,
+                    self.original_label.font(),
+                    max(10, round(font_size * 0.76)),
+                )
+            )
+            self.translation_label.setFont(
+                font_with_pixel_height(
+                    self.translation_label,
+                    self.translation_label.font(),
+                    font_size,
+                )
+            )
             self._font_size = font_size
         if self._show_original != show_original:
             self.original_label.setVisible(

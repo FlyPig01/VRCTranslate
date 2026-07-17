@@ -1,7 +1,16 @@
 from __future__ import annotations
 
 from PySide6.QtCore import QPoint, QRect, Qt, Signal
-from PySide6.QtGui import QColor, QCloseEvent, QGuiApplication, QKeyEvent, QMouseEvent, QPainter, QPen
+from PySide6.QtGui import (
+    QColor,
+    QCloseEvent,
+    QCursor,
+    QGuiApplication,
+    QKeyEvent,
+    QMouseEvent,
+    QPainter,
+    QPen,
+)
 from PySide6.QtWidgets import QWidget
 
 from vrctranslate.domain.ocr import WindowInfo
@@ -19,6 +28,7 @@ class RegionSelector(QWidget):
         self._client_height = window.height
         self._origin: QPoint | None = None
         self._selection = QRect()
+        self._cursor_position: QPoint | None = None
         self._completed = False
         self.setWindowFlags(
             Qt.WindowType.FramelessWindowHint
@@ -27,7 +37,8 @@ class RegionSelector(QWidget):
         )
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         self.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
-        self.setCursor(Qt.CursorShape.CrossCursor)
+        self.setMouseTracking(True)
+        self.setCursor(Qt.CursorShape.BlankCursor)
         scale = self._dpi_scale_at(window.left, window.top)
         self.setGeometry(
             round(window.left / scale),
@@ -54,6 +65,9 @@ class RegionSelector(QWidget):
 
     def showEvent(self, event: object) -> None:
         super().showEvent(event)  # type: ignore[arg-type]
+        cursor_position = self.mapFromGlobal(QCursor.pos())
+        if self.rect().contains(cursor_position):
+            self._cursor_position = cursor_position
         self.activateWindow()
         self.setFocus()
 
@@ -74,25 +88,71 @@ class RegionSelector(QWidget):
             else "拖动选择 OCR 区域；按 Esc 取消。区域越小识别越快越准，画面不会保存到磁盘。"
         )
         painter.drawText(16, 28, hint)
+        self._paint_crosshair(painter)
+
+    def _paint_crosshair(self, painter: QPainter) -> None:
+        point = self._cursor_position
+        if point is None or not self.rect().contains(point):
+            return
+        painter.save()
+        try:
+            # Thin full-frame guides make the pointer easy to locate, while a
+            # black outline and bright centre remain visible on any game scene.
+            guide_lines = (
+                (QPoint(0, point.y()), QPoint(self.width(), point.y())),
+                (QPoint(point.x(), 0), QPoint(point.x(), self.height())),
+            )
+            for color, width in (
+                (QColor(0, 0, 0, 210), 3),
+                (QColor(255, 255, 255, 225), 1),
+            ):
+                pen = QPen(color, width, Qt.PenStyle.DashLine)
+                painter.setPen(pen)
+                for start, end in guide_lines:
+                    painter.drawLine(start, end)
+
+            arm = 24
+            gap = 5
+            arms = (
+                (QPoint(point.x() - arm, point.y()), QPoint(point.x() - gap, point.y())),
+                (QPoint(point.x() + gap, point.y()), QPoint(point.x() + arm, point.y())),
+                (QPoint(point.x(), point.y() - arm), QPoint(point.x(), point.y() - gap)),
+                (QPoint(point.x(), point.y() + gap), QPoint(point.x(), point.y() + arm)),
+            )
+            for color, width in (
+                (QColor(0, 0, 0, 255), 6),
+                (QColor(84, 214, 255, 255), 3),
+            ):
+                painter.setPen(QPen(color, width, Qt.PenStyle.SolidLine))
+                for start, end in arms:
+                    painter.drawLine(start, end)
+            painter.setPen(QPen(QColor(0, 0, 0), 2))
+            painter.setBrush(QColor(84, 214, 255))
+            painter.drawEllipse(point, 3, 3)
+        finally:
+            painter.restore()
 
     def mousePressEvent(self, event: QMouseEvent) -> None:
         if event.button() == Qt.MouseButton.LeftButton:
-            self._origin = event.position().toPoint()
+            self._cursor_position = event.position().toPoint()
+            self._origin = self._cursor_position
             self._selection = QRect(self._origin, self._origin)
             self.update()
 
     def mouseMoveEvent(self, event: QMouseEvent) -> None:
+        self._cursor_position = event.position().toPoint()
         if self._origin is not None:
             self._selection = QRect(
-                self._origin, event.position().toPoint()
+                self._origin, self._cursor_position
             ).normalized().intersected(self.rect())
-            self.update()
+        self.update()
 
     def mouseReleaseEvent(self, event: QMouseEvent) -> None:
         if event.button() != Qt.MouseButton.LeftButton or self._origin is None:
             return
+        self._cursor_position = event.position().toPoint()
         self._selection = QRect(
-            self._origin, event.position().toPoint()
+            self._origin, self._cursor_position
         ).normalized().intersected(self.rect())
         self._origin = None
         if self._selection.width() >= 20 and self._selection.height() >= 20:

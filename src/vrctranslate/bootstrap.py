@@ -19,6 +19,7 @@ from vrctranslate.infrastructure.logging.setup import (
     configure_logging,
 )
 from vrctranslate.infrastructure.ocr.rapidocr_engine import RapidOcrEngine
+from vrctranslate.infrastructure.ocr.model_manager import OcrModelManager
 from vrctranslate.infrastructure.osc.pythonosc_gateway import PythonOscGateway
 from vrctranslate.infrastructure.paths import discover_app_paths
 from vrctranslate.infrastructure.settings.json_repository import JsonSettingsRepository
@@ -43,6 +44,7 @@ from vrctranslate.presentation.qt.pages.ocr_page import OcrPage
 from vrctranslate.presentation.qt.pages.self_message_page import SelfMessagePage
 from vrctranslate.presentation.qt.pages.settings_page import SettingsPage
 from vrctranslate.presentation.qt.windows.ocr_overlay_window import OcrOverlayWindow
+from vrctranslate.presentation.qt.windows.ocr_inline import OcrInlineWindow
 from vrctranslate.presentation.qt.windows.ocr_orb import OcrOrbWindow
 from vrctranslate.presentation.qt.windows.ocr_region import OcrRegionWindow
 from vrctranslate.presentation.qt.windows.quick_input_window import QuickInputWindow
@@ -74,7 +76,14 @@ def build_main_window() -> MainWindow:
         MssScreenCapture(windows_api),
     )
     capture.set_mode(settings.current.ocr.capture_backend)
-    ocr_engine = RapidOcrEngine(settings.current.translation.ocr_route.source_language)
+    ocr_models = OcrModelManager(
+        paths.data_root / "models" / "ocr",
+        paths.cache_dir / "ocr-models",
+    )
+    ocr_engine = RapidOcrEngine(
+        ocr_models,
+        settings.current.translation.ocr_route.source_language,
+    )
     process_ocr = ProcessOcrFrame(ocr_engine)
 
     i18n = I18nManager(settings.current.ui.language)
@@ -84,6 +93,7 @@ def build_main_window() -> MainWindow:
     settings_page = SettingsPage(i18n)
     quick_window = QuickInputWindow(windows_api, i18n)
     ocr_overlay = OcrOverlayWindow(windows_api, i18n)
+    ocr_inline = OcrInlineWindow(windows_api)
     ocr_region = OcrRegionWindow(windows_api, i18n)
     ocr_orb = OcrOrbWindow(windows_api, i18n)
     window = MainWindow(
@@ -122,6 +132,7 @@ def build_main_window() -> MainWindow:
         logger,
         i18n,
         window,
+        inline_window=ocr_inline,
     )
     settings_controller = SettingsController(
         settings_page,
@@ -131,6 +142,7 @@ def build_main_window() -> MainWindow:
         logger,
         window,
         i18n,
+        ocr_models=ocr_models,
     )
     window.register_controllers(self_controller, ocr_controller, settings_controller)
     settings_controller.settings_changed.connect(self_controller.apply_settings)

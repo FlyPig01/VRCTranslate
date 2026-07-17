@@ -2,7 +2,14 @@ from __future__ import annotations
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QImage, QPixmap
-from PySide6.QtWidgets import QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
+from PySide6.QtWidgets import (
+    QHBoxLayout,
+    QLabel,
+    QProgressBar,
+    QPushButton,
+    QVBoxLayout,
+    QWidget,
+)
 
 from vrctranslate.application.dto import AppSettings
 from vrctranslate.presentation.qt.i18n import I18nManager
@@ -12,6 +19,8 @@ from vrctranslate.presentation.qt.widgets import NoWheelComboBox, NumericLineEdi
 
 class OcrSettingsPage(QWidget):
     capture_test_requested = Signal(str)
+    model_install_requested = Signal(str)
+    model_remove_requested = Signal(str)
 
     def __init__(self, i18n: I18nManager) -> None:
         super().__init__()
@@ -20,6 +29,54 @@ class OcrSettingsPage(QWidget):
         root.setContentsMargins(0, 0, 0, 0)
         scroll, _, layout = scroll_page()
         root.addWidget(scroll)
+
+        models, models_layout = card("")
+        self._models_card_title = models_layout.itemAt(0).widget()
+        self._models_card_title.setObjectName("cardTitle")
+        self._models_note = QLabel()
+        self._models_note.setWordWrap(True)
+        self._models_note.setObjectName("inlineNotice")
+        models_layout.addWidget(self._models_note)
+        self._model_names: dict[str, QLabel] = {}
+        self._model_statuses: dict[str, QLabel] = {}
+        self._model_progress: dict[str, QProgressBar] = {}
+        self._model_install_buttons: dict[str, QPushButton] = {}
+        self._model_remove_buttons: dict[str, QPushButton] = {}
+        self._model_state: dict[str, tuple[bool, str, int]] = {}
+        for language in ("zh-CN", "ja"):
+            row = QHBoxLayout()
+            row.setSpacing(8)
+            name = QLabel()
+            name.setObjectName("cardTitle")
+            status = QLabel()
+            status.setWordWrap(True)
+            progress = QProgressBar()
+            progress.setTextVisible(True)
+            progress.setRange(0, 100)
+            progress.setValue(0)
+            progress.setFixedWidth(120)
+            install = QPushButton()
+            install.setObjectName("primaryButton")
+            remove = QPushButton()
+            install.clicked.connect(
+                lambda _checked=False, value=language: self.model_install_requested.emit(value)
+            )
+            remove.clicked.connect(
+                lambda _checked=False, value=language: self.model_remove_requested.emit(value)
+            )
+            row.addWidget(name)
+            row.addWidget(status, 1)
+            row.addWidget(progress)
+            row.addWidget(install)
+            row.addWidget(remove)
+            models_layout.addLayout(row)
+            self._model_names[language] = name
+            self._model_statuses[language] = status
+            self._model_progress[language] = progress
+            self._model_install_buttons[language] = install
+            self._model_remove_buttons[language] = remove
+            self._model_state[language] = (False, "", 0)
+        layout.addWidget(models)
 
         capture, capture_layout = card("")
         self._capture_card_title = capture_layout.itemAt(0).widget()
@@ -73,6 +130,19 @@ class OcrSettingsPage(QWidget):
         i18n.language_changed.connect(lambda *_: self._retranslate())
 
     def _retranslate(self) -> None:
+        self._models_card_title.setText(self._i18n.tr("ocr_models.card"))
+        self._models_note.setText(self._i18n.tr("ocr_models.note"))
+        self._model_names["zh-CN"].setText(self._i18n.tr("ocr_models.zh_name"))
+        self._model_names["ja"].setText(self._i18n.tr("ocr_models.ja_name"))
+        for language in ("zh-CN", "ja"):
+            self._model_install_buttons[language].setText(
+                self._i18n.tr("ocr_models.install")
+            )
+            self._model_remove_buttons[language].setText(
+                self._i18n.tr("ocr_models.remove")
+            )
+            installed, version, installed_size = self._model_state[language]
+            self.set_model_status(language, installed, version, installed_size)
         self._capture_card_title.setText(self._i18n.tr("ocr_settings.capture_card"))
         self._rebuild_backend_combo()
         self.capture_backend_status.setText(self._i18n.tr("ocr_settings.backend_status"))
@@ -141,3 +211,37 @@ class OcrSettingsPage(QWidget):
     def clear_preview(self) -> None:
         self.capture_preview.clear()
         self.capture_preview.setText(self._i18n.tr("ocr_settings.preview_hint"))
+
+    def set_model_status(
+        self,
+        language: str,
+        installed: bool,
+        version: str,
+        installed_size: int,
+        *,
+        busy: bool = False,
+        error: str = "",
+    ) -> None:
+        if language not in self._model_statuses:
+            return
+        self._model_state[language] = (installed, version, installed_size)
+        size_mb = installed_size / (1024 * 1024)
+        if error:
+            message = self._i18n.tr("ocr_models.failed", error=error)
+        elif busy:
+            message = self._i18n.tr("ocr_models.downloading")
+        elif installed:
+            message = self._i18n.tr(
+                "ocr_models.installed", version=version, size=f"{size_mb:.1f}"
+            )
+        else:
+            message = self._i18n.tr("ocr_models.not_installed")
+        self._model_statuses[language].setText(message)
+        progress = self._model_progress[language]
+        if busy:
+            progress.setRange(0, 0)
+        else:
+            progress.setRange(0, 100)
+            progress.setValue(100 if installed else 0)
+        self._model_install_buttons[language].setEnabled(not busy and not installed)
+        self._model_remove_buttons[language].setEnabled(not busy and installed)

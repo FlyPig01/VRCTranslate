@@ -54,17 +54,25 @@ def test_overlay_settings_use_percentage_and_round_trip(qtbot, tmp_path) -> None
     settings.ui.ocr_overlay_opacity = 0.63
     settings.ui.ocr_overlay_show_original = False
     settings.ui.ocr_overlay_font_size = 19
+    settings.ui.ocr_display_mode = "inline"
+    settings.ui.ocr_inline_opacity = 0.78
     page.load_settings(settings)
 
     assert page.overlay_opacity_spin.value() == 63
     assert not page.ocr_show_original_check.isChecked()
+    assert page.display_mode_combo.currentData() == "inline"
+    assert page.inline_opacity_spin.value() == 78
     page.overlay_opacity_spin.setValue(72)
     page.ocr_show_original_check.setChecked(True)
+    page.display_mode_combo.setCurrentIndex(page.display_mode_combo.findData("both"))
+    page.inline_opacity_spin.setValue(86)
 
     page.collect_ui_settings(settings.ui)
     assert settings.ui.ocr_overlay_opacity == pytest.approx(0.72)
     assert settings.ui.ocr_overlay_show_original is True
     assert settings.ui.ocr_overlay_font_size == 19
+    assert settings.ui.ocr_display_mode == "both"
+    assert settings.ui.ocr_inline_opacity == pytest.approx(0.86)
 
 
 def test_overlay_live_preview_reloads_saved_values(qtbot, tmp_path) -> None:

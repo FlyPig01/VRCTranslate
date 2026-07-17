@@ -1,8 +1,26 @@
-from PySide6.QtCore import QRect
+from PySide6.QtCore import QPoint, QRect
 import pytest
 
 from vrctranslate.domain.ocr import WindowInfo
 from vrctranslate.presentation.qt.dialogs.region_selector import RegionSelector
+
+
+def test_selector_draws_a_high_contrast_custom_crosshair(qtbot) -> None:
+    selector = RegionSelector(WindowInfo(1, "VRChat", 0, 0, 320, 180))
+    qtbot.addWidget(selector)
+    selector.resize(320, 180)
+    selector.show()
+    qtbot.waitExposed(selector)
+    centre = QPoint(170, 96)
+    selector._cursor_position = centre
+    selector.update()
+    qtbot.wait(20)
+
+    color = selector.grab().toImage().pixelColor(centre)
+
+    assert color.alpha() == 255
+    assert color.green() >= 180
+    assert color.blue() >= 220
 
 
 def test_selector_maps_qt_logical_coordinates_to_win32_client_space(qtbot) -> None:

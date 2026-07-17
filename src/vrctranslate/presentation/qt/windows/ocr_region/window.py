@@ -1,12 +1,33 @@
 from __future__ import annotations
 
 from PySide6.QtCore import QPoint, QRect, Qt, Signal
-from PySide6.QtGui import QColor, QGuiApplication, QMouseEvent, QPaintEvent, QPainter, QPen
-from PySide6.QtWidgets import QButtonGroup, QHBoxLayout, QLabel, QPushButton, QToolButton, QWidget
+from PySide6.QtGui import (
+    QAction,
+    QActionGroup,
+    QColor,
+    QGuiApplication,
+    QMouseEvent,
+    QPaintEvent,
+    QPainter,
+    QPen,
+)
+from PySide6.QtWidgets import (
+    QButtonGroup,
+    QHBoxLayout,
+    QLabel,
+    QMenu,
+    QPushButton,
+    QToolButton,
+    QWidget,
+)
 
 from vrctranslate.application.ports.window_capture import WindowCaptureExcluder
 from vrctranslate.domain.ocr import CaptureRegion, WindowInfo
 from vrctranslate.presentation.qt.i18n import I18nManager
+from vrctranslate.presentation.qt.windows.ocr_geometry import (
+    logical_rect_for_region,
+    physical_point,
+)
 
 
 class OcrRegionWindow(QWidget):
@@ -15,6 +36,7 @@ class OcrRegionWindow(QWidget):
     region_changed = Signal(object)
     interaction_started = Signal()
     interaction_finished = Signal()
+    display_mode_requested = Signal(str)
 
     BORDER = 6
     BAR_HEIGHT = 38
@@ -32,9 +54,12 @@ class OcrRegionWindow(QWidget):
         self._target: WindowInfo | None = None
         self._mode = "continuous"
         self._state = "idle"
+        self._display_mode = "overlay"
         self._drag_origin: QPoint | None = None
         self._start_geometry = QRect()
         self._resize_edges = Qt.Edge(0)
+        self._content_rect = QRect()
+        self._bar_inside = False
         self._allow_close = False
         self._programmatic_geometry = False
         self._build_ui()
@@ -57,26 +82,49 @@ class OcrRegionWindow(QWidget):
         )
         self.bar = QWidget(self)
         self.bar.setObjectName("ocrRegionControlBar")
+        self.bar.setCursor(Qt.CursorShape.ArrowCursor)
         bar_layout = QHBoxLayout(self.bar)
         bar_layout.setContentsMargins(10, 4, 5, 4)
         bar_layout.setSpacing(5)
         self.title_label = QLabel()
         self.title_label.setObjectName("ocrRegionTitle")
+        self.title_label.setCursor(Qt.CursorShape.ArrowCursor)
         self.state_label = QLabel()
         self.state_label.setObjectName("ocrRegionState")
+        self.state_label.setCursor(Qt.CursorShape.ArrowCursor)
         self.single_button = QPushButton()
         self.continuous_button = QPushButton()
         for button in (self.single_button, self.continuous_button):
             button.setCheckable(True)
             button.setObjectName("ocrRegionModeButton")
+            button.setCursor(Qt.CursorShape.PointingHandCursor)
         self.mode_group = QButtonGroup(self)
         self.mode_group.setExclusive(True)
         self.mode_group.addButton(self.single_button)
         self.mode_group.addButton(self.continuous_button)
         self.single_button.clicked.connect(lambda: self.mode_requested.emit("single"))
         self.continuous_button.clicked.connect(lambda: self.mode_requested.emit("continuous"))
+        self.display_button = QToolButton()
+        self.display_button.setObjectName("ocrRegionDisplayButton")
+        self.display_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.display_button.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
+        self.display_menu = QMenu(self.display_button)
+        self.display_group = QActionGroup(self)
+        self.display_group.setExclusive(True)
+        self.display_actions: dict[str, QAction] = {}
+        for mode in ("overlay", "inline", "both"):
+            action = QAction(self.display_menu)
+            action.setCheckable(True)
+            action.triggered.connect(
+                lambda _checked=False, value=mode: self._request_display_mode(value)
+            )
+            self.display_group.addAction(action)
+            self.display_menu.addAction(action)
+            self.display_actions[mode] = action
+        self.display_button.setMenu(self.display_menu)
         self.close_button = QToolButton()
         self.close_button.setObjectName("ocrRegionCloseButton")
+        self.close_button.setCursor(Qt.CursorShape.PointingHandCursor)
         self.close_button.setText("×")
         self.close_button.clicked.connect(self._request_close)
         bar_layout.addWidget(self.title_label)
@@ -84,31 +132,58 @@ class OcrRegionWindow(QWidget):
         bar_layout.addStretch()
         bar_layout.addWidget(self.single_button)
         bar_layout.addWidget(self.continuous_button)
+        bar_layout.addWidget(self.display_button)
         bar_layout.addWidget(self.close_button)
         self.set_mode("continuous")
+        self.set_display_mode("overlay")
 
     def _retranslate(self) -> None:
         if self._i18n is None:
             self.title_label.setText("OCR 识别区域")
             self.single_button.setText("单次")
             self.continuous_button.setText("持续")
+            self.display_button.setText("译文")
+            labels = {
+                "overlay": "独立浮窗",
+                "inline": "区域嵌字",
+                "both": "浮窗与嵌字",
+            }
+            for mode, action in self.display_actions.items():
+                action.setText(labels[mode])
             return
         t = self._i18n.tr
         self.title_label.setText(t("ocr_region.title"))
         self.single_button.setText(t("ocr_region.single"))
         self.continuous_button.setText(t("ocr_region.continuous"))
+        self.display_button.setText(t("ocr_region.display_mode"))
+        for mode, key in (
+            ("overlay", "ocr_display.overlay"),
+            ("inline", "ocr_display.inline"),
+            ("both", "ocr_display.both"),
+        ):
+            self.display_actions[mode].setText(t(key))
         self._update_state_text()
 
     def set_target(self, window: WindowInfo, region: CaptureRegion) -> None:
         self._target = window
-        logical = self._logical_rect_for_region(window, region)
+        logical = logical_rect_for_region(window, region)
+        screen = QGuiApplication.screenAt(logical.center()) or QGuiApplication.primaryScreen()
+        available_top = screen.availableGeometry().top() if screen is not None else logical.top()
+        self._bar_inside = logical.top() - self.BAR_HEIGHT < available_top
+        extra_height = self.BORDER if self._bar_inside else self.BAR_HEIGHT + self.BORDER
+        window_top = logical.top() if self._bar_inside else logical.top() - self.BAR_HEIGHT
+        self.setMinimumSize(
+            self.MIN_CONTENT_WIDTH + self.BORDER * 2,
+            self.MIN_CONTENT_HEIGHT + extra_height,
+        )
         self._programmatic_geometry = True
         self.setGeometry(
             logical.x() - self.BORDER,
-            logical.y() - self.BAR_HEIGHT,
+            window_top,
             logical.width() + self.BORDER * 2,
-            logical.height() + self.BAR_HEIGHT + self.BORDER,
+            logical.height() + extra_height,
         )
+        self._update_internal_geometry()
         self._programmatic_geometry = False
         self.setWindowTitle(f"VRCTranslate OCR · {window.title}")
 
@@ -117,9 +192,17 @@ class OcrRegionWindow(QWidget):
         self.single_button.setChecked(self._mode == "single")
         self.continuous_button.setChecked(self._mode == "continuous")
 
+    def set_display_mode(self, mode: str) -> None:
+        self._display_mode = mode if mode in {"overlay", "inline", "both"} else "overlay"
+        self.display_actions[self._display_mode].setChecked(True)
+
     def set_state(self, state: str) -> None:
         self._state = state
         self.setProperty("state", state)
+        if not self._can_adjust_region():
+            self._drag_origin = None
+            self._resize_edges = Qt.Edge(0)
+            self.setCursor(Qt.CursorShape.ArrowCursor)
         self._update_state_text()
         self.style().unpolish(self)
         self.style().polish(self)
@@ -151,11 +234,11 @@ class OcrRegionWindow(QWidget):
         del event
         painter = QPainter(self)
         try:
-            content = QRect(
-                self.BORDER // 2,
-                self.BAR_HEIGHT - 1,
-                self.width() - self.BORDER,
-                self.height() - self.BAR_HEIGHT - self.BORDER // 2,
+            content = self._content_rect.adjusted(
+                -self.BORDER // 2,
+                -self.BORDER // 2,
+                self.BORDER // 2 - 1,
+                self.BORDER // 2 - 1,
             )
             painter.setPen(QPen(Qt.GlobalColor.black, 5))
             painter.drawRect(content)
@@ -173,7 +256,7 @@ class OcrRegionWindow(QWidget):
 
     def resizeEvent(self, event) -> None:  # type: ignore[no-untyped-def]
         super().resizeEvent(event)
-        self.bar.setGeometry(self.BORDER, 0, max(1, self.width() - self.BORDER * 2), self.BAR_HEIGHT)
+        self._update_internal_geometry()
 
     def showEvent(self, event) -> None:  # type: ignore[no-untyped-def]
         super().showEvent(event)
@@ -190,16 +273,32 @@ class OcrRegionWindow(QWidget):
     def mousePressEvent(self, event: QMouseEvent) -> None:
         if event.button() != Qt.MouseButton.LeftButton:
             return
+        if not self._can_adjust_region():
+            event.ignore()
+            return
+        point = event.position().toPoint()
+        in_control_bar = self.bar.geometry().contains(point)
+        edges = Qt.Edge(0) if in_control_bar else self._edges_at(point)
+        # The transparent content is an observation area, not a drag handle.
+        # Moving is limited to the control bar; resizing is limited to borders.
+        if not edges and not in_control_bar:
+            event.ignore()
+            return
         self._drag_origin = event.globalPosition().toPoint()
         self._start_geometry = self.geometry()
-        self._resize_edges = self._edges_at(event.position().toPoint())
+        self._resize_edges = edges
         self.interaction_started.emit()
         event.accept()
 
     def mouseMoveEvent(self, event: QMouseEvent) -> None:
         point = event.position().toPoint()
         if self._drag_origin is None:
-            self._update_cursor(self._edges_at(point))
+            if self.bar.geometry().contains(point):
+                self.setCursor(Qt.CursorShape.ArrowCursor)
+                return
+            self._update_cursor(
+                self._edges_at(point) if self._can_adjust_region() else Qt.Edge(0)
+            )
             return
         delta = event.globalPosition().toPoint() - self._drag_origin
         geometry = QRect(self._start_geometry)
@@ -236,25 +335,26 @@ class OcrRegionWindow(QWidget):
         target = self._target
         if target is None:
             return None
-        content_top_left = QPoint(self.x() + self.BORDER, self.y() + self.BAR_HEIGHT)
-        physical_x, physical_y, ratio = self._physical_point(content_top_left)
+        content_top_left = self.pos() + self._content_rect.topLeft()
+        physical_x, physical_y, ratio = physical_point(content_top_left)
         return CaptureRegion(
             max(0, physical_x - target.left),
             max(0, physical_y - target.top),
-            max(1, round((self.width() - self.BORDER * 2) * ratio)),
-            max(1, round((self.height() - self.BAR_HEIGHT - self.BORDER) * ratio)),
+            max(1, round(self._content_rect.width() * ratio)),
+            max(1, round(self._content_rect.height() * ratio)),
         )
 
     def _edges_at(self, point: QPoint) -> Qt.Edge:
         margin = 9
+        content = self._content_rect
         edges = Qt.Edge(0)
-        if point.x() <= margin:
+        if abs(point.x() - content.left()) <= margin:
             edges |= Qt.Edge.LeftEdge
-        elif point.x() >= self.width() - margin:
+        elif abs(point.x() - content.right()) <= margin:
             edges |= Qt.Edge.RightEdge
-        if point.y() <= margin:
+        if abs(point.y() - content.top()) <= margin:
             edges |= Qt.Edge.TopEdge
-        elif point.y() >= self.height() - margin:
+        elif abs(point.y() - content.bottom()) <= margin:
             edges |= Qt.Edge.BottomEdge
         return edges
 
@@ -277,6 +377,32 @@ class OcrRegionWindow(QWidget):
         self.hide()
         self.close_requested.emit()
 
+    def _request_display_mode(self, mode: str) -> None:
+        self.set_display_mode(mode)
+        self.display_mode_requested.emit(self._display_mode)
+
+    def _update_internal_geometry(self) -> None:
+        content_top = 0 if self._bar_inside else self.BAR_HEIGHT
+        content_height = max(
+            1,
+            self.height() - content_top - self.BORDER,
+        )
+        self._content_rect = QRect(
+            self.BORDER,
+            content_top,
+            max(1, self.width() - self.BORDER * 2),
+            content_height,
+        )
+        self.bar.setGeometry(
+            self.BORDER,
+            0,
+            max(1, self.width() - self.BORDER * 2),
+            self.BAR_HEIGHT,
+        )
+
+    def _can_adjust_region(self) -> bool:
+        return self._state not in {"running", "waiting"}
+
     @staticmethod
     def _clamp_region(region: CaptureRegion, target: WindowInfo) -> CaptureRegion:
         x = min(max(0, region.x), max(0, target.width - 1))
@@ -286,43 +412,4 @@ class OcrRegionWindow(QWidget):
             y,
             min(region.width, target.width - x),
             min(region.height, target.height - y),
-        )
-
-    @classmethod
-    def _logical_rect_for_region(cls, target: WindowInfo, region: CaptureRegion) -> QRect:
-        x, y, ratio, logical_origin = cls._logical_point(target.left + region.x, target.top + region.y)
-        del logical_origin
-        return QRect(x, y, max(1, round(region.width / ratio)), max(1, round(region.height / ratio)))
-
-    @staticmethod
-    def _logical_point(physical_x: int, physical_y: int) -> tuple[int, int, float, QPoint]:
-        for screen in QGuiApplication.screens():
-            geo = screen.geometry()
-            ratio = screen.devicePixelRatio()
-            physical_left = round(geo.x() * ratio)
-            physical_top = round(geo.y() * ratio)
-            physical_width = round(geo.width() * ratio)
-            physical_height = round(geo.height() * ratio)
-            if physical_left <= physical_x < physical_left + physical_width and physical_top <= physical_y < physical_top + physical_height:
-                return (
-                    geo.x() + round((physical_x - physical_left) / ratio),
-                    geo.y() + round((physical_y - physical_top) / ratio),
-                    ratio,
-                    geo.topLeft(),
-                )
-        return physical_x, physical_y, 1.0, QPoint()
-
-    @staticmethod
-    def _physical_point(logical: QPoint) -> tuple[int, int, float]:
-        screen = QGuiApplication.screenAt(logical) or QGuiApplication.primaryScreen()
-        if screen is None:
-            return logical.x(), logical.y(), 1.0
-        geo = screen.geometry()
-        ratio = screen.devicePixelRatio()
-        physical_left = round(geo.x() * ratio)
-        physical_top = round(geo.y() * ratio)
-        return (
-            physical_left + round((logical.x() - geo.x()) * ratio),
-            physical_top + round((logical.y() - geo.y()) * ratio),
-            ratio,
         )

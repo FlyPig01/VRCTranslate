@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import logging
 from copy import deepcopy
+from dataclasses import dataclass
+from time import monotonic
 from uuid import uuid4
 
 from PySide6.QtCore import QObject, QTimer, Signal
@@ -26,7 +28,16 @@ from vrctranslate.presentation.qt.i18n import I18nManager
 from vrctranslate.presentation.qt.pages.ocr_page import OcrPage
 from vrctranslate.presentation.qt.windows.ocr_orb import OcrOrbWindow
 from vrctranslate.presentation.qt.windows.ocr_overlay_window import OcrOverlayWindow
+from vrctranslate.presentation.qt.windows.ocr_inline import OcrInlineWindow
 from vrctranslate.presentation.qt.windows.ocr_region import OcrRegionWindow
+
+
+@dataclass(frozen=True, slots=True)
+class _PendingInlineLayout:
+    source: OcrText
+    generation: int
+    hwnd: int
+    created_at: float
 
 
 class OcrController(QObject):
@@ -52,10 +63,12 @@ class OcrController(QObject):
         logger: logging.Logger,
         i18n: I18nManager | None = None,
         parent: QObject | None = None,
+        inline_window: OcrInlineWindow | None = None,
     ) -> None:
         super().__init__(parent)
         self._page = page
         self._overlay = overlay
+        self._inline = inline_window or OcrInlineWindow()
         self._region_window = region_window
         self._orb = orb_window
         self._capture = capture
@@ -72,6 +85,9 @@ class OcrController(QObject):
         self._pending_start_mode: str | None = None
         self._region_interacting = False
         self._available_windows: list[WindowInfo] = []
+        self._inline_available = True
+        self._layout_generation = 0
+        self._pending_inline: dict[str, _PendingInlineLayout] = {}
         self._scheduler = OcrTranslationScheduler(translate_text, self._scheduler_outcome.emit)
         self._translation_context = RecentOcrContext()
         self._scheduler_outcome.connect(self._translation_completed)
@@ -98,16 +114,19 @@ class OcrController(QObject):
         page.overlay_reset_requested.connect(self.reset_overlay_geometry)
         overlay.geometry_changed.connect(self._overlay_geometry_changed)
         overlay.capture_exclusion_failed.connect(self._capture_exclusion_warning)
+        self._inline.capture_exclusion_failed.connect(self._inline_exclusion_warning)
 
         orb_window.toggle_requested.connect(self.toggle)
         orb_window.single_requested.connect(lambda: self.start_mode("single"))
         orb_window.continuous_requested.connect(lambda: self.start_mode("continuous"))
         orb_window.region_requested.connect(self.select_region)
         orb_window.region_visibility_requested.connect(region_window.toggle_visibility)
+        orb_window.display_mode_requested.connect(self._set_display_mode)
         orb_window.exit_requested.connect(self.exit_ocr_tools)
         orb_window.geometry_changed.connect(self._save_orb_geometry)
 
         region_window.mode_requested.connect(self.start_mode)
+        region_window.display_mode_requested.connect(self._set_display_mode)
         region_window.close_requested.connect(self._close_region)
         region_window.region_changed.connect(self._region_moved)
         region_window.interaction_started.connect(self._region_interaction_started)
@@ -142,6 +161,11 @@ class OcrController(QObject):
         if not hasattr(settings, "ui"):
             return
         self._overlay.apply_settings(settings.ui)
+        self._inline.apply_settings(settings.ui)
+        self._orb.set_display_mode(settings.ui.ocr_display_mode)
+        self._region_window.set_display_mode(settings.ui.ocr_display_mode)
+        if settings.ui.ocr_display_mode == "inline":
+            self._overlay.hide()
         self._orb.apply_settings(settings.ui)
         self._page.load_settings(settings)
         if hasattr(settings, "ocr"):
@@ -181,6 +205,7 @@ class OcrController(QObject):
             return
         ocr = self._settings.current.ocr
         ocr.region_x = ocr.region_y = ocr.region_width = ocr.region_height = 0
+        self._invalidate_inline_layout()
         ocr.window_title = window.title
         self._settings.save(self._settings.current)
         self._region_window.hide()
@@ -232,6 +257,7 @@ class OcrController(QObject):
             settings.region_height,
         )
         self._region_window.set_target(window, region)
+        self._inline.set_target(window, region)
         self._region_window.set_mode(settings.recognition_mode)
         self._region_window.show()
         self._region_window.raise_()
@@ -246,6 +272,8 @@ class OcrController(QObject):
         self._scheduler.start(self._settings.current.translation)
         self._translation_context.clear()
         self._overlay.clear()
+        self._inline.clear()
+        self._pending_inline.clear()
         self._ocr_active = True
         self._stopping = False
         self._single_capture_finished = False
@@ -268,6 +296,8 @@ class OcrController(QObject):
         self._page.set_status(self._tr("ctrl.ocr_stopping"))
         self._scheduler.stop()
         self._translation_context.clear()
+        self._pending_inline.clear()
+        self._inline.clear()
         if self._session.is_running:
             self._session.stop()
         else:
@@ -289,6 +319,7 @@ class OcrController(QObject):
         if save:
             self._settings.current.ocr.window_title = value.title
             self._settings.save(self._settings.current)
+            self._invalidate_inline_layout()
         if self._available_windows:
             self._page.set_target_windows(self._available_windows, value.hwnd)
         current = self._settings.current.ocr
@@ -300,6 +331,7 @@ class OcrController(QObject):
                 min(current.region_height, value.height),
             )
             self._region_window.set_target(value, region)
+            self._inline.set_target(value, region)
 
     def _region_selected(self, value: object) -> None:
         if not isinstance(value, CaptureRegion):
@@ -314,7 +346,9 @@ class OcrController(QObject):
         ocr.region_height = value.height
         ocr.window_title = window.title
         self._settings.save(self._settings.current)
+        self._invalidate_inline_layout()
         self._region_window.set_target(window, value)
+        self._inline.set_target(window, value)
         self._region_window.set_mode(ocr.recognition_mode)
         self._region_window.show()
         self._region_window.raise_()
@@ -330,6 +364,7 @@ class OcrController(QObject):
         ocr.region_x, ocr.region_y = value.x, value.y
         ocr.region_width, ocr.region_height = value.width, value.height
         self._settings.save(self._settings.current)
+        self._invalidate_inline_layout()
 
     def _region_interaction_started(self) -> None:
         self._region_interacting = True
@@ -341,7 +376,7 @@ class OcrController(QObject):
         self._sync_region_to_target()
 
     def _sync_region_to_target(self) -> None:
-        if self._region_interacting or not self._region_window.isVisible():
+        if self._region_interacting:
             return
         window = self._target.selected_window()
         ocr = self._settings.current.ocr
@@ -353,7 +388,14 @@ class OcrController(QObject):
             min(ocr.region_width, max(1, window.width - ocr.region_x)),
             min(ocr.region_height, max(1, window.height - ocr.region_y)),
         )
-        self._region_window.set_target(window, region)
+        if self._region_window.isVisible():
+            self._region_window.set_target(window, region)
+        self._inline.set_target(window, region)
+        foreground = getattr(self._windows_api, "is_foreground_window", None)
+        minimized = getattr(self._windows_api, "is_window_minimized", None)
+        is_foreground = bool(foreground(window.hwnd)) if callable(foreground) else True
+        is_minimized = bool(minimized(window.hwnd)) if callable(minimized) else False
+        self._inline.set_target_visible(is_foreground and not is_minimized)
 
     def _close_region(self) -> None:
         if self._session.is_running or self._ocr_active:
@@ -361,6 +403,7 @@ class OcrController(QObject):
         ocr = self._settings.current.ocr
         ocr.region_x = ocr.region_y = ocr.region_width = ocr.region_height = 0
         self._settings.save(self._settings.current)
+        self._invalidate_inline_layout()
         self._page.set_status(self._tr("ctrl.ocr_region_removed"))
         self._set_visual_state("idle")
 
@@ -368,6 +411,7 @@ class OcrController(QObject):
         if self._session.is_running or self._ocr_active:
             self._stop_session()
         self._region_window.hide()
+        self._inline.clear()
         self._orb.show_and_raise()
 
     def test_capture(self, mode: str = "auto") -> None:
@@ -403,6 +447,11 @@ class OcrController(QObject):
         ui.ocr_orb_x = self._orb.x()
         ui.ocr_orb_y = self._orb.y()
         self._overlay.apply_settings(ui)
+        self._inline.apply_settings(ui)
+        self._orb.set_display_mode(ui.ocr_display_mode)
+        self._region_window.set_display_mode(ui.ocr_display_mode)
+        if ui.ocr_display_mode == "inline":
+            self._overlay.hide()
         self._orb.apply_settings(ui)
         self._ui_settings_timer.start()
 
@@ -417,6 +466,14 @@ class OcrController(QObject):
         self._settings.current.ui.ocr_orb_y = y
         self._settings.save(self._settings.current)
 
+    def _set_display_mode(self, mode: str) -> None:
+        normalized = mode if mode in {"overlay", "inline", "both"} else "overlay"
+        changed = self._settings.current.ui.ocr_display_mode != normalized
+        self._settings.current.ui.ocr_display_mode = normalized
+        self.apply_settings(self._settings.current)
+        if changed:
+            self._settings.save(self._settings.current)
+
     def _texts_ready(self, items: list[OcrText]) -> None:
         if not items:
             return
@@ -427,32 +484,70 @@ class OcrController(QObject):
                 lambda: self._set_visual_state("waiting") if self._ocr_active else None,
             )
         route = self._settings.current.translation.ocr_route
-        requests = [
-            TranslationRequest(
-                uuid4().hex,
-                item.text,
-                route.source_language,
-                route.target_language,
-                "ocr",
-                self._translation_context.prepare(item.text),
+        window = self._target.selected_window()
+        if window is None:
+            return
+        pairs = [
+            (
+                TranslationRequest(
+                    uuid4().hex,
+                    item.text,
+                    route.source_language,
+                    route.target_language,
+                    "ocr",
+                    self._translation_context.prepare(item.text),
+                ),
+                item,
             )
             for item in items
         ]
+        requests = [request for request, _ in pairs]
         accepted = self._scheduler.submit_many(requests)
+        now = monotonic()
+        ttl = self._settings.current.translation.ocr_route.task_ttl_seconds
+        self._pending_inline = {
+            request_id: pending
+            for request_id, pending in self._pending_inline.items()
+            if now - pending.created_at <= ttl * 2
+        }
+        for request, item in pairs:
+            if request.request_id in accepted:
+                self._pending_inline[request.request_id] = _PendingInlineLayout(
+                    item,
+                    self._layout_generation,
+                    window.hwnd,
+                    now,
+                )
         dropped = len(requests) - len(accepted)
         if dropped:
             self._logger.info("ocr_translation_dropped count=%s reason=queue_full", dropped)
 
     def _translation_completed(self, value: object) -> None:
-        if not isinstance(value, OcrTranslationOutcome) or not self._ocr_active:
+        if not isinstance(value, OcrTranslationOutcome):
+            return
+        pending = self._pending_inline.pop(value.request_id, None)
+        if not self._ocr_active:
             return
         if value.result is not None:
-            self._overlay.add_translation(value.result.original, value.result.translated)
+            mode = self._settings.current.ui.ocr_display_mode
+            valid_inline = self._valid_inline_layout(pending)
+            if mode in {"overlay", "both"} or not self._inline_available or not valid_inline:
+                self._overlay.add_translation(value.result.original, value.result.translated)
+                if not self._overlay.isVisible():
+                    self._overlay.show()
+            if mode in {"inline", "both"} and self._inline_available and valid_inline:
+                assert pending is not None
+                self._inline.add_translation(
+                    value.request_id,
+                    pending.source,
+                    value.result.translated,
+                    None
+                    if self._settings.current.ocr.recognition_mode == "single"
+                    else self._settings.current.ui.ocr_overlay_display_seconds,
+                )
             self._page.set_last_translation(
                 value.result.original, value.result.translated
             )
-            if not self._overlay.isVisible():
-                self._overlay.show()
         else:
             error = value.error
             self._logger.warning(
@@ -477,6 +572,8 @@ class OcrController(QObject):
         self._ocr_active = False
         self._scheduler.stop()
         self._translation_context.clear()
+        self._pending_inline.clear()
+        self._inline.clear()
         self._set_error(message)
 
     def _finished(self) -> None:
@@ -538,6 +635,28 @@ class OcrController(QObject):
         self._page.set_status(self._tr("ctrl.ocr_exclusion_failed"))
         self._logger.warning("ocr_overlay_capture_exclusion_unavailable")
 
+    def _inline_exclusion_warning(self) -> None:
+        self._inline_available = False
+        self._inline.clear()
+        self._page.set_status(self._tr("ctrl.ocr_inline_exclusion_failed"))
+        self._logger.warning("ocr_inline_capture_exclusion_unavailable")
+
+    def _invalidate_inline_layout(self) -> None:
+        self._layout_generation += 1
+        self._pending_inline.clear()
+        self._inline.clear()
+
+    def _valid_inline_layout(self, pending: _PendingInlineLayout | None) -> bool:
+        if pending is None or not pending.source.box:
+            return False
+        if pending.generation != self._layout_generation:
+            return False
+        window = self._target.selected_window()
+        if window is None or window.hwnd != pending.hwnd:
+            return False
+        ttl = self._settings.current.translation.ocr_route.task_ttl_seconds
+        return monotonic() - pending.created_at <= ttl
+
     def shutdown(self, timeout_ms: int = 10_000) -> bool:
         self._shutting_down = True
         self._pending_start_mode = None
@@ -549,6 +668,7 @@ class OcrController(QObject):
             self._save_page_settings()
         self._translation_context.clear()
         self._overlay.close_permanently()
+        self._inline.close_permanently()
         self._orb.close_permanently()
         self._region_window.close_permanently()
         self._target.shutdown()

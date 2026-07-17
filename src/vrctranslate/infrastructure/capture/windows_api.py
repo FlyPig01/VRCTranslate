@@ -68,6 +68,18 @@ class WindowsApi:
         except (AttributeError, OSError):
             return False
 
+    def is_foreground_window(self, hwnd: int) -> bool:
+        try:
+            return int(self._user32.GetForegroundWindow() or 0) == int(hwnd)
+        except (AttributeError, OSError, TypeError, ValueError):
+            return False
+
+    def is_window_minimized(self, hwnd: int) -> bool:
+        try:
+            return bool(self._user32.IsIconic(wintypes.HWND(hwnd)))
+        except (AttributeError, OSError):
+            return False
+
     def list_windows(self) -> list[WindowInfo]:
         windows: list[WindowInfo] = []
         callback_type = ctypes.WINFUNCTYPE(

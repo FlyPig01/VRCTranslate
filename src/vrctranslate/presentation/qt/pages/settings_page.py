@@ -39,6 +39,8 @@ class SettingsPage(QWidget):
     clear_logs_requested = Signal()
     open_path_requested = Signal(str)
     capture_test_requested = Signal(str)
+    ocr_model_install_requested = Signal(str)
+    ocr_model_remove_requested = Signal(str)
     discard_requested = Signal()
 
     def __init__(self, i18n: I18nManager) -> None:
@@ -161,6 +163,8 @@ class SettingsPage(QWidget):
         page = self.translation_page
         page.test_translation_requested.connect(self.test_translation_requested)
         self.ocr_page.capture_test_requested.connect(self.capture_test_requested)
+        self.ocr_page.model_install_requested.connect(self.ocr_model_install_requested)
+        self.ocr_page.model_remove_requested.connect(self.ocr_model_remove_requested)
         self.data_page.clear_logs_requested.connect(self.clear_logs_requested)
         self.data_page.open_path_requested.connect(self.open_path_requested)
 
@@ -251,6 +255,25 @@ class SettingsPage(QWidget):
 
     def set_capture_preview(self, pixels: object | None, message: str) -> None:
         self.ocr_page.set_capture_preview(pixels, message)
+
+    def set_ocr_model_status(
+        self,
+        language: str,
+        installed: bool,
+        version: str,
+        installed_size: int,
+        *,
+        busy: bool = False,
+        error: str = "",
+    ) -> None:
+        self.ocr_page.set_model_status(
+            language,
+            installed,
+            version,
+            installed_size,
+            busy=busy,
+            error=error,
+        )
 
     def path_for(self, key: str) -> str | None:
         return self.data_page.path_for(key)

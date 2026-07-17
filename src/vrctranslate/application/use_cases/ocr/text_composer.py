@@ -9,8 +9,14 @@ from vrctranslate.domain.text_rules import normalize_text
 
 
 _CJK = re.compile(r"[\u3040-\u30ff\u3400-\u9fff\uac00-\ud7af]")
+_LIST_PREFIX = re.compile(
+    r"^\s*(?:[•●▪◦‣⁃·*\-–—]|\(?\d{1,3}[.)、]|[一二三四五六七八九十]+[、.])\s*"
+)
+_NUMBERED_HEADING = re.compile(r"^\s*\d+(?:\.\d+)+\s+\S")
+_SENTENCE_END = set(".!?;。！？；：")
 _NO_SPACE_BEFORE = set(",.!?;:%)]}，。！？；：、）】》」』")
 _NO_SPACE_AFTER = set("([{（【《「『")
+_MAX_BLOCK_LINES = 6
 
 
 @dataclass(frozen=True, slots=True)
@@ -21,6 +27,9 @@ class _Segment:
     top: int
     right: int
     bottom: int
+    box: tuple[tuple[int, int], ...]
+    canvas_size: tuple[int, int]
+    background_luminance: float
 
     @property
     def width(self) -> int:
@@ -121,6 +130,9 @@ def _as_segment(item: OcrText) -> _Segment | None:
         top,
         right,
         bottom,
+        item.box,
+        item.canvas_size,
+        item.background_luminance,
     )
 
 
@@ -161,25 +173,57 @@ def _split_distant_row(row: _Line) -> list[_Line]:
     return result
 
 
-def _can_follow(previous: _Line, current: _Line) -> bool:
+def _can_follow(block: list[_Line], current: _Line) -> bool:
+    previous = block[-1]
     vertical_gap = current.top - previous.bottom
     minimum_height = min(previous.height, current.height)
     if vertical_gap < -minimum_height * 0.35:
         return False
-    if vertical_gap > max(previous.height, current.height) * 1.4:
+    if vertical_gap > max(previous.height, current.height) * 1.05:
+        return False
+    if len(block) >= _MAX_BLOCK_LINES:
+        return False
+    if _LIST_PREFIX.match(current.text):
+        return False
+    if _NUMBERED_HEADING.match(current.text) or _NUMBERED_HEADING.match(previous.text):
+        return False
+    height_ratio = max(previous.height, current.height) / minimum_height
+    if height_ratio > 1.45:
+        return False
+    if (
+        len(previous.text) <= 28
+        and len(current.text) >= max(36, round(len(previous.text) * 1.8))
+        and previous.height >= current.height * 1.05
+    ):
+        return False
+    if (
+        previous.text
+        and previous.text[-1] in _SENTENCE_END
+        and vertical_gap > minimum_height * 0.55
+    ):
         return False
     overlap = min(previous.right, current.right) - max(previous.left, current.left)
     overlap_ratio = max(0, overlap) / min(previous.width, current.width)
     center_distance = abs(previous.center_x - current.center_x)
-    return overlap_ratio >= 0.15 or center_distance <= max(
-        previous.width, current.width
-    ) * 0.35
+    left_distance = abs(previous.left - current.left)
+    left_aligned = left_distance <= max(10, round(minimum_height * 1.1))
+    continuation_indent = (
+        _LIST_PREFIX.match(previous.text) is not None
+        and current.left >= previous.left
+        and current.left - previous.left <= max(previous.height * 3, previous.width * 0.3)
+    )
+    return (
+        left_aligned
+        or continuation_indent
+        or overlap_ratio >= 0.45
+        or center_distance <= max(previous.width, current.width) * 0.2
+    )
 
 
 def _group_lines(lines: list[_Line]) -> list[list[_Line]]:
     blocks: list[list[_Line]] = []
     for line in sorted(lines, key=lambda item: (item.top, item.left)):
-        matches = [block for block in blocks if _can_follow(block[-1], line)]
+        matches = [block for block in blocks if _can_follow(block, line)]
         if not matches:
             blocks.append([line])
             continue
@@ -207,7 +251,23 @@ def _to_ocr_text(lines: list[_Line]) -> OcrText:
     right = max(line.right for line in ordered)
     bottom = max(line.bottom for line in ordered)
     box = ((left, top), (right, top), (right, bottom), (left, bottom))
-    return OcrText(text, confidence, box)
+    line_boxes = tuple(segment.box for segment in segments if segment.box)
+    canvas_size = next(
+        (segment.canvas_size for segment in segments if segment.canvas_size != (0, 0)),
+        (0, 0),
+    )
+    background_luminance = sum(
+        segment.background_luminance * max(1, len(segment.text))
+        for segment in segments
+    ) / weight
+    return OcrText(
+        text,
+        confidence,
+        box,
+        line_boxes,
+        canvas_size,
+        background_luminance,
+    )
 
 
 def compose_ocr_texts(items: list[OcrText]) -> list[OcrText]:
@@ -220,7 +280,16 @@ def compose_ocr_texts(items: list[OcrText]) -> list[OcrText]:
         if segment is None:
             text = normalize_text(item.text)
             if text:
-                unpositioned.append(OcrText(text, item.confidence, item.box))
+                unpositioned.append(
+                    OcrText(
+                        text,
+                        item.confidence,
+                        item.box,
+                        item.line_boxes,
+                        item.canvas_size,
+                        item.background_luminance,
+                    )
+                )
         elif segment.text:
             positioned.append(segment)
     rows = _build_rows(positioned)

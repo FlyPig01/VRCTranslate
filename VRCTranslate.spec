@@ -70,6 +70,12 @@ excludes = [
     "PySide6.QtLabsSettings",
     "PySide6.QtLabsSharedImage",
     "PySide6.QtLabsWavefrontMesh",
+    "torch",
+    "paddle",
+    "paddleocr",
+    "openvino",
+    "tensorrt",
+    "MNN",
 ]
 
 datas += collect_data_files(
@@ -78,8 +84,14 @@ datas += collect_data_files(
 )
 
 # OCR models and package resources are loaded dynamically at runtime.
-for package_name in ("rapidocr_onnxruntime",):
+for package_name in ("rapidocr",):
     package_datas, package_binaries, package_hidden = collect_all(package_name)
+    # High-accuracy OCR models are installed lazily into portable data/models/ocr.
+    package_datas = [
+        item
+        for item in package_datas
+        if not str(item[0]).lower().endswith(".onnx")
+    ]
     datas += package_datas
     binaries += package_binaries
     hiddenimports += package_hidden

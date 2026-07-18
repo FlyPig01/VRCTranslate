@@ -183,7 +183,7 @@ python -m pytest
 
 正式发布采用 one-folder，避免 one-file 向系统 `%TEMP%` 解压。构建命令见 [packaging/README.md](packaging/README.md)。
 
-`v0.6.0` 当前只完成源码和测试，尚未执行最终打包。正式构建仍输出到 `dist\VRCTranslate\`，实际大小会随依赖版本略有变化。构建脚本不会预置 OCR 模型、用户配置、日志或 API 密钥；启动构建后的 exe 才会在 `data` 中生成默认配置和日志。
+`v0.6.0` 正式构建输出到 `dist\VRCTranslate\`，实际大小会随依赖版本略有变化。构建脚本不会预置 OCR 模型、用户配置、日志或 API 密钥；启动构建后的 exe 才会在 `data` 中生成默认配置和日志。
 
 向外分发前应再次检查发布目录，确保测试启动产生的 `data\config.json`、日志、缓存和模型没有被放进压缩包。
 

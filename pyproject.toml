@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "vrctranslate"
-version = "0.6.0"
+version = "0.7.0"
 description = "VRChat 桌面文字翻译与 OSC Chatbox 工具"
 readme = "README.md"
 requires-python = ">=3.11,<3.12"
@@ -14,6 +14,7 @@ dependencies = [
     "python-osc>=1.9,<2",
     "mss>=9,<11",
     "numpy>=1.26,<3",
+    "Pillow>=10,<13",
     "rapidocr>=3.9,<4",
     "onnxruntime>=1.17,<2",
     "windows-capture>=1.4,<2; sys_platform == 'win32'",

@@ -92,6 +92,21 @@ def test_region_frame_has_two_modes_and_close_removes_it(qtbot) -> None:
     assert region_window.isHidden()
 
 
+def test_ocr_floating_tools_expose_the_error_reason(qtbot) -> None:
+    message = "翻译服务认证失败，请检查 API 密钥"
+    region = OcrRegionWindow(i18n=_I18n())  # type: ignore[arg-type]
+    orb = OcrOrbWindow(i18n=_I18n())  # type: ignore[arg-type]
+    qtbot.addWidget(region)
+    qtbot.addWidget(orb)
+
+    region.set_error(message)
+    orb.set_error(message)
+
+    assert message in region.state_label.text()
+    assert region.state_label.toolTip() == message
+    assert message in orb.toolTip()
+
+
 def test_region_content_does_not_accidentally_adjust_selection(qtbot) -> None:
     region_window = OcrRegionWindow(i18n=_I18n())  # type: ignore[arg-type]
     qtbot.addWidget(region_window)

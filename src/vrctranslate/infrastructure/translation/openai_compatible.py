@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Callable
+
 import httpx
 
 from vrctranslate.application.dto import TranslationProfile
@@ -10,9 +12,20 @@ from vrctranslate.domain.translation import TranslationRequest, TranslationResul
 from vrctranslate.infrastructure.translation.llm_prompt import (
     build_translation_messages,
 )
+from vrctranslate.infrastructure.translation.compatible_request import (
+    CompatibleRequestSession,
+    generation_parameters,
+    message_text,
+)
 
 
 class OpenAICompatibleTranslator:
+    def __init__(
+        self,
+        client_factory: Callable[[float], httpx.Client] | None = None,
+    ) -> None:
+        self._session = CompatibleRequestSession(client_factory)
+
     def capabilities(self) -> TranslationCapabilities:
         return TranslationCapabilities(
             provider="openai_compatible",
@@ -38,21 +51,23 @@ class OpenAICompatibleTranslator:
             raise TranslationError("configuration", "未填写翻译服务地址")
 
         endpoint = f"{profile.base_url.rstrip('/')}/chat/completions"
-        payload = {
+        payload: dict[str, object] = {
             "model": profile.model,
-            "temperature": 0,
             "messages": build_translation_messages(request),
         }
+        payload.update(
+            generation_parameters(profile, default_max_tokens=512)
+        )
         try:
-            with httpx.Client(timeout=profile.timeout_seconds) as client:
-                response = client.post(
-                    endpoint,
-                    headers={
-                        "Authorization": f"Bearer {profile.api_key}",
-                        "Content-Type": "application/json",
-                    },
-                    json=payload,
-                )
+            response = self._session.post(
+                endpoint,
+                headers={
+                    "Authorization": f"Bearer {profile.api_key}",
+                    "Content-Type": "application/json",
+                },
+                payload=payload,
+                timeout=profile.timeout_seconds,
+            )
             response.raise_for_status()
         except httpx.TimeoutException as exc:
             raise TranslationError("network", "翻译请求超时，请稍后重试") from exc
@@ -70,7 +85,9 @@ class OpenAICompatibleTranslator:
 
         try:
             data = response.json()
-            translated = normalize_text(str(data["choices"][0]["message"]["content"]))
+            translated = normalize_text(
+                message_text(data["choices"][0]["message"]["content"])
+            )
         except (ValueError, KeyError, IndexError, TypeError) as exc:
             raise TranslationError("response", "翻译服务返回了无法识别的数据") from exc
         if not translated:

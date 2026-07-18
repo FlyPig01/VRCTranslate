@@ -179,15 +179,12 @@ class OcrPage(QWidget):
         self.overlay_opacity_spin = NumericLineEdit(25, 100)
         self.overlay_font_spin = NumericLineEdit(10, 40)
         self.overlay_items_spin = NumericLineEdit(1, 20)
-        self.overlay_duration_spin = NumericLineEdit(2.0, 120.0, 1)
         self._opacity_label = QLabel()
         self._font_label = QLabel()
         self._items_label = QLabel()
-        self._duration_label = QLabel()
         form.addRow(self._opacity_label, self.overlay_opacity_spin)
         form.addRow(self._font_label, self.overlay_font_spin)
         form.addRow(self._items_label, self.overlay_items_spin)
-        form.addRow(self._duration_label, self.overlay_duration_spin)
 
         self._form_and_preview = QBoxLayout(QBoxLayout.Direction.LeftToRight)
         self._form_and_preview.setSpacing(14)
@@ -248,7 +245,6 @@ class OcrPage(QWidget):
             self.overlay_opacity_spin,
             self.overlay_font_spin,
             self.overlay_items_spin,
-            self.overlay_duration_spin,
             self.inline_opacity_spin,
         ):
             edit.textChanged.connect(self._settings_edited)
@@ -291,7 +287,6 @@ class OcrPage(QWidget):
         self._opacity_label.setText(t("ocr_settings.opacity"))
         self._font_label.setText(t("ocr_settings.font_size"))
         self._items_label.setText(t("ocr_settings.max_items"))
-        self._duration_label.setText(t("ocr_settings.duration"))
         self.show_overlay_button.setText(t("ocr_settings.show_overlay"))
         self.reset_overlay_button.setText(t("ocr_settings.reset_overlay"))
         self._refresh_runtime_labels()
@@ -361,7 +356,6 @@ class OcrPage(QWidget):
             self.overlay_opacity_spin.setValue(round(ui.ocr_overlay_opacity * 100))
             self.overlay_font_spin.setValue(ui.ocr_overlay_font_size)
             self.overlay_items_spin.setValue(ui.ocr_overlay_max_items)
-            self.overlay_duration_spin.setValue(ui.ocr_overlay_display_seconds)
             self.set_overlay_geometry(
                 ui.ocr_overlay_x,
                 ui.ocr_overlay_y,
@@ -383,7 +377,6 @@ class OcrPage(QWidget):
         ui.ocr_overlay_opacity = float(self.overlay_opacity_spin.value()) / 100
         ui.ocr_overlay_font_size = int(self.overlay_font_spin.value())
         ui.ocr_overlay_max_items = int(self.overlay_items_spin.value())
-        ui.ocr_overlay_display_seconds = float(self.overlay_duration_spin.value())
 
     def set_status(self, message: str) -> None:
         self._runtime["status"] = message

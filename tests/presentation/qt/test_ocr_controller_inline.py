@@ -12,9 +12,16 @@ from vrctranslate.application.use_cases.ocr_translation_scheduler import (
 )
 from vrctranslate.domain.ocr import OcrText, WindowInfo
 from vrctranslate.domain.translation import TranslationResult
+from vrctranslate.domain.visual_translation import (
+    VisualRegionTranslation,
+    VisualTranslationResult,
+)
 from vrctranslate.presentation.qt.controllers.ocr_controller import (
     OcrController,
     _PendingInlineLayout,
+)
+from vrctranslate.presentation.qt.workers.multimodal_ocr_worker import (
+    MultimodalOcrOutcome,
 )
 
 
@@ -23,7 +30,10 @@ class _OverlayRecorder:
         self.items: list[tuple[str, str]] = []
         self.visible = False
 
-    def add_translation(self, original: str, translated: str) -> None:
+    def add_translation(
+        self, original: str, translated: str, group_id: str = ""
+    ) -> None:
+        del group_id
         self.items.append((original, translated))
 
     def isVisible(self) -> bool:
@@ -44,8 +54,11 @@ class _InlineRecorder:
         source: OcrText,
         translated: str,
         display_seconds: float | None,
-    ) -> None:
+        group_id: str = "",
+    ) -> bool:
+        del group_id
         self.items.append((request_id, source, translated, display_seconds))
+        return True
 
     def clear(self) -> None:
         self.clear_count += 1
@@ -126,6 +139,7 @@ def _add_pending(
         generation,
         12,
         monotonic() if created_at is None else created_at,
+        "group",
     )
 
 
@@ -186,3 +200,46 @@ def test_single_mode_inline_result_has_no_time_expiry(qtbot) -> None:
 
     assert overlay.items == []
     assert inline.items[0][3] is None
+
+
+def test_slow_result_keeps_valid_inline_geometry(qtbot) -> None:
+    del qtbot
+    controller, overlay, inline = _controller("inline")
+    controller._settings.current.translation.ocr_route.task_ttl_seconds = 1
+    _add_pending(controller, created_at=monotonic() - 30)
+
+    _complete(controller)
+
+    assert overlay.items == []
+    assert [(item[0], item[2]) for item in inline.items] == [("request", "你好")]
+
+
+def test_unfittable_inline_result_falls_back_to_overlay(qtbot) -> None:
+    del qtbot
+    controller, overlay, inline = _controller("inline")
+    inline.add_translation = lambda *args, **kwargs: False
+    _add_pending(controller)
+
+    _complete(controller)
+
+    assert overlay.items == [("hello", "你好")]
+
+
+def test_multimodal_region_result_drives_overlay_and_inline(qtbot) -> None:
+    del qtbot
+    controller, overlay, inline = _controller("both")
+    outcome = MultimodalOcrOutcome(
+        VisualTranslationResult(
+            "visual-group",
+            regions=(VisualRegionTranslation("r1", "hello", "你好"),),
+        ),
+        (("r1", _source()),),
+    )
+
+    controller._visual_result_ready(outcome)
+
+    assert overlay.items == [("hello", "你好")]
+    assert [(item[0], item[2]) for item in inline.items] == [
+        ("visual-group-r1", "你好")
+    ]
+    assert controller._page.last_translation == ("hello", "你好")

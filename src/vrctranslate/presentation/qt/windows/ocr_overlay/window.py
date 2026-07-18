@@ -141,26 +141,17 @@ class OcrOverlayWindow(QWidget):
             for entry in self._model.entries
         )
 
-    @property
-    def _display_seconds(self) -> float:
-        return self._model.display_seconds
-
-    @_display_seconds.setter
-    def _display_seconds(self, value: float) -> None:
-        self._model.configure(len(self._model.entries) or 5, value)
-
-    def add_translation(self, original: str, translated: str) -> None:
-        self._model.add(original, translated)
+    def add_translation(
+        self, original: str, translated: str, group_id: str = ""
+    ) -> None:
+        self._model.add(original, translated, group_id)
 
     def clear(self) -> None:
         self._model.clear()
 
     def apply_settings(self, settings: UiSettings) -> None:
         visible = self.isVisible()
-        self._model.configure(
-            settings.ocr_overlay_max_items,
-            settings.ocr_overlay_display_seconds,
-        )
+        self._model.configure(settings.ocr_overlay_max_items)
         self._font_size = settings.ocr_overlay_font_size
         self._show_original = getattr(settings, "ocr_overlay_show_original", True)
         self.surface.set_background_opacity(settings.ocr_overlay_opacity)

@@ -24,6 +24,15 @@ def test_rapidocr_reports_a_missing_english_model(tmp_path) -> None:
         RapidOcrEngine(manager, "en").recognize(frame)
 
 
+def test_rapidocr_reports_a_missing_detection_model_for_multimodal_inline(
+    tmp_path,
+) -> None:
+    manager = OcrModelManager(tmp_path / "models", tmp_path / "cache")
+
+    with pytest.raises(OcrUnavailable, match="多模态嵌字需要本地文字检测模型"):
+        RapidOcrEngine(manager, "ja").ensure_detection_available()
+
+
 def test_rapidocr_keeps_boxes_in_original_frame_coordinates(monkeypatch) -> None:
     class Models:
         models_root = Path("models")
@@ -105,3 +114,40 @@ def test_rapidocr_uses_english_mobile_recognition_settings(monkeypatch) -> None:
     assert captured["Rec.lang_type"] == LangRec.EN
     assert captured["Rec.ocr_version"] == OCRVersion.PPOCRV5
     assert captured["Rec.model_type"] == ModelType.MOBILE
+
+
+def test_rapidocr_detection_only_skips_recognition(monkeypatch) -> None:
+    captured = {}
+    call_options = {}
+
+    class Models:
+        models_root = Path("models")
+
+        def detection_signature(self):
+            return ("det.onnx", 1, 1)
+
+        def detection_path(self):
+            return Path("det.onnx")
+
+    class Output:
+        boxes = np.array([[[10, 12], [70, 12], [70, 32], [10, 32]]])
+        scores = (0.91,)
+
+    class FakeRapidOCR:
+        def __init__(self, params):
+            captured.update(params)
+
+        def __call__(self, _frame, **kwargs):
+            call_options.update(kwargs)
+            return Output()
+
+    monkeypatch.setattr("rapidocr.RapidOCR", FakeRapidOCR)
+    frame = np.full((100, 200, 3), 64, dtype=np.uint8)
+
+    result = RapidOcrEngine(Models(), "ja").detect(frame)  # type: ignore[arg-type]
+
+    assert result[0].box == ((10, 12), (70, 12), (70, 32), (10, 32))
+    assert result[0].canvas_size == (200, 100)
+    assert call_options == {"use_det": True, "use_cls": False, "use_rec": False}
+    assert captured["Global.use_rec"] is False
+    assert "Rec.model_path" not in captured

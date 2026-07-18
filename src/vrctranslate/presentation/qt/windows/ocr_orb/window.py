@@ -35,6 +35,7 @@ class OcrOrbWindow(QWidget):
         self._capture_excluder = capture_excluder
         self._i18n = i18n
         self._state = "idle"
+        self._error_message = ""
         self._drag_start: QPoint | None = None
         self._window_start = QPoint()
         self._moved = False
@@ -120,16 +121,34 @@ class OcrOrbWindow(QWidget):
         self.pause_action.setText(t("ocr_orb.toggle"))
         self.visibility_action.setText(t("ocr_orb.toggle_region"))
         self.exit_action.setText(t("ocr_orb.exit"))
-        self.setToolTip(t("ocr_orb.tooltip"))
+        self._update_tooltip()
 
     def set_state(self, state: str) -> None:
         if state not in {"idle", "running", "waiting", "error"}:
             state = "idle"
         self._state = state
+        if state != "error":
+            self._error_message = ""
         self.button.setIcon(load_icon(f"ui/ocr_orb_{state}.svg"))
         self.setProperty("state", state)
         self.style().unpolish(self)
         self.style().polish(self)
+        self._update_tooltip()
+
+    def set_error(self, message: str) -> None:
+        self._error_message = " ".join(message.split()).strip()
+        self.set_state("error")
+
+    def _update_tooltip(self) -> None:
+        base = (
+            self._i18n.tr("ocr_orb.tooltip")
+            if self._i18n is not None
+            else "OCR"
+        )
+        if self._state == "error" and self._error_message:
+            self.setToolTip(f"{base}\n{self._error_message}")
+        else:
+            self.setToolTip(base)
 
     def set_display_mode(self, mode: str) -> None:
         normalized = mode if mode in {"overlay", "inline", "both"} else "overlay"

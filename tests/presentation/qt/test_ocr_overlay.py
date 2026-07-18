@@ -35,13 +35,22 @@ class CaptureExcluderFake:
         return self.result
 
 
-def test_overlay_contains_only_translation_and_expires(qtbot) -> None:
+def test_overlay_keeps_results_until_the_next_group(qtbot) -> None:
     overlay = OcrOverlayWindow()
-    overlay._display_seconds = 0.03
     qtbot.addWidget(overlay)
-    overlay.add_translation("hello", "こんにちは")
-    assert [(orig, trans) for _, orig, trans in overlay._items] == [("hello", "こんにちは")]
-    qtbot.waitUntil(lambda: not overlay._items, timeout=1000)
+    overlay.add_translation("hello", "こんにちは", "group-1")
+    overlay.add_translation("thanks", "ありがとう", "group-1")
+    qtbot.wait(50)
+    assert [(orig, trans) for _, orig, trans in overlay._items] == [
+        ("hello", "こんにちは"),
+        ("thanks", "ありがとう"),
+    ]
+
+    overlay.add_translation("next", "下一轮", "group-2")
+
+    assert [(orig, trans) for _, orig, trans in overlay._items] == [
+        ("next", "下一轮")
+    ]
     overlay.close_permanently()
 
 

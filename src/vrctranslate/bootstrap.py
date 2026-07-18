@@ -8,6 +8,7 @@ from vrctranslate.application.use_cases.prepare_chatbox_message import (
 from vrctranslate.application.use_cases.process_ocr_frame import ProcessOcrFrame
 from vrctranslate.application.use_cases.send_chatbox_message import ChatboxSendQueue
 from vrctranslate.application.use_cases.translate_text import TranslateText
+from vrctranslate.application.use_cases.translate_visual_frame import TranslateVisualFrame
 from vrctranslate.infrastructure.capture.capture_router import CaptureRouter
 from vrctranslate.infrastructure.capture.mss_capture import MssScreenCapture
 from vrctranslate.infrastructure.capture.windows_graphics_capture import (
@@ -30,6 +31,8 @@ from vrctranslate.infrastructure.translation.echo_translator import EchoTranslat
 from vrctranslate.infrastructure.translation.google_cloud_translator import GoogleCloudTranslator
 from vrctranslate.infrastructure.translation.google_free_translator import GoogleFreeTranslator
 from vrctranslate.infrastructure.translation.openai_compatible import OpenAICompatibleTranslator
+from vrctranslate.infrastructure.translation.multimodal_openai import OpenAICompatibleVisualTranslator
+from vrctranslate.infrastructure.translation.visual_image import PillowVisualFrameEncoder
 from vrctranslate.infrastructure.translation.router import TranslationRouter
 from vrctranslate.infrastructure.translation.tencent_translator import TencentTranslator
 from vrctranslate.presentation.qt.application import run_qt_application
@@ -75,6 +78,11 @@ def build_main_window() -> MainWindow:
     translate_text = TranslateText(
         router,
         WanaKanaRomajiConverter(),
+        glossary_repository,
+        lambda: settings.current.glossary,
+    )
+    translate_visual = TranslateVisualFrame(
+        OpenAICompatibleVisualTranslator(),
         glossary_repository,
         lambda: settings.current.glossary,
     )
@@ -143,6 +151,8 @@ def build_main_window() -> MainWindow:
         i18n,
         window,
         inline_window=ocr_inline,
+        translate_visual=translate_visual,
+        visual_frame_encoder=PillowVisualFrameEncoder(),
     )
     settings_controller = SettingsController(
         settings_page,
@@ -154,6 +164,7 @@ def build_main_window() -> MainWindow:
         i18n,
         ocr_models=ocr_models,
         glossary_repository=glossary_repository,
+        translate_visual=translate_visual,
     )
     window.register_controllers(self_controller, ocr_controller, settings_controller)
     settings_controller.settings_changed.connect(self_controller.apply_settings)

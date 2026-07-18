@@ -1,6 +1,11 @@
 from dataclasses import replace
 
-from vrctranslate.application.dto import AppSettings, OcrSettings, OscSettings
+from vrctranslate.application.dto import (
+    AppSettings,
+    OcrSettings,
+    OscSettings,
+    TranslationProfile,
+)
 from vrctranslate.application.use_cases.manage_settings import ManageSettings
 from vrctranslate.application.use_cases.prepare_chatbox_message import (
     PrepareChatboxMessage,
@@ -80,6 +85,26 @@ def test_translate_use_case_sends_converted_text_but_preserves_original() -> Non
     result = use_case.execute(request, AppSettings().translation)
 
     assert result.original == "konnichiwa"
+    assert result.translated == "translated:こんにちは"
+
+
+def test_translation_profile_runtime_option_can_disable_romaji_conversion() -> None:
+    use_case = TranslateText(FakeTranslator(), WanaKanaRomajiConverter())
+    request = TranslationRequest("1", "konnichiwa", "ja", "zh-CN")
+    profile = TranslationProfile(options={"_romaji_mode": "off"})
+
+    result = use_case.execute(request, profile)
+
+    assert result.translated == "translated:konnichiwa"
+
+
+def test_translation_profile_runtime_option_can_force_romaji_conversion() -> None:
+    use_case = TranslateText(FakeTranslator(), WanaKanaRomajiConverter())
+    request = TranslationRequest("1", "konnichiwa", "ja", "zh-CN")
+    profile = TranslationProfile(options={"_romaji_mode": "force"})
+
+    result = use_case.execute(request, profile)
+
     assert result.translated == "translated:こんにちは"
 
 

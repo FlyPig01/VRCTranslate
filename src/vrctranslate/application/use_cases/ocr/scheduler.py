@@ -66,6 +66,7 @@ class OcrTranslationScheduler:
         profile = deepcopy(settings.profile(route.profile_id))
         profile.timeout_seconds = min(profile.timeout_seconds, route.timeout_seconds)
         profile.options["_glossary_enabled"] = route.glossary_enabled
+        profile.options["_romaji_mode"] = route.romaji_mode
         policy = OcrExecutionPolicy.create(profile, route)
         with self._lock:
             self._generation += 1
@@ -162,17 +163,19 @@ class OcrTranslationScheduler:
 
     def _submit_batch(self, requests: list[TranslationRequest]) -> set[str]:
         executor, queue, profile, generation = self._session()
-        if executor is None or queue is None or profile is None:
+        if (
+            executor is None
+            or queue is None
+            or profile is None
+            or not queue.try_acquire()
+        ):
             return set()
         accepted: set[str] = set()
         misses: list[tuple[int, TranslationRequest, CacheKey]] = []
         created_at = monotonic()
         for request in requests:
-            if not queue.try_acquire():
-                break
             sequence = self._reserve(generation, executor)
             if sequence is None:
-                queue.release()
                 break
             accepted.add(request.request_id)
             key = self._cache.key(
@@ -184,7 +187,6 @@ class OcrTranslationScheduler:
             if cached is None:
                 misses.append((sequence, request, key))
                 continue
-            queue.release()
             result = TranslationResult(
                 request.request_id,
                 normalize_text(request.text),
@@ -199,6 +201,7 @@ class OcrTranslationScheduler:
                 OcrTranslationOutcome(request.request_id, result=result, cached=True),
             )
         if not misses:
+            queue.release()
             return accepted
         future = executor.submit(
             self._execute_batch,
@@ -282,8 +285,7 @@ class OcrTranslationScheduler:
         queue: BoundedTaskQueue,
         created_at: float,
     ) -> None:
-        for _ in entries:
-            queue.release()
+        queue.release()
         error: Exception | None = None
         results: list[TranslationResult] | None = None
         try:

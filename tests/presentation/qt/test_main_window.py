@@ -47,6 +47,15 @@ class FailingFake:
         raise RuntimeError("failure")
 
 
+class ProfileCapturingFake(EchoFake):
+    def __init__(self) -> None:
+        self.romaji_mode = None
+
+    def translate(self, request, profile):
+        self.romaji_mode = profile.options.get("_romaji_mode")
+        return super().translate(request, profile)
+
+
 class GatewayFake:
     def __init__(self):
         self.messages = []
@@ -109,12 +118,37 @@ def test_enter_translates_and_sends_without_edit_or_buttons(qtbot) -> None:
     controller.shutdown()
 
 
+def test_quick_input_consumes_tab_without_changing_focus(qtbot) -> None:
+    _, quick, _, controller, _ = _controller(qtbot, EchoFake())
+    quick.show()
+    quick.input.setFocus()
+
+    qtbot.keyPress(quick.input, Qt.Key.Key_Tab)
+    qtbot.keyPress(quick.input, Qt.Key.Key_Backtab)
+
+    assert quick.focusWidget() is quick.input
+    controller.shutdown()
+
+
 def test_translation_failure_restores_original(qtbot) -> None:
     _, quick, _, controller, _ = _controller(qtbot, FailingFake())
     quick.input.setText("restore me")
     qtbot.keyPress(quick.input, Qt.Key.Key_Return)
     qtbot.waitUntil(lambda: "restore me" in quick.text, timeout=3000)
     assert "fail" in quick.status.text().lower()
+    controller.shutdown()
+
+
+def test_quick_input_passes_self_romaji_mode_to_translation_profile(qtbot) -> None:
+    translator = ProfileCapturingFake()
+    _, quick, gateway, controller, repository = _controller(qtbot, translator)
+    repository.value.translation.self_route.romaji_mode = "force"
+
+    quick.input.setText("konnichiwa")
+    qtbot.keyPress(quick.input, Qt.Key.Key_Return)
+    qtbot.waitUntil(lambda: gateway.messages == ["你好"], timeout=3000)
+
+    assert translator.romaji_mode == "force"
     controller.shutdown()
 
 

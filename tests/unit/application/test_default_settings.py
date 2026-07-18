@@ -1,4 +1,4 @@
-from vrctranslate.application.dto import AppSettings
+from vrctranslate.application.dto import AppSettings, TranslationProfile, TranslationSettings
 
 
 def test_release_defaults_are_portable_and_contain_no_private_service() -> None:
@@ -11,6 +11,7 @@ def test_release_defaults_are_portable_and_contain_no_private_service() -> None:
     assert profile.base_url == ""
     assert profile.model == ""
     assert profile.region == ""
+    assert profile.timeout_seconds == 8.0
 
     assert settings.translation.self_route.profile_id == "test"
     assert settings.translation.self_route.source_language == "auto"
@@ -30,3 +31,23 @@ def test_release_defaults_are_portable_and_contain_no_private_service() -> None:
     assert settings.ocr.region_width == 0
     assert settings.ocr.region_height == 0
     assert settings.ui.ocr_display_mode == "overlay"
+
+
+def test_multimodal_profile_cannot_become_the_self_message_route() -> None:
+    settings = TranslationSettings(
+        profiles=[
+            TranslationProfile(
+                id="vision",
+                name="Vision",
+                provider="multimodal_openai",
+            )
+        ]
+    )
+    settings.self_route.profile_id = "vision"
+    settings.ocr_route.profile_id = "vision"
+
+    settings.ensure_routes()
+
+    assert settings.profile(settings.self_route.profile_id).provider == "test"
+    assert settings.ocr_route.profile_id == "vision"
+    assert settings.profile("vision").timeout_seconds == 8.0

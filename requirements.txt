@@ -3,6 +3,7 @@ httpx>=0.27,<1
 python-osc>=1.9,<2
 mss>=9,<11
 numpy>=1.26,<3
+Pillow>=10,<13
 rapidocr>=3.9,<4
 onnxruntime>=1.17,<2
 windows-capture>=1.4,<2; sys_platform == "win32"

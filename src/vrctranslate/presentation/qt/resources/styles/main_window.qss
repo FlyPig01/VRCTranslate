@@ -60,6 +60,11 @@ QLabel#inlineNotice {
     border-radius: 8px;
     font-size: 13px;
 }
+QLabel#fieldHint {
+    color: #5d6c80;
+    padding: 2px 2px 4px 2px;
+    font-size: 12px;
+}
 QLabel#warningNotice {
     background: #fef3dc;
     color: #6a3f08;
@@ -67,6 +72,19 @@ QLabel#warningNotice {
     border: 1px solid #e4b862;
     border-radius: 8px;
     font-size: 13px;
+}
+QLabel#translationTestStatus {
+    color: #185f3f;
+    background: #e7f5ed;
+    border: 1px solid #acd9bf;
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 13px;
+}
+QLabel#translationTestStatus[failed="true"] {
+    color: #873943;
+    background: #fff0f1;
+    border-color: #e3a8ae;
 }
 QLabel#statusPill {
     color: #1e6883;

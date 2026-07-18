@@ -12,6 +12,7 @@ from vrctranslate.application.ports.ocr_models import OcrModelManagement
 from vrctranslate.application.ports.glossary_repository import GlossaryRepository
 from vrctranslate.application.use_cases.manage_settings import ManageSettings
 from vrctranslate.application.use_cases.translate_text import TranslateText
+from vrctranslate.application.use_cases.translate_visual_frame import TranslateVisualFrame
 from vrctranslate.presentation.qt.controllers.settings import (
     TranslationProfileTester,
 )
@@ -39,6 +40,7 @@ class SettingsController(QObject):
         i18n: I18nManager | None = None,
         ocr_models: OcrModelManagement | None = None,
         glossary_repository: GlossaryRepository | None = None,
+        translate_visual: TranslateVisualFrame | None = None,
     ) -> None:
         super().__init__(parent)
         self._page = page
@@ -55,6 +57,7 @@ class SettingsController(QObject):
             logger,
             i18n,
             self,
+            translate_visual,
         )
         page.save_requested.connect(self._save)
         page.test_translation_requested.connect(self._translation_tester.run)

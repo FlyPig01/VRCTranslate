@@ -13,7 +13,10 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from vrctranslate.application.dto import TranslationProfile
+from vrctranslate.application.dto import (
+    MIN_PROFILE_TIMEOUT_SECONDS,
+    TranslationProfile,
+)
 from vrctranslate.presentation.qt.i18n import I18nManager
 from vrctranslate.presentation.qt.pages.settings.common import card, form_layout, scroll_page
 from vrctranslate.presentation.qt.widgets import NoWheelComboBox, NumericLineEdit
@@ -61,7 +64,11 @@ class ProfileEditor(QWidget):
         self.api_key_edit = QLineEdit()
         self.api_key_edit.setEchoMode(QLineEdit.EchoMode.Password)
         self.model_edit = QLineEdit()
-        self.timeout_spin = NumericLineEdit(1.0, 120.0, 1)
+        self.timeout_spin = NumericLineEdit(
+            MIN_PROFILE_TIMEOUT_SECONDS,
+            120.0,
+            1,
+        )
         self._profile_name_label = QLabel()
         self._provider_label = QLabel()
         self.base_url_label = QLabel()
@@ -86,7 +93,9 @@ class ProfileEditor(QWidget):
         profile_layout.addWidget(self._profile_warning)
         self.test_button = QPushButton()
         self.test_status = QLabel()
+        self.test_status.setObjectName("translationTestStatus")
         self.test_status.setWordWrap(True)
+        self.test_status.hide()
         profile_layout.addWidget(self.test_button)
         profile_layout.addWidget(self.test_status)
         layout.addWidget(profile_card)
@@ -134,6 +143,7 @@ class ProfileEditor(QWidget):
     def set_test_status(self, message: str, failed: bool = False) -> None:
         self.test_status.setText(message)
         self.test_status.setProperty("failed", failed)
+        self.test_status.setVisible(bool(message.strip()))
         self.test_status.style().unpolish(self.test_status)
         self.test_status.style().polish(self.test_status)
 
@@ -218,13 +228,21 @@ class ProfileEditor(QWidget):
 
     def _update_provider_fields(self) -> None:
         provider = str(self.provider_combo.currentData())
+        minimum_timeout = MIN_PROFILE_TIMEOUT_SECONDS
+        self.timeout_spin.minimum = minimum_timeout
+        try:
+            current_timeout = float(self.timeout_spin.text())
+        except ValueError:
+            current_timeout = minimum_timeout
+        if current_timeout < minimum_timeout:
+            self.timeout_spin.setValue(minimum_timeout)
         show_base_url = provider in {
-            "deepl", "google_cloud", "openai_compatible", "tencent", "google_free",
+            "deepl", "google_cloud", "openai_compatible", "multimodal_openai", "tencent", "google_free",
         }
         show_api_key = provider in {
-            "deepl", "google_cloud", "openai_compatible", "tencent",
+            "deepl", "google_cloud", "openai_compatible", "multimodal_openai", "tencent",
         }
-        show_model = provider in {"openai_compatible", "tencent"}
+        show_model = provider in {"openai_compatible", "multimodal_openai", "tencent"}
         for widget in (self.base_url_label, self.base_url_edit):
             widget.setVisible(show_base_url)
         for widget in (self.api_key_label, self.api_key_edit):
@@ -249,10 +267,12 @@ class ProfileEditor(QWidget):
             "deepl": "profile.placeholder_key",
             "google_cloud": "profile.placeholder_key",
             "openai_compatible": "profile.placeholder_key",
+            "multimodal_openai": "profile.placeholder_key",
             "tencent": "profile.placeholder_tencent_id",
         }
         model_keys = {
             "openai_compatible": "profile.placeholder_model",
+            "multimodal_openai": "profile.placeholder_model",
             "tencent": "profile.placeholder_tencent_key",
         }
         base_urls = {
@@ -276,6 +296,7 @@ class ProfileEditor(QWidget):
             "google_free": "profile.help_google_free",
             "tencent": "profile.help_tencent",
             "openai_compatible": "profile.help_openai",
+            "multimodal_openai": "profile.help_multimodal",
         }
         self.profile_help.setText(
             self._i18n.tr(help_keys.get(provider, "profile.help_unknown"))

@@ -65,9 +65,6 @@ def settings_v3_from_dict(raw: dict[str, Any]) -> AppSettings:
             ocr_overlay_show_original=bool(ui.get("ocr_overlay_show_original", True)),
             ocr_overlay_font_size=int_in_range(ui.get("ocr_overlay_font_size"), 16, 10, 40),
             ocr_overlay_max_items=int_in_range(ui.get("ocr_overlay_max_items"), 5, 1, 20),
-            ocr_overlay_display_seconds=float_in_range(
-                ui.get("ocr_overlay_display_seconds"), 12.0, 2.0, 120.0
-            ),
             ocr_orb_topmost=bool(ui.get("ocr_orb_topmost", True)),
             ocr_orb_x=int_in_range(ui.get("ocr_orb_x"), -1, -100000, 100000),
             ocr_orb_y=int_in_range(ui.get("ocr_orb_y"), -1, -100000, 100000),
@@ -94,7 +91,7 @@ def profile_from_dict(raw: dict[str, Any], index: int) -> TranslationProfile | N
         api_key=str(raw.get("api_key", "")),
         model=str(raw.get("model", "")),
         region=str(raw.get("region", "")),
-        timeout_seconds=float_in_range(raw.get("timeout_seconds"), 20.0, 1, 120),
+        timeout_seconds=float_in_range(raw.get("timeout_seconds"), 8.0, 8, 120),
         options=dict(options),
     )
 
@@ -142,6 +139,15 @@ def ocr_from_dict(raw: dict[str, Any]) -> OcrSettings:
         interval_ms=int_in_range(raw.get("interval_ms"), 900, 250, 10000),
         confidence=float_in_range(raw.get("confidence"), 0.68, 0, 1),
         change_threshold=float_in_range(raw.get("change_threshold"), 0.0, 0, 255),
+        multimodal_interval_ms=int_in_range(
+            raw.get("multimodal_interval_ms"), 3000, 1000, 60000
+        ),
+        multimodal_max_image_side=int_in_range(
+            raw.get("multimodal_max_image_side"), 1600, 640, 4096
+        ),
+        multimodal_image_quality=int_in_range(
+            raw.get("multimodal_image_quality"), 85, 40, 95
+        ),
         region_x=int_in_range(raw.get("region_x"), 0, 0, 100000),
         region_y=int_in_range(raw.get("region_y"), 0, 0, 100000),
         region_width=int_in_range(raw.get("region_width"), 0, 0, 100000),

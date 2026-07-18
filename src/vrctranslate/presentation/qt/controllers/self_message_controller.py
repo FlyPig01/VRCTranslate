@@ -58,6 +58,7 @@ class SelfMessageController(QObject):
         self._pending: deque[_PendingMessage] = deque()
         self._active: _PendingMessage | None = None
         self._typing_active = False
+        self._shutting_down = False
 
         self._queue_timer = QTimer(self)
         self._queue_timer.setInterval(100)
@@ -80,7 +81,9 @@ class SelfMessageController(QObject):
         quick_window.submitted.connect(self._submitted)
         quick_window.text_activity.connect(self._text_activity)
         quick_window.hidden_by_user.connect(lambda: self._set_typing(False))
-        quick_window.geometry_changed.connect(lambda *_: self._geometry_timer.start())
+        quick_window.geometry_changed.connect(
+            lambda *_: self._geometry_timer.start() if not self._shutting_down else None
+        )
         self.apply_settings(settings.current)
 
     def _tr(self, key: str, **kwargs: object) -> str:
@@ -128,6 +131,7 @@ class SelfMessageController(QObject):
         profile = deepcopy(translation.profile(route.profile_id))
         profile.timeout_seconds = min(profile.timeout_seconds, route.timeout_seconds)
         profile.options["_glossary_enabled"] = route.glossary_enabled
+        profile.options["_romaji_mode"] = route.romaji_mode
         request = TranslationRequest(
             uuid4().hex,
             original,
@@ -241,12 +245,15 @@ class SelfMessageController(QObject):
         self._page.set_status(message)
 
     def _save_geometry(self) -> None:
+        if self._shutting_down:
+            return
         ui = self._settings.current.ui
         ui.input_x = self._window.x()
         ui.input_y = self._window.y()
         self._settings.save(self._settings.current)
 
     def shutdown(self) -> None:
+        self._shutting_down = True
         self._queue_timer.stop()
         self._typing_timer.stop()
         self._geometry_timer.stop()

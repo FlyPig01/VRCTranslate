@@ -35,7 +35,7 @@ def migrate_v1(raw: dict[str, Any]) -> AppSettings:
         api_key=str(old_translation.get("api_key", "")),
         model=str(old_translation.get("model", "")),
         timeout_seconds=float_in_range(
-            old_translation.get("timeout_seconds"), 20.0, 1, 120
+            old_translation.get("timeout_seconds"), 8.0, 8, 120
         ),
     )
     source = str(old_ui.get("source_language", "auto"))

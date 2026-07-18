@@ -20,6 +20,7 @@ def test_self_prompt_is_vrchat_specific_and_contains_no_ocr_context() -> None:
 
     assert "VRChat 实时聊天" in messages[0]["content"]
     assert "自然" in messages[0]["content"]
+    assert "不要展示分析或思考过程" in messages[0]["content"]
     assert "OCR" not in messages[0]["content"]
     payload = json.loads(messages[1]["content"])
     assert payload["current_text"] == "Let's hang out!"

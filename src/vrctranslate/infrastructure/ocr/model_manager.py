@@ -178,6 +178,29 @@ class OcrModelManager:
             (str(path), path.stat().st_size, path.stat().st_mtime_ns) for path in files
         )
 
+    def detection_path(self) -> Path:
+        path = self.models_root / DETECTION_PATH
+        spec = next(
+            (
+                item
+                for package in self._packages.values()
+                for item in package.files
+                if item.relative_path == DETECTION_PATH
+            ),
+            None,
+        )
+        if spec is None or not path.is_file() or path.stat().st_size != spec.size:
+            raise FileNotFoundError(DETECTION_PATH)
+        return path
+
+    def detection_signature(self) -> tuple[str, int, int] | None:
+        try:
+            path = self.detection_path()
+        except FileNotFoundError:
+            return None
+        stat = path.stat()
+        return str(path), stat.st_size, stat.st_mtime_ns
+
     def _package(self, language: str) -> OcrModelPackage:
         normalized = "zh-CN" if language in {"zh", "zh_CN", "zh-CN"} else language
         if normalized == "auto":

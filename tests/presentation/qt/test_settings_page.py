@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 
 from PySide6.QtCore import QPoint, QPointF, Qt
@@ -7,8 +8,13 @@ from PySide6.QtGui import QWheelEvent
 from PySide6.QtWidgets import QApplication, QSpinBox
 
 from vrctranslate.application.dto import AppSettings, TranslationProfile
+from vrctranslate.domain.errors import TranslationError
 from vrctranslate.domain.glossary import GlossaryEntry
+from vrctranslate.presentation.qt.controllers.settings.translation_tester import (
+    TranslationProfileTester,
+)
 from vrctranslate.presentation.qt.icon_resources import load_icon
+from vrctranslate.presentation.qt.i18n import I18nManager
 from vrctranslate.presentation.qt.pages.settings.translation.glossary_tab import (
     GlossaryEntryDialog,
 )
@@ -84,6 +90,113 @@ def test_tencent_profile_uses_secret_id_and_secret_key_labels(qtbot, tmp_path) -
     assert page.translation_page.model_label.text() == "profile.secret_key"
     assert page.translation_page.api_key_edit.text() == "test-secret-id"
     assert page.translation_page.model_edit.text() == "test-secret-key"
+
+
+def test_translation_test_status_is_hidden_until_a_test_starts(qtbot, tmp_path) -> None:
+    page = SettingsPage(I18nManager("zh_CN"))
+    qtbot.addWidget(page)
+    page.load_settings(AppSettings(), str(tmp_path / "data" / "config.json"))
+    status = page.translation_page.test_status
+
+    assert status.isHidden()
+
+    page.translation_page.set_test_status("正在测试…")
+    assert not status.isHidden()
+
+    page.translation_page.set_test_status("")
+    assert status.isHidden()
+
+
+def test_profile_timeout_defaults_to_eight_seconds(
+    qtbot,
+    tmp_path,
+) -> None:
+    page = SettingsPage(I18nManager("zh_CN"))
+    qtbot.addWidget(page)
+    settings = AppSettings()
+    settings.translation.profiles = [
+        TranslationProfile(
+            id="vision",
+            name="Vision",
+            provider="multimodal_openai",
+            timeout_seconds=8,
+        )
+    ]
+    settings.translation.ocr_route.profile_id = "vision"
+
+    page.load_settings(settings, str(tmp_path / "data" / "config.json"))
+
+    assert page.translation_page.timeout_spin.value() == 8.0
+    assert page.translation_page.timeout_spin.minimum == 8.0
+
+
+def test_switching_profiles_accepts_an_eight_second_timeout(qtbot, tmp_path) -> None:
+    page = SettingsPage(I18nManager("zh_CN"))
+    qtbot.addWidget(page)
+    settings = AppSettings()
+    settings.translation.profiles = [
+        TranslationProfile(
+            id="vision",
+            name="Vision",
+            provider="multimodal_openai",
+            timeout_seconds=8,
+        ),
+        TranslationProfile(
+            id="text",
+            name="Text",
+            provider="openai_compatible",
+            timeout_seconds=8,
+        ),
+    ]
+    settings.translation.ocr_route.profile_id = "vision"
+    page.load_settings(settings, str(tmp_path / "data" / "config.json"))
+    combo = page.translation_page.profile_combo
+
+    combo.setCurrentIndex(combo.findData("text"))
+    combo.setCurrentIndex(combo.findData("vision"))
+
+    assert page.translation_page.selected_profile().timeout_seconds == 8.0
+
+
+def test_translation_test_error_contains_reason_and_action() -> None:
+    class Page:
+        def set_test_status(self, _message: str, _failed: bool = False) -> None:
+            return
+
+    tester = TranslationProfileTester(
+        Page(),  # type: ignore[arg-type]
+        object(),  # type: ignore[arg-type]
+        logging.getLogger("translation-test-message"),
+        I18nManager("zh_CN"),
+    )
+
+    message = tester._failure_message(
+        TranslationError("authentication", "腾讯云认证失败")
+    )
+
+    assert "测试失败：腾讯云认证失败" in message
+    assert "处理建议" in message
+    assert "SecretId/SecretKey" in message
+
+
+def test_route_cards_share_one_field_alignment(qtbot, tmp_path) -> None:
+    page = SettingsPage(I18nManager("zh_CN"))
+    qtbot.addWidget(page)
+    page.resize(1100, 780)
+    page.load_settings(AppSettings(), str(tmp_path / "data" / "config.json"))
+    routes = page.translation_page.routes_tab
+    page.translation_page.tabs.setCurrentWidget(routes)
+    page.show()
+    qtbot.waitExposed(page)
+    QApplication.processEvents()
+
+    assert routes._self_profile_label.alignment() & Qt.AlignmentFlag.AlignRight
+    assert routes._ocr_profile_label.alignment() & Qt.AlignmentFlag.AlignRight
+    assert routes.self_glossary_status.x() == routes.self_romaji_help.x()
+    assert routes.ocr_glossary_status.x() == routes.ocr_romaji_help.x()
+    assert routes.ocr_romaji_help.x() == routes.ocr_route_warning.x()
+    assert routes.self_romaji_help.objectName() == "fieldHint"
+    assert routes.ocr_romaji_help.objectName() == "fieldHint"
 
 
 def test_glossary_tab_shows_read_only_defaults_and_editable_user_terms(
@@ -361,3 +474,32 @@ def test_quick_input_overlay_settings_live_on_quick_input_page(qtbot) -> None:
     qtbot.addWidget(settings_page)
     assert not hasattr(settings_page.osc_page, "input_width_spin")
     assert not hasattr(settings_page.ocr_page, "overlay_opacity_spin")
+
+
+def test_multimodal_profile_is_available_only_to_ocr_route(qtbot, tmp_path) -> None:
+    page = SettingsPage(_FAKE_I18N)
+    qtbot.addWidget(page)
+    settings = AppSettings()
+    settings.translation.profiles.append(
+        TranslationProfile(
+            id="vision",
+            name="Vision",
+            provider="multimodal_openai",
+        )
+    )
+    settings.translation.ocr_route.profile_id = "vision"
+
+    page.load_settings(settings, str(tmp_path / "data" / "config.json"))
+
+    editor = page.translation_page.profile_editor
+    providers = {
+        editor.provider_combo.itemData(index)
+        for index in range(editor.provider_combo.count())
+    }
+    routes = page.translation_page.routes_tab
+    assert "multimodal_openai" in providers
+    assert routes.self_profile_combo.findData("vision") == -1
+    assert routes.ocr_profile_combo.findData("vision") >= 0
+    assert routes.ocr_route_warning.text() == "route.ocr_warning_multimodal"
+    assert not routes.ocr_romaji_combo.isEnabled()
+    assert routes.ocr_romaji_help.text() == "route.romaji_help_multimodal"

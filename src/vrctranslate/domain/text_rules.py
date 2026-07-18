@@ -21,9 +21,9 @@ def format_chatbox_message(
     original = normalize_text(original)
     translated = normalize_text(translated)
     if message_format == MessageFormat.ORIGINAL_THEN_TRANSLATION:
-        return f"{original} / {translated}" if original else translated
+        return f"{original}\n\n{translated}" if original else translated
     if message_format == MessageFormat.TRANSLATION_THEN_ORIGINAL:
-        return f"{translated} / {original}" if original else translated
+        return f"{translated}\n\n{original}" if original else translated
     return translated
 
 
@@ -99,4 +99,3 @@ def frame_signature_changed(
         return False
     mean_difference = sum(abs(left - right) for left, right in zip(previous, current)) / len(current)
     return mean_difference >= threshold
-

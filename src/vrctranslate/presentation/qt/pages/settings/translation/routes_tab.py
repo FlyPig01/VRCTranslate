@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from copy import deepcopy
 
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QCheckBox, QLabel, QVBoxLayout, QWidget
 
 from vrctranslate.application.dto import TranslationProfile, TranslationSettings
@@ -35,6 +36,9 @@ class RoutesTab(QWidget):
         self._self_card_title = osc_layout.itemAt(0).widget()
         self._self_card_title.setObjectName("cardTitle")
         osc_form = form_layout()
+        osc_form.setLabelAlignment(
+            Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
+        )
         self.self_profile_combo = NoWheelComboBox()
         self.self_source_combo = NoWheelComboBox()
         self.self_target_combo = NoWheelComboBox()
@@ -46,6 +50,17 @@ class RoutesTab(QWidget):
         self._format_label = QLabel()
         self._overflow_label = QLabel()
         self._self_romaji_label = QLabel()
+        for label in (
+            self._self_profile_label,
+            self._self_source_label,
+            self._self_target_label,
+            self._format_label,
+            self._overflow_label,
+            self._self_romaji_label,
+        ):
+            label.setAlignment(
+                Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
+            )
         osc_form.addRow(self._self_profile_label, self.self_profile_combo)
         osc_form.addRow(self._self_source_label, self.self_source_combo)
         osc_form.addRow(self._self_target_label, self.self_target_combo)
@@ -56,20 +71,23 @@ class RoutesTab(QWidget):
         self.self_glossary_enabled = QCheckBox()
         osc_form.addRow("", self.self_glossary_enabled)
         self.self_glossary_status = QLabel()
-        self.self_glossary_status.setObjectName("inlineNotice")
+        self.self_glossary_status.setObjectName("fieldHint")
         self.self_glossary_status.setWordWrap(True)
         osc_form.addRow("", self.self_glossary_status)
-        osc_layout.addLayout(osc_form)
         self.self_romaji_help = QLabel()
         self.self_romaji_help.setWordWrap(True)
-        self.self_romaji_help.setObjectName("inlineNotice")
-        osc_layout.addWidget(self.self_romaji_help)
+        self.self_romaji_help.setObjectName("fieldHint")
+        osc_form.addRow("", self.self_romaji_help)
+        osc_layout.addLayout(osc_form)
         layout.addWidget(osc_card)
 
         ocr_card, ocr_layout = card("")
         self._ocr_card_title = ocr_layout.itemAt(0).widget()
         self._ocr_card_title.setObjectName("cardTitle")
         ocr_form = form_layout()
+        ocr_form.setLabelAlignment(
+            Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
+        )
         self.ocr_profile_combo = NoWheelComboBox()
         self.ocr_source_combo = NoWheelComboBox()
         self.ocr_target_combo = NoWheelComboBox()
@@ -77,6 +95,15 @@ class RoutesTab(QWidget):
         self._ocr_source_label = QLabel()
         self._ocr_target_label = QLabel()
         self._ocr_romaji_label = QLabel()
+        for label in (
+            self._ocr_profile_label,
+            self._ocr_source_label,
+            self._ocr_target_label,
+            self._ocr_romaji_label,
+        ):
+            label.setAlignment(
+                Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
+            )
         ocr_form.addRow(self._ocr_profile_label, self.ocr_profile_combo)
         ocr_form.addRow(self._ocr_source_label, self.ocr_source_combo)
         ocr_form.addRow(self._ocr_target_label, self.ocr_target_combo)
@@ -85,18 +112,18 @@ class RoutesTab(QWidget):
         self.ocr_glossary_enabled = QCheckBox()
         ocr_form.addRow("", self.ocr_glossary_enabled)
         self.ocr_glossary_status = QLabel()
-        self.ocr_glossary_status.setObjectName("inlineNotice")
+        self.ocr_glossary_status.setObjectName("fieldHint")
         self.ocr_glossary_status.setWordWrap(True)
         ocr_form.addRow("", self.ocr_glossary_status)
-        ocr_layout.addLayout(ocr_form)
         self.ocr_romaji_help = QLabel()
         self.ocr_romaji_help.setWordWrap(True)
-        self.ocr_romaji_help.setObjectName("inlineNotice")
-        ocr_layout.addWidget(self.ocr_romaji_help)
+        self.ocr_romaji_help.setObjectName("fieldHint")
+        ocr_form.addRow("", self.ocr_romaji_help)
         self.ocr_route_warning = QLabel()
         self.ocr_route_warning.setWordWrap(True)
         self.ocr_route_warning.setObjectName("warningNotice")
-        ocr_layout.addWidget(self.ocr_route_warning)
+        ocr_form.addRow("", self.ocr_route_warning)
+        ocr_layout.addLayout(ocr_form)
         layout.addWidget(ocr_card)
         layout.addStretch()
 
@@ -199,13 +226,20 @@ class RoutesTab(QWidget):
         self.update_warnings()
 
     def _populate_profile_combos(self, self_id: str, ocr_id: str) -> None:
-        for combo, selected in (
-            (self.self_profile_combo, self_id),
-            (self.ocr_profile_combo, ocr_id),
+        for combo, selected, profiles in (
+            (
+                self.self_profile_combo,
+                self_id,
+                [
+                    profile for profile in self._profiles
+                    if profile.provider != "multimodal_openai"
+                ],
+            ),
+            (self.ocr_profile_combo, ocr_id, self._profiles),
         ):
             combo.blockSignals(True)
             combo.clear()
-            for profile in self._profiles:
+            for profile in profiles:
                 combo.addItem(profile.name, profile.id)
             set_combo(combo, selected)
             combo.blockSignals(False)
@@ -301,7 +335,7 @@ class RoutesTab(QWidget):
                 key = "route.glossary_status_global_disabled"
             elif not enabled.isChecked():
                 key = "route.glossary_status_disabled"
-            elif provider == "openai_compatible":
+            elif provider in {"openai_compatible", "multimodal_openai"}:
                 key = "route.glossary_status_prompt"
             elif provider == "test" or not provider:
                 key = "route.glossary_status_none"
@@ -310,14 +344,31 @@ class RoutesTab(QWidget):
             label.setText(self._i18n.tr(key, profile=profile_name))
 
     def _update_romaji_help(self) -> None:
-        for source_combo, mode_combo, help_label in (
-            (self.self_source_combo, self.self_romaji_combo, self.self_romaji_help),
-            (self.ocr_source_combo, self.ocr_romaji_combo, self.ocr_romaji_help),
+        for source_combo, mode_combo, help_label, visual_route in (
+            (
+                self.self_source_combo,
+                self.self_romaji_combo,
+                self.self_romaji_help,
+                False,
+            ),
+            (
+                self.ocr_source_combo,
+                self.ocr_romaji_combo,
+                self.ocr_romaji_help,
+                self._profile_provider(
+                    str(self.ocr_profile_combo.currentData() or "")
+                )
+                == "multimodal_openai",
+            ),
         ):
             source = str(source_combo.currentData() or "")
-            available = source in {"auto", "ja"}
+            available = source in {"auto", "ja"} and not visual_route
             mode_combo.setEnabled(available)
-            if available:
+            if visual_route:
+                help_label.setText(
+                    self._i18n.tr("route.romaji_help_multimodal")
+                )
+            elif available:
                 mode = str(mode_combo.currentData() or "off")
                 help_label.setText(self._i18n.tr(f"route.romaji_help_{mode}"))
             else:
@@ -334,7 +385,11 @@ class RoutesTab(QWidget):
             str(self.ocr_profile_combo.currentData() or "")
         )
         self.ocr_route_warning.setText(
-            self._i18n.tr("route.ocr_warning_llm")
-            if provider == "openai_compatible"
-            else self._i18n.tr("route.ocr_warning_default")
+            self._i18n.tr(
+                "route.ocr_warning_multimodal"
+                if provider == "multimodal_openai"
+                else "route.ocr_warning_llm"
+                if provider == "openai_compatible"
+                else "route.ocr_warning_default"
+            )
         )

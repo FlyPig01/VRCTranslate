@@ -4,8 +4,9 @@ from dataclasses import dataclass, field
 from typing import Any
 
 
-CONFIG_VERSION = 7
+CONFIG_VERSION = 8
 ROMAJI_MODES = frozenset({"off", "auto", "force"})
+MIN_PROFILE_TIMEOUT_SECONDS = 8.0
 SUPPORTED_TRANSLATION_PROVIDERS = frozenset(
     {
         "test",
@@ -14,6 +15,7 @@ SUPPORTED_TRANSLATION_PROVIDERS = frozenset(
         "google_free",
         "tencent",
         "openai_compatible",
+        "multimodal_openai",
     }
 )
 
@@ -27,7 +29,7 @@ class TranslationProfile:
     api_key: str = ""
     model: str = ""
     region: str = ""
-    timeout_seconds: float = 20.0
+    timeout_seconds: float = 8.0
     options: dict[str, Any] = field(default_factory=dict)
 
 
@@ -79,13 +81,29 @@ class TranslationSettings:
             for profile in self.profiles
             if profile.provider in SUPPORTED_TRANSLATION_PROVIDERS
         ]
+        for profile in self.profiles:
+            if (
+                profile.provider == "multimodal_openai"
+                and profile.timeout_seconds < MIN_PROFILE_TIMEOUT_SECONDS
+            ):
+                profile.timeout_seconds = MIN_PROFILE_TIMEOUT_SECONDS
         ids = {profile.id for profile in self.profiles}
         if not ids:
             self.profiles.append(TranslationProfile())
             ids.add("test")
+        text_profiles = [
+            profile for profile in self.profiles
+            if profile.provider != "multimodal_openai"
+        ]
+        if not text_profiles:
+            fallback_profile = TranslationProfile()
+            self.profiles.append(fallback_profile)
+            ids.add(fallback_profile.id)
+            text_profiles.append(fallback_profile)
         fallback = self.profiles[0].id
-        if self.self_route.profile_id not in ids:
-            self.self_route.profile_id = fallback
+        text_ids = {profile.id for profile in text_profiles}
+        if self.self_route.profile_id not in text_ids:
+            self.self_route.profile_id = text_profiles[0].id
         if self.ocr_route.profile_id not in ids:
             self.ocr_route.profile_id = fallback
 
@@ -112,6 +130,9 @@ class OcrSettings:
     interval_ms: int = 900
     confidence: float = 0.68
     change_threshold: float = 0.0
+    multimodal_interval_ms: int = 3000
+    multimodal_max_image_side: int = 1600
+    multimodal_image_quality: int = 85
     region_x: int = 0
     region_y: int = 0
     region_width: int = 0
@@ -135,7 +156,6 @@ class UiSettings:
     ocr_overlay_show_original: bool = True
     ocr_overlay_font_size: int = 16
     ocr_overlay_max_items: int = 5
-    ocr_overlay_display_seconds: float = 12.0
     ocr_display_mode: str = "overlay"
     ocr_inline_opacity: float = 0.9
     ocr_inline_auto_contrast: bool = True

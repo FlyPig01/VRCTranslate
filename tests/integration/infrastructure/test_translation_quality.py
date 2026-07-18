@@ -11,6 +11,16 @@
     pytest tests/integration/infrastructure/test_translation_quality.py -v -s -k "vrchat_romaji_to_zh_tencent_quality"
     Remove-Item Env:VRC_TRANSLATE_TEST_TENCENT_CONFIG
 
+使用软件当前配置中的多模态档案测试图片翻译（仅上传内存生成图片）：
+    $env:VRC_TRANSLATE_TEST_MULTIMODAL_CONFIG="1"
+    pytest tests/integration/infrastructure/test_translation_quality.py -v -s -k "multimodal"
+    Remove-Item Env:VRC_TRANSLATE_TEST_MULTIMODAL_CONFIG
+
+使用软件当前配置中的纯文本大模型档案测试翻译：
+    $env:VRC_TRANSLATE_TEST_LLM_CONFIG="1"
+    pytest tests/integration/infrastructure/test_translation_quality.py -v -s -k "configured_llm"
+    Remove-Item Env:VRC_TRANSLATE_TEST_LLM_CONFIG
+
 输出为表格，方便人工对比翻译质量。
 """
 
@@ -18,17 +28,26 @@ from __future__ import annotations
 
 import os
 import time
+from io import BytesIO
 
 import pytest
+from PIL import Image, ImageDraw, ImageFont
 
 from vrctranslate.application.dto import TranslationProfile
 from vrctranslate.application.text_preprocessing.japanese_romaji import (
     preprocess_romaji,
 )
 from vrctranslate.domain.translation import TranslationRequest
+from vrctranslate.domain.visual_translation import VisualTranslationRequest
 from vrctranslate.infrastructure.settings.json_repository import JsonSettingsRepository
 from vrctranslate.infrastructure.translation.google_free_translator import (
     GoogleFreeTranslator,
+)
+from vrctranslate.infrastructure.translation.multimodal_openai import (
+    OpenAICompatibleVisualTranslator,
+)
+from vrctranslate.infrastructure.translation.openai_compatible import (
+    OpenAICompatibleTranslator,
 )
 from vrctranslate.infrastructure.translation.tencent_translator import (
     TencentTranslator,
@@ -132,6 +151,10 @@ VRCHAT_ROMAJI_SENTENCES = [
 
 ROMAJI_CONVERTER = WanaKanaRomajiConverter()
 _TENCENT_CONFIG_TEST = os.environ.get("VRC_TRANSLATE_TEST_TENCENT_CONFIG") == "1"
+_MULTIMODAL_CONFIG_TEST = (
+    os.environ.get("VRC_TRANSLATE_TEST_MULTIMODAL_CONFIG") == "1"
+)
+_LLM_CONFIG_TEST = os.environ.get("VRC_TRANSLATE_TEST_LLM_CONFIG") == "1"
 
 
 def _tencent_test_enabled() -> bool:
@@ -139,6 +162,55 @@ def _tencent_test_enabled() -> bool:
         os.environ.get("TENCENT_SECRET_ID")
         and os.environ.get("TENCENT_SECRET_KEY")
     )
+
+
+def _multimodal_profile() -> TranslationProfile:
+    profiles = [
+        profile
+        for profile in JsonSettingsRepository().load().translation.profiles
+        if profile.provider == "multimodal_openai"
+    ]
+    if not profiles:
+        pytest.skip("当前软件配置中没有多模态翻译档案")
+    profile = profiles[0]
+    if not all(
+        value.strip() for value in (profile.base_url, profile.api_key, profile.model)
+    ):
+        pytest.skip("当前多模态翻译档案的地址、密钥或模型名称不完整")
+    return profile
+
+
+def _llm_profile() -> TranslationProfile:
+    profiles = [
+        profile
+        for profile in JsonSettingsRepository().load().translation.profiles
+        if profile.provider == "openai_compatible"
+    ]
+    if not profiles:
+        pytest.skip("当前软件配置中没有纯文本大模型翻译档案")
+    profile = profiles[0]
+    if not all(
+        value.strip() for value in (profile.base_url, profile.api_key, profile.model)
+    ):
+        pytest.skip("当前纯文本大模型档案的地址、密钥或模型名称不完整")
+    return profile
+
+
+def _romaji_test_image() -> bytes:
+    image = Image.new("RGB", (960, 180), "white")
+    try:
+        font = ImageFont.truetype("arial.ttf", 42)
+    except OSError:
+        font = ImageFont.load_default()
+    ImageDraw.Draw(image).text(
+        (34, 58),
+        "Konnichiwa, genki desu ka?",
+        fill="black",
+        font=font,
+    )
+    output = BytesIO()
+    image.save(output, format="PNG")
+    return output.getvalue()
 
 # ── helpers ──────────────────────────────────────────
 
@@ -290,6 +362,7 @@ def test_zh_to_ja_tencent() -> None:
         req = TranslationRequest(sid, text, "zh-CN", "ja", "self")
         translated = _try_translate(translator, req, profile)
         print(f"{sid:<8} {text:<28} {translated}")
+        assert not translated.startswith("ERR:"), translated
         time.sleep(0.26)
 
 
@@ -308,6 +381,7 @@ def test_ja_to_zh_tencent() -> None:
         req = TranslationRequest(sid, text, "ja", "zh-CN", "self")
         translated = _try_translate(translator, req, profile)
         print(f"{sid:<8} {text:<28} {translated}")
+        assert not translated.startswith("ERR:"), translated
         time.sleep(0.26)
 
 
@@ -337,7 +411,69 @@ def test_vrchat_romaji_to_zh_tencent_quality() -> None:
         print(f"  预处理: {kana_text}")
         print(f"  参考译文: {expected_zh}")
         print(f"  腾讯译文: {translated}")
+        assert not translated.startswith("ERR:"), translated
         time.sleep(0.26)
+
+
+# ── Multimodal ───────────────────────────────────────
+
+@pytest.mark.skipif(
+    not _MULTIMODAL_CONFIG_TEST,
+    reason="未显式启用多模态配置测试",
+)
+def test_romaji_image_to_zh_multimodal_quality() -> None:
+    """真实上传内存图片，验证多模态模型能识别并翻译日语罗马音。"""
+    request = VisualTranslationRequest(
+        "multimodal-romaji-01",
+        _romaji_test_image(),
+        "image/png",
+        "ja",
+        "zh-CN",
+    )
+
+    started = time.monotonic()
+    result = OpenAICompatibleVisualTranslator().translate(
+        request,
+        _multimodal_profile(),
+    )
+    elapsed = time.monotonic() - started
+
+    _print_header("罗马音图片 → 中文 [多模态真实接口]")
+    print("图片文字: Konnichiwa, genki desu ka?")
+    print(f"模型识别: {result.original}")
+    print(f"模型译文: {result.translated}")
+    print(f"请求耗时: {elapsed:.2f} 秒")
+    assert result.original.strip(), "多模态模型没有返回识别原文"
+    assert result.translated.strip(), "多模态模型没有返回中文译文"
+    assert any(token in result.translated for token in ("你好", "您好", "好吗")), (
+        f"多模态罗马音译文质量异常：{result.translated}"
+    )
+
+
+@pytest.mark.skipif(
+    not _LLM_CONFIG_TEST,
+    reason="未显式启用纯文本大模型配置测试",
+)
+def test_configured_llm_translation_quality() -> None:
+    """验证当前纯文本大模型档案的低延迟最终译文链路。"""
+    request = TranslationRequest(
+        "configured-llm-01",
+        "昨日のイベントは楽しかったです。",
+        "ja",
+        "zh-CN",
+        "self",
+    )
+
+    started = time.monotonic()
+    result = OpenAICompatibleTranslator().translate(request, _llm_profile())
+    elapsed = time.monotonic() - started
+
+    _print_header("日语 → 中文 [纯文本大模型真实接口]")
+    print(f"原文: {request.text}")
+    print(f"译文: {result.translated}")
+    print(f"请求耗时: {elapsed:.2f} 秒")
+    assert any(token in result.translated for token in ("昨天", "昨日"))
+    assert any(token in result.translated for token in ("活动", "事件"))
 
 
 # ── 横向对比 ─────────────────────────────────────────

@@ -31,5 +31,8 @@ class OcrExecutionPolicy:
         return cls(
             max_workers=1 if serialized_provider else 2,
             queue_capacity=capacity,
-            batch_enabled=profile.provider in {"test", "deepl", "google_cloud"},
+            # Treat one OCR frame as one scheduling unit. Adapters without a
+            # native batch endpoint fall back to ordered calls in one worker
+            # instead of silently dropping blocks beyond the queue capacity.
+            batch_enabled=True,
         )

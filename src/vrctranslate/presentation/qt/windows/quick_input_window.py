@@ -1,12 +1,28 @@
 from __future__ import annotations
 
 from PySide6.QtCore import QPoint, Qt, Signal
-from PySide6.QtGui import QCloseEvent, QGuiApplication, QHideEvent, QMouseEvent
+from PySide6.QtGui import (
+    QCloseEvent,
+    QGuiApplication,
+    QHideEvent,
+    QKeyEvent,
+    QMouseEvent,
+)
 from PySide6.QtWidgets import QFrame, QLabel, QLineEdit, QVBoxLayout, QWidget
 
 from vrctranslate.application.dto import UiSettings
 from vrctranslate.application.ports.window_capture import WindowCaptureExcluder
 from vrctranslate.presentation.qt.i18n import I18nManager
+
+
+class _QuickInputEdit(QLineEdit):
+    """Keep VRChat's Tab key from moving focus inside the input overlay."""
+
+    def keyPressEvent(self, event: QKeyEvent) -> None:
+        if event.key() in (Qt.Key.Key_Tab, Qt.Key.Key_Backtab):
+            event.accept()
+            return
+        super().keyPressEvent(event)
 
 
 class QuickInputWindow(QWidget):
@@ -48,7 +64,7 @@ class QuickInputWindow(QWidget):
         card_layout = QVBoxLayout(self.card)
         card_layout.setContentsMargins(10, 8, 10, 7)
         card_layout.setSpacing(2)
-        self.input = QLineEdit()
+        self.input = _QuickInputEdit()
         self.input.setObjectName("quickInput")
         self.input.setClearButtonEnabled(False)
         self.status = QLabel("")

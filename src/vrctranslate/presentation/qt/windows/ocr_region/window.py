@@ -54,6 +54,7 @@ class OcrRegionWindow(QWidget):
         self._target: WindowInfo | None = None
         self._mode = "continuous"
         self._state = "idle"
+        self._error_message = ""
         self._display_mode = "overlay"
         self._drag_origin: QPoint | None = None
         self._start_geometry = QRect()
@@ -198,6 +199,8 @@ class OcrRegionWindow(QWidget):
 
     def set_state(self, state: str) -> None:
         self._state = state
+        if state != "error":
+            self._error_message = ""
         self.setProperty("state", state)
         if not self._can_adjust_region():
             self._drag_origin = None
@@ -207,7 +210,19 @@ class OcrRegionWindow(QWidget):
         self.style().unpolish(self)
         self.style().polish(self)
 
+    def set_error(self, message: str) -> None:
+        self._error_message = " ".join(message.split()).strip()
+        self.set_state("error")
+
     def _update_state_text(self) -> None:
+        if self._state == "error" and self._error_message:
+            prefix = self._i18n.tr("ocr_region.state_error") if self._i18n else "错误"
+            detail = self._error_message
+            summary = detail if len(detail) <= 36 else f"{detail[:35]}…"
+            self.state_label.setText(f"{prefix}：{summary}")
+            self.state_label.setToolTip(detail)
+            return
+        self.state_label.setToolTip("")
         if self._i18n is None:
             self.state_label.setText(self._state)
             return

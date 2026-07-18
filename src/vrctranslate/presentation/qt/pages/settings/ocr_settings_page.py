@@ -141,10 +141,15 @@ class OcrSettingsPage(QWidget):
         self.ocr_interval_spin = NumericLineEdit(250, 10000)
         self.ocr_confidence_spin = NumericLineEdit(0.0, 1.0, 2)
         self.ocr_change_spin = NumericLineEdit(0.0, 255.0, 1)
+        self.multimodal_interval_spin = NumericLineEdit(1000, 60000)
         form.addRow(self._i18n.tr("ocr_settings.backend"), self.capture_backend_combo)
         form.addRow(self._i18n.tr("ocr_settings.interval"), self.ocr_interval_spin)
         form.addRow(self._i18n.tr("ocr_settings.confidence"), self.ocr_confidence_spin)
         form.addRow(self._i18n.tr("ocr_settings.change"), self.ocr_change_spin)
+        form.addRow(
+            self._i18n.tr("ocr_settings.multimodal_interval"),
+            self.multimodal_interval_spin,
+        )
         capture_layout.addLayout(form)
         self.capture_backend_status = QLabel()
         self.capture_backend_status.setWordWrap(True)
@@ -306,6 +311,7 @@ class OcrSettingsPage(QWidget):
         self.ocr_interval_spin.setValue(settings.ocr.interval_ms)
         self.ocr_confidence_spin.setValue(settings.ocr.confidence)
         self.ocr_change_spin.setValue(settings.ocr.change_threshold)
+        self.multimodal_interval_spin.setValue(settings.ocr.multimodal_interval_ms)
         self.ocr_queue_spin.setValue(settings.translation.ocr_route.queue_limit)
         self.ocr_ttl_spin.setValue(settings.translation.ocr_route.task_ttl_seconds)
 
@@ -314,6 +320,9 @@ class OcrSettingsPage(QWidget):
         settings.ocr.interval_ms = int(self.ocr_interval_spin.value())
         settings.ocr.confidence = float(self.ocr_confidence_spin.value())
         settings.ocr.change_threshold = float(self.ocr_change_spin.value())
+        settings.ocr.multimodal_interval_ms = int(
+            self.multimodal_interval_spin.value()
+        )
         settings.translation.ocr_route.queue_limit = int(self.ocr_queue_spin.value())
         settings.translation.ocr_route.task_ttl_seconds = float(self.ocr_ttl_spin.value())
 

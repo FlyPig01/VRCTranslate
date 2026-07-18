@@ -149,3 +149,19 @@ def test_inline_layout_font_always_has_a_valid_point_size(qtbot) -> None:
     layout = window._fit_layout("日本語の翻訳結果", QRectF(window.rect()), 18)
 
     assert layout.font().pointSizeF() > 0
+
+
+def test_inline_reports_when_a_long_translation_cannot_fit(qtbot) -> None:
+    window = OcrInlineWindow()
+    qtbot.addWidget(window)
+    window.resize(300, 150)
+
+    complete = window.add_translation(
+        "long",
+        _positioned_source("source", 20, 20, 90, 40),
+        "无法完整放进识别区域的超长译文" * 80,
+        None,
+        "group",
+    )
+
+    assert complete is False

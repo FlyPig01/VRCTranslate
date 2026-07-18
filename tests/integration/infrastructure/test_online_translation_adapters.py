@@ -141,7 +141,9 @@ def test_openai_compatible_sends_fixed_purpose_specific_messages(monkeypatch) ->
     endpoint, kwargs, timeout = FakeClient.last_call
     assert endpoint == "https://example.invalid/v1/chat/completions"
     assert kwargs["json"]["temperature"] == 0
+    assert kwargs["json"]["max_tokens"] == 512
     assert "OCR 翻译器" in kwargs["json"]["messages"][0]["content"]
+    assert "不要展示分析或思考过程" in kwargs["json"]["messages"][0]["content"]
     user_data = json.loads(kwargs["json"]["messages"][1]["content"])
     assert user_data["recent_context"] == ["さっきのワールドにいるよ"]
     assert user_data["glossary"] == [

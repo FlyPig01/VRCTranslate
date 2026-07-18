@@ -7,6 +7,9 @@ from vrctranslate.application.dto import TranslationProfile, TranslationSettings
 from vrctranslate.application.use_cases.ocr_translation_scheduler import OcrTranslationScheduler
 from vrctranslate.application.use_cases.translate_text import TranslateText
 from vrctranslate.domain.translation import TranslationRequest, TranslationResult
+from vrctranslate.infrastructure.text.wanakana_converter import (
+    WanaKanaRomajiConverter,
+)
 
 
 class ControlledTranslator:
@@ -117,4 +120,38 @@ def test_fast_provider_batches_lines_from_the_same_frame() -> None:
     _wait_until(lambda: len(outcomes) == 2)
     assert translator.batch_calls == 1
     assert [outcome.request_id for outcome in outcomes] == ["1", "2"]
+    scheduler.shutdown()
+
+
+def test_one_frame_is_not_partially_dropped_by_the_queue_limit() -> None:
+    translator = BatchTranslator()
+    outcomes = []
+    scheduler = OcrTranslationScheduler(TranslateText(translator), outcomes.append)
+    scheduler.start(_settings(limit=2))
+    requests = [_request(str(index), f"line-{index}") for index in range(12)]
+
+    accepted = scheduler.submit_many(requests)
+
+    assert accepted == {str(index) for index in range(12)}
+    _wait_until(lambda: len(outcomes) == 12)
+    assert [outcome.request_id for outcome in outcomes] == [
+        str(index) for index in range(12)
+    ]
+    scheduler.shutdown()
+
+
+def test_scheduler_passes_ocr_romaji_mode_to_translation_profile() -> None:
+    translator = ControlledTranslator()
+    outcomes = []
+    settings = _settings()
+    settings.ocr_route.romaji_mode = "off"
+    scheduler = OcrTranslationScheduler(
+        TranslateText(translator, WanaKanaRomajiConverter()), outcomes.append
+    )
+    scheduler.start(settings)
+
+    assert scheduler.submit(TranslationRequest("1", "konnichiwa", "ja", "zh-CN", "ocr"))
+    _wait_until(lambda: len(outcomes) == 1)
+
+    assert outcomes[0].result.translated == "translated:konnichiwa"
     scheduler.shutdown()

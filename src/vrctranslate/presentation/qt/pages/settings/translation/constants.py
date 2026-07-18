@@ -8,6 +8,7 @@ PROVIDERS = [
     ("provider.google_free", "google_free"),
     ("provider.tencent", "tencent"),
     ("provider.openai", "openai_compatible"),
+    ("provider.multimodal", "multimodal_openai"),
 ]
 
 OVERFLOW_POLICIES = [

@@ -7,6 +7,7 @@ from threading import Lock
 
 from vrctranslate.application.dto import (
     GlossarySettings,
+    ROMAJI_MODES,
     TranslationProfile,
     TranslationSettings,
 )
@@ -85,7 +86,13 @@ class TranslateText:
         settings: TranslationSettings | TranslationProfile,
     ) -> str:
         route = cls._route(request, settings)
-        return route.romaji_mode if route is not None else "auto"
+        raw_mode = (
+            route.romaji_mode
+            if route is not None
+            else settings.options.get("_romaji_mode", "auto")
+        )
+        mode = str(raw_mode)
+        return mode if mode in ROMAJI_MODES else "auto"
 
     @classmethod
     def _route_glossary_enabled(

@@ -51,6 +51,7 @@ class OcrInlineWindow(QWidget):
         self._target: WindowInfo | None = None
         self._region: CaptureRegion | None = None
         self._entries: dict[str, _InlineEntry] = {}
+        self._active_group_id = ""
         self._display_mode = "overlay"
         self._opacity = 0.9
         self._auto_contrast = True
@@ -96,9 +97,13 @@ class OcrInlineWindow(QWidget):
         source: OcrText,
         translated: str,
         display_seconds: float | None,
-    ) -> None:
+        group_id: str = "",
+    ) -> bool:
         if not translated.strip() or not source.box:
-            return
+            return False
+        if group_id and group_id != self._active_group_id:
+            self._entries.clear()
+            self._active_group_id = group_id
         self._remove_overlapping(source)
         self._entries[request_id] = _InlineEntry(
             request_id,
@@ -110,9 +115,11 @@ class OcrInlineWindow(QWidget):
         )
         self._update_visibility()
         self.update()
+        return self._entry_fits(request_id)
 
     def clear(self) -> None:
         self._entries.clear()
+        self._active_group_id = ""
         self.hide()
         self.update()
 
@@ -278,16 +285,49 @@ class OcrInlineWindow(QWidget):
         rect: QRectF,
         initial_size: int,
     ) -> QTextLayout:
+        return self._fit_layout_with_status(text, rect, initial_size)[0]
+
+    def _fit_layout_with_status(
+        self,
+        text: str,
+        rect: QRectF,
+        initial_size: int,
+    ) -> tuple[QTextLayout, bool]:
         minimum = max(6, round(initial_size * 0.45))
         chosen: QTextLayout | None = None
+        fits = False
         for size in range(initial_size, minimum - 1, -1):
             font = font_with_pixel_height(self, self.font(), size)
             layout, height = self._create_layout(text, font, rect.width())
             chosen = layout
             if height <= rect.height():
+                fits = True
                 break
         assert chosen is not None
-        return chosen
+        return chosen, fits
+
+    def _entry_fits(self, request_id: str) -> bool:
+        prepared = self._prepare_entries()
+        current = next(
+            (item for item in prepared if item.entry.request_id == request_id),
+            None,
+        )
+        if current is None:
+            return False
+        bounds = self._layout_bounds(current, prepared)
+        rect = QRectF(
+            current.source_rect.left(),
+            current.source_rect.top(),
+            max(1.0, bounds.width()),
+            max(1.0, bounds.height()),
+        )
+        heights = [item.height() for item in current.line_rects]
+        initial_size = max(9, round(median(heights) * 0.88))
+        return self._fit_layout_with_status(
+            current.entry.translated,
+            rect,
+            initial_size,
+        )[1]
 
     @staticmethod
     def _create_layout(

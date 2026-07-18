@@ -18,7 +18,13 @@ def test_format_chatbox_message() -> None:
         format_chatbox_message(
             "hello", "你好", MessageFormat.ORIGINAL_THEN_TRANSLATION
         )
-        == "hello / 你好"
+        == "hello\n\n你好"
+    )
+    assert (
+        format_chatbox_message(
+            "hello", "你好", MessageFormat.TRANSLATION_THEN_ORIGINAL
+        )
+        == "你好\n\nhello"
     )
 
 
@@ -44,4 +50,3 @@ def test_frame_signature_change_is_framework_independent() -> None:
     assert frame_signature_changed(None, b"\x00\x00", 2)
     assert not frame_signature_changed(b"\x00\x00", b"\x00\x00", 2)
     assert frame_signature_changed(b"\x00\x00", b"\x0a\x0a", 2)
-

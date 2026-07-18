@@ -103,7 +103,11 @@ class RapidOcrEngine:
         if self._engine is not None and signature == self._model_signature:
             return self._engine
         if not signature:
-            language_name = "中文" if self._source_language == "zh-CN" else "日文"
+            language_name = {
+                "zh-CN": "中文",
+                "ja": "日文",
+                "en": "英文",
+            }[self._source_language]
             raise OcrUnavailable(
                 f"尚未安装{language_name} OCR 模型，请在设置 → OCR 中下载。"
             )
@@ -112,17 +116,21 @@ class RapidOcrEngine:
         except Exception as exc:
             raise OcrUnavailable(f"无法加载本地 OCR：{type(exc).__name__}") from exc
         paths = self._model_manager.paths(self._source_language)
-        rec_lang = LangRec.CH if self._source_language == "zh-CN" else LangRec.JAPAN
+        rec_lang = {
+            "zh-CN": LangRec.CH,
+            "ja": LangRec.JAPAN,
+            "en": LangRec.EN,
+        }[self._source_language]
         rec_version = (
             OCRVersion.PPOCRV5
             if paths.recognition_version == "PP-OCRv5"
             else OCRVersion.PPOCRV6
         )
-        rec_type = (
-            ModelType.SERVER
-            if paths.recognition_type == "server"
-            else ModelType.MEDIUM
-        )
+        rec_type = {
+            "server": ModelType.SERVER,
+            "medium": ModelType.MEDIUM,
+            "mobile": ModelType.MOBILE,
+        }[paths.recognition_type]
         params = {
             "Global.text_score": 0.0,
             "Global.log_level": "warning",
@@ -155,4 +163,6 @@ class RapidOcrEngine:
             return "zh-CN"
         if source_language in {"ja", "auto"}:
             return "ja"
-        raise OcrUnavailable("OCR 仅支持中文或日文识别模型。")
+        if source_language in {"en", "en-US", "en_US"}:
+            return "en"
+        raise OcrUnavailable("OCR 仅支持中文、日文或英文识别模型。")

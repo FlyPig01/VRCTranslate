@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QImage, QPixmap
 from PySide6.QtWidgets import (
+    QFrame,
     QHBoxLayout,
     QLabel,
     QProgressBar,
@@ -17,10 +20,27 @@ from vrctranslate.presentation.qt.pages.settings.common import card, form_layout
 from vrctranslate.presentation.qt.widgets import NoWheelComboBox, NumericLineEdit
 
 
+_OCR_MODEL_LANGUAGES = ("zh-CN", "ja", "en")
+
+
+@dataclass(slots=True)
+class _ModelState:
+    installed: bool = False
+    version: str = ""
+    installed_size: int = 0
+    exclusive_size: int = 0
+    download_size: int = 0
+    busy: bool = False
+    error: str = ""
+    completed: int = 0
+    total: int = 0
+
+
 class OcrSettingsPage(QWidget):
     capture_test_requested = Signal(str)
     model_install_requested = Signal(str)
     model_remove_requested = Signal(str)
+    model_cancel_requested = Signal(str)
 
     def __init__(self, i18n: I18nManager) -> None:
         super().__init__()
@@ -37,45 +57,80 @@ class OcrSettingsPage(QWidget):
         self._models_note.setWordWrap(True)
         self._models_note.setObjectName("inlineNotice")
         models_layout.addWidget(self._models_note)
+
         self._model_names: dict[str, QLabel] = {}
         self._model_statuses: dict[str, QLabel] = {}
+        self._model_details: dict[str, QLabel] = {}
         self._model_progress: dict[str, QProgressBar] = {}
         self._model_install_buttons: dict[str, QPushButton] = {}
         self._model_remove_buttons: dict[str, QPushButton] = {}
-        self._model_state: dict[str, tuple[bool, str, int]] = {}
-        for language in ("zh-CN", "ja"):
-            row = QHBoxLayout()
-            row.setSpacing(8)
+        self._model_cancel_buttons: dict[str, QPushButton] = {}
+        self._model_state = {
+            language: _ModelState() for language in _OCR_MODEL_LANGUAGES
+        }
+
+        for language in _OCR_MODEL_LANGUAGES:
+            surface = QFrame()
+            surface.setObjectName("ocrModelCard")
+            surface_layout = QVBoxLayout(surface)
+            surface_layout.setContentsMargins(14, 12, 14, 12)
+            surface_layout.setSpacing(8)
+
+            header = QHBoxLayout()
             name = QLabel()
-            name.setObjectName("cardTitle")
+            name.setObjectName("ocrModelName")
             status = QLabel()
-            status.setWordWrap(True)
+            status.setObjectName("ocrModelStatus")
+            header.addWidget(name)
+            header.addStretch()
+            header.addWidget(status)
+            surface_layout.addLayout(header)
+
+            detail = QLabel()
+            detail.setObjectName("ocrModelDetail")
+            detail.setWordWrap(True)
+            surface_layout.addWidget(detail)
+
             progress = QProgressBar()
             progress.setTextVisible(True)
-            progress.setRange(0, 100)
-            progress.setValue(0)
-            progress.setFixedWidth(120)
+            progress.hide()
+            surface_layout.addWidget(progress)
+
+            actions = QHBoxLayout()
+            actions.addStretch()
             install = QPushButton()
             install.setObjectName("primaryButton")
             remove = QPushButton()
+            cancel = QPushButton()
             install.clicked.connect(
                 lambda _checked=False, value=language: self.model_install_requested.emit(value)
             )
             remove.clicked.connect(
                 lambda _checked=False, value=language: self.model_remove_requested.emit(value)
             )
-            row.addWidget(name)
-            row.addWidget(status, 1)
-            row.addWidget(progress)
-            row.addWidget(install)
-            row.addWidget(remove)
-            models_layout.addLayout(row)
+            cancel.clicked.connect(
+                lambda _checked=False, value=language: self.model_cancel_requested.emit(value)
+            )
+            actions.addWidget(install)
+            actions.addWidget(remove)
+            actions.addWidget(cancel)
+            surface_layout.addLayout(actions)
+            models_layout.addWidget(surface)
+
             self._model_names[language] = name
             self._model_statuses[language] = status
+            self._model_details[language] = detail
             self._model_progress[language] = progress
             self._model_install_buttons[language] = install
             self._model_remove_buttons[language] = remove
-            self._model_state[language] = (False, "", 0)
+            self._model_cancel_buttons[language] = cancel
+
+        self._model_storage_summary = QLabel()
+        self._model_storage_summary.setObjectName("ocrModelStorage")
+        self._model_storage_summary.setWordWrap(True)
+        models_layout.addWidget(self._model_storage_summary)
+        self._shared_model_size = 0
+        self._total_model_size = 0
         layout.addWidget(models)
 
         capture, capture_layout = card("")
@@ -129,20 +184,21 @@ class OcrSettingsPage(QWidget):
         self._retranslate()
         i18n.language_changed.connect(lambda *_: self._retranslate())
 
+    @staticmethod
+    def _mib(size: int) -> str:
+        return f"{size / (1024 * 1024):.1f}"
+
     def _retranslate(self) -> None:
         self._models_card_title.setText(self._i18n.tr("ocr_models.card"))
         self._models_note.setText(self._i18n.tr("ocr_models.note"))
         self._model_names["zh-CN"].setText(self._i18n.tr("ocr_models.zh_name"))
         self._model_names["ja"].setText(self._i18n.tr("ocr_models.ja_name"))
-        for language in ("zh-CN", "ja"):
-            self._model_install_buttons[language].setText(
-                self._i18n.tr("ocr_models.install")
-            )
-            self._model_remove_buttons[language].setText(
-                self._i18n.tr("ocr_models.remove")
-            )
-            installed, version, installed_size = self._model_state[language]
-            self.set_model_status(language, installed, version, installed_size)
+        self._model_names["en"].setText(self._i18n.tr("ocr_models.en_name"))
+        for language in _OCR_MODEL_LANGUAGES:
+            self._model_remove_buttons[language].setText(self._i18n.tr("ocr_models.remove"))
+            self._model_cancel_buttons[language].setText(self._i18n.tr("ocr_models.cancel"))
+            self._render_model(language)
+        self._render_storage()
         self._capture_card_title.setText(self._i18n.tr("ocr_settings.capture_card"))
         self._rebuild_backend_combo()
         self.capture_backend_status.setText(self._i18n.tr("ocr_settings.backend_status"))
@@ -151,6 +207,84 @@ class OcrSettingsPage(QWidget):
             self.capture_preview.setText(self._i18n.tr("ocr_settings.preview_hint"))
         self._scheduler_card_title.setText(self._i18n.tr("ocr_settings.scheduler_card"))
         self._scheduler_note.setText(self._i18n.tr("ocr_settings.scheduler_note"))
+
+    def _render_model(self, language: str) -> None:
+        state = self._model_state[language]
+        status = self._model_statuses[language]
+        detail = self._model_details[language]
+        progress = self._model_progress[language]
+        install = self._model_install_buttons[language]
+        remove = self._model_remove_buttons[language]
+        cancel = self._model_cancel_buttons[language]
+
+        if state.error:
+            view_state = "error"
+            status.setText(self._i18n.tr("ocr_models.failed_badge"))
+            detail.setText(self._i18n.tr("ocr_models.failed", error=state.error))
+        elif state.busy:
+            view_state = "busy"
+            if state.total > 0 and state.completed >= state.total:
+                status.setText(self._i18n.tr("ocr_models.verifying_badge"))
+                detail.setText(self._i18n.tr("ocr_models.verifying"))
+            else:
+                status.setText(self._i18n.tr("ocr_models.downloading_badge"))
+                detail.setText(
+                    self._i18n.tr(
+                        "ocr_models.downloading_progress",
+                        completed=self._mib(state.completed),
+                        total=self._mib(state.total or state.download_size),
+                    )
+                )
+        elif state.installed:
+            view_state = "installed"
+            status.setText(self._i18n.tr("ocr_models.installed_badge"))
+            detail.setText(
+                self._i18n.tr(
+                    "ocr_models.installed",
+                    version=state.version,
+                    size=self._mib(state.exclusive_size),
+                )
+            )
+        else:
+            view_state = "missing"
+            status.setText(self._i18n.tr("ocr_models.not_installed"))
+            detail.setText(
+                self._i18n.tr(
+                    "ocr_models.available",
+                    version=state.version or "-",
+                    size=self._mib(state.download_size),
+                )
+            )
+
+        status.setProperty("state", view_state)
+        status.style().unpolish(status)
+        status.style().polish(status)
+
+        progress.setVisible(state.busy)
+        if state.busy:
+            total = state.total or state.download_size
+            if total > 0:
+                progress.setRange(0, total)
+                progress.setValue(min(state.completed, total))
+                progress.setFormat("%p%")
+            else:
+                progress.setRange(0, 0)
+
+        install.setVisible(not state.busy and not state.installed)
+        install.setText(
+            self._i18n.tr("ocr_models.retry" if state.error else "ocr_models.install")
+        )
+        remove.setVisible(not state.busy and state.installed)
+        cancel.setVisible(state.busy)
+
+    def _render_storage(self) -> None:
+        self._model_storage_summary.setText(
+            self._i18n.tr(
+                "ocr_models.storage_summary",
+                shared=self._mib(self._shared_model_size),
+                total=self._mib(self._total_model_size),
+            )
+        )
 
     def _rebuild_backend_combo(self) -> None:
         current = self.capture_backend_combo.currentData()
@@ -196,7 +330,11 @@ class OcrSettingsPage(QWidget):
             height, width = pixels.shape[:2]  # type: ignore[attr-defined]
             stride = int(pixels.strides[0])  # type: ignore[attr-defined]
             image = QImage(
-                pixels.data, int(width), int(height), stride, QImage.Format.Format_BGR888  # type: ignore[attr-defined]
+                pixels.data,
+                int(width),
+                int(height),
+                stride,
+                QImage.Format.Format_BGR888,  # type: ignore[attr-defined]
             ).copy()
             self.capture_preview.setPixmap(
                 QPixmap.fromImage(image).scaled(
@@ -219,29 +357,37 @@ class OcrSettingsPage(QWidget):
         version: str,
         installed_size: int,
         *,
+        download_size: int = 0,
+        exclusive_size: int = 0,
         busy: bool = False,
         error: str = "",
     ) -> None:
-        if language not in self._model_statuses:
+        if language not in self._model_state:
             return
-        self._model_state[language] = (installed, version, installed_size)
-        size_mb = installed_size / (1024 * 1024)
-        if error:
-            message = self._i18n.tr("ocr_models.failed", error=error)
-        elif busy:
-            message = self._i18n.tr("ocr_models.downloading")
-        elif installed:
-            message = self._i18n.tr(
-                "ocr_models.installed", version=version, size=f"{size_mb:.1f}"
-            )
-        else:
-            message = self._i18n.tr("ocr_models.not_installed")
-        self._model_statuses[language].setText(message)
-        progress = self._model_progress[language]
-        if busy:
-            progress.setRange(0, 0)
-        else:
-            progress.setRange(0, 100)
-            progress.setValue(100 if installed else 0)
-        self._model_install_buttons[language].setEnabled(not busy and not installed)
-        self._model_remove_buttons[language].setEnabled(not busy and installed)
+        self._model_state[language] = _ModelState(
+            installed=installed,
+            version=version,
+            installed_size=installed_size,
+            exclusive_size=exclusive_size,
+            download_size=download_size,
+            busy=busy,
+            error=error,
+            completed=0,
+            total=download_size,
+        )
+        self._render_model(language)
+
+    def set_model_progress(self, language: str, completed: int, total: int) -> None:
+        state = self._model_state.get(language)
+        if state is None:
+            return
+        state.busy = True
+        state.error = ""
+        state.completed = max(0, completed)
+        state.total = max(0, total)
+        self._render_model(language)
+
+    def set_model_storage(self, shared_size: int, total_size: int) -> None:
+        self._shared_model_size = max(0, shared_size)
+        self._total_model_size = max(0, total_size)
+        self._render_storage()

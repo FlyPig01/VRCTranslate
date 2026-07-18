@@ -143,3 +143,6 @@ def test_llm_cache_separates_context_but_regular_provider_cache_does_not() -> No
     assert SessionTranslationCache.key(first, deepl) == SessionTranslationCache.key(
         second, deepl
     )
+    assert SessionTranslationCache.key(first, deepl, 1) != SessionTranslationCache.key(
+        first, deepl, 2
+    )

@@ -6,5 +6,6 @@ numpy>=1.26,<3
 rapidocr>=3.9,<4
 onnxruntime>=1.17,<2
 windows-capture>=1.4,<2; sys_platform == "win32"
+wanakana-python>=1.2.2,<2
 pytest>=8,<9
 pytest-qt>=4.4,<5

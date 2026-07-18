@@ -5,7 +5,7 @@ from vrctranslate.domain.text_rules import normalize_text
 from vrctranslate.domain.translation import TranslationRequest, TranslationResult
 
 
-CacheKey = tuple[str, str, str, str, tuple[str, ...]]
+CacheKey = tuple[str, str, str, str, int, tuple[str, ...]]
 
 
 class SessionTranslationCache:
@@ -15,7 +15,11 @@ class SessionTranslationCache:
         self._values: dict[CacheKey, TranslationResult] = {}
 
     @staticmethod
-    def key(request: TranslationRequest, profile: TranslationProfile) -> CacheKey:
+    def key(
+        request: TranslationRequest,
+        profile: TranslationProfile,
+        glossary_revision: int = 0,
+    ) -> CacheKey:
         context = (
             tuple(normalize_text(item).casefold() for item in request.context)
             if profile.provider == "openai_compatible"
@@ -26,6 +30,7 @@ class SessionTranslationCache:
             request.source_language,
             request.target_language,
             profile.id,
+            glossary_revision,
             context,
         )
 

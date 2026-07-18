@@ -19,7 +19,7 @@ def settings_v4_to_dict(settings: AppSettings) -> dict[str, Any]:
 
 def settings_v4_from_dict(raw: dict[str, Any]) -> AppSettings:
     settings = settings_v3_from_dict(raw)
-    if settings.translation.ocr_route.source_language not in {"zh-CN", "ja"}:
+    if settings.translation.ocr_route.source_language not in {"zh-CN", "ja", "en"}:
         settings.translation.ocr_route.source_language = "ja"
     ui = mapping(raw.get("ui"))
     mode = str(ui.get("ocr_display_mode", "overlay"))

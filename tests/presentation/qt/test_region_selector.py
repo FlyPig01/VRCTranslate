@@ -16,7 +16,12 @@ def test_selector_draws_a_high_contrast_custom_crosshair(qtbot) -> None:
     selector.update()
     qtbot.wait(20)
 
-    color = selector.grab().toImage().pixelColor(centre)
+    image = selector.grab().toImage()
+    scale = image.devicePixelRatio()
+    color = image.pixelColor(
+        round(centre.x() * scale),
+        round(centre.y() * scale),
+    )
 
     assert color.alpha() == 255
     assert color.green() >= 180

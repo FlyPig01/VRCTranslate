@@ -73,4 +73,20 @@ OCR_MODEL_PACKAGES: dict[str, OcrModelPackage] = {
             ),
         ),
     ),
+    "en": OcrModelPackage(
+        "en",
+        "PP-OCRv5-mobile",
+        "PP-OCRv5",
+        "mobile",
+        (
+            DETECTION,
+            ORIENTATION,
+            OcrModelFile(
+                "en/recognition.onnx",
+                f"{_BASE}/PP-OCRv5/rec/en_PP-OCRv5_rec_mobile.onnx",
+                "c3461add59bb4323ecba96a492ab75e06dda42467c9e3d0c18db5d1d21924be8",
+                7_872_351,
+            ),
+        ),
+    ),
 }

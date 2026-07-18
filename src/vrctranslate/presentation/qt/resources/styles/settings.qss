@@ -64,6 +64,48 @@ QLabel#capturePreview {
 }
 QScrollArea#settingsContentScroll { background: transparent; border: none; }
 
+QFrame#ocrModelCard {
+    background: #f8fafc;
+    border: 1px solid #d6e0eb;
+    border-radius: 10px;
+}
+QLabel#ocrModelName {
+    color: #17283e;
+    font-size: 15px;
+    font-weight: 700;
+}
+QLabel#ocrModelDetail {
+    color: #5b6d83;
+    font-size: 13px;
+}
+QLabel#ocrModelStatus {
+    padding: 4px 9px;
+    border-radius: 9px;
+    color: #617188;
+    background: #e8edf4;
+    font-size: 12px;
+    font-weight: 600;
+}
+QLabel#ocrModelStatus[state="installed"] {
+    color: #216a45;
+    background: #dff2e8;
+}
+QLabel#ocrModelStatus[state="busy"] {
+    color: #1b667f;
+    background: #dceff5;
+}
+QLabel#ocrModelStatus[state="error"] {
+    color: #a63f49;
+    background: #fde8ea;
+}
+QLabel#ocrModelStorage {
+    color: #4e6076;
+    background: #eef3f8;
+    border: 1px solid #d8e1ec;
+    border-radius: 8px;
+    padding: 8px 10px;
+}
+
 QWidget#settingsChoicePanel {
     background: #f7f9fc;
     border: 1px solid #dce3ee;

@@ -41,6 +41,7 @@ class GoogleFreeTranslator:
             supports_batch=False,
             realtime_recommended=True,
             requires_api_key=False,
+            glossary_mode="local_placeholder",
             supported_languages=tuple(_LANGUAGE_CODES),
         )
 

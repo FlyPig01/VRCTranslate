@@ -4,7 +4,8 @@ from dataclasses import dataclass, field
 from typing import Any
 
 
-CONFIG_VERSION = 4
+CONFIG_VERSION = 7
+ROMAJI_MODES = frozenset({"off", "auto", "force"})
 SUPPORTED_TRANSLATION_PROVIDERS = frozenset(
     {
         "test",
@@ -40,7 +41,8 @@ class TranslationRouteSettings:
     timeout_seconds: float = 8.0
     queue_limit: int = 8
     task_ttl_seconds: float = 4.0
-    romaji_to_kana: bool = True
+    romaji_mode: str = "auto"
+    glossary_enabled: bool = True
 
 
 @dataclass(slots=True)
@@ -57,6 +59,7 @@ class TranslationSettings:
             timeout_seconds=4.0,
             queue_limit=8,
             task_ttl_seconds=4.0,
+            romaji_mode="off",
         )
     )
 
@@ -85,6 +88,12 @@ class TranslationSettings:
             self.self_route.profile_id = fallback
         if self.ocr_route.profile_id not in ids:
             self.ocr_route.profile_id = fallback
+
+
+@dataclass(slots=True)
+class GlossarySettings:
+    enabled: bool = True
+    builtin_enabled: bool = True
 
 
 @dataclass(slots=True)
@@ -144,6 +153,7 @@ class UiSettings:
 class AppSettings:
     version: int = CONFIG_VERSION
     translation: TranslationSettings = field(default_factory=TranslationSettings)
+    glossary: GlossarySettings = field(default_factory=GlossarySettings)
     osc: OscSettings = field(default_factory=OscSettings)
     ocr: OcrSettings = field(default_factory=OcrSettings)
     ui: UiSettings = field(default_factory=UiSettings)

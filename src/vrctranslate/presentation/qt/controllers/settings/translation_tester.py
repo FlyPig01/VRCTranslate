@@ -30,12 +30,14 @@ class TranslationProfileTester(QObject):
         self._logger = logger
         self._i18n = i18n
         self._thread_pool = QThreadPool.globalInstance()
+        self._testing_profile_id = ""
 
     def run(self) -> None:
         profile = self._page.selected_profile()
+        self._testing_profile_id = profile.id
         request = TranslationRequest(
             uuid4().hex,
-            "Hello, world!",
+            "Please keep VRChat unchanged.",
             "en",
             "zh-CN",
             "self",
@@ -55,11 +57,20 @@ class TranslationProfileTester(QObject):
         if not isinstance(value, TranslationResult):
             return
         message = (
-            self._i18n.tr("ctrl.settings.test_ok", text=value.translated)
+            self._success_message(value)
             if self._i18n
             else f"测试成功：{value.translated}"
         )
         self._page.set_test_status(message)
+
+    def _success_message(self, value: TranslationResult) -> str:
+        status = self._translate_text.glossary_status(self._testing_profile_id)
+        key = {
+            "compatible": "ctrl.settings.test_ok_glossary",
+            "fallback": "ctrl.settings.test_ok_glossary_fallback",
+            "prompt": "ctrl.settings.test_ok_glossary_prompt",
+        }.get(status, "ctrl.settings.test_ok")
+        return self._i18n.tr(key, text=value.translated) if self._i18n else value.translated
 
     def _failed(self, error: object) -> None:
         if isinstance(error, VrcTranslateError):

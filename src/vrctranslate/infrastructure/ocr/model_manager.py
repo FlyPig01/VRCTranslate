@@ -5,18 +5,20 @@ import json
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
+from threading import Lock
 
 import httpx
 
-from vrctranslate.application.ports.ocr_models import OcrModelStatus
+from vrctranslate.application.ports.ocr_models import (
+    OcrModelProgress,
+    OcrModelStatus,
+    OcrModelStorage,
+)
 from vrctranslate.infrastructure.ocr.model_catalog import (
     OCR_MODEL_PACKAGES,
     OcrModelFile,
     OcrModelPackage,
 )
-
-
-ProgressCallback = Callable[[int, int], None]
 
 
 @dataclass(frozen=True, slots=True)
@@ -43,6 +45,7 @@ class OcrModelManager:
         self.models_root = models_root
         self.cache_root = cache_root
         self._packages = packages or OCR_MODEL_PACKAGES
+        self._management_lock = Lock()
         self._client_factory = client_factory or (
             lambda: httpx.Client(follow_redirects=True, timeout=120.0)
         )
@@ -62,24 +65,60 @@ class OcrModelManager:
             for path, item in zip(paths, package.files)
         )
         installed_size = sum(path.stat().st_size for path in paths if path.is_file())
+        recognition = paths[-1]
+        exclusive_size = recognition.stat().st_size if recognition.is_file() else 0
+        required_download_size = sum(
+            item.size
+            for path, item in zip(paths, package.files)
+            if not path.is_file() or path.stat().st_size != item.size
+        )
         return OcrModelStatus(
             package.language,
             package.version,
             installed,
             package.download_size,
             installed_size,
+            exclusive_size,
+            required_download_size,
         )
+
+    def storage(self) -> OcrModelStorage:
+        files: dict[str, OcrModelFile] = {}
+        for package in self._packages.values():
+            for item in package.files:
+                files[item.relative_path] = item
+        total = sum(
+            path.stat().st_size
+            for relative in files
+            if (path := self.models_root / relative).is_file()
+        )
+        shared = sum(
+            path.stat().st_size
+            for relative in (DETECTION_PATH, ORIENTATION_PATH)
+            if (path := self.models_root / relative).is_file()
+        )
+        return OcrModelStorage(shared, total)
 
     def install(
         self,
         language: str,
-        progress: ProgressCallback | None = None,
+        progress: OcrModelProgress | None = None,
+    ) -> OcrModelStatus:
+        with self._management_lock:
+            return self._install(language, progress)
+
+    def _install(
+        self,
+        language: str,
+        progress: OcrModelProgress | None = None,
     ) -> OcrModelStatus:
         package = self._package(language)
         self.models_root.mkdir(parents=True, exist_ok=True)
         self.cache_root.mkdir(parents=True, exist_ok=True)
         total = package.download_size
         completed = 0
+        if progress:
+            progress(0, total)
         with self._client_factory() as client:
             for item in package.files:
                 destination = self.models_root / item.relative_path
@@ -94,6 +133,10 @@ class OcrModelManager:
         return self.status(language)
 
     def remove(self, language: str) -> OcrModelStatus:
+        with self._management_lock:
+            return self._remove(language)
+
+    def _remove(self, language: str) -> OcrModelStatus:
         package = self._package(language)
         recognition = self.models_root / package.files[-1].relative_path
         recognition.unlink(missing_ok=True)
@@ -161,7 +204,7 @@ class OcrModelManager:
         destination: Path,
         completed: int,
         total: int,
-        progress: ProgressCallback | None,
+        progress: OcrModelProgress | None,
     ) -> None:
         temporary = self.cache_root / f"{spec.sha256}.part"
         temporary.unlink(missing_ok=True)
@@ -183,6 +226,8 @@ class OcrModelManager:
                 raise OSError(f"OCR 模型大小校验失败：{spec.relative_path}")
             if digest.hexdigest().lower() != spec.sha256.lower():
                 raise OSError(f"OCR 模型 SHA-256 校验失败：{spec.relative_path}")
+            if progress:
+                progress(min(total, completed + written), total)
             destination.parent.mkdir(parents=True, exist_ok=True)
             temporary.replace(destination)
         finally:

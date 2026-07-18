@@ -15,9 +15,15 @@ def test_release_defaults_are_portable_and_contain_no_private_service() -> None:
     assert settings.translation.self_route.profile_id == "test"
     assert settings.translation.self_route.source_language == "auto"
     assert settings.translation.self_route.target_language == "zh-CN"
+    assert settings.translation.self_route.romaji_mode == "auto"
+    assert settings.translation.self_route.glossary_enabled is True
     assert settings.translation.ocr_route.profile_id == "test"
     assert settings.translation.ocr_route.source_language == "ja"
     assert settings.translation.ocr_route.target_language == "zh-CN"
+    assert settings.translation.ocr_route.romaji_mode == "off"
+    assert settings.translation.ocr_route.glossary_enabled is True
+    assert settings.glossary.enabled is True
+    assert settings.glossary.builtin_enabled is True
 
     assert settings.ocr.window_title == "VRChat"
     assert settings.ocr.recognition_mode == "continuous"

@@ -1,0 +1,95 @@
+{
+  "description": "VRChat 三语默认术语库（中英日），仅收录VRChat专属概念与社区固定译法，日语含官方标准与社区俗称备注",
+  "version": "2.0",
+  "update_date": "2026-07-18",
+  "languages": ["en", "zh", "ja"],
+  "categories": [
+    {
+      "category_name": "客户端核心系统（100% VRC专属）",
+      "terms": [
+        { "en": "Quick Menu", "zh": "快捷菜单", "ja": "クイックメニュー", "note": "VRC独有轮盘式快捷操作界面" },
+        { "en": "Action Menu", "zh": "动作菜单", "ja": "アクションメニュー", "note": "手柄长按呼出的功能菜单" },
+        { "en": "Expression Menu", "zh": "表情菜单", "ja": "エクスプレッションメニュー", "note": "模型自定义功能菜单，社区简称エクスプレスメニュー" },
+        { "en": "Safe Mode", "zh": "安全模式", "ja": "セーフモード", "note": "内容分级过滤系统" },
+        { "en": "Performance Rank", "zh": "性能等级", "ja": "パフォーマンスランク", "note": "模型/世界的官方性能评级" },
+        { "en": "Fallback Avatar", "zh": "备用模型", "ja": "フォールバックアバター", "note": "安全系统自动替换的默认模型，又称降级模型" },
+        { "en": "Impostor", "zh": "模型替身", "ja": "インポスター", "note": "远距离低模显示方案" },
+        { "en": "VRChat Plus", "zh": "VRC+ 会员", "ja": "VRChat Plus", "note": "官方订阅服务，三语通用缩写VRC+" },
+        { "en": "VRC+", "zh": "VRC+ 会员", "ja": "VRC+", "note": "VRChat Plus通用缩写" }
+      ]
+    },
+    {
+      "category_name": "信任等级体系（VRC独有用户分级）",
+      "terms": [
+        { "en": "Visitor", "zh": "游客", "ja": "ビジター", "note": "灰色名称，初始等级" },
+        { "en": "New User", "zh": "新玩家", "ja": "ニューユーザー", "note": "蓝色名称" },
+        { "en": "User", "zh": "玩家", "ja": "ユーザー", "note": "绿色名称" },
+        { "en": "Known User", "zh": "长期玩家", "ja": "ノウンユーザー", "note": "橙色名称" },
+        { "en": "Trusted User", "zh": "资深玩家", "ja": "トラステッドユーザー", "note": "紫色名称" },
+        { "en": "Nuisance", "zh": "劣迹玩家", "ja": "迷惑ユーザー", "note": "负面灰名标记，官方片假名ニューサンス" }
+      ]
+    },
+    {
+      "category_name": "Avatar专属技术系统（100% VRC专属）",
+      "terms": [
+        { "en": "Avatar Dynamics", "zh": "形象动态系统", "ja": "アバターダイナミクス", "note": "VRC物理交互总框架" },
+        { "en": "PhysBone", "zh": "物理骨骼", "ja": "フィスボーン", "note": "VRC自研物理骨骼，社区俗称フィジボン" },
+        { "en": "Contact", "zh": "接触检测", "ja": "コンタクト", "note": "触碰触发交互系统，又称碰撞器" },
+        { "en": "Expression Parameters", "zh": "表情参数", "ja": "エクスプレッションパラメーター", "note": "模型网络同步参数体系" },
+        { "en": "Playable Layer", "zh": "可播放层", "ja": "プレイアブルレイヤー", "note": "Avatar动画分层架构" },
+        { "en": "Viseme", "zh": "口型", "ja": "バイゼム", "note": "语音驱动的口型同步系统" }
+      ]
+    },
+    {
+      "category_name": "世界开发专属（100% VRC专属）",
+      "terms": [
+        { "en": "Udon", "zh": "Udon", "ja": "ウドン", "note": "VRC自研脚本系统，专有名词保留原拼写" },
+        { "en": "UdonSharp", "zh": "UdonSharp", "ja": "ウドンシャープ", "note": "简称U#，C#方言，保留原词" },
+        { "en": "Udon Graph", "zh": "Udon 蓝图", "ja": "ウドングラフ", "note": "可视化节点编程工具" },
+        { "en": "Community Labs", "zh": "社区实验室", "ja": "コミュニティラボ", "note": "世界公开审核队列" },
+        { "en": "ClientSim", "zh": "客户端模拟器", "ja": "クライアントシム", "note": "Unity内测试工具" },
+        { "en": "Ownership", "zh": "所有权", "ja": "オーナーシップ", "note": "网络对象的同步控制权" }
+      ]
+    },
+    {
+      "category_name": "房间权限体系（VRC独有机制）",
+      "terms": [
+        { "en": "Friends+", "zh": "好友+", "ja": "フレンズ+", "note": "社区通用简称フレプラ，最常用房间档位" },
+        { "en": "Invite+", "zh": "邀请+", "ja": "インバイト+", "note": "社区简称インビプラ" },
+        { "en": "Invite Request", "zh": "邀请请求", "ja": "インバイトリクエスト", "note": "社区简称インビリク，中文俗称求邀" },
+        { "en": "Master", "zh": "房主", "ja": "マスター", "note": "房间权限最高者；技术语境译主机" },
+        { "en": "Portal Drop", "zh": "扔传送门", "ja": "ポータル設置", "note": "社区口语ポータルを投げる" }
+      ]
+    },
+    {
+      "category_name": "社区特有黑话与常用语",
+      "terms": [
+        { "en": "Mirror Dweller", "zh": "镜子党", "ja": "ミラー住人", "note": "镜前常驻玩家，三语社区特有文化" },
+        { "en": "Ripper", "zh": "盗模者", "ja": "リッパー", "note": "盗取Avatar模型的人" },
+        { "en": "Questie", "zh": "Quest端玩家", "ja": "クエスト民", "note": "一体机玩家的社区称呼" },
+        { "en": "Brain Dead", "zh": "深度挂机", "ja": "脳死AFK", "note": "长时间挂机无操作，社区口语" },
+        { "en": "Sleepover", "zh": "VR睡觉", "ja": "寝落ち / VR寝", "note": "VRC特有挂机文化，源自日语社区" },
+        { "en": "Otsukare VR", "zh": "辛苦了VR", "ja": "おつかれVR", "note": "日语社区下线常用问候语" }
+      ]
+    },
+    {
+      "category_name": "通用词但VRC有固定译法（建议默认启用）",
+      "terms": [
+        { "en": "World", "zh": "世界", "ja": "ワールド", "note": "不译地图/关卡，三语固定称呼场景" },
+        { "en": "Avatar", "zh": "虚拟形象", "ja": "アバター", "note": "社区口语多称模型/モデル" },
+        { "en": "Instance", "zh": "房间", "ja": "インスタンス", "note": "社交语境译房间/ルーム，技术语境译实例" },
+        { "en": "Portal", "zh": "传送门", "ja": "ポータル", "note": "不译门户/入口" },
+        { "en": "Respawn", "zh": "回出生点", "ja": "リスポーン", "note": "多指回到世界出生点，也译重生" },
+        { "en": "Group", "zh": "群组", "ja": "グループ", "note": "VRC内置社群功能固定译法" },
+        { "en": "Favorite", "zh": "收藏", "ja": "お気に入り", "note": "日语界面官方译法" },
+        { "en": "AFK", "zh": "暂离", "ja": "AFK", "note": "三语通用缩写，社区也说挂机" },
+        { "en": "Mute", "zh": "闭麦", "ja": "ミュート", "note": "社交语境译闭麦，通用语境译静音" },
+        { "en": "Block", "zh": "屏蔽", "ja": "ブロック", "note": "社交功能固定译法" },
+        { "en": "Kick", "zh": "踢出", "ja": "キック", "note": "房间管理功能固定译法" },
+        { "en": "Full-Body Tracking", "zh": "全身追踪", "ja": "フルボディトラッキング", "note": "社区通用简称FBT" },
+        { "en": "FBT", "zh": "全身追踪", "ja": "FBT", "note": "全身追踪通用缩写" },
+        { "en": "OSC", "zh": "OSC协议", "ja": "OSC", "note": "模型外接参数协议，保留缩写" }
+      ]
+    }
+  ]
+}

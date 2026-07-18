@@ -2,12 +2,7 @@ from __future__ import annotations
 
 from copy import deepcopy
 
-from PySide6.QtWidgets import (
-    QCheckBox,
-    QLabel,
-    QVBoxLayout,
-    QWidget,
-)
+from PySide6.QtWidgets import QCheckBox, QLabel, QVBoxLayout, QWidget
 
 from vrctranslate.application.dto import TranslationProfile, TranslationSettings
 from vrctranslate.presentation.qt.i18n import I18nManager
@@ -26,6 +21,7 @@ class RoutesTab(QWidget):
         super().__init__()
         self._i18n = i18n
         self._profiles: list[TranslationProfile] = []
+        self._global_glossary_enabled = True
         self._build_ui()
         self.retranslate()
 
@@ -49,14 +45,25 @@ class RoutesTab(QWidget):
         self._self_target_label = QLabel()
         self._format_label = QLabel()
         self._overflow_label = QLabel()
+        self._self_romaji_label = QLabel()
         osc_form.addRow(self._self_profile_label, self.self_profile_combo)
         osc_form.addRow(self._self_source_label, self.self_source_combo)
         osc_form.addRow(self._self_target_label, self.self_target_combo)
         osc_form.addRow(self._format_label, self.format_combo)
         osc_form.addRow(self._overflow_label, self.overflow_combo)
-        self.self_romaji_check = QCheckBox()
-        osc_form.addRow("", self.self_romaji_check)
+        self.self_romaji_combo = NoWheelComboBox()
+        osc_form.addRow(self._self_romaji_label, self.self_romaji_combo)
+        self.self_glossary_enabled = QCheckBox()
+        osc_form.addRow("", self.self_glossary_enabled)
+        self.self_glossary_status = QLabel()
+        self.self_glossary_status.setObjectName("inlineNotice")
+        self.self_glossary_status.setWordWrap(True)
+        osc_form.addRow("", self.self_glossary_status)
         osc_layout.addLayout(osc_form)
+        self.self_romaji_help = QLabel()
+        self.self_romaji_help.setWordWrap(True)
+        self.self_romaji_help.setObjectName("inlineNotice")
+        osc_layout.addWidget(self.self_romaji_help)
         layout.addWidget(osc_card)
 
         ocr_card, ocr_layout = card("")
@@ -69,12 +76,23 @@ class RoutesTab(QWidget):
         self._ocr_profile_label = QLabel()
         self._ocr_source_label = QLabel()
         self._ocr_target_label = QLabel()
+        self._ocr_romaji_label = QLabel()
         ocr_form.addRow(self._ocr_profile_label, self.ocr_profile_combo)
         ocr_form.addRow(self._ocr_source_label, self.ocr_source_combo)
         ocr_form.addRow(self._ocr_target_label, self.ocr_target_combo)
-        self.ocr_romaji_check = QCheckBox()
-        ocr_form.addRow("", self.ocr_romaji_check)
+        self.ocr_romaji_combo = NoWheelComboBox()
+        ocr_form.addRow(self._ocr_romaji_label, self.ocr_romaji_combo)
+        self.ocr_glossary_enabled = QCheckBox()
+        ocr_form.addRow("", self.ocr_glossary_enabled)
+        self.ocr_glossary_status = QLabel()
+        self.ocr_glossary_status.setObjectName("inlineNotice")
+        self.ocr_glossary_status.setWordWrap(True)
+        ocr_form.addRow("", self.ocr_glossary_status)
         ocr_layout.addLayout(ocr_form)
+        self.ocr_romaji_help = QLabel()
+        self.ocr_romaji_help.setWordWrap(True)
+        self.ocr_romaji_help.setObjectName("inlineNotice")
+        ocr_layout.addWidget(self.ocr_romaji_help)
         self.ocr_route_warning = QLabel()
         self.ocr_route_warning.setWordWrap(True)
         self.ocr_route_warning.setObjectName("warningNotice")
@@ -90,8 +108,12 @@ class RoutesTab(QWidget):
             self.ocr_profile_combo,
             self.ocr_source_combo,
             self.ocr_target_combo,
+            self.self_romaji_combo,
+            self.ocr_romaji_combo,
         ):
             combo.currentIndexChanged.connect(self.update_warnings)
+        self.self_glossary_enabled.toggled.connect(self.update_warnings)
+        self.ocr_glossary_enabled.toggled.connect(self.update_warnings)
 
     def retranslate(self) -> None:
         self._self_card_title.setText(self._i18n.tr("route.self_card"))
@@ -104,16 +126,24 @@ class RoutesTab(QWidget):
         self._ocr_target_label.setText(self._i18n.tr("route.target"))
         self._format_label.setText(self._i18n.tr("route.format"))
         self._overflow_label.setText(self._i18n.tr("route.overflow"))
-        self.self_romaji_check.setText(self._i18n.tr("route.romaji"))
-        self.ocr_romaji_check.setText(self._i18n.tr("route.romaji"))
+        self._self_romaji_label.setText(self._i18n.tr("route.romaji_mode"))
+        self._ocr_romaji_label.setText(self._i18n.tr("route.romaji_mode"))
+        self.self_glossary_enabled.setText(self._i18n.tr("route.glossary_enabled"))
+        self.ocr_glossary_enabled.setText(self._i18n.tr("route.glossary_enabled"))
         self._rebuild_languages()
         self._rebuild_formats()
         self._rebuild_overflow()
+        self._rebuild_romaji_modes()
         self._refresh_profile_labels()
         self.update_warnings()
 
-    def load_settings(self, settings: TranslationSettings) -> None:
+    def load_settings(
+        self,
+        settings: TranslationSettings,
+        global_glossary_enabled: bool = True,
+    ) -> None:
         self._profiles = deepcopy(settings.profiles)
+        self._global_glossary_enabled = global_glossary_enabled
         self._populate_profile_combos(
             settings.self_route.profile_id,
             settings.ocr_route.profile_id,
@@ -124,8 +154,10 @@ class RoutesTab(QWidget):
         set_combo(self.ocr_target_combo, settings.ocr_route.target_language)
         set_combo(self.format_combo, settings.self_route.message_format)
         set_combo(self.overflow_combo, settings.self_route.overflow_policy)
-        self.self_romaji_check.setChecked(settings.self_route.romaji_to_kana)
-        self.ocr_romaji_check.setChecked(settings.ocr_route.romaji_to_kana)
+        set_combo(self.self_romaji_combo, settings.self_route.romaji_mode)
+        set_combo(self.ocr_romaji_combo, settings.ocr_route.romaji_mode)
+        self.self_glossary_enabled.setChecked(settings.self_route.glossary_enabled)
+        self.ocr_glossary_enabled.setChecked(settings.ocr_route.glossary_enabled)
         self.update_warnings()
 
     def collect_settings(self, settings: TranslationSettings) -> None:
@@ -137,8 +169,14 @@ class RoutesTab(QWidget):
         settings.ocr_route.target_language = str(self.ocr_target_combo.currentData())
         settings.self_route.message_format = str(self.format_combo.currentData())
         settings.self_route.overflow_policy = str(self.overflow_combo.currentData())
-        settings.self_route.romaji_to_kana = self.self_romaji_check.isChecked()
-        settings.ocr_route.romaji_to_kana = self.ocr_romaji_check.isChecked()
+        settings.self_route.romaji_mode = str(
+            self.self_romaji_combo.currentData() or "auto"
+        )
+        settings.ocr_route.romaji_mode = str(
+            self.ocr_romaji_combo.currentData() or "off"
+        )
+        settings.self_route.glossary_enabled = self.self_glossary_enabled.isChecked()
+        settings.ocr_route.glossary_enabled = self.ocr_glossary_enabled.isChecked()
 
     def set_profiles(
         self,
@@ -154,6 +192,10 @@ class RoutesTab(QWidget):
         if not preserve or ocr_id not in {p.id for p in profiles}:
             ocr_id = profiles[0].id if profiles else ""
         self._populate_profile_combos(self_id, ocr_id)
+        self.update_warnings()
+
+    def set_glossary_global_enabled(self, enabled: bool) -> None:
+        self._global_glossary_enabled = enabled
         self.update_warnings()
 
     def _populate_profile_combos(self, self_id: str, ocr_id: str) -> None:
@@ -196,11 +238,11 @@ class RoutesTab(QWidget):
         self.ocr_source_combo.blockSignals(True)
         self.ocr_source_combo.clear()
         for label, value in languages(self._i18n):
-            if value in {"zh-CN", "ja"}:
+            if value in {"zh-CN", "ja", "en"}:
                 self.ocr_source_combo.addItem(label, value)
         set_combo(
             self.ocr_source_combo,
-            current if current in {"zh-CN", "ja"} else "ja",
+            current if current in {"zh-CN", "ja", "en"} else "ja",
         )
         self.ocr_source_combo.blockSignals(False)
 
@@ -218,8 +260,68 @@ class RoutesTab(QWidget):
             self.overflow_combo.addItem(self._i18n.tr(key), value)
         set_combo(self.overflow_combo, current)
 
+    def _rebuild_romaji_modes(self) -> None:
+        for combo, fallback in (
+            (self.self_romaji_combo, "auto"),
+            (self.ocr_romaji_combo, "off"),
+        ):
+            current = str(combo.currentData() or fallback)
+            combo.blockSignals(True)
+            combo.clear()
+            for mode in ("off", "auto", "force"):
+                combo.addItem(self._i18n.tr(f"route.romaji_{mode}"), mode)
+            set_combo(combo, current)
+            combo.blockSignals(False)
+
     def update_warnings(self) -> None:
         self._update_ocr_warning()
+        self._update_romaji_help()
+        self._update_glossary_status()
+
+    def _update_glossary_status(self) -> None:
+        for profile_combo, enabled, label in (
+            (
+                self.self_profile_combo,
+                self.self_glossary_enabled,
+                self.self_glossary_status,
+            ),
+            (
+                self.ocr_profile_combo,
+                self.ocr_glossary_enabled,
+                self.ocr_glossary_status,
+            ),
+        ):
+            profile_id = str(profile_combo.currentData() or "")
+            provider = self._profile_provider(profile_id)
+            profile_name = next(
+                (profile.name for profile in self._profiles if profile.id == profile_id),
+                "",
+            )
+            if not self._global_glossary_enabled:
+                key = "route.glossary_status_global_disabled"
+            elif not enabled.isChecked():
+                key = "route.glossary_status_disabled"
+            elif provider == "openai_compatible":
+                key = "route.glossary_status_prompt"
+            elif provider == "test" or not provider:
+                key = "route.glossary_status_none"
+            else:
+                key = "route.glossary_status_local"
+            label.setText(self._i18n.tr(key, profile=profile_name))
+
+    def _update_romaji_help(self) -> None:
+        for source_combo, mode_combo, help_label in (
+            (self.self_source_combo, self.self_romaji_combo, self.self_romaji_help),
+            (self.ocr_source_combo, self.ocr_romaji_combo, self.ocr_romaji_help),
+        ):
+            source = str(source_combo.currentData() or "")
+            available = source in {"auto", "ja"}
+            mode_combo.setEnabled(available)
+            if available:
+                mode = str(mode_combo.currentData() or "off")
+                help_label.setText(self._i18n.tr(f"route.romaji_help_{mode}"))
+            else:
+                help_label.setText(self._i18n.tr("route.romaji_help_unavailable"))
 
     def _profile_provider(self, profile_id: str) -> str:
         for profile in self._profiles:

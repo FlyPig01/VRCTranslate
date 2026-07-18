@@ -82,6 +82,10 @@ datas += collect_data_files(
     "vrctranslate.presentation.qt",
     includes=["resources/**/*", "i18n/locales/*.json"],
 )
+datas += collect_data_files(
+    "vrctranslate.infrastructure.glossary.resources",
+    includes=["default_glossary.json"],
+)
 
 # OCR models and package resources are loaded dynamically at runtime.
 for package_name in ("rapidocr",):
@@ -139,6 +143,10 @@ release_root = Path(DISTPATH) / product_name
 (release_root / "data").mkdir(parents=True, exist_ok=True)
 shutil.copy2(ROOT / "README.md", release_root / "README.md")
 shutil.copy2(ROOT / "使用说明.md", release_root / "使用说明.md")
+shutil.copy2(
+    ROOT / "THIRD_PARTY_NOTICES.md",
+    release_root / "THIRD_PARTY_NOTICES.md",
+)
 shutil.copy2(
     ROOT / "packaging" / "portable-data-readme.txt",
     release_root / "data" / "README.txt",

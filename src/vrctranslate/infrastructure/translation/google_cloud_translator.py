@@ -34,6 +34,7 @@ class GoogleCloudTranslator:
             supports_batch=True,
             realtime_recommended=True,
             requires_api_key=True,
+            glossary_mode="local_placeholder",
             supported_languages=tuple(_LANGUAGE_CODES),
         )
 

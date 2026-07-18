@@ -22,6 +22,7 @@ class OpenAICompatibleTranslator:
             supports_batch=False,
             realtime_recommended=False,
             requires_api_key=True,
+            glossary_mode="prompt",
         )
 
     def translate(

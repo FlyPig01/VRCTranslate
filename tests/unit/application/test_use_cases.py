@@ -12,6 +12,9 @@ from vrctranslate.domain.chatbox import MessageFormat
 from vrctranslate.domain.errors import ChatboxSendFailed
 from vrctranslate.domain.ocr import CapturedFrame, OcrText
 from vrctranslate.domain.translation import TranslationRequest, TranslationResult
+from vrctranslate.infrastructure.text.wanakana_converter import (
+    WanaKanaRomajiConverter,
+)
 
 
 class FakeTranslator:
@@ -68,6 +71,16 @@ def test_translate_use_case_has_no_provider_dependency() -> None:
     request = TranslationRequest("1", "hello", "en", "zh-CN")
     result = use_case.execute(request, AppSettings().translation)
     assert result.translated == "translated:hello"
+
+
+def test_translate_use_case_sends_converted_text_but_preserves_original() -> None:
+    use_case = TranslateText(FakeTranslator(), WanaKanaRomajiConverter())
+    request = TranslationRequest("1", "konnichiwa", "ja", "zh-CN")
+
+    result = use_case.execute(request, AppSettings().translation)
+
+    assert result.original == "konnichiwa"
+    assert result.translated == "translated:こんにちは"
 
 
 def test_prepare_chatbox_message_returns_explicit_limit_state() -> None:

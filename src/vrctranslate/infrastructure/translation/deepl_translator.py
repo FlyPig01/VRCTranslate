@@ -38,6 +38,7 @@ class DeepLTranslator:
             supports_batch=True,
             realtime_recommended=True,
             requires_api_key=True,
+            glossary_mode="local_placeholder",
             supported_languages=tuple(_TARGET_LANGUAGE_CODES),
         )
 

@@ -127,6 +127,7 @@ class SelfMessageController(QObject):
         route = deepcopy(translation.self_route)
         profile = deepcopy(translation.profile(route.profile_id))
         profile.timeout_seconds = min(profile.timeout_seconds, route.timeout_seconds)
+        profile.options["_glossary_enabled"] = route.glossary_enabled
         request = TranslationRequest(
             uuid4().hex,
             original,

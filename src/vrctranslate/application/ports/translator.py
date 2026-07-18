@@ -18,6 +18,7 @@ class TranslationCapabilities:
     requires_api_key: bool
     supported_languages: tuple[str, ...] = ()
     available: bool = True
+    glossary_mode: str = "none"
 
 
 class TranslationAdapter(Protocol):

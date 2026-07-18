@@ -1,143 +1,220 @@
 from __future__ import annotations
 
 import re
+from dataclasses import dataclass
 
-_HIRAGANA_MAP: dict[str, str] = {
-    "kya": "きゃ", "kyu": "きゅ", "kyo": "きょ",
-    "sha": "しゃ", "shu": "しゅ", "sho": "しょ",
-    "cha": "ちゃ", "chu": "ちゅ", "cho": "ちょ",
-    "nya": "にゃ", "nyu": "にゅ", "nyo": "にょ",
-    "hya": "ひゃ", "hyu": "ひゅ", "hyo": "ひょ",
-    "mya": "みゃ", "myu": "みゅ", "myo": "みょ",
-    "rya": "りゃ", "ryu": "りゅ", "ryo": "りょ",
-    "gya": "ぎゃ", "gyu": "ぎゅ", "gyo": "ぎょ",
-    "ja": "じゃ", "ju": "じゅ", "jo": "じょ",
-    "jya": "じゃ", "jyu": "じゅ", "jyo": "じょ",
-    "bya": "びゃ", "byu": "びゅ", "byo": "びょ",
-    "pya": "ぴゃ", "pyu": "ぴゅ", "pyo": "ぴょ",
-    "shi": "し", "chi": "ち", "tsu": "つ",
-    "ka": "か", "ki": "き", "ku": "く", "ke": "け", "ko": "こ",
-    "sa": "さ", "si": "し", "su": "す", "se": "せ", "so": "そ",
-    "ta": "た", "ti": "ち", "tu": "つ", "te": "て", "to": "と",
-    "na": "な", "ni": "に", "nu": "ぬ", "ne": "ね", "no": "の",
-    "ha": "は", "hi": "ひ", "fu": "ふ", "he": "へ", "ho": "ほ",
-    "ma": "ま", "mi": "み", "mu": "む", "me": "め", "mo": "も",
-    "ya": "や", "yu": "ゆ", "yo": "よ",
-    "ra": "ら", "ri": "り", "ru": "る", "re": "れ", "ro": "ろ",
-    "wa": "わ", "wi": "ゐ", "we": "ゑ", "wo": "を",
-    "ga": "が", "gi": "ぎ", "gu": "ぐ", "ge": "げ", "go": "ご",
-    "za": "ざ", "ji": "じ", "zu": "ず", "ze": "ぜ", "zo": "ぞ",
-    "da": "だ", "di": "ぢ", "du": "づ", "de": "で", "do": "ど",
-    "ba": "ば", "bi": "び", "bu": "ぶ", "be": "べ", "bo": "ぼ",
-    "pa": "ぱ", "pi": "ぴ", "pu": "ぷ", "pe": "ぺ", "po": "ぽ",
-    "a": "あ", "i": "い", "u": "う", "e": "え", "o": "お",
-    "n": "ん",
-    "vu": "ゔ",
+from vrctranslate.application.dto import ROMAJI_MODES
+from vrctranslate.application.ports.romaji_converter import RomajiConverter
+
+
+_WORD_PATTERN = re.compile(r"[A-Za-z]+(?:'[A-Za-z]+)*")
+_PROTECTED_PATTERN = re.compile(
+    r"https?://[^\s]+|www\.[^\s]+|"
+    r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}|"
+    r"[@#][A-Za-z0-9_]+|"
+    r"\b[A-Za-z][A-Za-z0-9]*(?:[_-][A-Za-z0-9]+)+\b|"
+    r"\b[A-Za-z]*\d[A-Za-z0-9_]*\b",
+    re.IGNORECASE,
+)
+_LATIN_PATTERN = re.compile(r"[A-Za-z]")
+
+_FIXED_PHRASES = {
+    "abataa": "アバター",
+    "e": "へ",
+    "ibento": "イベント",
+    "konnichiwa": "こんにちは",
+    "konbanwa": "こんばんは",
+    "koohii": "コーヒー",
+    "nihai": "二杯",
+    "o": "を",
+    "onryou": "音量",
+    "wa": "は",
+    "waarudo": "ワールド",
 }
 
-_SOKUON_CONSONANTS = {"k", "s", "t", "p", "c", "g", "z", "d", "b"}
+_JAPANESE_CHARACTER_CLASS = r"\u3040-\u30ff\u3400-\u9fff"
 
-
-def _looks_like_romaji(text: str) -> bool:
-    stripped = re.sub(r"[\s\d\W_]", "", text, flags=re.UNICODE)
-    if not stripped:
-        return False
-    if not re.fullmatch(r"[a-zA-Z]+", stripped):
-        return False
-    lower = stripped.lower()
-    words = re.findall(r"[a-z]+", text.lower())
-    if not words:
-        return False
-    common_english = {
-        "the", "is", "are", "was", "were", "and", "or", "not", "you", "have",
-        "has", "that", "this", "with", "for", "from", "but", "all", "can",
-        "will", "would", "could", "should", "about", "what", "when", "where",
-        "who", "how", "why", "which", "their", "there", "they", "them",
-        "then", "than", "some", "any", "very", "just", "only", "also",
+# Exact English/chat tokens are deliberately conservative. A user can select
+# force mode when a short ambiguous token is known to be Japanese romaji.
+_COMMON_ENGLISH = frozenset(
+    {
+        "a", "about", "after", "all", "also", "am", "an", "and", "any",
+        "are", "as", "at", "be", "because", "before", "but", "by", "can",
+        "chat", "could", "day", "do", "does", "done", "for", "from", "game",
+        "go", "good", "have", "hello", "help", "here", "hey", "hi", "how",
+        "i", "if", "in", "is", "it", "join", "just", "know", "like", "lol",
+        "machine", "me", "more", "my", "name", "new", "no", "not", "now",
+        "of", "on", "one", "only", "or", "our", "party", "please", "room",
+        "should", "some", "start", "stop", "thank", "thanks", "that", "the",
+        "their", "them", "then", "there", "they", "this", "time", "to", "too",
+        "very", "want", "was", "we", "were", "what", "when", "where", "which",
+        "who", "why", "will", "with", "world", "would", "www", "yes", "you",
+        "your",
     }
-    english_hits = sum(1 for w in words if w in common_english)
-    if english_hits >= 2:
-        return False
-    jp_patterns = ["nichiwa", "konnichi", "ohayou", "arigatou", "sumimasen",
-                   "gomen", "sugoi", "kawaii", "baka", "chan", "kun",
-                   "sensei", "desu", "masu", "mashita", "nani", "kore",
-                   "sore", "dare", "itsu", "doko", "nandemo", "ittai",
-                   "itte", "kimashita", "ikimasho", "tabemashou", "kyou",
-                   "ashita", "kinou", "hayaku", "osoi", "kirei", "shiawase",
-                   "kanashii", "ureshii", "shitsurei", "onegai", "yoroshiku",
-                   "hajimemashite", "otsukaresama", "itadakimasu", "gozaimasu",
-                   "kashikoi", "subarashii", "omoshiroi", "tsukareta",
-                   "kitanai", "mazui", "oishii", "kireina", "kakkoii",
-                   "kawaiikute", "tanoshii", "samishii", "atsui", "samui",
-                   "muzukashii", "yasashii", "takai", "yasukute", "omoi",
-                   "karui", "hageshii", "yowai", "tsuyoi", "hayai"]
-    for pattern in jp_patterns:
-        if pattern in lower:
-            return True
-    if english_hits >= 1 and len(words) >= 3:
-        return False
-    return False
+)
+
+# These short spellings are also English words, but become Japanese particles
+# when the surrounding sentence already contains high-confidence romaji.
+_AMBIGUOUS_JAPANESE_TOKENS = frozenset({"no", "to"})
+
+_STRONG_EXACT = frozenset(
+    {
+        "abataa", "arigatou", "asobou", "baka", "chan", "daijoubu",
+        "dare", "desu", "doko", "fuji", "gakusei", "gomen",
+        "hajimemashite", "hayaku", "henkou", "houhou", "ibento",
+        "itadakimasu", "ja", "kawaii", "kinou", "konnichiwa",
+        "konbanwa", "koohii", "kore", "kudasai", "kyou", "masu",
+        "matcha", "minna", "nani", "ohayou", "onegai", "ore",
+        "oshiete", "otsukaresama", "ryokou", "sensei", "shinjuku",
+        "sore", "sugoi", "sumimasen", "tanoshikatta", "toukyou",
+        "waarudo", "watashi", "yoroshiku", "zasshi",
+    }
+)
+
+_STRONG_PARTS = (
+    "arigat", "asob", "chou", "desu", "gakusei", "gozaimasu", "hajime",
+    "issho", "itadaki", "kawaii", "konnichi", "mashita", "match", "onegai",
+    "otukare", "otsukare", "ryo", "shiawase", "shinj", "shitsu", "sshi",
+    "sumimasen", "tcha", "toukyou", "tsu", "ureshii", "watashi", "yoroshi",
+)
 
 
-def _should_convert(text: str, source_language: str) -> bool:
-    if source_language == "ja":
-        stripped = re.sub(r"[\s\d\W_]", "", text, flags=re.UNICODE)
-        if not stripped:
-            return False
-        if re.search(r"[\u3040-\u309f\u30a0-\u30ff\u4e00-\u9fff]", stripped):
-            return False
-        return bool(re.fullmatch(r"[a-zA-Z]+", stripped)) or _looks_like_romaji(text)
-    if source_language == "auto":
-        return _looks_like_romaji(text)
-    return False
+@dataclass(frozen=True, slots=True)
+class RomajiPreprocessResult:
+    original: str
+    text: str
+    changed: bool
+    confidence: float
+    unparsed_segments: tuple[str, ...] = ()
 
 
-def _convert_word(word: str) -> str:
-    result: list[str] = []
-    i = 0
-    n = len(word)
-    lower = word.lower()
-    while i < n:
-        if i + 1 < n and lower[i] == lower[i + 1] and lower[i] in _SOKUON_CONSONANTS:
-            result.append("っ")
-            i += 1
-            continue
-        matched = False
-        for length in (3, 2, 1):
-            if i + length <= n:
-                chunk = lower[i:i + length]
-                if chunk in _HIRAGANA_MAP:
-                    if length == 1 and chunk == "n" and i + 1 < n:
-                        next_char = lower[i + 1]
-                        if next_char in "aeiouy":
-                            continue
-                    result.append(_HIRAGANA_MAP[chunk])
-                    i += length
-                    matched = True
-                    break
-        if not matched:
-            result.append(word[i])
-            i += 1
-    return "".join(result)
+def normalize_romaji_mode(value: object, default: str = "off") -> str:
+    mode = str(value)
+    return mode if mode in ROMAJI_MODES else default
 
 
-def romaji_to_hiragana(text: str) -> str:
-    parts = re.split(r"([a-zA-Z]+)", text)
-    out: list[str] = []
-    for part in parts:
-        if part and part.isascii() and part.isalpha():
-            out.append(_convert_word(part))
+def _protected_spans(text: str) -> tuple[tuple[int, int], ...]:
+    return tuple(match.span() for match in _PROTECTED_PATTERN.finditer(text))
+
+
+def _inside(span: tuple[int, int], protected: tuple[tuple[int, int], ...]) -> bool:
+    start, end = span
+    return any(start >= left and end <= right for left, right in protected)
+
+
+def _looks_like_brand(word: str) -> bool:
+    uppercase = sum(1 for character in word if character.isupper())
+    return uppercase >= 2
+
+
+def _strong_romaji(word: str) -> bool:
+    lower = word.lower().replace("'", "")
+    if lower in _STRONG_EXACT:
+        return True
+    if "'" in word:
+        return True
+    return any(part in lower for part in _STRONG_PARTS)
+
+
+def _convert_word(word: str, converter: RomajiConverter) -> str | None:
+    fixed = _FIXED_PHRASES.get(word.lower())
+    if fixed is not None:
+        return fixed
+    converted = converter.to_hiragana(word)
+    return None if _LATIN_PATTERN.search(converted) else converted
+
+
+def _normalize_converted_sentence(text: str) -> str:
+    """Make converted kana look like ordinary Japanese for translators."""
+    japanese = _JAPANESE_CHARACTER_CLASS
+    normalized = re.sub(
+        rf"(?<=[{japanese}])\s*,\s*(?=[{japanese}])",
+        "、",
+        text,
+    )
+    normalized = re.sub(
+        rf"(?<=[{japanese}])\s+(?=[{japanese}])",
+        "",
+        normalized,
+    )
+    terminal_punctuation = {".": "。", "?": "？", "!": "！"}
+    return re.sub(
+        rf"(?<=[{japanese}])([.?!])$",
+        lambda match: terminal_punctuation[match.group(1)],
+        normalized,
+    )
+
+
+def preprocess_romaji(
+    text: str,
+    source_language: str,
+    mode: str,
+    converter: RomajiConverter | None,
+) -> RomajiPreprocessResult:
+    """Conservatively convert continuous romaji spans without damaging English."""
+
+    normalized_mode = normalize_romaji_mode(mode)
+    if (
+        converter is None
+        or normalized_mode == "off"
+        or source_language not in {"ja", "auto"}
+        or not text
+    ):
+        return RomajiPreprocessResult(text, text, False, 0.0)
+
+    protected = _protected_spans(text)
+    matches = list(_WORD_PATTERN.finditer(text))
+    candidates = [
+        match
+        for match in matches
+        if not _inside(match.span(), protected) and not _looks_like_brand(match.group())
+    ]
+    if not candidates:
+        return RomajiPreprocessResult(text, text, False, 0.0)
+
+    strong_phrase = any(_strong_romaji(match.group()) for match in candidates)
+    parts: list[str] = []
+    unparsed: list[str] = []
+    converted_count = 0
+    cursor = 0
+
+    for match in matches:
+        parts.append(text[cursor:match.start()])
+        word = match.group()
+        is_protected = _inside(match.span(), protected) or _looks_like_brand(word)
+        lower = word.lower()
+        should_convert = normalized_mode == "force"
+        if normalized_mode == "auto" and not is_protected:
+            should_convert = (
+                (
+                    lower not in _COMMON_ENGLISH
+                    or (strong_phrase and lower in _AMBIGUOUS_JAPANESE_TOKENS)
+                )
+                and (_strong_romaji(word) or strong_phrase)
+            )
+
+        if is_protected or not should_convert:
+            parts.append(word)
         else:
-            out.append(part)
-    return "".join(out)
+            converted = _convert_word(word, converter)
+            if converted is None:
+                parts.append(word)
+                unparsed.append(word)
+            else:
+                parts.append(converted)
+                converted_count += 1
+        cursor = match.end()
 
-
-def preprocess_romaji(text: str, source_language: str, enabled: bool = True) -> tuple[str, bool]:
-    if not enabled:
-        return text, False
-    if not _should_convert(text, source_language):
-        return text, False
-    converted = romaji_to_hiragana(text)
-    if converted == text:
-        return text, False
-    return converted, True
+    parts.append(text[cursor:])
+    converted_text = "".join(parts)
+    if converted_count:
+        converted_text = _normalize_converted_sentence(converted_text)
+    changed = converted_text != text
+    confidence = converted_count / max(1, len(candidates)) if changed else 0.0
+    return RomajiPreprocessResult(
+        text,
+        converted_text,
+        changed,
+        confidence,
+        tuple(unparsed),
+    )

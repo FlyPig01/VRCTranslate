@@ -18,11 +18,13 @@ from vrctranslate.infrastructure.logging.setup import (
     clear_application_logs,
     configure_logging,
 )
+from vrctranslate.infrastructure.glossary import JsonGlossaryRepository
 from vrctranslate.infrastructure.ocr.rapidocr_engine import RapidOcrEngine
 from vrctranslate.infrastructure.ocr.model_manager import OcrModelManager
 from vrctranslate.infrastructure.osc.pythonosc_gateway import PythonOscGateway
 from vrctranslate.infrastructure.paths import discover_app_paths
 from vrctranslate.infrastructure.settings.json_repository import JsonSettingsRepository
+from vrctranslate.infrastructure.text.wanakana_converter import WanaKanaRomajiConverter
 from vrctranslate.infrastructure.translation.deepl_translator import DeepLTranslator
 from vrctranslate.infrastructure.translation.echo_translator import EchoTranslator
 from vrctranslate.infrastructure.translation.google_cloud_translator import GoogleCloudTranslator
@@ -56,6 +58,9 @@ def build_main_window() -> MainWindow:
     logger = configure_logging(paths.data_root)
     settings = ManageSettings(JsonSettingsRepository(app_paths=paths))
     settings.load()
+    glossary_repository = JsonGlossaryRepository(
+        paths.data_root / "glossaries" / "user_glossary.json"
+    )
 
     router = TranslationRouter(
         [
@@ -67,7 +72,12 @@ def build_main_window() -> MainWindow:
             OpenAICompatibleTranslator(),
         ]
     )
-    translate_text = TranslateText(router)
+    translate_text = TranslateText(
+        router,
+        WanaKanaRomajiConverter(),
+        glossary_repository,
+        lambda: settings.current.glossary,
+    )
     prepare_message = PrepareChatboxMessage()
     send_queue = ChatboxSendQueue(PythonOscGateway())
     windows_api = WindowsApi()
@@ -143,6 +153,7 @@ def build_main_window() -> MainWindow:
         window,
         i18n,
         ocr_models=ocr_models,
+        glossary_repository=glossary_repository,
     )
     window.register_controllers(self_controller, ocr_controller, settings_controller)
     settings_controller.settings_changed.connect(self_controller.apply_settings)

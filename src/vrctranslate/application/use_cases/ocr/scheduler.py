@@ -65,6 +65,7 @@ class OcrTranslationScheduler:
         route = settings.ocr_route
         profile = deepcopy(settings.profile(route.profile_id))
         profile.timeout_seconds = min(profile.timeout_seconds, route.timeout_seconds)
+        profile.options["_glossary_enabled"] = route.glossary_enabled
         policy = OcrExecutionPolicy.create(profile, route)
         with self._lock:
             self._generation += 1
@@ -125,7 +126,11 @@ class OcrTranslationScheduler:
             queue.release()
             return False
         created_at = monotonic()
-        key = self._cache.key(request, profile)
+        key = self._cache.key(
+            request,
+            profile,
+            self._translate_text.glossary_revision,
+        )
         cached = self._cache.get(key)
         if cached is not None:
             queue.release()
@@ -170,7 +175,11 @@ class OcrTranslationScheduler:
                 queue.release()
                 break
             accepted.add(request.request_id)
-            key = self._cache.key(request, profile)
+            key = self._cache.key(
+                request,
+                profile,
+                self._translate_text.glossary_revision,
+            )
             cached = self._cache.get(key)
             if cached is None:
                 misses.append((sequence, request, key))

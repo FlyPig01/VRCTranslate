@@ -5,6 +5,7 @@ from typing import Any
 
 from vrctranslate.application.dto import (
     CONFIG_VERSION,
+    ROMAJI_MODES,
     SUPPORTED_TRANSLATION_PROVIDERS,
     AppSettings,
     OcrSettings,
@@ -101,6 +102,13 @@ def profile_from_dict(raw: dict[str, Any], index: int) -> TranslationProfile | N
 def route_from_dict(
     raw: dict[str, Any], default: TranslationRouteSettings
 ) -> TranslationRouteSettings:
+    raw_mode = str(raw.get("romaji_mode", ""))
+    if raw_mode in ROMAJI_MODES:
+        romaji_mode = raw_mode
+    elif "romaji_to_kana" in raw:
+        romaji_mode = "auto" if bool(raw.get("romaji_to_kana")) else "off"
+    else:
+        romaji_mode = default.romaji_mode
     return TranslationRouteSettings(
         profile_id=str(raw.get("profile_id", default.profile_id)),
         source_language=str(raw.get("source_language", default.source_language)),
@@ -110,7 +118,8 @@ def route_from_dict(
         timeout_seconds=float_in_range(raw.get("timeout_seconds"), default.timeout_seconds, 0.5, 120),
         queue_limit=int_in_range(raw.get("queue_limit"), default.queue_limit, 1, 100),
         task_ttl_seconds=float_in_range(raw.get("task_ttl_seconds"), default.task_ttl_seconds, 0.5, 60),
-        romaji_to_kana=bool(raw.get("romaji_to_kana", True)),
+        romaji_mode=romaji_mode,
+        glossary_enabled=bool(raw.get("glossary_enabled", True)),
     )
 
 

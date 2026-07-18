@@ -51,6 +51,7 @@ class TencentTranslator:
             supports_batch=False,
             realtime_recommended=True,
             requires_api_key=True,
+            glossary_mode="local_placeholder",
             supported_languages=tuple(_LANGUAGE_CODES),
         )
 
@@ -134,7 +135,7 @@ class TencentTranslator:
         if not secret_id or not secret_key:
             raise TranslationError(
                 "configuration",
-                "未填写腾讯云 SecretId（API 密钥）和 SecretKey（模型字段）",
+                "未填写腾讯云 SecretId 和 SecretKey",
             )
         target = _LANGUAGE_CODES.get(request.target_language)
         if target is None:

@@ -24,6 +24,12 @@ class TranslationRouter:
     def has_provider(self, provider: str) -> bool:
         return provider in self._adapters
 
+    def glossary_mode(self, profile: TranslationProfile) -> str:
+        adapter = self._adapters.get(profile.provider)
+        if adapter is None:
+            return "none"
+        return adapter.capabilities().glossary_mode
+
     def translate(
         self,
         request: TranslationRequest,

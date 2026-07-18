@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from vrctranslate.domain.glossary import GlossaryInstruction
+
 
 @dataclass(frozen=True, slots=True)
 class TranslationRequest:
@@ -11,6 +13,7 @@ class TranslationRequest:
     target_language: str
     purpose: str = "self"
     context: tuple[str, ...] = ()
+    glossary: tuple[GlossaryInstruction, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)

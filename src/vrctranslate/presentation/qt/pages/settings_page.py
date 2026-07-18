@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from copy import deepcopy
 
-from PySide6.QtCore import QTimer, Signal
+from PySide6.QtCore import QSize, Qt, QTimer, Signal
 from PySide6.QtGui import QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QCheckBox,
@@ -13,6 +13,7 @@ from PySide6.QtWidgets import (
     QLineEdit,
     QMessageBox,
     QPushButton,
+    QSizePolicy,
     QStackedWidget,
     QVBoxLayout,
     QWidget,
@@ -31,6 +32,38 @@ from vrctranslate.presentation.qt.widgets.settings_section_nav import SettingsSe
 from vrctranslate.presentation.qt.view_models.settings_draft import SettingsDraft
 
 
+class _ElidedPathLabel(QLabel):
+    def __init__(self) -> None:
+        super().__init__()
+        self._full_text = ""
+        self.setWordWrap(False)
+        self.setSizePolicy(
+            QSizePolicy.Policy.Ignored,
+            QSizePolicy.Policy.Preferred,
+        )
+
+    def set_full_text(self, text: str) -> None:
+        self._full_text = text
+        self.setToolTip(text)
+        self._refresh_text()
+
+    def resizeEvent(self, event) -> None:  # type: ignore[no-untyped-def]
+        super().resizeEvent(event)
+        self._refresh_text()
+
+    def sizeHint(self) -> QSize:
+        return QSize(0, super().sizeHint().height())
+
+    def _refresh_text(self) -> None:
+        available = max(0, self.contentsRect().width())
+        elided = self.fontMetrics().elidedText(
+            self._full_text,
+            Qt.TextElideMode.ElideMiddle,
+            available,
+        )
+        super().setText(elided)
+
+
 class SettingsPage(QWidget):
     """Fixed settings shell around four independently scrollable sections."""
 
@@ -41,7 +74,10 @@ class SettingsPage(QWidget):
     capture_test_requested = Signal(str)
     ocr_model_install_requested = Signal(str)
     ocr_model_remove_requested = Signal(str)
+    ocr_model_cancel_requested = Signal(str)
     discard_requested = Signal()
+    glossary_import_requested = Signal(str)
+    glossary_export_requested = Signal(str, object)
 
     def __init__(self, i18n: I18nManager) -> None:
         super().__init__()
@@ -119,11 +155,9 @@ class SettingsPage(QWidget):
 
         footer = QHBoxLayout()
         footer.setSpacing(16)
-        self._location_summary = QLabel()
+        self._location_summary = _ElidedPathLabel()
         self._location_summary.setObjectName("pageSubtitle")
-        self._location_summary.setWordWrap(True)
-        footer.addWidget(self._location_summary)
-        footer.addStretch()
+        footer.addWidget(self._location_summary, 1)
         self._shortcut_hint = QLabel()
         self._shortcut_hint.setStyleSheet("color: #8d99a8; font-size: 12px;")
         footer.addWidget(self._shortcut_hint)
@@ -162,9 +196,13 @@ class SettingsPage(QWidget):
     def _forward_signals(self) -> None:
         page = self.translation_page
         page.test_translation_requested.connect(self.test_translation_requested)
+        page.glossary_import_requested.connect(self.glossary_import_requested)
+        page.glossary_export_requested.connect(self.glossary_export_requested)
+        page.glossary_tab.changed.connect(self._mark_dirty)
         self.ocr_page.capture_test_requested.connect(self.capture_test_requested)
         self.ocr_page.model_install_requested.connect(self.ocr_model_install_requested)
         self.ocr_page.model_remove_requested.connect(self.ocr_model_remove_requested)
+        self.ocr_page.model_cancel_requested.connect(self.ocr_model_cancel_requested)
         self.data_page.clear_logs_requested.connect(self.clear_logs_requested)
         self.data_page.open_path_requested.connect(self.open_path_requested)
 
@@ -221,7 +259,7 @@ class SettingsPage(QWidget):
             self.osc_page.load_settings(settings)
             self.ocr_page.load_settings(settings)
             self.data_page.load_location(location)
-            self._location_summary.setText(
+            self._location_summary.set_full_text(
                 self._i18n.tr("page.settings.config_location", path=location)
             )
             lang_index = (self._lang_locales.index(settings.ui.language)
@@ -247,6 +285,15 @@ class SettingsPage(QWidget):
     def selected_profile(self) -> TranslationProfile:
         return self.translation_page.selected_profile()
 
+    def set_glossary_entries(self, builtin: tuple, user: tuple) -> None:
+        self.translation_page.load_glossary_entries(builtin, user)
+
+    def user_glossary_entries(self) -> list:
+        return self.translation_page.user_glossary_entries()
+
+    def set_user_glossary_entries(self, entries: tuple) -> None:
+        self.translation_page.set_user_glossary_entries(entries)
+
     def set_test_status(self, message: str, failed: bool = False) -> None:
         self.translation_page.set_test_status(message, failed)
 
@@ -263,6 +310,8 @@ class SettingsPage(QWidget):
         version: str,
         installed_size: int,
         *,
+        download_size: int = 0,
+        exclusive_size: int = 0,
         busy: bool = False,
         error: str = "",
     ) -> None:
@@ -271,9 +320,22 @@ class SettingsPage(QWidget):
             installed,
             version,
             installed_size,
+            download_size=download_size,
+            exclusive_size=exclusive_size,
             busy=busy,
             error=error,
         )
+
+    def set_ocr_model_progress(
+        self,
+        language: str,
+        completed: int,
+        total: int,
+    ) -> None:
+        self.ocr_page.set_model_progress(language, completed, total)
+
+    def set_ocr_model_storage(self, shared_size: int, total_size: int) -> None:
+        self.ocr_page.set_model_storage(shared_size, total_size)
 
     def path_for(self, key: str) -> str | None:
         return self.data_page.path_for(key)

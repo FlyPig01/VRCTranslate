@@ -7,11 +7,15 @@ import pytest
 
 from vrctranslate.application.dto import TranslationProfile
 from vrctranslate.domain.errors import TranslationError
+from vrctranslate.domain.glossary import GlossaryInstruction
 from vrctranslate.domain.translation import TranslationRequest
 from vrctranslate.infrastructure.translation.deepl_translator import DeepLTranslator
 from vrctranslate.infrastructure.translation.google_cloud_translator import GoogleCloudTranslator
 from vrctranslate.infrastructure.translation.openai_compatible import (
     OpenAICompatibleTranslator,
+)
+from vrctranslate.infrastructure.translation.tencent_translator import (
+    TencentTranslator,
 )
 
 
@@ -129,6 +133,7 @@ def test_openai_compatible_sends_fixed_purpose_specific_messages(monkeypatch) ->
             "zh-CN",
             "ocr",
             ("さっきのワールドにいるよ",),
+            (GlossaryInstruction("アバター", "虚拟形象"),),
         ),
         profile,
     )
@@ -139,5 +144,44 @@ def test_openai_compatible_sends_fixed_purpose_specific_messages(monkeypatch) ->
     assert "OCR 翻译器" in kwargs["json"]["messages"][0]["content"]
     user_data = json.loads(kwargs["json"]["messages"][1]["content"])
     assert user_data["recent_context"] == ["さっきのワールドにいるよ"]
+    assert user_data["glossary"] == [
+        {"source": "アバター", "target": "虚拟形象"}
+    ]
     assert timeout == 4
     assert result.translated == "你现在在哪里？"
+
+
+def test_tencent_uses_tc3_signature_and_provider_credentials(monkeypatch) -> None:
+    from vrctranslate.infrastructure.translation import tencent_translator
+
+    monkeypatch.setattr(tencent_translator.httpx, "Client", FakeClient)
+    FakeClient.response = FakeResponse({"Response": {"TargetText": "你好"}})
+    profile = TranslationProfile(
+        provider="tencent",
+        base_url="tmt.tencentcloudapi.com",
+        api_key="test-secret-id",
+        model="test-secret-key",
+        region="ap-beijing",
+        timeout_seconds=8,
+    )
+
+    result = TencentTranslator().translate(
+        TranslationRequest("1", "hello", "en", "zh-CN"),
+        profile,
+    )
+
+    endpoint, kwargs, timeout = FakeClient.last_call
+    headers = kwargs["headers"]
+    payload = json.loads(kwargs["content"].decode("utf-8"))
+    assert endpoint == "https://tmt.tencentcloudapi.com/"
+    assert "Credential=test-secret-id/" in headers["Authorization"]
+    assert headers["X-TC-Action"] == "TextTranslate"
+    assert headers["X-TC-Region"] == "ap-beijing"
+    assert payload == {
+        "SourceText": "hello",
+        "Source": "en",
+        "Target": "zh",
+        "ProjectId": 0,
+    }
+    assert timeout == 8
+    assert result.translated == "你好"

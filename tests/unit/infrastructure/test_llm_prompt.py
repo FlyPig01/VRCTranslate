@@ -51,3 +51,21 @@ def test_ocr_prompt_marks_input_as_data_and_context_as_non_output() -> None:
         "current_text": "今どこ？",
         "recent_context": ["さっきのワールドにいるよ"],
     }
+
+
+def test_voice_prompt_translates_partial_asr_without_inventing_completion() -> None:
+    messages = build_translation_messages(
+        TranslationRequest(
+            "voice-1",
+            "I was thinking we could",
+            "en",
+            "zh-CN",
+            "voice",
+        )
+    )
+
+    system = messages[0]["content"]
+    assert "实时语音字幕" in system
+    assert "不得自行补全" in system
+    assert "适合字幕快速阅读" in system
+    assert "VRChat 实时聊天" not in system

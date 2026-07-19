@@ -16,7 +16,7 @@ from .helpers import set_combo
 
 
 class RoutesTab(QWidget):
-    """Edits the independent OSC and OCR translation routes."""
+    """Edits OSC, image-text, and recognized-voice translation routes."""
 
     def __init__(self, i18n: I18nManager) -> None:
         super().__init__()
@@ -125,6 +125,39 @@ class RoutesTab(QWidget):
         ocr_form.addRow("", self.ocr_route_warning)
         ocr_layout.addLayout(ocr_form)
         layout.addWidget(ocr_card)
+
+        voice_card, voice_layout = card("")
+        self._voice_card_title = voice_layout.itemAt(0).widget()
+        self._voice_card_title.setObjectName("cardTitle")
+        voice_form = form_layout()
+        voice_form.setLabelAlignment(
+            Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
+        )
+        self.voice_profile_combo = NoWheelComboBox()
+        self.voice_source_combo = NoWheelComboBox()
+        self.voice_target_combo = NoWheelComboBox()
+        self._voice_profile_label = QLabel()
+        self._voice_source_label = QLabel()
+        self._voice_target_label = QLabel()
+        for label in (
+            self._voice_profile_label,
+            self._voice_source_label,
+            self._voice_target_label,
+        ):
+            label.setAlignment(
+                Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
+            )
+        voice_form.addRow(self._voice_profile_label, self.voice_profile_combo)
+        voice_form.addRow(self._voice_source_label, self.voice_source_combo)
+        voice_form.addRow(self._voice_target_label, self.voice_target_combo)
+        self.voice_glossary_enabled = QCheckBox()
+        voice_form.addRow("", self.voice_glossary_enabled)
+        self.voice_glossary_status = QLabel()
+        self.voice_glossary_status.setObjectName("fieldHint")
+        self.voice_glossary_status.setWordWrap(True)
+        voice_form.addRow("", self.voice_glossary_status)
+        voice_layout.addLayout(voice_form)
+        layout.addWidget(voice_card)
         layout.addStretch()
 
         self.ocr_profile_combo.currentIndexChanged.connect(self.update_warnings)
@@ -135,28 +168,39 @@ class RoutesTab(QWidget):
             self.ocr_profile_combo,
             self.ocr_source_combo,
             self.ocr_target_combo,
+            self.voice_profile_combo,
+            self.voice_source_combo,
+            self.voice_target_combo,
             self.self_romaji_combo,
             self.ocr_romaji_combo,
         ):
             combo.currentIndexChanged.connect(self.update_warnings)
         self.self_glossary_enabled.toggled.connect(self.update_warnings)
         self.ocr_glossary_enabled.toggled.connect(self.update_warnings)
+        self.voice_glossary_enabled.toggled.connect(self.update_warnings)
 
     def retranslate(self) -> None:
         self._self_card_title.setText(self._i18n.tr("route.self_card"))
         self._ocr_card_title.setText(self._i18n.tr("route.ocr_card"))
+        self._voice_card_title.setText(self._i18n.tr("route.voice_card"))
         self._self_profile_label.setText(self._i18n.tr("route.profile"))
         self._ocr_profile_label.setText(self._i18n.tr("route.profile"))
+        self._voice_profile_label.setText(self._i18n.tr("route.profile"))
         self._self_source_label.setText(self._i18n.tr("route.source"))
         self._self_target_label.setText(self._i18n.tr("route.target"))
         self._ocr_source_label.setText(self._i18n.tr("route.source"))
         self._ocr_target_label.setText(self._i18n.tr("route.target"))
+        self._voice_source_label.setText(self._i18n.tr("route.source"))
+        self._voice_target_label.setText(self._i18n.tr("route.target"))
         self._format_label.setText(self._i18n.tr("route.format"))
         self._overflow_label.setText(self._i18n.tr("route.overflow"))
         self._self_romaji_label.setText(self._i18n.tr("route.romaji_mode"))
         self._ocr_romaji_label.setText(self._i18n.tr("route.romaji_mode"))
         self.self_glossary_enabled.setText(self._i18n.tr("route.glossary_enabled"))
         self.ocr_glossary_enabled.setText(self._i18n.tr("route.glossary_enabled"))
+        self.voice_glossary_enabled.setText(
+            self._i18n.tr("route.glossary_enabled")
+        )
         self._rebuild_languages()
         self._rebuild_formats()
         self._rebuild_overflow()
@@ -174,26 +218,40 @@ class RoutesTab(QWidget):
         self._populate_profile_combos(
             settings.self_route.profile_id,
             settings.ocr_route.profile_id,
+            settings.voice_route.profile_id,
         )
         set_combo(self.self_source_combo, settings.self_route.source_language)
         set_combo(self.self_target_combo, settings.self_route.target_language)
         set_combo(self.ocr_source_combo, settings.ocr_route.source_language)
         set_combo(self.ocr_target_combo, settings.ocr_route.target_language)
+        set_combo(self.voice_source_combo, settings.voice_route.source_language)
+        set_combo(self.voice_target_combo, settings.voice_route.target_language)
         set_combo(self.format_combo, settings.self_route.message_format)
         set_combo(self.overflow_combo, settings.self_route.overflow_policy)
         set_combo(self.self_romaji_combo, settings.self_route.romaji_mode)
         set_combo(self.ocr_romaji_combo, settings.ocr_route.romaji_mode)
         self.self_glossary_enabled.setChecked(settings.self_route.glossary_enabled)
         self.ocr_glossary_enabled.setChecked(settings.ocr_route.glossary_enabled)
+        self.voice_glossary_enabled.setChecked(
+            settings.voice_route.glossary_enabled
+        )
         self.update_warnings()
 
     def collect_settings(self, settings: TranslationSettings) -> None:
         settings.self_route.profile_id = str(self.self_profile_combo.currentData())
         settings.ocr_route.profile_id = str(self.ocr_profile_combo.currentData())
+        settings.voice_route.profile_id = str(self.voice_profile_combo.currentData())
         settings.self_route.source_language = str(self.self_source_combo.currentData())
         settings.self_route.target_language = str(self.self_target_combo.currentData())
         settings.ocr_route.source_language = str(self.ocr_source_combo.currentData())
         settings.ocr_route.target_language = str(self.ocr_target_combo.currentData())
+        settings.voice_route.source_language = str(
+            self.voice_source_combo.currentData()
+        )
+        settings.voice_route.target_language = str(
+            self.voice_target_combo.currentData()
+        )
+        settings.voice_route.translation_strategy = "text_profile"
         settings.self_route.message_format = str(self.format_combo.currentData())
         settings.self_route.overflow_policy = str(self.overflow_combo.currentData())
         settings.self_route.romaji_mode = str(
@@ -204,6 +262,9 @@ class RoutesTab(QWidget):
         )
         settings.self_route.glossary_enabled = self.self_glossary_enabled.isChecked()
         settings.ocr_route.glossary_enabled = self.ocr_glossary_enabled.isChecked()
+        settings.voice_route.glossary_enabled = (
+            self.voice_glossary_enabled.isChecked()
+        )
 
     def set_profiles(
         self,
@@ -213,19 +274,25 @@ class RoutesTab(QWidget):
     ) -> None:
         self_id = str(self.self_profile_combo.currentData() or "")
         ocr_id = str(self.ocr_profile_combo.currentData() or "")
+        voice_id = str(self.voice_profile_combo.currentData() or "")
         self._profiles = deepcopy(profiles)
         if not preserve or self_id not in {p.id for p in profiles}:
             self_id = profiles[0].id if profiles else ""
         if not preserve or ocr_id not in {p.id for p in profiles}:
             ocr_id = profiles[0].id if profiles else ""
-        self._populate_profile_combos(self_id, ocr_id)
+        text_profiles = [p for p in profiles if p.provider != "multimodal_openai"]
+        if not preserve or voice_id not in {p.id for p in text_profiles}:
+            voice_id = text_profiles[0].id if text_profiles else ""
+        self._populate_profile_combos(self_id, ocr_id, voice_id)
         self.update_warnings()
 
     def set_glossary_global_enabled(self, enabled: bool) -> None:
         self._global_glossary_enabled = enabled
         self.update_warnings()
 
-    def _populate_profile_combos(self, self_id: str, ocr_id: str) -> None:
+    def _populate_profile_combos(
+        self, self_id: str, ocr_id: str, voice_id: str
+    ) -> None:
         for combo, selected, profiles in (
             (
                 self.self_profile_combo,
@@ -236,6 +303,15 @@ class RoutesTab(QWidget):
                 ],
             ),
             (self.ocr_profile_combo, ocr_id, self._profiles),
+            (
+                self.voice_profile_combo,
+                voice_id,
+                [
+                    profile
+                    for profile in self._profiles
+                    if profile.provider != "multimodal_openai"
+                ],
+            ),
         ):
             combo.blockSignals(True)
             combo.clear()
@@ -246,7 +322,11 @@ class RoutesTab(QWidget):
 
     def _refresh_profile_labels(self) -> None:
         by_id = {profile.id: profile.name for profile in self._profiles}
-        for combo in (self.self_profile_combo, self.ocr_profile_combo):
+        for combo in (
+            self.self_profile_combo,
+            self.ocr_profile_combo,
+            self.voice_profile_combo,
+        ):
             combo.blockSignals(True)
             for index in range(combo.count()):
                 profile_id = str(combo.itemData(index) or "")
@@ -259,6 +339,8 @@ class RoutesTab(QWidget):
             (self.self_source_combo, True),
             (self.self_target_combo, False),
             (self.ocr_target_combo, False),
+            (self.voice_source_combo, True),
+            (self.voice_target_combo, False),
         ):
             current = str(combo.currentData() or "")
             combo.blockSignals(True)
@@ -308,6 +390,7 @@ class RoutesTab(QWidget):
             combo.blockSignals(False)
 
     def update_warnings(self) -> None:
+        self.voice_profile_combo.setEnabled(True)
         self._update_ocr_warning()
         self._update_romaji_help()
         self._update_glossary_status()
@@ -323,6 +406,11 @@ class RoutesTab(QWidget):
                 self.ocr_profile_combo,
                 self.ocr_glossary_enabled,
                 self.ocr_glossary_status,
+            ),
+            (
+                self.voice_profile_combo,
+                self.voice_glossary_enabled,
+                self.voice_glossary_status,
             ),
         ):
             profile_id = str(profile_combo.currentData() or "")

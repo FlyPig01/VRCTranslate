@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 
-from PySide6.QtCore import QPoint, Qt
+from PySide6.QtCore import QAbstractAnimation, QPoint, QSize, Qt
 from PySide6.QtGui import QGuiApplication
 
 from vrctranslate.application.dto import AppSettings, UiSettings
@@ -12,6 +12,7 @@ from vrctranslate.presentation.qt.pages.ocr_page import OcrPage
 from vrctranslate.presentation.qt.windows.ocr_orb import OcrOrbWindow
 from vrctranslate.presentation.qt.windows.ocr_overlay_window import OcrOverlayWindow
 from vrctranslate.presentation.qt.windows.ocr_region import OcrRegionWindow
+from vrctranslate.presentation.qt.windows.voice_overlay_window import VoiceOverlayWindow
 
 
 class _Signal:
@@ -35,12 +36,14 @@ class _Excluder:
         return True
 
 
-def test_orb_uses_state_assets_and_click_toggles(qtbot) -> None:
+def test_orb_uses_state_assets_and_left_click_menu(qtbot) -> None:
     excluder = _Excluder()
     orb = OcrOrbWindow(excluder, _I18n())  # type: ignore[arg-type]
     qtbot.addWidget(orb)
     toggles: list[bool] = []
+    overlay_hides: list[bool] = []
     orb.toggle_requested.connect(lambda: toggles.append(True))
+    orb.overlay_hide_requested.connect(lambda: overlay_hides.append(True))
     orb.apply_settings(UiSettings(ocr_orb_topmost=False))
     orb.show()
     qtbot.waitExposed(orb)
@@ -56,9 +59,77 @@ def test_orb_uses_state_assets_and_click_toggles(qtbot) -> None:
     assert not hasattr(orb, "target_action")
     assert all(action.text() != "ocr_orb.select_target" for action in orb.menu.actions())
     qtbot.mouseClick(orb, Qt.MouseButton.LeftButton)
+    qtbot.waitUntil(orb.menu.isVisible, timeout=1000)
 
+    assert toggles == []
+    assert (
+        orb.menu._visibility_animation.state()
+        == QAbstractAnimation.State.Running
+    )
+    assert (
+        orb.menu._visibility_animation.startValue().height()
+        < orb.menu._visibility_animation.endValue().height()
+    )
+    qtbot.waitUntil(
+        lambda: orb.menu._visibility_animation.state()
+        == QAbstractAnimation.State.Stopped,
+        timeout=1000,
+    )
+    qtbot.mouseClick(orb, Qt.MouseButton.LeftButton)
+    assert (
+        orb.menu._visibility_animation.state()
+        == QAbstractAnimation.State.Running
+    )
+    qtbot.waitUntil(lambda: not orb.menu.isVisible(), timeout=1000)
+
+    qtbot.mouseClick(orb, Qt.MouseButton.LeftButton)
+    qtbot.waitUntil(
+        lambda: orb.menu._visibility_animation.state()
+        == QAbstractAnimation.State.Stopped,
+        timeout=1000,
+    )
+    qtbot.mouseClick(orb, Qt.MouseButton.RightButton)
+    assert (
+        orb.menu._visibility_animation.state()
+        == QAbstractAnimation.State.Running
+    )
+    assert (
+        orb.menu._visibility_animation.startValue().height()
+        > orb.menu._visibility_animation.endValue().height()
+    )
+    qtbot.waitUntil(lambda: not orb.menu.isVisible(), timeout=1000)
+
+    qtbot.mouseClick(orb, Qt.MouseButton.LeftButton)
+    qtbot.waitUntil(
+        lambda: orb.menu._visibility_animation.state()
+        == QAbstractAnimation.State.Stopped,
+        timeout=1000,
+    )
+    qtbot.mouseClick(
+        orb.menu,
+        Qt.MouseButton.LeftButton,
+        pos=orb.menu.actionGeometry(orb.pause_action).center(),
+    )
     assert toggles == [True]
+    assert (
+        orb.menu._visibility_animation.state()
+        == QAbstractAnimation.State.Running
+    )
+    qtbot.waitUntil(lambda: not orb.menu.isVisible(), timeout=1000)
+    assert not orb.menu.isVisible()
     assert excluder.handles
+    orb.hide_overlay_action.trigger()
+    assert overlay_hides == [True]
+
+
+def test_ocr_and_voice_orbs_use_the_same_outer_size(qtbot) -> None:
+    ocr = OcrOrbWindow(i18n=_I18n())  # type: ignore[arg-type]
+    voice = VoiceOverlayWindow(i18n=_I18n())  # type: ignore[arg-type]
+    qtbot.addWidget(ocr)
+    qtbot.addWidget(voice)
+
+    assert ocr.size() == voice.size() == QSize(58, 58)
+    assert ocr.button.iconSize() == voice.orb_button.iconSize() == QSize(48, 48)
 
 
 def test_region_frame_has_two_modes_and_close_removes_it(qtbot) -> None:
@@ -273,6 +344,12 @@ def test_saved_region_is_not_shown_during_controller_startup(qtbot) -> None:
     assert region.isVisible()
     assert not region.grab().isNull()
 
+    overlay.show()
+    assert overlay.isVisible()
+    orb.hide_overlay_action.trigger()
+    assert overlay.isHidden()
+    assert region.isVisible()
+
     orb.display_actions["inline"].trigger()
     assert settings.current.ui.ocr_display_mode == "inline"
     assert page.display_mode_combo.currentData() == "inline"
@@ -290,4 +367,86 @@ def test_saved_region_is_not_shown_during_controller_startup(qtbot) -> None:
     assert settings.current.ui.ocr_display_mode == "overlay"
     assert orb.display_actions["overlay"].isChecked()
     assert region.display_actions["overlay"].isChecked()
+    assert controller.shutdown()
+
+
+def test_mss_mode_uses_desktop_target_without_process_selection(qtbot) -> None:
+    desktop = WindowInfo(0, "Desktop", 0, 0, 1920, 1080)
+
+    class Settings:
+        location = "memory://settings"
+
+        def __init__(self) -> None:
+            self.current = AppSettings()
+            self.current.ocr.capture_backend = "screen"
+            self.current.ocr.region_width = 640
+            self.current.ocr.region_height = 360
+
+        def save(self, settings: AppSettings) -> None:
+            self.current = settings
+
+    class Capture:
+        backend_name = "MSS"
+        semantics = "screen_coordinates"
+        uses_screen_coordinates = True
+
+        def set_mode(self, mode: str) -> None:
+            assert mode == "screen"
+
+        def screen_target(self):
+            return desktop
+
+        def list_windows(self):
+            raise AssertionError("MSS mode must not enumerate target processes")
+
+        def get_window(self, hwnd: int):
+            return desktop if hwnd == 0 else None
+
+    class Engine:
+        def set_source_language(self, _language: str) -> None:
+            return
+
+    class Activator:
+        def __init__(self) -> None:
+            self.handles: list[int] = []
+
+        def activate_window(self, hwnd: int) -> bool:
+            self.handles.append(hwnd)
+            return True
+
+    i18n = _I18n()
+    page = OcrPage(i18n)  # type: ignore[arg-type]
+    overlay = OcrOverlayWindow(i18n=i18n)  # type: ignore[arg-type]
+    region = OcrRegionWindow(i18n=i18n)  # type: ignore[arg-type]
+    orb = OcrOrbWindow(i18n=i18n)  # type: ignore[arg-type]
+    for widget in (page, overlay, region, orb):
+        qtbot.addWidget(widget)
+    settings = Settings()
+    activator = Activator()
+
+    controller = OcrController(
+        page,
+        overlay,
+        region,
+        orb,
+        Capture(),  # type: ignore[arg-type]
+        object(),  # type: ignore[arg-type]
+        Engine(),  # type: ignore[arg-type]
+        object(),  # type: ignore[arg-type]
+        settings,  # type: ignore[arg-type]
+        activator,  # type: ignore[arg-type]
+        logging.getLogger("test-ocr-mss-screen"),
+        i18n,  # type: ignore[arg-type]
+    )
+
+    assert page.target_controls.isHidden()
+    assert not page._screen_capture_note.isHidden()
+    assert controller._target.selected_window() == desktop
+    assert settings.current.ocr.region_width == 0
+    assert settings.current.ocr.region_coordinate_space == "screen"
+
+    controller._region_selected(CaptureRegion(100, 120, 500, 220))
+    assert settings.current.ocr.window_title == "VRChat"
+    assert settings.current.ocr.region_coordinate_space == "screen"
+    assert activator.handles == []
     assert controller.shutdown()

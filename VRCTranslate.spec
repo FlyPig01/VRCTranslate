@@ -88,14 +88,21 @@ datas += collect_data_files(
 )
 
 # OCR models and package resources are loaded dynamically at runtime.
-for package_name in ("rapidocr",):
+for package_name in (
+    "rapidocr",
+    "alibabacloud_alimt20181012",
+    "alibabacloud_tea_openapi",
+    "alibabacloud_tea_util",
+    "Tea",
+):
     package_datas, package_binaries, package_hidden = collect_all(package_name)
     # High-accuracy OCR models are installed lazily into portable data/models/ocr.
-    package_datas = [
-        item
-        for item in package_datas
-        if not str(item[0]).lower().endswith(".onnx")
-    ]
+    if package_name == "rapidocr":
+        package_datas = [
+            item
+            for item in package_datas
+            if not str(item[0]).lower().endswith(".onnx")
+        ]
     datas += package_datas
     binaries += package_binaries
     hiddenimports += package_hidden

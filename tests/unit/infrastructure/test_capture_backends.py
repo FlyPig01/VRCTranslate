@@ -19,6 +19,9 @@ class WindowsFake:
     def get_window(self, hwnd):
         return None
 
+    def virtual_desktop(self):
+        return WindowInfo(0, "Desktop", -1920, 0, 3840, 1080)
+
 
 class WindowAvailableFake(WindowsFake):
     def get_window(self, hwnd):
@@ -30,6 +33,44 @@ def test_mss_is_explicitly_screen_coordinate_capture() -> None:
     assert capture.semantics == "screen_coordinates"
     assert capture.uses_screen_coordinates
     assert "屏幕坐标" in capture.backend_name
+    assert capture.screen_target() == WindowInfo(
+        0,
+        "Desktop",
+        -1920,
+        0,
+        3840,
+        1080,
+    )
+    assert capture.get_window(0) == capture.screen_target()
+
+
+def test_mss_captures_desktop_region_without_window_handle(monkeypatch) -> None:
+    from vrctranslate.infrastructure.capture import mss_capture
+
+    monitors: list[dict[str, int]] = []
+
+    class Grabber:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+        def grab(self, monitor):
+            monitors.append(monitor)
+            return np.zeros((120, 300, 4), dtype=np.uint8)
+
+    monkeypatch.setattr(mss_capture.mss, "mss", Grabber)
+
+    frame = MssScreenCapture(WindowsFake()).capture(
+        0,
+        CaptureRegion(100, 50, 300, 120),
+    )
+
+    assert monitors == [
+        {"left": -1820, "top": 50, "width": 300, "height": 120}
+    ]
+    assert frame.pixels.shape == (120, 300, 3)
 
 
 def test_window_capture_scales_client_region_in_memory() -> None:

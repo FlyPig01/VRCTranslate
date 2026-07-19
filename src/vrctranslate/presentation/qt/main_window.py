@@ -26,13 +26,18 @@ from vrctranslate.application.use_cases.manage_settings import ManageSettings
 from vrctranslate.presentation.qt.controllers.ocr_controller import OcrController
 from vrctranslate.presentation.qt.controllers.self_message_controller import SelfMessageController
 from vrctranslate.presentation.qt.controllers.settings_controller import SettingsController
+from vrctranslate.presentation.qt.controllers.voice_translation_controller import (
+    VoiceTranslationController,
+)
 from vrctranslate.presentation.qt.icon_resources import load_icon
 from vrctranslate.presentation.qt.i18n import I18nManager
 from vrctranslate.presentation.qt.pages.ocr_page import OcrPage
 from vrctranslate.presentation.qt.pages.self_message_page import SelfMessagePage
 from vrctranslate.presentation.qt.pages.settings_page import SettingsPage
+from vrctranslate.presentation.qt.pages.voice_page import VoicePage
 from vrctranslate.presentation.qt.windows.ocr_overlay_window import OcrOverlayWindow
 from vrctranslate.presentation.qt.windows.quick_input_window import QuickInputWindow
+from vrctranslate.presentation.qt.windows.voice_overlay_window import VoiceOverlayWindow
 
 
 class MainWindow(QMainWindow):
@@ -46,6 +51,8 @@ class MainWindow(QMainWindow):
         settings: ManageSettings,
         logger: logging.Logger,
         i18n: I18nManager,
+        voice_page: VoicePage | None = None,
+        voice_overlay: VoiceOverlayWindow | None = None,
     ) -> None:
         super().__init__()
         self._logger = logger
@@ -56,18 +63,21 @@ class MainWindow(QMainWindow):
         self._self_controller: SelfMessageController | None = None
         self._ocr_controller: OcrController | None = None
         self._settings_controller: SettingsController | None = None
+        self._voice_controller: VoiceTranslationController | None = None
         self._first_show = True
         self._closing = False
         self._changing_navigation = False
         self._self_page = self_page
         self._ocr_page = ocr_page
+        self._voice_page = voice_page
+        self._voice_overlay = voice_overlay
         self.setWindowTitle("VRCTranslate")
         self.setWindowIcon(load_icon("app.ico"))
         self.setMinimumSize(900, 560)
         self.resize(settings.current.ui.main_width, settings.current.ui.main_height)
         if settings.current.ui.main_x >= 0 and settings.current.ui.main_y >= 0:
             self.move(settings.current.ui.main_x, settings.current.ui.main_y)
-        self._build_layout(self_page, ocr_page, settings_page)
+        self._build_layout(self_page, ocr_page, settings_page, voice_page)
         self.setStatusBar(QStatusBar())
         self._retranslate_ui()
         self._geometry_timer = QTimer(self)
@@ -82,6 +92,7 @@ class MainWindow(QMainWindow):
         self_page: SelfMessagePage,
         ocr_page: OcrPage,
         settings_page: SettingsPage,
+        voice_page: VoicePage | None,
     ) -> None:
         central = QWidget()
         central.setObjectName("mainSurface")
@@ -114,12 +125,26 @@ class MainWindow(QMainWindow):
         self.navigation = QListWidget()
         self.navigation.setObjectName("navigation")
         self.navigation.setSpacing(2)
-        self._nav_keys = ("nav.quick_input", "nav.ocr", "nav.settings")
-        entries = (
-            ("", "ui/nav_input.svg"),
-            ("", "ui/nav_ocr.svg"),
-            ("", "ui/nav_settings.svg"),
-        )
+        if voice_page is None:
+            self._nav_keys = ("nav.quick_input", "nav.ocr", "nav.settings")
+            entries = (
+                ("", "ui/nav_input.svg"),
+                ("", "ui/nav_ocr.svg"),
+                ("", "ui/nav_settings.svg"),
+            )
+        else:
+            self._nav_keys = (
+                "nav.quick_input",
+                "nav.ocr",
+                "nav.voice",
+                "nav.settings",
+            )
+            entries = (
+                ("", "ui/nav_input.svg"),
+                ("", "ui/nav_ocr.svg"),
+                ("", "ui/nav_voice.svg"),
+                ("", "ui/nav_settings.svg"),
+            )
         self.navigation.setIconSize(QSize(20, 20))
         for (_, icon) in entries:
             item = QListWidgetItem(load_icon(icon), "")
@@ -135,6 +160,8 @@ class MainWindow(QMainWindow):
         self.pages = QStackedWidget()
         self.pages.addWidget(self_page)
         self.pages.addWidget(ocr_page)
+        if voice_page is not None:
+            self.pages.addWidget(voice_page)
         self.pages.addWidget(settings_page)
         self._settings_page = settings_page
         self.tabs = self.pages  # Stable public handle used by lightweight UI tests.
@@ -174,12 +201,16 @@ class MainWindow(QMainWindow):
         self_controller: SelfMessageController,
         ocr_controller: OcrController,
         settings_controller: SettingsController,
+        voice_controller: VoiceTranslationController | None = None,
     ) -> None:
         self._self_controller = self_controller
         self._ocr_controller = ocr_controller
         self._settings_controller = settings_controller
+        self._voice_controller = voice_controller
         self_controller.status_bar_message.connect(self.statusBar().showMessage)
         ocr_controller.tray_state_changed.connect(self.set_tray_state)
+        if voice_controller is not None:
+            voice_controller.status_bar_message.connect(self.show_status)
 
     def apply_settings(self, settings: object) -> None:
         if not isinstance(settings, AppSettings):
@@ -304,7 +335,11 @@ class MainWindow(QMainWindow):
         self._settings.save(self._settings.current)
 
     def closeEvent(self, event: QCloseEvent) -> None:
-        for page in (self._self_page, self._ocr_page, self._settings_page):
+        pages = [self._self_page, self._ocr_page]
+        if self._voice_page is not None:
+            pages.append(self._voice_page)
+        pages.append(self._settings_page)
+        for page in pages:
             if not self._confirm_page_leave(page):
                 event.ignore()
                 return
@@ -316,6 +351,10 @@ class MainWindow(QMainWindow):
             return
         if self._self_controller:
             self._self_controller.shutdown()
+        if self._voice_controller:
+            self._voice_controller.shutdown()
+        elif self._voice_overlay is not None:
+            self._voice_overlay.close_permanently()
         self._ocr_overlay.close_permanently()
         self._geometry_timer.stop()
         QThreadPool.globalInstance().waitForDone(10_000)

@@ -23,12 +23,14 @@ class SettingsSectionNav(QListWidget):
             "settings.section.translation",
             "settings.section.osc",
             "settings.section.ocr",
+            "settings.section.voice",
             "settings.section.data",
         )
         self._section_icons = (
             "ui/settings_translation.svg",
             "ui/settings_osc.svg",
             "ui/settings_ocr.svg",
+            "ui/nav_voice.svg",
             "ui/settings_data.svg",
         )
         for icon in self._section_icons:

@@ -9,10 +9,15 @@ from PySide6.QtGui import QDesktopServices
 
 from vrctranslate.application.dto import AppSettings
 from vrctranslate.application.ports.ocr_models import OcrModelManagement
+from vrctranslate.application.ports.speech_recognizer import SpeechRecognizer
 from vrctranslate.application.ports.glossary_repository import GlossaryRepository
 from vrctranslate.application.use_cases.manage_settings import ManageSettings
 from vrctranslate.application.use_cases.translate_text import TranslateText
 from vrctranslate.application.use_cases.translate_visual_frame import TranslateVisualFrame
+from vrctranslate.domain.speech import (
+    SpeechProfileValidationResult,
+    SpeechRecognitionError,
+)
 from vrctranslate.presentation.qt.controllers.settings import (
     TranslationProfileTester,
 )
@@ -21,6 +26,7 @@ from vrctranslate.presentation.qt.pages.settings_page import SettingsPage
 from vrctranslate.presentation.qt.workers.ocr_model_install_worker import (
     OcrModelInstallWorker,
 )
+from vrctranslate.presentation.qt.workers.task_worker import TaskWorker
 
 
 class SettingsController(QObject):
@@ -41,6 +47,7 @@ class SettingsController(QObject):
         ocr_models: OcrModelManagement | None = None,
         glossary_repository: GlossaryRepository | None = None,
         translate_visual: TranslateVisualFrame | None = None,
+        speech_validator: SpeechRecognizer | None = None,
     ) -> None:
         super().__init__(parent)
         self._page = page
@@ -51,6 +58,8 @@ class SettingsController(QObject):
         self._ocr_models = ocr_models
         self._glossary_repository = glossary_repository
         self._model_workers: dict[str, OcrModelInstallWorker] = {}
+        self._speech_validator = speech_validator
+        self._speech_worker: TaskWorker | None = None
         self._translation_tester = TranslationProfileTester(
             page,
             translate_text,
@@ -69,8 +78,64 @@ class SettingsController(QObject):
         page.ocr_model_cancel_requested.connect(self._cancel_ocr_model)
         page.glossary_import_requested.connect(self._import_glossary)
         page.glossary_export_requested.connect(self._export_glossary)
+        page.speech_profile_test_requested.connect(self._validate_speech_profile)
         self._load_page()
         self._refresh_ocr_models()
+
+    def _validate_speech_profile(self) -> None:
+        if self._speech_validator is None or self._speech_worker is not None:
+            return
+        profile = self._page.selected_speech_profile()
+        self._page.set_speech_validation_busy(True)
+        worker = TaskWorker(lambda: self._speech_validator.validate_profile(profile))
+        self._speech_worker = worker
+        worker.signals.succeeded.connect(
+            lambda result, profile_id=profile.id: self._speech_validation_succeeded(
+                profile_id, result
+            )
+        )
+        worker.signals.failed.connect(
+            lambda error, profile_id=profile.id: self._speech_validation_failed(
+                profile_id, error
+            )
+        )
+        worker.signals.finished.connect(
+            lambda current=worker: self._speech_validation_finished(current)
+        )
+        QThreadPool.globalInstance().start(worker)
+
+    def _speech_validation_succeeded(
+        self,
+        profile_id: str,
+        result: object,
+    ) -> None:
+        if not isinstance(result, SpeechProfileValidationResult):
+            self._speech_validation_failed(profile_id, RuntimeError("invalid result"))
+            return
+        self._page.set_speech_validation_result(
+            profile_id,
+            result.state,
+            result.message,
+        )
+
+    def _speech_validation_failed(self, profile_id: str, error: object) -> None:
+        message = (
+            error.user_message
+            if isinstance(error, SpeechRecognitionError)
+            else self._i18n.tr("speech_profile.validation_unexpected")
+            if self._i18n is not None
+            else "实时语音连接验证失败"
+        )
+        self._page.set_speech_validation_result(profile_id, "failed", message)
+        self._logger.warning(
+            "speech_profile_validation_failed category=%s",
+            getattr(error, "category", type(error).__name__),
+        )
+
+    def _speech_validation_finished(self, worker: TaskWorker) -> None:
+        if self._speech_worker is worker:
+            self._speech_worker = None
+        self._page.set_speech_validation_busy(False)
 
     def _load_page(self) -> None:
         if self._glossary_repository is not None:

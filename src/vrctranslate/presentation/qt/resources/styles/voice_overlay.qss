@@ -1,0 +1,100 @@
+#voiceOverlaySurface {
+    background: rgba(8, 13, 22, 238);
+    border: 1px solid rgba(96, 226, 214, 185);
+    border-radius: 12px;
+}
+
+#voiceOverlayHeader {
+    background: transparent;
+}
+
+#voiceOverlayTitle {
+    color: #b9eafa;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+#voiceRecognitionToggleButton {
+    min-width: 28px;
+    max-width: 28px;
+    min-height: 28px;
+    max-height: 28px;
+    padding: 0;
+    color: #ffffff;
+    background: #187f86;
+    border: 1px solid #4fc9c2;
+    border-radius: 7px;
+    font-weight: 700;
+}
+
+#voiceRecognitionToggleButton:hover {
+    background: #23949b;
+}
+
+#voiceRecognitionToggleButton[state="running"] {
+    background: #9a3f4a;
+    border-color: #e2848e;
+}
+
+#voiceRecognitionToggleButton[state="running"]:hover {
+    background: #b34b57;
+}
+
+#voiceRecognitionToggleButton[state="starting"] {
+    color: #aeb9c7;
+    background: #273746;
+    border-color: #536577;
+}
+
+#voiceOverlayCollapseButton {
+    min-width: 28px;
+    max-width: 28px;
+    min-height: 28px;
+    max-height: 28px;
+    padding: 0;
+    background: rgba(36, 68, 93, 150);
+    border: 1px solid rgba(85, 121, 147, 190);
+    border-radius: 7px;
+}
+
+#voiceOverlayCollapseButton:hover {
+    background: #2d5b74;
+    border-color: #79d7e8;
+}
+
+#voiceOrbButton {
+    min-width: 48px;
+    max-width: 48px;
+    min-height: 48px;
+    max-height: 48px;
+    padding: 0;
+    background: transparent;
+    border: none;
+}
+
+#voiceCaptionItem {
+    background: rgba(17, 27, 41, 225);
+    border-left: 3px solid #27c2b8;
+    border-radius: 7px;
+}
+
+#voiceCaptionOriginal {
+    color: #d5deea;
+}
+
+#voiceCaptionTranslation {
+    color: #ffffff;
+    font-weight: 600;
+}
+
+#voiceOverlayEmpty {
+    color: #9caabc;
+}
+
+#voiceOverlayError {
+    color: #ffd9dd;
+    background: rgba(133, 38, 52, 190);
+    border: 1px solid rgba(235, 117, 132, 210);
+    border-radius: 7px;
+    padding: 7px 9px;
+}

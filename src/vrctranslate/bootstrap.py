@@ -9,12 +9,14 @@ from vrctranslate.application.use_cases.process_ocr_frame import ProcessOcrFrame
 from vrctranslate.application.use_cases.send_chatbox_message import ChatboxSendQueue
 from vrctranslate.application.use_cases.translate_text import TranslateText
 from vrctranslate.application.use_cases.translate_visual_frame import TranslateVisualFrame
+from vrctranslate.application.use_cases.translate_voice_text import TranslateVoiceText
 from vrctranslate.infrastructure.capture.capture_router import CaptureRouter
 from vrctranslate.infrastructure.capture.mss_capture import MssScreenCapture
 from vrctranslate.infrastructure.capture.windows_graphics_capture import (
     WindowsGraphicsCapture,
 )
 from vrctranslate.infrastructure.capture.windows_api import WindowsApi
+from vrctranslate.infrastructure.audio import WindowsProcessAudioCapture
 from vrctranslate.infrastructure.logging.setup import (
     clear_application_logs,
     configure_logging,
@@ -25,8 +27,14 @@ from vrctranslate.infrastructure.ocr.model_manager import OcrModelManager
 from vrctranslate.infrastructure.osc.pythonosc_gateway import PythonOscGateway
 from vrctranslate.infrastructure.paths import discover_app_paths
 from vrctranslate.infrastructure.settings.json_repository import JsonSettingsRepository
+from vrctranslate.infrastructure.speech import (
+    AliyunNlsRealtimeSpeechRecognizer,
+    SpeechRecognitionRouter,
+    TencentRealtimeSpeechRecognizer,
+)
 from vrctranslate.infrastructure.text.wanakana_converter import WanaKanaRomajiConverter
 from vrctranslate.infrastructure.translation.deepl_translator import DeepLTranslator
+from vrctranslate.infrastructure.translation.aliyun_translator import AliyunTranslator
 from vrctranslate.infrastructure.translation.echo_translator import EchoTranslator
 from vrctranslate.infrastructure.translation.google_cloud_translator import GoogleCloudTranslator
 from vrctranslate.infrastructure.translation.google_free_translator import GoogleFreeTranslator
@@ -43,16 +51,21 @@ from vrctranslate.presentation.qt.controllers.self_message_controller import (
 from vrctranslate.presentation.qt.controllers.settings_controller import (
     SettingsController,
 )
+from vrctranslate.presentation.qt.controllers.voice_translation_controller import (
+    VoiceTranslationController,
+)
 from vrctranslate.presentation.qt.i18n import I18nManager
 from vrctranslate.presentation.qt.main_window import MainWindow
 from vrctranslate.presentation.qt.pages.ocr_page import OcrPage
 from vrctranslate.presentation.qt.pages.self_message_page import SelfMessagePage
 from vrctranslate.presentation.qt.pages.settings_page import SettingsPage
+from vrctranslate.presentation.qt.pages.voice_page import VoicePage
 from vrctranslate.presentation.qt.windows.ocr_overlay_window import OcrOverlayWindow
 from vrctranslate.presentation.qt.windows.ocr_inline import OcrInlineWindow
 from vrctranslate.presentation.qt.windows.ocr_orb import OcrOrbWindow
 from vrctranslate.presentation.qt.windows.ocr_region import OcrRegionWindow
 from vrctranslate.presentation.qt.windows.quick_input_window import QuickInputWindow
+from vrctranslate.presentation.qt.windows.voice_overlay_window import VoiceOverlayWindow
 
 
 def build_main_window() -> MainWindow:
@@ -71,6 +84,7 @@ def build_main_window() -> MainWindow:
             DeepLTranslator(),
             GoogleCloudTranslator(),
             GoogleFreeTranslator(),
+            AliyunTranslator(),
             TencentTranslator(),
             OpenAICompatibleTranslator(),
         ]
@@ -109,11 +123,13 @@ def build_main_window() -> MainWindow:
     self_page = SelfMessagePage(i18n)
     ocr_page = OcrPage(i18n)
     settings_page = SettingsPage(i18n)
+    voice_page = VoicePage(i18n)
     quick_window = QuickInputWindow(windows_api, i18n)
     ocr_overlay = OcrOverlayWindow(windows_api, i18n)
     ocr_inline = OcrInlineWindow(windows_api)
     ocr_region = OcrRegionWindow(windows_api, i18n)
     ocr_orb = OcrOrbWindow(windows_api, i18n)
+    voice_overlay = VoiceOverlayWindow(windows_api, i18n)
     window = MainWindow(
         self_page,
         ocr_page,
@@ -123,6 +139,8 @@ def build_main_window() -> MainWindow:
         settings,
         logger,
         i18n,
+        voice_page,
+        voice_overlay,
     )
 
     self_controller = SelfMessageController(
@@ -154,6 +172,12 @@ def build_main_window() -> MainWindow:
         translate_visual=translate_visual,
         visual_frame_encoder=PillowVisualFrameEncoder(),
     )
+    speech_router = SpeechRecognitionRouter(
+        [
+            TencentRealtimeSpeechRecognizer(),
+            AliyunNlsRealtimeSpeechRecognizer(),
+        ]
+    )
     settings_controller = SettingsController(
         settings_page,
         settings,
@@ -165,11 +189,30 @@ def build_main_window() -> MainWindow:
         ocr_models=ocr_models,
         glossary_repository=glossary_repository,
         translate_visual=translate_visual,
+        speech_validator=speech_router,
     )
-    window.register_controllers(self_controller, ocr_controller, settings_controller)
+    voice_controller = VoiceTranslationController(
+        voice_page,
+        voice_overlay,
+        WindowsProcessAudioCapture(),
+        speech_router,
+        TranslateVoiceText(translate_text),
+        settings,
+        windows_api,
+        logger,
+        i18n,
+        window,
+    )
+    window.register_controllers(
+        self_controller,
+        ocr_controller,
+        settings_controller,
+        voice_controller,
+    )
     settings_controller.settings_changed.connect(self_controller.apply_settings)
     settings_controller.settings_changed.connect(ocr_controller.apply_settings)
     settings_controller.settings_changed.connect(window.apply_settings)
+    settings_controller.settings_changed.connect(voice_controller.apply_settings)
     settings_page.capture_test_requested.connect(ocr_controller.test_capture)
     ocr_controller.capture_preview_ready.connect(settings_page.set_capture_preview)
     settings_controller.status_bar_message.connect(window.show_status)

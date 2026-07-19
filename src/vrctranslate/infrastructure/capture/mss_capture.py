@@ -33,12 +33,20 @@ class MssScreenCapture:
         return self._windows.list_windows()
 
     def get_window(self, hwnd: int) -> WindowInfo | None:
+        if hwnd == 0:
+            return self.screen_target()
         return self._windows.get_window(hwnd)
 
+    def screen_target(self) -> WindowInfo:
+        desktop = getattr(self._windows, "virtual_desktop", None)
+        if callable(desktop):
+            return desktop()
+        return WindowInfo(0, "Desktop", 0, 0, 1920, 1080)
+
     def capture(self, hwnd: int, region: CaptureRegion) -> CapturedFrame:
-        window = self._windows.get_window(hwnd)
+        window = self.get_window(hwnd)
         if window is None:
-            raise CaptureTargetUnavailable("VRChat 窗口不可用，请重新选择窗口")
+            raise CaptureTargetUnavailable("屏幕捕获目标不可用，请重新框选区域")
         x = max(0, region.x)
         y = max(0, region.y)
         width = region.width or window.width
@@ -59,7 +67,7 @@ class MssScreenCapture:
             pixels = np.asarray(raw, dtype=np.uint8)[:, :, :3].copy()
         except Exception as exc:
             raise CaptureTargetUnavailable(
-                f"无法捕获目标窗口：{type(exc).__name__}"
+                f"无法捕获屏幕区域：{type(exc).__name__}"
             ) from exc
         signature = pixels[::16, ::16, :].tobytes()
         return CapturedFrame(pixels=pixels, signature=signature)

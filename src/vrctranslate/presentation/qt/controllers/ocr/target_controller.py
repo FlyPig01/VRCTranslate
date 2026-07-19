@@ -51,6 +51,10 @@ class OcrTargetController(QObject):
         return self._i18n.tr(key, **kwargs) if self._i18n is not None else key
 
     def refresh_windows(self) -> list[WindowInfo]:
+        screen = self._screen_target()
+        if screen is not None:
+            self._selected = screen
+            return []
         try:
             windows = self._capture.list_windows()
         except Exception:
@@ -89,6 +93,10 @@ class OcrTargetController(QObject):
         return selected
 
     def selected_window(self) -> WindowInfo | None:
+        screen = self._screen_target()
+        if screen is not None:
+            self._selected = screen
+            return screen
         if self._selected is None:
             self.refresh_windows()
         if self._selected is None:
@@ -117,7 +125,8 @@ class OcrTargetController(QObject):
                 self._tr("ctrl.ocr.test_needs_window"),
             )
             return
-        self._windows_api.activate_window(window.hwnd)
+        if window.hwnd:
+            self._windows_api.activate_window(window.hwnd)
         selector = RegionSelector(window, self._i18n)
         selector.selected.connect(self._selection_completed)
         selector.cancelled.connect(self._selection_cancelled)
@@ -143,7 +152,8 @@ class OcrTargetController(QObject):
         if self._session_running():
             self.capture_preview_ready.emit(None, self._tr("ctrl.ocr.test_needs_stop"))
             return
-        window = self.selected_window()
+        self._capture.set_mode(mode)
+        window = self._screen_target() or self.selected_window()
         if window is None:
             self.capture_preview_ready.emit(None, self._tr("ctrl.ocr.test_needs_window"))
             return
@@ -154,8 +164,8 @@ class OcrTargetController(QObject):
             current.region_width or window.width,
             current.region_height or window.height,
         )
-        self._capture.set_mode(mode)
-        self._windows_api.activate_window(window.hwnd)
+        if window.hwnd:
+            self._windows_api.activate_window(window.hwnd)
 
         def begin() -> None:
             worker = TaskWorker(lambda: self._capture.capture(window.hwnd, region))
@@ -186,3 +196,15 @@ class OcrTargetController(QObject):
         self._shutting_down = True
         if self._selector:
             self._selector.close()
+
+    def _screen_target(self) -> WindowInfo | None:
+        try:
+            if not self._capture.uses_screen_coordinates:
+                return None
+        except VrcTranslateError:
+            return None
+        factory = getattr(self._capture, "screen_target", None)
+        if not callable(factory):
+            return None
+        target = factory()
+        return target if isinstance(target, WindowInfo) else None

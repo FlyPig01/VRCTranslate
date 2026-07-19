@@ -129,3 +129,152 @@ QWidget#overlayStylePreview QLabel#ocrTranslation {
     background: transparent;
     font-weight: 600;
 }
+
+QWidget#profileManagementList {
+    background: #fbfcfe;
+    border: 1px solid #d6e0eb;
+    border-radius: 10px;
+}
+QFrame#profileListHeader {
+    min-height: 38px;
+    background: #edf2f7;
+    border: 1px solid #d2dce8;
+    border-radius: 8px;
+}
+QFrame#profileListHeader QLabel {
+    color: #50627a;
+    font-weight: 700;
+}
+QLabel#profileGroupTitle {
+    min-height: 36px;
+    padding: 0 14px;
+    color: #31465f;
+    background: #f4f7fb;
+    border-bottom: 1px solid #dde5ef;
+    font-size: 14px;
+    font-weight: 700;
+}
+QLabel#profileGroupEmpty {
+    min-height: 38px;
+    padding: 7px 14px;
+    color: #718096;
+    background: #fbfcfe;
+    border-bottom: 1px solid #e4e9f0;
+    font-size: 12px;
+}
+QFrame#profileManagementRow {
+    min-height: 46px;
+    background: #fbfcfe;
+    border-bottom: 1px solid #e4e9f0;
+}
+QFrame#profileManagementRow:hover {
+    background: #eef4f8;
+}
+QFrame#profileManagementRow[selected="true"] {
+    background: #dfeef3;
+}
+QFrame#profileManagementRow[active="true"] {
+    background: #dff0f4;
+    border-left: 3px solid #19758c;
+}
+QLabel#profileRowName {
+    color: #21364e;
+    font-weight: 700;
+}
+QPushButton#profileRowSelectButton {
+    min-height: 32px;
+    padding: 0 6px;
+    color: #21364e;
+    background: transparent;
+    border: none;
+    text-align: left;
+    font-weight: 500;
+}
+QPushButton#profileRowSelectButton:hover {
+    color: #16647a;
+}
+QLabel#profileRowService {
+    color: #53677f;
+}
+QLabel#speechValidationBadge {
+    padding: 3px 7px;
+    color: #85621f;
+    background: #fff2cf;
+    border: 1px solid #ead79f;
+    border-radius: 7px;
+    font-size: 11px;
+    font-weight: 700;
+}
+QLabel#speechValidationBadge[state="verified"] {
+    color: #216a45;
+    background: #dff2e8;
+    border-color: #b7dec9;
+}
+QLabel#speechValidationBadge[state="failed"] {
+    color: #a44750;
+    background: #fde8ea;
+    border-color: #e8c2c7;
+}
+QPushButton#speechValidationButton {
+    min-height: 26px;
+    padding: 0 9px;
+    color: #85621f;
+    background: #fff2cf;
+    border: 1px solid #ead79f;
+    border-radius: 7px;
+    font-size: 11px;
+    font-weight: 700;
+}
+QPushButton#speechValidationButton:hover {
+    background: #ffe8ad;
+}
+QPushButton#speechValidationButton[state="verified"] {
+    color: #216a45;
+    background: #dff2e8;
+    border-color: #b7dec9;
+}
+QPushButton#speechValidationButton[state="failed"] {
+    color: #a44750;
+    background: #fde8ea;
+    border-color: #e8c2c7;
+}
+QWidget#profileManagementList QPushButton#tableActionButton,
+QWidget#profileManagementList QPushButton#tableDangerButton {
+    min-height: 26px;
+    padding: 0 8px;
+    border-radius: 6px;
+    background: transparent;
+}
+QWidget#profileManagementList QPushButton#tableActionButton {
+    color: #1e708b;
+    border-color: #bad4df;
+}
+QWidget#profileManagementList QPushButton#tableDangerButton {
+    color: #a44750;
+    border-color: #e3c7ca;
+}
+QDialog#addProfileDialog {
+    background: #f4f7fb;
+}
+QDialog#addProfileDialog QLabel#dialogTitle {
+    color: #17283e;
+    font-size: 20px;
+    font-weight: 700;
+}
+QTabWidget#profileTypeTabs::pane {
+    border: 1px solid #d3ddea;
+    border-radius: 10px;
+    background: #ffffff;
+}
+QTabWidget#profileTypeTabs QTabBar::tab {
+    min-height: 38px;
+    padding: 0 18px;
+    color: #53657c;
+    background: #e9eef5;
+    border: 1px solid #d3ddea;
+}
+QTabWidget#profileTypeTabs QTabBar::tab:selected {
+    color: #145e76;
+    background: #ffffff;
+    font-weight: 700;
+}

@@ -23,20 +23,32 @@ def settings_v6_to_dict(settings: AppSettings) -> dict[str, Any]:
     settings.translation.ensure_routes()
     raw = asdict(settings)
     for profile in _profiles(raw):
-        if profile.get("provider") != "tencent":
-            continue
-        profile["secret_id"] = profile.pop("api_key", "")
-        profile["secret_key"] = profile.pop("model", "")
+        provider = profile.get("provider")
+        if provider == "tencent":
+            profile["secret_id"] = profile.pop("api_key", "")
+            profile["secret_key"] = profile.pop("model", "")
+        elif provider == "aliyun":
+            profile["access_key_id"] = profile.pop("api_key", "")
+            profile["access_key_secret"] = profile.pop("model", "")
     return raw
 
 
 def settings_v6_from_dict(raw: dict[str, Any]) -> AppSettings:
     compatible = deepcopy(raw)
     for profile in _profiles(compatible):
-        if profile.get("provider") != "tencent":
-            continue
-        profile["api_key"] = profile.get("secret_id", profile.get("api_key", ""))
-        profile["model"] = profile.get("secret_key", profile.get("model", ""))
+        provider = profile.get("provider")
+        if provider == "tencent":
+            profile["api_key"] = profile.get("secret_id", profile.get("api_key", ""))
+            profile["model"] = profile.get("secret_key", profile.get("model", ""))
+        elif provider == "aliyun":
+            profile["api_key"] = profile.get(
+                "access_key_id",
+                profile.get("api_key", ""),
+            )
+            profile["model"] = profile.get(
+                "access_key_secret",
+                profile.get("model", ""),
+            )
     settings = settings_v5_from_dict(compatible)
     settings.version = CONFIG_VERSION
     return settings

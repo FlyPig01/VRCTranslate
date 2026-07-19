@@ -5,11 +5,19 @@ import logging
 import pytest
 from PySide6.QtCore import QPoint, QRect, Qt
 from PySide6.QtGui import QColor, QImage, QPainter
-from PySide6.QtWidgets import QListWidget, QStyle, QStyleOptionButton, QTableWidget
+from PySide6.QtWidgets import (
+    QListWidget,
+    QStackedWidget,
+    QStyle,
+    QStyleOptionButton,
+    QTableWidget,
+    QWidget,
+)
 
 from vrctranslate.application.dto import AppSettings
 from vrctranslate.domain.ocr import WindowInfo
 from vrctranslate.presentation.qt.app_style import VrcTranslateStyle
+from vrctranslate.presentation.qt.i18n import I18nManager
 from vrctranslate.presentation.qt.main_window import MainWindow
 from vrctranslate.presentation.qt.pages.ocr_page import OcrPage
 from vrctranslate.presentation.qt.pages.self_message_page import SelfMessagePage
@@ -124,7 +132,7 @@ def test_overlay_position_actions_are_visible_and_forwarded(qtbot, tmp_path) -> 
 
 
 def test_settings_navigation_is_vertical_and_save_remains_visible(qtbot, tmp_path) -> None:
-    page = SettingsPage(I18N)
+    page = SettingsPage(I18nManager("zh_CN"))
     qtbot.addWidget(page)
     page.resize(720, 520)
     page.load_settings(
@@ -141,6 +149,14 @@ def test_settings_navigation_is_vertical_and_save_remains_visible(qtbot, tmp_pat
     assert first.top() < second.top()
     assert page._save_button.isVisible()
     assert _top_left(page._save_button, page).y() < _top_left(page.section_stack, page).y()
+    editor = page.translation_page.profile_editor
+    assert editor._compact is True
+    assert editor.profile_list_header.isHidden()
+    assert editor.scroll.horizontalScrollBar().maximum() == 0
+    row, select, service, actions = next(iter(editor._profile_row_parts.values()))
+    assert row.getItemPosition(row.indexOf(select))[:2] == (0, 0)
+    assert row.getItemPosition(row.indexOf(service))[:2] == (1, 0)
+    assert row.getItemPosition(row.indexOf(actions))[:2] == (1, 1)
 
 
 def test_ocr_overlay_choices_are_on_ocr_feature_page(qtbot, tmp_path) -> None:
@@ -207,6 +223,31 @@ def test_feature_pages_reflow_without_horizontal_clipping(qtbot) -> None:
         assert page._narrow_layout is False
 
 
+def test_ocr_page_reflows_when_first_shown_from_stacked_widget(qtbot) -> None:
+    stack = QStackedWidget()
+    placeholder = QWidget()
+    page = OcrPage(I18N)
+    stack.addWidget(placeholder)
+    stack.addWidget(page)
+    stack.setCurrentWidget(placeholder)
+    stack.resize(1400, 800)
+    qtbot.addWidget(stack)
+    stack.show()
+    qtbot.waitExposed(stack)
+
+    stack.setCurrentWidget(page)
+    qtbot.waitUntil(lambda: page._narrow_layout is False, timeout=1000)
+
+    status_position = page._content_layout.getItemPosition(
+        page._content_layout.indexOf(page._status_card)
+    )
+    tool_position = page._content_layout.getItemPosition(
+        page._content_layout.indexOf(page._tool_card)
+    )
+    assert status_position[:2] == (0, 0)
+    assert tool_position[:2] == (0, 1)
+
+
 @pytest.mark.parametrize("size", [(900, 560), (960, 660), (1200, 800)])
 def test_ocr_page_has_read_only_summary_and_no_legacy_controls(qtbot, size) -> None:
     page = OcrPage(I18N)
@@ -239,6 +280,11 @@ def test_ocr_page_has_read_only_summary_and_no_legacy_controls(qtbot, size) -> N
         None,
     )
     assert page.selected_hwnd is None
+
+    page.set_target_required(False)
+    assert page.target_controls.isHidden()
+    assert not page._screen_capture_note.isHidden()
+    assert "page.ocr.screen_capture_note" in page._screen_capture_note.text()
 
 
 def test_main_sidebar_is_always_complete(qtbot) -> None:

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from html.parser import HTMLParser
 import random
 import time
 
@@ -30,8 +31,58 @@ _USER_AGENTS = [
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
 ]
 
+_DEFAULT_JSON_ENDPOINT = "https://translate.googleapis.com/translate_a/single"
+_KNOWN_JSON_ENDPOINTS = frozenset(
+    {
+        _DEFAULT_JSON_ENDPOINT,
+        "https://translate.google.com/translate_a/single",
+    }
+)
+_MOBILE_FALLBACK_ENDPOINT = "https://translate.google.com/m"
+_MOBILE_FALLBACK_SECONDS = 15 * 60
+
+
+class _MobileResultParser(HTMLParser):
+    """Extract the translated text without depending on an HTML package."""
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self._inside_result = False
+        self._div_depth = 0
+        self.parts: list[str] = []
+
+    def handle_starttag(
+        self,
+        tag: str,
+        attrs: list[tuple[str, str | None]],
+    ) -> None:
+        if self._inside_result:
+            if tag == "div":
+                self._div_depth += 1
+            return
+        if tag != "div":
+            return
+        classes = dict(attrs).get("class", "") or ""
+        if "result-container" in classes.split():
+            self._inside_result = True
+            self._div_depth = 1
+
+    def handle_endtag(self, tag: str) -> None:
+        if not self._inside_result or tag != "div":
+            return
+        self._div_depth -= 1
+        if self._div_depth <= 0:
+            self._inside_result = False
+
+    def handle_data(self, data: str) -> None:
+        if self._inside_result:
+            self.parts.append(data)
+
 
 class GoogleFreeTranslator:
+    def __init__(self) -> None:
+        self._mobile_fallback_until = 0.0
+
     def capabilities(self) -> TranslationCapabilities:
         return TranslationCapabilities(
             provider="google_free",
@@ -57,7 +108,8 @@ class GoogleFreeTranslator:
         if request.source_language != "auto":
             source = _LANGUAGE_CODES.get(request.source_language, "auto")
         text = normalize_text(request.text)
-        endpoint = profile.base_url.strip() or "https://translate.googleapis.com/translate_a/single"
+        configured_endpoint = profile.base_url.strip()
+        endpoint = configured_endpoint or _DEFAULT_JSON_ENDPOINT
         params = {
             "client": "gtx",
             "sl": source,
@@ -69,12 +121,32 @@ class GoogleFreeTranslator:
             "User-Agent": random.choice(_USER_AGENTS),
             "Accept": "application/json",
         }
+        can_use_fallback = endpoint.rstrip("/") in _KNOWN_JSON_ENDPOINTS
+        if can_use_fallback and time.monotonic() < self._mobile_fallback_until:
+            translated_text = self._translate_with_mobile_page(
+                source,
+                target,
+                text,
+                profile.timeout_seconds,
+            )
+            return self._result(request, text, translated_text, request.source_language)
+
         try:
             with httpx.Client(timeout=profile.timeout_seconds, verify=False) as client:
                 response = client.get(endpoint, params=params, headers=headers)
             response.raise_for_status()
         except httpx.TimeoutException as exc:
-            raise TranslationError("network", "Google 翻译请求超时") from exc
+            primary_error = TranslationError("network", "Google 翻译请求超时")
+            return self._fallback_or_raise(
+                request,
+                text,
+                source,
+                target,
+                profile.timeout_seconds,
+                can_use_fallback,
+                primary_error,
+                exc,
+            )
         except httpx.HTTPStatusError as exc:
             status = exc.response.status_code
             if status == 429:
@@ -83,9 +155,27 @@ class GoogleFreeTranslator:
                 message, category = "Google 翻译访问被拒绝", "authentication"
             else:
                 message, category = f"Google 翻译返回 HTTP {status}", "service"
-            raise TranslationError(category, message) from exc
+            return self._fallback_or_raise(
+                request,
+                text,
+                source,
+                target,
+                profile.timeout_seconds,
+                can_use_fallback,
+                TranslationError(category, message),
+                exc,
+            )
         except httpx.HTTPError as exc:
-            raise TranslationError("network", "无法连接 Google 翻译服务") from exc
+            return self._fallback_or_raise(
+                request,
+                text,
+                source,
+                target,
+                profile.timeout_seconds,
+                can_use_fallback,
+                TranslationError("network", "无法连接 Google 翻译服务"),
+                exc,
+            )
         try:
             data = response.json()
             if not isinstance(data, list) or not data or not isinstance(data[0], list):
@@ -98,9 +188,16 @@ class GoogleFreeTranslator:
                 raise ValueError("no translation found")
             translated_text = normalize_text("".join(translated_parts))
         except (ValueError, KeyError, IndexError, TypeError) as exc:
-            raise TranslationError(
-                "response", "Google 翻译返回了无法识别的数据"
-            ) from exc
+            return self._fallback_or_raise(
+                request,
+                text,
+                source,
+                target,
+                profile.timeout_seconds,
+                can_use_fallback,
+                TranslationError("response", "Google 翻译返回了无法识别的数据"),
+                exc,
+            )
         detected_source = request.source_language
         if source == "auto" and len(data) >= 3 and isinstance(data[2], str):
             detected_code = data[2]
@@ -108,6 +205,96 @@ class GoogleFreeTranslator:
                 if _LANGUAGE_CODES[code].lower() == detected_code.lower():
                     detected_source = code
                     break
+        return self._result(request, text, translated_text, detected_source)
+
+    def _fallback_or_raise(
+        self,
+        request: TranslationRequest,
+        text: str,
+        source: str,
+        target: str,
+        timeout_seconds: float,
+        can_use_fallback: bool,
+        primary_error: TranslationError,
+        cause: Exception,
+    ) -> TranslationResult:
+        if not can_use_fallback:
+            raise primary_error from cause
+        try:
+            translated_text = self._translate_with_mobile_page(
+                source,
+                target,
+                text,
+                timeout_seconds,
+            )
+        except TranslationError as fallback_error:
+            raise TranslationError(
+                fallback_error.category,
+                (
+                    f"{fallback_error.user_message}；"
+                    f"原免费接口同时失败：{primary_error.user_message}"
+                ),
+            ) from fallback_error
+        self._mobile_fallback_until = time.monotonic() + _MOBILE_FALLBACK_SECONDS
+        return self._result(request, text, translated_text, request.source_language)
+
+    @staticmethod
+    def _translate_with_mobile_page(
+        source: str,
+        target: str,
+        text: str,
+        timeout_seconds: float,
+    ) -> str:
+        params = {"sl": source, "tl": target, "q": text, "hl": "en-US"}
+        headers = {
+            "User-Agent": random.choice(_USER_AGENTS),
+            "Accept": "text/html,application/xhtml+xml",
+        }
+        try:
+            with httpx.Client(timeout=timeout_seconds, verify=False) as client:
+                response = client.get(
+                    _MOBILE_FALLBACK_ENDPOINT,
+                    params=params,
+                    headers=headers,
+                )
+            response.raise_for_status()
+        except httpx.TimeoutException as exc:
+            raise TranslationError("network", "Google 免费备用翻译请求超时") from exc
+        except httpx.HTTPStatusError as exc:
+            status = exc.response.status_code
+            if status == 429:
+                message, category = "Google 免费翻译已被限流，请稍后重试", "quota"
+            elif status in (401, 403):
+                message, category = "Google 免费翻译访问被拒绝", "authentication"
+            else:
+                message, category = f"Google 免费备用翻译返回 HTTP {status}", "service"
+            raise TranslationError(category, message) from exc
+        except httpx.HTTPError as exc:
+            raise TranslationError("network", "无法连接 Google 免费备用翻译") from exc
+
+        parser = _MobileResultParser()
+        try:
+            parser.feed(response.text)
+            translated_text = normalize_text("".join(parser.parts))
+        except (ValueError, TypeError) as exc:
+            raise TranslationError(
+                "response",
+                "Google 免费备用翻译返回了无法识别的数据",
+            ) from exc
+        if not translated_text:
+            raise TranslationError(
+                "response",
+                "Google 免费备用翻译未返回译文，网页接口可能已变更",
+            )
+        return translated_text
+
+    @staticmethod
+    def _result(
+        request: TranslationRequest,
+        text: str,
+        translated_text: str,
+        detected_source: str,
+    ) -> TranslationResult:
         return TranslationResult(
             request.request_id,
             text,

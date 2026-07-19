@@ -5,7 +5,10 @@ import shutil
 from datetime import datetime
 from pathlib import Path
 
-from vrctranslate.application.dto import CONFIG_VERSION, AppSettings
+from vrctranslate.application.dto import (
+    CONFIG_VERSION,
+    AppSettings,
+)
 from vrctranslate.infrastructure.paths import AppPaths, discover_app_paths
 from vrctranslate.infrastructure.settings.migration_v1 import migrate_v1
 from vrctranslate.infrastructure.settings.migration_v2 import migrate_v2
@@ -14,10 +17,14 @@ from vrctranslate.infrastructure.settings.migration_v4 import migrate_v4
 from vrctranslate.infrastructure.settings.migration_v5 import migrate_v5
 from vrctranslate.infrastructure.settings.migration_v6 import migrate_v6
 from vrctranslate.infrastructure.settings.migration_v7 import migrate_v7
+from vrctranslate.infrastructure.settings.migration_v8 import migrate_v8
+from vrctranslate.infrastructure.settings.migration_v9 import migrate_v9
+from vrctranslate.infrastructure.settings.migration_v10 import migrate_v10
+from vrctranslate.infrastructure.settings.migration_v11 import migrate_v11
 from vrctranslate.infrastructure.settings.schema_v3 import int_in_range
-from vrctranslate.infrastructure.settings.schema_v8 import (
-    settings_v8_from_dict,
-    settings_v8_to_dict,
+from vrctranslate.infrastructure.settings.schema_v12 import (
+    settings_v12_from_dict,
+    settings_v12_to_dict,
 )
 
 
@@ -89,7 +96,40 @@ class JsonSettingsRepository:
                 self._backup_version(7)
                 self.save(settings)
                 return settings
-            return settings_v8_from_dict(raw)
+            if version == 8:
+                settings = migrate_v8(raw)
+                self._backup_version(8)
+                self.save(settings)
+                return settings
+            if version == 9:
+                settings = migrate_v9(raw)
+                self._backup_version(9)
+                self.save(settings)
+                return settings
+            if version == 10:
+                settings = migrate_v10(raw)
+                self._backup_version(10)
+                self.save(settings)
+                return settings
+            if version == 11:
+                settings = migrate_v11(raw)
+                self._backup_version(11)
+                self.save(settings)
+                return settings
+            settings = settings_v12_from_dict(raw)
+            voice = raw.get("voice") if isinstance(raw.get("voice"), dict) else {}
+            profiles = voice.get("asr_profiles") if isinstance(voice, dict) else []
+            persisted_profile_ids = {
+                str(profile.get("id", ""))
+                for profile in profiles
+                if isinstance(profile, dict)
+            } if isinstance(profiles, list) else set()
+            loaded_profile_ids = {
+                profile.id for profile in settings.voice.asr_profiles
+            }
+            if persisted_profile_ids != loaded_profile_ids:
+                self.save(settings)
+            return settings
         except (OSError, ValueError, json.JSONDecodeError):
             timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
             broken = self._path.with_name(f"{self._path.name}.broken-{timestamp}")
@@ -108,7 +148,7 @@ class JsonSettingsRepository:
         self._path.parent.mkdir(parents=True, exist_ok=True)
         temporary = self._path.with_suffix(self._path.suffix + ".tmp")
         temporary.write_text(
-            json.dumps(settings_v8_to_dict(settings), ensure_ascii=False, indent=2),
+            json.dumps(settings_v12_to_dict(settings), ensure_ascii=False, indent=2),
             encoding="utf-8",
         )
         temporary.replace(self._path)

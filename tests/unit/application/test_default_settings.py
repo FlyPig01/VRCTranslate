@@ -23,6 +23,15 @@ def test_release_defaults_are_portable_and_contain_no_private_service() -> None:
     assert settings.translation.ocr_route.target_language == "zh-CN"
     assert settings.translation.ocr_route.romaji_mode == "off"
     assert settings.translation.ocr_route.glossary_enabled is True
+    assert settings.translation.voice_route.profile_id == "test"
+    assert settings.translation.voice_route.source_language == "auto"
+    assert settings.translation.voice_route.target_language == "zh-CN"
+    assert settings.translation.voice_route.glossary_enabled is True
+    assert settings.translation.voice_route.translation_strategy == "text_profile"
+    assert settings.voice.target_process_name == "VRChat.exe"
+    assert settings.voice.asr_profile_id == ""
+    assert settings.voice.asr_profiles == []
+    assert settings.voice.overlay.display_mode == "both"
     assert settings.glossary.enabled is True
     assert settings.glossary.builtin_enabled is True
 

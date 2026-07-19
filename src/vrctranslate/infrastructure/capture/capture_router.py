@@ -58,7 +58,14 @@ class CaptureRouter:
         return self._window_capture.list_windows()
 
     def get_window(self, hwnd: int) -> WindowInfo | None:
+        if self._mode == "screen" and hwnd == 0:
+            return self._screen_capture.screen_target()
         return self._window_capture.get_window(hwnd)
+
+    def screen_target(self) -> WindowInfo | None:
+        if self._mode != "screen":
+            return None
+        return self._screen_capture.screen_target()
 
     def capture(self, hwnd: int, region: CaptureRegion) -> CapturedFrame:
         backend = self._selected()

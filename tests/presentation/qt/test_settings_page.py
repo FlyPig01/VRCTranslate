@@ -5,9 +5,20 @@ from pathlib import Path
 
 from PySide6.QtCore import QPoint, QPointF, Qt
 from PySide6.QtGui import QWheelEvent
-from PySide6.QtWidgets import QApplication, QSpinBox
+from PySide6.QtWidgets import (
+    QApplication,
+    QDialog,
+    QLabel,
+    QScrollArea,
+    QSpinBox,
+    QTreeWidget,
+)
 
-from vrctranslate.application.dto import AppSettings, TranslationProfile
+from vrctranslate.application.dto import (
+    AppSettings,
+    TranslationProfile,
+    TranslationSettings,
+)
 from vrctranslate.domain.errors import TranslationError
 from vrctranslate.domain.glossary import GlossaryEntry
 from vrctranslate.presentation.qt.controllers.settings.translation_tester import (
@@ -18,6 +29,10 @@ from vrctranslate.presentation.qt.i18n import I18nManager
 from vrctranslate.presentation.qt.pages.settings.translation.glossary_tab import (
     GlossaryEntryDialog,
 )
+from vrctranslate.presentation.qt.pages.settings.translation.add_profile_dialog import (
+    AddProfileDialog,
+)
+from vrctranslate.presentation.qt.pages.settings.translation.routes_tab import RoutesTab
 from vrctranslate.presentation.qt.pages.settings_page import SettingsPage
 from vrctranslate.presentation.qt.pages.self_message_page import SelfMessagePage
 from vrctranslate.presentation.qt.widgets.no_wheel_combobox import NoWheelComboBox
@@ -41,7 +56,7 @@ class _FakeSignal:
 _FAKE_I18N = _FakeI18n()
 
 
-def test_settings_has_four_discoverable_sections_and_fixed_save(qtbot, tmp_path) -> None:
+def test_settings_has_five_discoverable_sections_and_fixed_save(qtbot, tmp_path) -> None:
     page = SettingsPage(_FAKE_I18N)
     qtbot.addWidget(page)
     page.resize(720, 520)
@@ -52,11 +67,13 @@ def test_settings_has_four_discoverable_sections_and_fixed_save(qtbot, tmp_path)
     page.show()
     qtbot.waitExposed(page)
 
-    assert page.section_nav.count() == 4
-    assert [page.section_nav.tabText(i) for i in range(4)] == [
+    assert page.section_nav.count() == 5
+    assert not hasattr(page, "_subtitle")
+    assert [page.section_nav.tabText(i) for i in range(5)] == [
         "settings.section.translation",
         "settings.section.osc",
         "settings.section.ocr",
+        "settings.section.voice",
         "settings.section.data",
     ]
     assert page._save_button.isVisible()
@@ -192,11 +209,65 @@ def test_route_cards_share_one_field_alignment(qtbot, tmp_path) -> None:
 
     assert routes._self_profile_label.alignment() & Qt.AlignmentFlag.AlignRight
     assert routes._ocr_profile_label.alignment() & Qt.AlignmentFlag.AlignRight
+    assert routes._voice_profile_label.alignment() & Qt.AlignmentFlag.AlignRight
     assert routes.self_glossary_status.x() == routes.self_romaji_help.x()
     assert routes.ocr_glossary_status.x() == routes.ocr_romaji_help.x()
     assert routes.ocr_romaji_help.x() == routes.ocr_route_warning.x()
     assert routes.self_romaji_help.objectName() == "fieldHint"
     assert routes.ocr_romaji_help.objectName() == "fieldHint"
+
+
+def test_voice_translation_route_is_owned_by_the_unified_routes_page(
+    qtbot,
+    tmp_path,
+) -> None:
+    page = SettingsPage(I18nManager("zh_CN"))
+    qtbot.addWidget(page)
+    settings = AppSettings()
+    settings.translation.profiles.append(
+        TranslationProfile(
+            id="translator",
+            name="Translator",
+            provider="openai_compatible",
+        )
+    )
+    settings.translation.voice_route.profile_id = "translator"
+    settings.translation.voice_route.source_language = "ja"
+    settings.translation.voice_route.target_language = "en"
+    settings.translation.voice_route.glossary_enabled = False
+
+    page.load_settings(settings, str(tmp_path / "data" / "config.json"))
+    routes = page.translation_page.routes_tab
+
+    assert routes._voice_card_title.text() == "他人语音（识别后翻译）"
+    assert routes.voice_profile_combo.currentData() == "translator"
+    assert routes.voice_source_combo.currentData() == "ja"
+    assert routes.voice_target_combo.currentData() == "en"
+    assert not routes.voice_glossary_enabled.isChecked()
+
+    routes.voice_target_combo.setCurrentIndex(
+        routes.voice_target_combo.findData("zh-CN")
+    )
+    collected = page.collect_settings(settings)
+
+    assert collected.translation.voice_route.profile_id == "translator"
+    assert collected.translation.voice_route.source_language == "ja"
+    assert collected.translation.voice_route.target_language == "zh-CN"
+    assert collected.translation.voice_route.glossary_enabled is False
+
+
+def test_voice_route_is_always_recognition_then_text_translation(qtbot) -> None:
+    routes = RoutesTab(I18nManager("zh_CN"))
+    qtbot.addWidget(routes)
+
+    settings = TranslationSettings()
+    settings.voice_route.translation_strategy = "native_voice"
+    routes.load_settings(settings)
+    routes.collect_settings(settings)
+
+    assert settings.voice_route.translation_strategy == "text_profile"
+    assert routes.voice_profile_combo.isEnabled()
+    assert not hasattr(routes, "voice_strategy_combo")
 
 
 def test_glossary_tab_shows_read_only_defaults_and_editable_user_terms(
@@ -503,3 +574,252 @@ def test_multimodal_profile_is_available_only_to_ocr_route(qtbot, tmp_path) -> N
     assert routes.ocr_route_warning.text() == "route.ocr_warning_multimodal"
     assert not routes.ocr_romaji_combo.isEnabled()
     assert routes.ocr_romaji_help.text() == "route.romaji_help_multimodal"
+
+
+def test_profile_management_separates_machine_translation_and_large_models(
+    qtbot,
+    tmp_path,
+) -> None:
+    page = SettingsPage(_FAKE_I18N)
+    qtbot.addWidget(page)
+    settings = AppSettings()
+    settings.translation.profiles.extend(
+        [
+            TranslationProfile(
+                id="tencent",
+                name="Tencent",
+                provider="tencent",
+            ),
+            TranslationProfile(
+                id="qwen",
+                name="Qwen Plus",
+                provider="openai_compatible",
+                base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
+                model="qwen-plus",
+                options={"model_vendor": "qwen"},
+            ),
+        ]
+    )
+
+    page.load_settings(settings, str(tmp_path / "data" / "config.json"))
+    editor = page.translation_page.profile_editor
+
+    assert not hasattr(editor, "profile_tree")
+    assert not editor.findChildren(QTreeWidget)
+    assert len(editor.findChildren(QScrollArea)) == 1
+    assert [
+        label.text()
+        for label in editor.findChildren(QLabel, "profileGroupTitle")
+    ] == [
+        "profile_group.builtin",
+        "profile_group.machine",
+        "profile_group.model",
+    ]
+    assert len(editor._profile_rows) == 3
+    assert any(
+        "model_vendor.qwen" in label.text()
+        for label in editor.findChildren(QLabel, "profileRowService")
+    )
+    assert not editor.provider_combo.isEnabled()
+    assert editor.profile_combo.isHidden()
+    assert editor.profile_name_edit.objectName() != "profileManagementTree"
+
+
+def test_add_profile_dialog_has_distinct_protocol_families(qtbot) -> None:
+    dialog = AddProfileDialog(_FAKE_I18N)
+    qtbot.addWidget(dialog)
+
+    assert dialog.tabs.count() == 3
+    assert [dialog.tabs.tabText(index) for index in range(3)] == [
+        "profile_add.machine_tab",
+        "profile_add.model_tab",
+        "profile_add.custom_tab",
+    ]
+    machine = {
+        dialog.machine_provider.itemData(index)
+        for index in range(dialog.machine_provider.count())
+    }
+    vendors = {
+        dialog.model_vendor.itemData(index)
+        for index in range(dialog.model_vendor.count())
+    }
+    assert machine == {
+        "deepl",
+        "google_cloud",
+        "google_free",
+        "aliyun",
+        "tencent",
+    }
+    assert "openai_compatible" not in machine
+    assert {"deepseek", "qwen", "doubao", "minimax", "kimi", "zhipu", "openai"} == vendors
+    assert "deepl" not in vendors
+
+
+def test_google_free_new_profile_has_default_endpoint(qtbot) -> None:
+    dialog = AddProfileDialog(_FAKE_I18N)
+    qtbot.addWidget(dialog)
+
+    dialog.machine_provider.setCurrentIndex(
+        dialog.machine_provider.findData("google_free")
+    )
+
+    assert dialog.machine_base_url.text() == (
+        "https://translate.googleapis.com/translate_a/single"
+    )
+    profile = dialog._machine_profile()
+    assert profile is not None
+    assert profile.base_url == dialog.machine_base_url.text()
+
+
+def test_edit_profile_dialog_preserves_identity_and_protocol(qtbot) -> None:
+    original = TranslationProfile(
+        id="google-free",
+        name="Google old",
+        provider="google_free",
+        base_url="",
+        timeout_seconds=12,
+        region="ap-test",
+        options={"custom": "kept"},
+    )
+    dialog = AddProfileDialog(_FAKE_I18N, profile=original)
+    qtbot.addWidget(dialog)
+
+    assert dialog.windowTitle() == "profile_edit.title"
+    assert dialog.tabs.tabBar().isHidden()
+    assert not dialog.machine_provider.isEnabled()
+    assert dialog.machine_base_url.text() == (
+        "https://translate.googleapis.com/translate_a/single"
+    )
+    dialog.machine_name.setText("Google edited")
+    dialog.timeout_edit.setValue(20)
+
+    edited = dialog._machine_profile()
+    assert edited is not None
+    assert edited.id == original.id
+    assert edited.name == "Google edited"
+    assert edited.provider == original.provider
+    assert edited.timeout_seconds == 20
+    assert edited.region == original.region
+    assert edited.options == original.options
+
+
+def test_profile_row_edit_is_applied_from_modal_dialog(
+    qtbot,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    page = SettingsPage(_FAKE_I18N)
+    qtbot.addWidget(page)
+    settings = AppSettings()
+    settings.translation.profiles.append(
+        TranslationProfile(
+            id="google-edit",
+            name="Before",
+            provider="google_free",
+        )
+    )
+    page.load_settings(settings, str(tmp_path / "config.json"))
+    editor = page.translation_page.profile_editor
+    opened: list[str] = []
+
+    def accept_edit(dialog: AddProfileDialog) -> QDialog.DialogCode:
+        opened.append(dialog.windowTitle())
+        dialog.machine_name.setText("After")
+        dialog._profile = dialog._machine_profile()
+        return QDialog.DialogCode.Accepted
+
+    monkeypatch.setattr(AddProfileDialog, "exec", accept_edit)
+
+    editor._edit_from_list("google-edit")
+
+    assert opened == ["profile_edit.title"]
+    assert editor._profile("google-edit").name == "After"
+    assert not editor.profile_name_edit.isVisible()
+
+
+def test_add_dialog_creates_tencent_and_qwen_profiles_with_different_fields(
+    qtbot,
+) -> None:
+    dialog = AddProfileDialog(_FAKE_I18N)
+    qtbot.addWidget(dialog)
+    dialog.machine_provider.setCurrentIndex(
+        dialog.machine_provider.findData("tencent")
+    )
+    dialog.machine_key.setText("secret-id")
+    dialog.machine_secret.setText("secret-key")
+
+    machine = dialog._machine_profile()
+
+    assert machine is not None
+    assert machine.provider == "tencent"
+    assert machine.api_key == "secret-id"
+    assert machine.model == "secret-key"
+    assert dialog._machine_key_label.text() == "profile.secret_id"
+    assert not dialog.machine_secret.isHidden()
+
+    dialog.model_vendor.setCurrentIndex(dialog.model_vendor.findData("qwen"))
+    dialog.model_id.setText("qwen-plus")
+    dialog.model_key.setText("test-key")
+    model = dialog._model_profile()
+
+    assert model is not None
+    assert model.provider == "openai_compatible"
+    assert model.options["model_vendor"] == "qwen"
+    assert model.base_url == "https://dashscope.aliyuncs.com/compatible-mode/v1"
+
+
+def test_add_dialog_configures_aliyun_region_endpoint_and_api(qtbot) -> None:
+    dialog = AddProfileDialog(_FAKE_I18N)
+    qtbot.addWidget(dialog)
+    dialog.machine_provider.setCurrentIndex(
+        dialog.machine_provider.findData("aliyun")
+    )
+
+    assert not dialog.machine_region.isHidden()
+    assert not dialog.machine_api.isHidden()
+    assert dialog.machine_region.currentData() is None
+    assert dialog.machine_base_url.text() == ""
+    assert dialog.machine_region.lineEdit().placeholderText() == (
+        "profile.aliyun_region_select"
+    )
+    dialog.show()
+    qtbot.waitExposed(dialog)
+    qtbot.mouseClick(
+        dialog.machine_region.lineEdit(),
+        Qt.MouseButton.LeftButton,
+    )
+    assert dialog.machine_region.lineEdit().placeholderText() == ""
+    assert dialog._machine_key_label.text() == "profile.aliyun_access_key_id"
+    assert dialog._machine_secret_label.text() == (
+        "profile.aliyun_access_key_secret"
+    )
+
+    dialog.machine_region.setCurrentIndex(
+        dialog.machine_region.findData("cn-hangzhou")
+    )
+    assert dialog.machine_base_url.text() == "mt.cn-hangzhou.aliyuncs.com"
+
+    dialog.machine_region.setCurrentIndex(
+        dialog.machine_region.findData("ap-southeast-1")
+    )
+    assert dialog.machine_base_url.text() == (
+        "mt.ap-southeast-1.aliyuncs.com"
+    )
+    dialog.machine_key.setText("test-id")
+    dialog.machine_secret.setText("test-secret")
+    dialog.machine_api.setCurrentIndex(
+        dialog.machine_api.findData("professional")
+    )
+
+    profile = dialog._machine_profile()
+
+    assert profile is not None
+    assert profile.provider == "aliyun"
+    assert profile.region == "ap-southeast-1"
+    assert profile.base_url == "mt.ap-southeast-1.aliyuncs.com"
+    assert profile.api_key == "test-id"
+    assert profile.model == "test-secret"
+    assert profile.options["aliyun_api"] == "professional"
+
+    dialog.machine_region.setCurrentText("future-region-1")
+    assert dialog.machine_base_url.text() == ""

@@ -165,22 +165,23 @@ def test_quick_input_page_settings_are_saved_automatically(qtbot) -> None:
     controller.shutdown()
 
 
-def test_bootstrap_composes_three_pages_and_non_topmost_main(qtbot, monkeypatch, tmp_path) -> None:
+def test_bootstrap_composes_four_pages_and_non_topmost_main(qtbot, monkeypatch, tmp_path) -> None:
     monkeypatch.setenv("VRC_TRANSLATE_HOME", str(tmp_path))
     from vrctranslate.bootstrap import build_main_window
 
     window = build_main_window()
     qtbot.addWidget(window)
-    assert window.tabs.count() == 3
+    assert window.tabs.count() == 4
     assert window.windowTitle() == "VRCTranslate"
     assert not window.windowIcon().isNull()
     assert not bool(window.windowFlags() & Qt.WindowType.WindowStaysOnTopHint)
     assert "quick_input" in window._quick_window.input.placeholderText() or "Enter" in window._quick_window.input.placeholderText()
     assert not hasattr(window, "_capture_excluder")
-    assert [window.navigation.item(i).sizeHint().height() for i in range(3)] == [
+    assert [window.navigation.item(i).sizeHint().height() for i in range(4)] == [
+        44,
         44,
         44,
         44,
     ]
-    assert all(not window.navigation.item(i).icon().isNull() for i in range(3))
+    assert all(not window.navigation.item(i).icon().isNull() for i in range(4))
     window.close()

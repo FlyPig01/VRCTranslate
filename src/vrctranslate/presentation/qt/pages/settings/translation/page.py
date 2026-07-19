@@ -68,6 +68,7 @@ class TranslationSettingsPage(QWidget):
             "delete_profile_button",
             "profile_name_edit",
             "provider_combo",
+            "model_vendor_combo",
             "base_url_edit",
             "api_key_edit",
             "model_edit",
@@ -94,6 +95,10 @@ class TranslationSettingsPage(QWidget):
             "self_romaji_help",
             "ocr_romaji_help",
             "ocr_route_warning",
+            "voice_profile_combo",
+            "voice_source_combo",
+            "voice_target_combo",
+            "voice_glossary_enabled",
         ):
             setattr(self, name, getattr(self.routes_tab, name))
 

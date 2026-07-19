@@ -19,7 +19,11 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from vrctranslate.application.dto import AppSettings, TranslationProfile
+from vrctranslate.application.dto import (
+    AppSettings,
+    SpeechRecognitionProfile,
+    TranslationProfile,
+)
 from vrctranslate.presentation.qt.i18n import I18nManager
 from vrctranslate.presentation.qt.icon_resources import load_icon
 from vrctranslate.presentation.qt.pages.settings import (
@@ -27,6 +31,7 @@ from vrctranslate.presentation.qt.pages.settings import (
     OcrSettingsPage,
     OscSettingsPage,
     TranslationSettingsPage,
+    VoiceSettingsPage,
 )
 from vrctranslate.presentation.qt.widgets.settings_section_nav import SettingsSectionNav
 from vrctranslate.presentation.qt.view_models.settings_draft import SettingsDraft
@@ -65,10 +70,11 @@ class _ElidedPathLabel(QLabel):
 
 
 class SettingsPage(QWidget):
-    """Fixed settings shell around four independently scrollable sections."""
+    """Fixed settings shell around five independently scrollable sections."""
 
     save_requested = Signal()
     test_translation_requested = Signal()
+    speech_profile_test_requested = Signal()
     clear_logs_requested = Signal()
     open_path_requested = Signal(str)
     capture_test_requested = Signal(str)
@@ -86,6 +92,10 @@ class SettingsPage(QWidget):
         self._loading = False
         self._dirty = False
         self._build_ui()
+        self._voice_auto_save_timer = QTimer(self)
+        self._voice_auto_save_timer.setSingleShot(True)
+        self._voice_auto_save_timer.setInterval(0)
+        self._voice_auto_save_timer.timeout.connect(self.save_requested)
         self._retranslate()
         self._forward_signals()
         self._connect_dirty_tracking()
@@ -105,11 +115,7 @@ class SettingsPage(QWidget):
         header.setVerticalSpacing(4)
         self._title = QLabel()
         self._title.setObjectName("pageTitle")
-        self._subtitle = QLabel()
-        self._subtitle.setObjectName("pageSubtitle")
-        self._subtitle.setWordWrap(True)
         header.addWidget(self._title, 0, 0)
-        header.addWidget(self._subtitle, 1, 0, 1, 2)
         actions = QHBoxLayout()
         actions.setSpacing(8)
         self._lang_label = QLabel()
@@ -139,11 +145,13 @@ class SettingsPage(QWidget):
         self.translation_page = TranslationSettingsPage(self._i18n)
         self.osc_page = OscSettingsPage(self._i18n)
         self.ocr_page = OcrSettingsPage(self._i18n)
+        self.voice_page = VoiceSettingsPage(self._i18n)
         self.data_page = DataDiagnosticsPage(self._i18n)
         for page in (
             self.translation_page,
             self.osc_page,
             self.ocr_page,
+            self.voice_page,
             self.data_page,
         ):
             self.section_stack.addWidget(page)
@@ -172,7 +180,6 @@ class SettingsPage(QWidget):
     def _retranslate(self) -> None:
         t = self._i18n.tr
         self._title.setText(t("page.settings.title"))
-        self._subtitle.setText(t("page.settings.subtitle"))
         self._lang_label.setText(t("page.settings.ui_language"))
         self._save_button.setText(t("page.settings.save_button"))
         self._discard_button.setText(t("save_state.discard"))
@@ -199,6 +206,12 @@ class SettingsPage(QWidget):
         page.glossary_import_requested.connect(self.glossary_import_requested)
         page.glossary_export_requested.connect(self.glossary_export_requested)
         page.glossary_tab.changed.connect(self._mark_dirty)
+        page.profile_editor.structure_changed.connect(self._mark_dirty)
+        self.voice_page.structure_changed.connect(self._mark_dirty)
+        self.voice_page.active_profile_changed.connect(
+            self._schedule_voice_profile_save
+        )
+        self.voice_page.test_requested.connect(self.speech_profile_test_requested)
         self.ocr_page.capture_test_requested.connect(self.capture_test_requested)
         self.ocr_page.model_install_requested.connect(self.ocr_model_install_requested)
         self.ocr_page.model_remove_requested.connect(self.ocr_model_remove_requested)
@@ -217,8 +230,6 @@ class SettingsPage(QWidget):
                 combo.currentIndexChanged.connect(self._mark_dirty)
         for check in self.findChildren(QCheckBox):
             check.checkStateChanged.connect(self._mark_dirty)
-        self.translation_page.new_profile_button.clicked.connect(self._mark_dirty)
-        self.translation_page.delete_profile_button.clicked.connect(self._mark_dirty)
 
     def _mark_dirty(self, *_: object) -> None:
         if self._loading:
@@ -229,6 +240,10 @@ class SettingsPage(QWidget):
         self._dirty_label.setProperty("dirty", True)
         self._save_button.setEnabled(True)
         self._discard_button.setEnabled(True)
+
+    def _schedule_voice_profile_save(self) -> None:
+        if not self._loading:
+            self._voice_auto_save_timer.start()
 
     def mark_saved(self) -> None:
         self._dirty = False
@@ -258,6 +273,7 @@ class SettingsPage(QWidget):
             self.translation_page.load_settings(settings)
             self.osc_page.load_settings(settings)
             self.ocr_page.load_settings(settings)
+            self.voice_page.load_settings(settings)
             self.data_page.load_location(location)
             self._location_summary.set_full_text(
                 self._i18n.tr("page.settings.config_location", path=location)
@@ -279,11 +295,26 @@ class SettingsPage(QWidget):
         self.translation_page.collect_settings(settings)
         self.osc_page.collect_settings(settings)
         self.ocr_page.collect_settings(settings)
+        self.voice_page.collect_settings(settings)
         self._draft.replace(settings)
         return settings
 
     def selected_profile(self) -> TranslationProfile:
         return self.translation_page.selected_profile()
+
+    def selected_speech_profile(self) -> SpeechRecognitionProfile:
+        return self.voice_page.selected_profile()
+
+    def set_speech_validation_busy(self, busy: bool) -> None:
+        self.voice_page.set_validation_busy(busy)
+
+    def set_speech_validation_result(
+        self,
+        profile_id: str,
+        state: str,
+        message: str,
+    ) -> None:
+        self.voice_page.set_validation_result(profile_id, state, message)
 
     def set_glossary_entries(self, builtin: tuple, user: tuple) -> None:
         self.translation_page.load_glossary_entries(builtin, user)

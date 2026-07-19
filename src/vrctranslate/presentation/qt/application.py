@@ -27,6 +27,7 @@ def run_qt_application(window_factory: Callable[[], QMainWindow]) -> int:
         "quick_input.qss",
         "ocr_overlay.qss",
         "ocr_tools.qss",
+        "voice_overlay.qss",
     )
     application.setStyleSheet(
         "\n".join(

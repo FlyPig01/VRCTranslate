@@ -28,7 +28,11 @@ def scroll_page() -> tuple[QScrollArea, QWidget, QVBoxLayout]:
     scroll.setObjectName("settingsContentScroll")
     scroll.setWidgetResizable(True)
     scroll.setFrameShape(QFrame.Shape.NoFrame)
+    scroll.setHorizontalScrollBarPolicy(
+        Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+    )
     content = QWidget()
+    content.setMinimumWidth(0)
     layout = QVBoxLayout(content)
     layout.setContentsMargins(2, 14, 8, 14)
     layout.setSpacing(14)

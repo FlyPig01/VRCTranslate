@@ -117,6 +117,7 @@ def route_from_dict(
         task_ttl_seconds=float_in_range(raw.get("task_ttl_seconds"), default.task_ttl_seconds, 0.5, 60),
         romaji_mode=romaji_mode,
         glossary_enabled=bool(raw.get("glossary_enabled", True)),
+        translation_strategy="text_profile",
     )
 
 

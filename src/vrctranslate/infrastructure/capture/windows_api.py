@@ -139,6 +139,23 @@ class WindowsApi:
             process_id,
         )
 
+    def virtual_desktop(self) -> WindowInfo:
+        """Return the physical bounds of the complete Windows desktop."""
+
+        sm_xvirtualscreen = 76
+        sm_yvirtualscreen = 77
+        sm_cxvirtualscreen = 78
+        sm_cyvirtualscreen = 79
+        left = int(self._user32.GetSystemMetrics(sm_xvirtualscreen))
+        top = int(self._user32.GetSystemMetrics(sm_yvirtualscreen))
+        width = int(self._user32.GetSystemMetrics(sm_cxvirtualscreen))
+        height = int(self._user32.GetSystemMetrics(sm_cyvirtualscreen))
+        if width <= 0 or height <= 0:
+            width = int(self._user32.GetSystemMetrics(0))
+            height = int(self._user32.GetSystemMetrics(1))
+            left = top = 0
+        return WindowInfo(0, "Desktop", left, top, width, height)
+
     def _window_process_id(self, hwnd: int) -> int:
         process_id = wintypes.DWORD()
         self._user32.GetWindowThreadProcessId(hwnd, ctypes.byref(process_id))

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import QTimer, Qt, Signal
 from PySide6.QtWidgets import (
     QBoxLayout,
     QCheckBox,
@@ -43,6 +43,12 @@ class OcrPage(QWidget):
         self._last_original = ""
         self._last_translated = ""
         self._narrow_layout: bool | None = None
+        self._layout_refresh_timer = QTimer(self)
+        self._layout_refresh_timer.setSingleShot(True)
+        self._layout_refresh_timer.setInterval(0)
+        self._layout_refresh_timer.timeout.connect(
+            self._apply_responsive_layout
+        )
         self._runtime = {
             "status": "",
             "mode": "continuous",
@@ -102,7 +108,9 @@ class OcrPage(QWidget):
         self._tool_card, tool_layout = self._card()
         self._tool_title = self._card_title(tool_layout)
         self._target_label = QLabel()
-        target_row = QHBoxLayout()
+        self.target_controls = QWidget()
+        target_row = QHBoxLayout(self.target_controls)
+        target_row.setContentsMargins(0, 0, 0, 0)
         target_row.setSpacing(8)
         self.target_combo = NoWheelComboBox()
         self.target_combo.setSizeAdjustPolicy(
@@ -117,9 +125,14 @@ class OcrPage(QWidget):
         self.refresh_targets_button.setIcon(load_icon("ui/action_refresh.svg"))
         target_row.addWidget(self.target_combo, 1)
         target_row.addWidget(self.refresh_targets_button)
+        self._screen_capture_note = QLabel()
+        self._screen_capture_note.setObjectName("inlineNotice")
+        self._screen_capture_note.setWordWrap(True)
+        self._screen_capture_note.hide()
         self.orb_topmost_check = QCheckBox()
         tool_layout.addWidget(self._target_label)
-        tool_layout.addLayout(target_row)
+        tool_layout.addWidget(self.target_controls)
+        tool_layout.addWidget(self._screen_capture_note)
         tool_layout.addSpacing(4)
         tool_layout.addWidget(self.orb_topmost_check)
         tool_layout.addStretch()
@@ -273,6 +286,7 @@ class OcrPage(QWidget):
         self._status_title.setText(t("page.ocr.status_title"))
         self._tool_title.setText(t("page.ocr.tool_title"))
         self._target_label.setText(t("page.ocr.target_program"))
+        self._screen_capture_note.setText(t("page.ocr.screen_capture_note"))
         self.refresh_targets_button.setText(t("page.ocr.refresh_targets"))
         self.orb_topmost_check.setText(t("page.ocr.orb_topmost"))
         self._recent_title.setText(t("page.ocr.recent_title"))
@@ -340,6 +354,11 @@ class OcrPage(QWidget):
                         self.target_combo.setCurrentIndex(index)
         finally:
             self._loading_targets = False
+
+    def set_target_required(self, required: bool) -> None:
+        self._target_label.setVisible(required)
+        self.target_controls.setVisible(required)
+        self._screen_capture_note.setVisible(not required)
 
     def load_settings(self, settings: AppSettings) -> None:
         ui = settings.ui
@@ -498,12 +517,18 @@ class OcrPage(QWidget):
         super().resizeEvent(event)
         self._apply_responsive_layout()
 
+    def showEvent(self, event) -> None:  # type: ignore[no-untyped-def]
+        super().showEvent(event)
+        # A page inside QStackedWidget can receive its last resize while still
+        # hidden and before the scroll viewport has its final geometry. Re-run
+        # after the selected page has actually been laid out.
+        self._layout_refresh_timer.start()
+
     def _apply_responsive_layout(self) -> None:
         """Keep every OCR control usable at the main window's minimum size."""
 
         viewport_width = self._scroll.viewport().width()
-        if viewport_width <= 0:
-            viewport_width = max(0, self.width() - 44)
+        viewport_width = max(viewport_width, max(0, self.width() - 44))
         narrow = viewport_width < 900
         if narrow == self._narrow_layout:
             return

@@ -45,6 +45,9 @@ class WindowsGraphicsCapture:
     def get_window(self, hwnd: int) -> WindowInfo | None:
         return self._windows.get_window(hwnd)
 
+    def screen_target(self) -> WindowInfo | None:
+        return None
+
     def capture(self, hwnd: int, region: CaptureRegion) -> CapturedFrame:
         window = self._windows.get_window(hwnd)
         if window is None:

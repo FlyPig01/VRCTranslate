@@ -84,6 +84,12 @@ class OcrController(QObject):
         self._region_window = region_window
         self._orb = orb_window
         self._capture = capture
+        try:
+            self._screen_capture_mode: bool | None = bool(
+                capture.uses_screen_coordinates
+            )
+        except VrcTranslateError:
+            self._screen_capture_mode = None
         self._ocr_engine = ocr_engine
         self._settings = settings
         self._windows_api = windows_api
@@ -144,6 +150,7 @@ class OcrController(QObject):
         orb_window.continuous_requested.connect(lambda: self.start_mode("continuous"))
         orb_window.region_requested.connect(self.select_region)
         orb_window.region_visibility_requested.connect(region_window.toggle_visibility)
+        orb_window.overlay_hide_requested.connect(overlay.hide)
         orb_window.display_mode_requested.connect(self._set_display_mode)
         orb_window.exit_requested.connect(self.exit_ocr_tools)
         orb_window.geometry_changed.connect(self._save_orb_geometry)
@@ -202,7 +209,34 @@ class OcrController(QObject):
         self._orb.apply_settings(settings.ui)
         self._page.load_settings(settings)
         if hasattr(settings, "ocr"):
+            previous_screen_mode = self._screen_capture_mode
             self._capture.set_mode(settings.ocr.capture_backend)
+            try:
+                self._screen_capture_mode = bool(
+                    self._capture.uses_screen_coordinates
+                )
+            except VrcTranslateError:
+                self._screen_capture_mode = None
+            self._page.set_target_required(self._screen_capture_mode is not True)
+            expected_space = (
+                "screen" if self._screen_capture_mode is True else "window"
+            )
+            coordinate_space_changed = (
+                self._screen_capture_mode is not None
+                and settings.ocr.region_coordinate_space != expected_space
+            )
+            if coordinate_space_changed:
+                settings.ocr.region_x = 0
+                settings.ocr.region_y = 0
+                settings.ocr.region_width = 0
+                settings.ocr.region_height = 0
+                settings.ocr.region_coordinate_space = expected_space
+                self._region_window.hide()
+                self._invalidate_inline_layout()
+                self._settings.save(settings)
+                QTimer.singleShot(0, self.refresh_target)
+            elif previous_screen_mode != self._screen_capture_mode:
+                QTimer.singleShot(0, self.refresh_target)
             self._region_window.set_mode(settings.ocr.recognition_mode)
         if hasattr(settings, "translation"):
             settings.translation.ensure_routes()
@@ -217,6 +251,7 @@ class OcrController(QObject):
         self._update_capture_status()
 
     def refresh_target(self) -> None:
+        self._page.set_target_required(self._screen_capture_mode is not True)
         self._available_windows = self._target.refresh_windows()
         window = self._target.selected_window()
         self._page.set_target_windows(
@@ -238,6 +273,7 @@ class OcrController(QObject):
             return
         ocr = self._settings.current.ocr
         ocr.region_x = ocr.region_y = ocr.region_width = ocr.region_height = 0
+        ocr.region_coordinate_space = "window"
         self._invalidate_inline_layout()
         ocr.window_title = window.title
         self._settings.save(self._settings.current)
@@ -326,7 +362,8 @@ class OcrController(QObject):
         except VrcTranslateError as exc:
             self._set_error(exc.user_message)
             return
-        self._windows_api.activate_window(window.hwnd)
+        if window.hwnd:
+            self._windows_api.activate_window(window.hwnd)
         if not multimodal:
             self._scheduler.start(self._settings.current.translation)
         self._translation_context.clear()
@@ -385,7 +422,7 @@ class OcrController(QObject):
     def _target_changed(self, value: object, save: bool = True) -> None:
         if not isinstance(value, WindowInfo):
             return
-        if save:
+        if save and value.hwnd:
             self._settings.current.ocr.window_title = value.title
             self._settings.save(self._settings.current)
             self._invalidate_inline_layout()
@@ -413,7 +450,9 @@ class OcrController(QObject):
         ocr.region_y = value.y
         ocr.region_width = value.width
         ocr.region_height = value.height
-        ocr.window_title = window.title
+        ocr.region_coordinate_space = "screen" if not window.hwnd else "window"
+        if window.hwnd:
+            ocr.window_title = window.title
         self._settings.save(self._settings.current)
         self._invalidate_inline_layout()
         self._region_window.set_target(window, value)
@@ -460,11 +499,14 @@ class OcrController(QObject):
         if self._region_window.isVisible():
             self._region_window.set_target(window, region)
         self._inline.set_target(window, region)
-        foreground = getattr(self._windows_api, "is_foreground_window", None)
-        minimized = getattr(self._windows_api, "is_window_minimized", None)
-        is_foreground = bool(foreground(window.hwnd)) if callable(foreground) else True
-        is_minimized = bool(minimized(window.hwnd)) if callable(minimized) else False
-        self._inline.set_target_visible(is_foreground and not is_minimized)
+        if not window.hwnd:
+            self._inline.set_target_visible(True)
+        else:
+            foreground = getattr(self._windows_api, "is_foreground_window", None)
+            minimized = getattr(self._windows_api, "is_window_minimized", None)
+            is_foreground = bool(foreground(window.hwnd)) if callable(foreground) else True
+            is_minimized = bool(minimized(window.hwnd)) if callable(minimized) else False
+            self._inline.set_target_visible(is_foreground and not is_minimized)
 
     def _close_region(self) -> None:
         if self._session_running() or self._ocr_active:

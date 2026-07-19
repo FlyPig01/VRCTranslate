@@ -77,7 +77,11 @@ class TranslateText:
     ):
         if not isinstance(settings, TranslationSettings):
             return None
-        return settings.ocr_route if request.purpose == "ocr" else settings.self_route
+        if request.purpose == "ocr":
+            return settings.ocr_route
+        if request.purpose == "voice":
+            return settings.voice_route
+        return settings.self_route
 
     @classmethod
     def _romaji_mode(

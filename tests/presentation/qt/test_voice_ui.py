@@ -4,7 +4,13 @@ import logging
 
 from PySide6.QtCore import QAbstractAnimation, Qt
 from PySide6.QtGui import QGuiApplication
-from PySide6.QtWidgets import QLabel, QPushButton, QScrollArea, QTreeWidget
+from PySide6.QtWidgets import (
+    QApplication,
+    QLabel,
+    QPushButton,
+    QScrollArea,
+    QTreeWidget,
+)
 
 from vrctranslate.application.dto import AppSettings, SpeechRecognitionProfile
 from vrctranslate.application.speech_profiles import (
@@ -18,6 +24,7 @@ from vrctranslate.domain.speech import (
     AudioFrame,
     SpeechProfileValidationResult,
     SpeechServiceCapabilities,
+    SpeechRecognitionResult,
     SpeechStreamEvent,
     VoiceCaption,
 )
@@ -111,6 +118,25 @@ class _Speech:
         del profile
         return SpeechProfileValidationResult("verified", "ok")
 
+    def release(self, profile):
+        del profile
+
+
+class _LocalSpeech(_Speech):
+    def __init__(self) -> None:
+        super().__init__()
+        self.transcribe_calls = 0
+        self.released = False
+
+    def transcribe(self, request, profile):
+        assert profile.provider == "local_offline"
+        self.transcribe_calls += 1
+        return SpeechRecognitionResult(request.request_id, "こんにちは", "ja")
+
+    def release(self, profile):
+        assert profile.provider == "local_offline"
+        self.released = True
+
 
 class _FixedLanguageSpeech(_Speech):
     def capabilities(self, profile):
@@ -158,6 +184,59 @@ def _verified_repository() -> _Repository:
     repository.value.voice.asr_profiles = [profile]
     repository.value.voice.asr_profile_id = profile.id
     return repository
+
+
+def _verified_local_repository() -> _Repository:
+    repository = _Repository()
+    profile = SpeechRecognitionProfile(
+        id="speech-local",
+        name="SenseVoice",
+        provider="local_offline",
+        model="sensevoice-small-int8",
+    )
+    set_profile_validation(profile, "verified", "ok")
+    repository.value.voice.asr_profiles = [profile]
+    repository.value.voice.asr_profile_id = profile.id
+    return repository
+
+
+def test_local_voice_waits_for_sentence_end_before_asr_and_translation(qtbot) -> None:
+    page = VoicePage(I18nManager("zh_CN"))
+    overlay = VoiceOverlayWindow(i18n=I18nManager("zh_CN"))
+    qtbot.addWidget(page)
+    qtbot.addWidget(overlay)
+    capture = _Capture()
+    speech = _LocalSpeech()
+    translator = _RecordingTranslateVoice()
+    controller = VoiceTranslationController(
+        page,
+        overlay,
+        capture,
+        speech,  # type: ignore[arg-type]
+        translator,  # type: ignore[arg-type]
+        ManageSettings(_verified_local_repository()),
+        _Windows(),  # type: ignore[arg-type]
+        logging.getLogger("test-local-voice-controller"),
+        I18nManager("zh_CN"),
+    )
+    page.target_combo.setCurrentIndex(page.target_combo.findData(202))
+
+    controller.start()
+    qtbot.waitUntil(lambda: capture.running, timeout=3000)
+    assert capture.on_frame is not None
+    voiced = AudioFrame(b"\xd0\x07" * 1600)
+    silent = AudioFrame(b"\x00\x00" * 1600)
+    for _ in range(4):
+        capture.on_frame(voiced)
+    qtbot.wait(50)
+    assert speech.transcribe_calls == 0
+    assert translator.calls == []
+    for _ in range(7):
+        capture.on_frame(silent)
+
+    qtbot.waitUntil(lambda: translator.calls == [("こんにちは", "ja")], timeout=3000)
+    controller.stop()
+    assert speech.released
 
 
 def test_voice_page_accepts_non_vrchat_processes(qtbot) -> None:
@@ -264,7 +343,7 @@ def test_voice_start_failure_is_visible_inside_overlay(qtbot) -> None:
     qtbot.mouseClick(overlay.recognition_button, Qt.MouseButton.LeftButton)
 
     qtbot.waitUntil(lambda: overlay.error_label.isVisible(), timeout=1000)
-    assert "尚未配置实时语音识别档案" in overlay.error_label.text()
+    assert "尚未配置语音识别档案" in overlay.error_label.text()
     assert capture.running is False
     controller.shutdown()
 
@@ -435,6 +514,41 @@ def test_voice_overlay_switches_between_caption_and_animated_orb(qtbot) -> None:
     qtbot.waitUntil(overlay.is_collapsed, timeout=1000)
     assert overlay.is_collapsed()
     assert overlay.pos() == orb_position
+
+
+def test_voice_caption_refresh_never_reparents_visible_items_as_windows(qtbot) -> None:
+    overlay = VoiceOverlayWindow(i18n=I18nManager("zh_CN"))
+    qtbot.addWidget(overlay)
+    overlay.add_caption(VoiceCaption(1, "hello", "你好"))
+    previous = overlay.findChildren(QLabel, "voiceCaptionTranslation")[0].parentWidget()
+
+    overlay.add_caption(VoiceCaption(2, "world", "世界"))
+
+    assert previous.parentWidget() is overlay.caption_container
+    assert previous.isHidden()
+    assert previous not in QApplication.topLevelWidgets()
+
+
+def test_long_voice_captions_do_not_expand_top_level_window(qtbot) -> None:
+    overlay = VoiceOverlayWindow(i18n=I18nManager("zh_CN"))
+    qtbot.addWidget(overlay)
+    settings = AppSettings().voice.overlay
+    settings.width = 320
+    settings.height = 210
+    settings.max_items = 3
+    overlay.apply_settings(settings)
+    overlay.show_overlay()
+    qtbot.waitUntil(lambda: not overlay._animating_geometry, timeout=1000)
+
+    for sequence in range(1, 4):
+        overlay.add_caption(
+            VoiceCaption(sequence, "長い原文" * 80, "很长的翻译" * 80)
+        )
+        qtbot.wait(20)
+
+    assert (overlay.width(), overlay.height()) == (320, 210)
+    assert overlay.minimumHeight() <= 210
+    assert overlay.caption_scroll.height() > 0
 
 
 def test_collapsing_running_voice_overlay_pauses_recognition(qtbot) -> None:
@@ -619,7 +733,7 @@ def test_voice_service_profiles_delete_legacy_entries(qtbot) -> None:
     assert not hasattr(page, "show_original_check")
 
 
-def test_add_voice_service_dialog_only_lists_realtime_provider_presets(qtbot) -> None:
+def test_add_voice_service_dialog_lists_cloud_and_local_provider_presets(qtbot) -> None:
     dialog = AddSpeechProfileDialog(I18nManager("zh_CN"))
     qtbot.addWidget(dialog)
 
@@ -629,11 +743,73 @@ def test_add_voice_service_dialog_only_lists_realtime_provider_presets(qtbot) ->
     } == {
         "tencent_realtime",
         "aliyun_nls_realtime",
+        "local_offline",
     }
     assert "16k_multi_lang" in {
         dialog.model_combo.itemData(index)
         for index in range(dialog.model_combo.count())
     }
+
+
+def test_local_speech_model_card_only_shows_actions_for_current_state(qtbot) -> None:
+    page = VoiceSettingsPage(I18nManager("zh_CN"))
+    qtbot.addWidget(page)
+
+    page.set_model_status(False, "v1", 0, 258_000_000, "data/models/speech")
+    assert page._model_install.isVisibleTo(page)
+    assert not page._model_progress.isVisibleTo(page)
+    assert not page._model_remove.isVisibleTo(page)
+
+    page.set_model_status(True, "v1", 267_000_000, 258_000_000, "data/models/speech")
+    assert not page._model_install.isVisibleTo(page)
+    assert page._model_verify.isVisibleTo(page)
+    assert page._model_remove.isVisibleTo(page)
+
+    page.set_model_status(
+        True,
+        "v1",
+        267_000_000,
+        258_000_000,
+        "data/models/speech",
+        busy=True,
+        operation="verify",
+    )
+    assert "校验" in page._model_status.text()
+    assert not page._model_progress.isVisibleTo(page)
+    assert not page._model_cancel.isVisibleTo(page)
+
+    page.set_model_status(
+        False,
+        "v1",
+        20_000_000,
+        258_000_000,
+        "data/models/speech",
+        removal_pending=True,
+    )
+    assert "重启" in page._model_status.text()
+    assert not page._model_install.isVisibleTo(page)
+    assert not page._model_remove.isVisibleTo(page)
+
+
+def test_local_speech_profile_requires_no_api_credentials(qtbot) -> None:
+    dialog = AddSpeechProfileDialog(I18nManager("zh_CN"))
+    qtbot.addWidget(dialog)
+    dialog.provider_combo.setCurrentIndex(
+        dialog.provider_combo.findData("local_offline")
+    )
+
+    assert not dialog.form.isRowVisible(dialog.field_one_edit)
+    assert not dialog.form.isRowVisible(dialog.field_two_edit)
+    assert not dialog.form.isRowVisible(dialog.field_three_edit)
+    assert dialog.form.isRowVisible(dialog.model_combo)
+
+    dialog.profile_name_edit.setText("Local SenseVoice")
+    dialog._accept_profile()
+
+    assert dialog.profile is not None
+    assert dialog.profile.provider == "local_offline"
+    assert dialog.profile.model == "sensevoice-small-int8"
+    assert dialog.profile.api_key == ""
 
 
 def test_tencent_engine_labels_are_localized_and_custom_values_are_editable(qtbot) -> None:

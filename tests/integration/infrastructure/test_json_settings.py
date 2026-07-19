@@ -73,6 +73,29 @@ def test_v12_round_trip_keeps_provider_specific_speech_fields(tmp_path) -> None:
     assert repository.load().voice.overlay.display_mode == "original"
 
 
+def test_v12_round_trip_keeps_local_sensevoice_profile(tmp_path) -> None:
+    repository = JsonSettingsRepository(tmp_path / "config.json")
+    settings = AppSettings()
+    settings.voice.asr_profiles = [
+        SpeechRecognitionProfile(
+            id="local-asr",
+            name="SenseVoice",
+            provider="local_offline",
+            model="sensevoice-small-int8",
+            options={"validation_state": "pending", "service_vendor": "local"},
+        )
+    ]
+    settings.voice.asr_profile_id = "local-asr"
+
+    repository.save(settings)
+    loaded = repository.load().voice.asr_profile()
+
+    assert loaded.provider == "local_offline"
+    assert loaded.model == "sensevoice-small-int8"
+    assert loaded.api_key == ""
+    assert loaded.options["service_vendor"] == "local"
+
+
 def test_v12_round_trip_keeps_ocr_region_coordinate_space(tmp_path) -> None:
     repository = JsonSettingsRepository(tmp_path / "config.json")
     settings = AppSettings()

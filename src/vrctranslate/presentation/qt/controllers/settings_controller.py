@@ -7,10 +7,12 @@ from pathlib import Path
 from PySide6.QtCore import QObject, QThreadPool, QUrl, Signal
 from PySide6.QtGui import QDesktopServices
 
-from vrctranslate.application.dto import AppSettings
+from vrctranslate.application.dto import AppSettings, SpeechRecognitionProfile
 from vrctranslate.application.ports.ocr_models import OcrModelManagement
+from vrctranslate.application.ports.speech_models import SpeechModelManagement
 from vrctranslate.application.ports.speech_recognizer import SpeechRecognizer
 from vrctranslate.application.ports.glossary_repository import GlossaryRepository
+from vrctranslate.application.speech_profiles import set_profile_validation
 from vrctranslate.application.use_cases.manage_settings import ManageSettings
 from vrctranslate.application.use_cases.translate_text import TranslateText
 from vrctranslate.application.use_cases.translate_visual_frame import TranslateVisualFrame
@@ -48,6 +50,7 @@ class SettingsController(QObject):
         glossary_repository: GlossaryRepository | None = None,
         translate_visual: TranslateVisualFrame | None = None,
         speech_validator: SpeechRecognizer | None = None,
+        speech_models: SpeechModelManagement | None = None,
     ) -> None:
         super().__init__(parent)
         self._page = page
@@ -59,6 +62,8 @@ class SettingsController(QObject):
         self._glossary_repository = glossary_repository
         self._model_workers: dict[str, OcrModelInstallWorker] = {}
         self._speech_validator = speech_validator
+        self._speech_models = speech_models
+        self._speech_model_worker: OcrModelInstallWorker | None = None
         self._speech_worker: TaskWorker | None = None
         self._translation_tester = TranslationProfileTester(
             page,
@@ -79,8 +84,126 @@ class SettingsController(QObject):
         page.glossary_import_requested.connect(self._import_glossary)
         page.glossary_export_requested.connect(self._export_glossary)
         page.speech_profile_test_requested.connect(self._validate_speech_profile)
+        page.speech_model_install_requested.connect(self._install_speech_model)
+        page.speech_model_verify_requested.connect(self._verify_speech_model)
+        page.speech_model_remove_requested.connect(self._remove_speech_model)
+        page.speech_model_cancel_requested.connect(self._cancel_speech_model)
         self._load_page()
         self._refresh_ocr_models()
+        self._refresh_speech_model()
+
+    def _refresh_speech_model(
+        self,
+        *,
+        error: str = "",
+        busy: bool = False,
+        operation: str = "",
+    ) -> None:
+        if self._speech_models is None:
+            return
+        status = self._speech_models.status()
+        self._page.set_speech_model_status(
+            status.installed,
+            status.version,
+            status.installed_size,
+            status.required_download_size or status.download_size,
+            str(status.models_root),
+            busy=busy,
+            error=error,
+            operation=operation,
+            removal_pending=status.removal_pending,
+        )
+
+    def _install_speech_model(self) -> None:
+        if self._speech_models is None or self._speech_model_worker is not None:
+            return
+        self._start_speech_model_worker(
+            lambda progress: self._speech_models.install(progress)
+        )
+
+    def _verify_speech_model(self) -> None:
+        if self._speech_models is None or self._speech_model_worker is not None:
+            return
+        self._start_speech_model_worker(
+            lambda _progress: self._speech_models.verify(),
+            operation="verify",
+        )
+
+    def _start_speech_model_worker(
+        self,
+        task: Callable,
+        *,
+        operation: str = "install",
+    ) -> None:
+        self._refresh_speech_model(busy=True, operation=operation)
+        worker = OcrModelInstallWorker(task)
+        self._speech_model_worker = worker
+        worker.signals.progress.connect(self._page.set_speech_model_progress)
+        worker.signals.succeeded.connect(lambda _result: self._speech_model_finished())
+        worker.signals.failed.connect(self._speech_model_failed)
+        worker.signals.cancelled.connect(self._speech_model_cancelled)
+        worker.signals.finished.connect(
+            lambda current=worker: self._clear_speech_model_worker(current)
+        )
+        QThreadPool.globalInstance().start(worker)
+
+    def _cancel_speech_model(self) -> None:
+        if self._speech_model_worker is not None:
+            self._speech_model_worker.cancel()
+
+    def _remove_speech_model(self) -> None:
+        if self._speech_models is None or self._speech_model_worker is not None:
+            return
+        try:
+            if self._speech_validator is not None and hasattr(
+                self._speech_validator, "release"
+            ):
+                self._speech_validator.release(
+                    SpeechRecognitionProfile(
+                        provider="local_offline",
+                        model="sensevoice-small-int8",
+                    )
+                )
+            self._speech_models.remove()
+            for profile in self._settings.current.voice.asr_profiles:
+                if profile.provider == "local_offline":
+                    set_profile_validation(profile, "pending", "")
+            self._settings.save(self._settings.current)
+        except OSError as exc:
+            self._speech_model_failed(exc)
+            return
+        self._load_page()
+        self.settings_changed.emit(self._settings.current)
+        self._speech_model_finished()
+
+    def _speech_model_finished(self) -> None:
+        self._refresh_speech_model()
+        message = (
+            self._i18n.tr("speech_models.ready")
+            if self._i18n
+            else "本地语音模型状态已更新"
+        )
+        self.status_bar_message.emit(message, 5000)
+
+    def _speech_model_cancelled(self) -> None:
+        self._refresh_speech_model()
+        message = (
+            self._i18n.tr("speech_models.cancelled")
+            if self._i18n
+            else "本地语音模型下载已取消"
+        )
+        self.status_bar_message.emit(message, 4000)
+
+    def _speech_model_failed(self, error: object) -> None:
+        message = getattr(error, "user_message", str(error)) or type(error).__name__
+        self._refresh_speech_model(error=message)
+        self._logger.warning(
+            "speech_model_operation_failed error=%s", type(error).__name__
+        )
+
+    def _clear_speech_model_worker(self, worker: OcrModelInstallWorker) -> None:
+        if self._speech_model_worker is worker:
+            self._speech_model_worker = None
 
     def _validate_speech_profile(self) -> None:
         if self._speech_validator is None or self._speech_worker is not None:

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import threading
+from collections import deque
 from copy import deepcopy
 
 from PySide6.QtCore import QObject, QThreadPool, QTimer, Signal
@@ -15,14 +16,19 @@ from vrctranslate.application.ports.speech_recognizer import (
 from vrctranslate.application.ports.window_catalog import WindowCatalog
 from vrctranslate.application.speech_profiles import profile_validation_state
 from vrctranslate.application.use_cases.manage_settings import ManageSettings
+from vrctranslate.application.use_cases.recognize_voice_segment import (
+    RecognizeVoiceSegment,
+)
 from vrctranslate.application.use_cases.translate_voice_text import TranslateVoiceText
 from vrctranslate.application.use_cases.voice_activity_gate import VoiceActivityGate
+from vrctranslate.application.use_cases.voice_segmenter import VoiceSegmenter
 from vrctranslate.domain.errors import TranslationError
 from vrctranslate.domain.ocr import WindowInfo
 from vrctranslate.domain.speech import (
     AudioFrame,
     ProcessAudioCaptureError,
     SpeechRecognitionError,
+    SpeechRecognitionResult,
     SpeechStreamConfig,
     SpeechStreamEvent,
     VoiceCaption,
@@ -40,6 +46,7 @@ class VoiceTranslationController(QObject):
     _capture_failed = Signal(int, object)
     _speech_event_ready = Signal(int, object)
     _speech_failed = Signal(int, object)
+    _segment_ready = Signal(int, object)
 
     def __init__(
         self,
@@ -59,6 +66,7 @@ class VoiceTranslationController(QObject):
         self._overlay = overlay
         self._capture = capture
         self._speech = speech
+        self._recognize_segment = RecognizeVoiceSegment(speech)
         self._translate_voice = translate_voice
         self._settings = settings
         self._windows_api = windows_api
@@ -72,8 +80,12 @@ class VoiceTranslationController(QObject):
         self._starting = False
         self._speech_session: SpeechStreamSession | None = None
         self._gate: VoiceActivityGate | None = None
+        self._segmenter: VoiceSegmenter | None = None
+        self._recognition_mode = "streaming"
         self._stream_lock = threading.Lock()
         self._start_worker: TaskWorker | None = None
+        self._recognition_worker: TaskWorker | None = None
+        self._pending_segments: deque[tuple[int, bytes]] = deque()
         self._workers: dict[tuple[int, int], TaskWorker] = {}
         self._pending_translation: tuple[int, str, str] | None = None
         self._selected_process_id: int | None = None
@@ -101,6 +113,7 @@ class VoiceTranslationController(QObject):
         self._capture_failed.connect(self._on_capture_failed)
         self._speech_event_ready.connect(self._on_speech_event)
         self._speech_failed.connect(self._on_speech_failed)
+        self._segment_ready.connect(self._recognize_completed_segment)
         self.apply_settings(settings.current)
         self._overlay.set_recognition_running(False)
         self.refresh_targets()
@@ -154,8 +167,15 @@ class VoiceTranslationController(QObject):
         self._pending_translation = None
         self._finalized_utterances.clear()
         self._partial_original = ""
+        profile = self._settings.current.voice.asr_profile()
+        self._recognition_mode = self._speech.capabilities(profile).recognition_mode
         with self._stream_lock:
-            self._gate = VoiceActivityGate(self._settings.current.voice.segment)
+            if self._recognition_mode == "segmented":
+                self._segmenter = VoiceSegmenter(self._settings.current.voice.segment)
+                self._gate = None
+            else:
+                self._gate = VoiceActivityGate(self._settings.current.voice.segment)
+                self._segmenter = None
         self._starting = True
         self._overlay.set_recognition_state("starting")
         self._page.set_running(False, starting=True)
@@ -185,10 +205,26 @@ class VoiceTranslationController(QObject):
         session: int,
         process_id: int,
         settings: AppSettings,
-    ) -> SpeechStreamSession:
+    ) -> SpeechStreamSession | None:
+        profile = settings.voice.asr_profile()
+        capabilities = self._speech.capabilities(profile)
+        if capabilities.recognition_mode == "segmented":
+            result = self._speech.validate_profile(profile)
+            if result.state != "verified":
+                raise SpeechRecognitionError("model_missing", result.message)
+            self._capture.start(
+                process_id,
+                lambda frame: self._on_audio_frame(session, frame),
+                include_process_tree=True,
+                on_error=lambda error: self._capture_failed.emit(session, error),
+            )
+            if session != self._session:
+                self._capture.stop()
+                raise SpeechRecognitionError("cancelled", "语音会话已取消")
+            return None
         route = settings.translation.voice_route
         stream = self._speech.open_session(
-            settings.voice.asr_profile(),
+            profile,
             SpeechStreamConfig(route.source_language, route.target_language),
             lambda event: self._speech_event_ready.emit(session, event),
             lambda error: self._speech_failed.emit(session, error),
@@ -220,21 +256,34 @@ class VoiceTranslationController(QObject):
     def stop(self) -> None:
         if not self._capturing and not self._starting:
             return
+        was_capturing = self._capturing
         self._session += 1
         self._starting = False
         self._capturing = False
         self._partial_timer.stop()
+        release_profile = None
+        if was_capturing and self._recognition_mode == "segmented":
+            try:
+                release_profile = self._settings.current.voice.asr_profile()
+            except (ValueError, KeyError):
+                pass
         with self._stream_lock:
             stream, self._speech_session = self._speech_session, None
             if self._gate is not None:
                 self._gate.reset()
             self._gate = None
+            if self._segmenter is not None:
+                self._segmenter.reset()
+            self._segmenter = None
         self._completed.clear()
+        self._pending_segments.clear()
         self._pending_translation = None
         self._finalized_utterances.clear()
         self._capture.stop()
         if stream is not None:
             stream.cancel()
+        if release_profile is not None:
+            self._speech.release(release_profile)
         self._overlay.set_live_caption("", "")
         self._overlay.set_recognition_running(False)
         self._page.set_running(False)
@@ -270,8 +319,9 @@ class VoiceTranslationController(QObject):
         self._page.set_running(True)
         self._page.set_status("listening")
         self._logger.info(
-            "voice_stream_started process_id=%d",
+            "voice_capture_started process_id=%d recognition_mode=%s",
             self._selected_process_id or 0,
+            self._recognition_mode,
         )
 
     def _pipeline_start_failed(self, session: int, error: object) -> None:
@@ -302,15 +352,76 @@ class VoiceTranslationController(QObject):
             return
         try:
             with self._stream_lock:
+                segmenter = self._segmenter
                 gate = self._gate
                 stream = self._speech_session
-                frames = gate.feed(frame) if gate is not None else ()
+                if segmenter is not None:
+                    segment = segmenter.feed(frame)
+                    frames = ()
+                else:
+                    segment = None
+                    frames = gate.feed(frame) if gate is not None else ()
+            if segment is not None:
+                self._segment_ready.emit(session, segment)
+                return
             if stream is None:
                 return
             for forwarded in frames:
                 stream.push_audio(forwarded)
         except Exception as exc:
             self._speech_failed.emit(session, exc)
+
+    def _recognize_completed_segment(self, session: int, value: object) -> None:
+        if session != self._session or not isinstance(value, bytes) or not value:
+            return
+        if self._recognition_worker is not None:
+            limit = max(1, self._settings.current.translation.voice_route.queue_limit)
+            while len(self._pending_segments) >= limit:
+                self._pending_segments.popleft()
+                self._logger.info("voice_segment_dropped reason=recognition_queue_full")
+            self._pending_segments.append((session, value))
+            return
+        snapshot = deepcopy(self._settings.current)
+        worker = TaskWorker(lambda: self._recognize_segment.execute(value, snapshot))
+        self._recognition_worker = worker
+        worker.signals.succeeded.connect(
+            lambda result: self._segment_recognized(session, result)
+        )
+        worker.signals.failed.connect(
+            lambda error: self._segment_recognition_failed(session, error)
+        )
+        worker.signals.finished.connect(
+            lambda current=worker: self._recognition_finished(current)
+        )
+        self._page.set_status("recognizing")
+        QThreadPool.globalInstance().start(worker)
+
+    def _segment_recognized(self, session: int, value: object) -> None:
+        if session != self._session or not isinstance(value, SpeechRecognitionResult):
+            return
+        original = value.text.strip()
+        if not original:
+            self._page.set_status("listening")
+            return
+        self._partial_original = original
+        self._render_partial()
+        self._queue_translation(session, original, value.detected_language)
+
+    def _segment_recognition_failed(self, session: int, error: object) -> None:
+        if session != self._session:
+            return
+        if isinstance(error, ValueError) and "空文本" in str(error):
+            return
+        self._on_speech_failed(session, error)
+
+    def _recognition_finished(self, worker: TaskWorker) -> None:
+        if self._recognition_worker is worker:
+            self._recognition_worker = None
+        while self._pending_segments:
+            pending = self._pending_segments.popleft()
+            if pending[0] == self._session:
+                self._recognize_completed_segment(*pending)
+                break
 
     def _on_speech_event(self, session: int, value: object) -> None:
         if session != self._session or not isinstance(value, SpeechStreamEvent):
@@ -521,8 +632,8 @@ class VoiceTranslationController(QObject):
     def _validate_services(self, settings: AppSettings) -> None:
         profile = settings.voice.asr_profile()
         capabilities = self._speech.capabilities(profile)
-        if not capabilities.realtime_eligible:
-            raise ValueError("当前语音档案不是实时流式服务，请更换档案")
+        if not capabilities.caption_eligible:
+            raise ValueError("当前语音档案不能用于语音字幕，请更换档案")
         if (
             settings.translation.voice_route.source_language == "auto"
             and not capabilities.source_language_auto

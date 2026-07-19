@@ -39,12 +39,21 @@ class SpeechServiceCapabilities:
     final_transcript: bool
     source_language_auto: bool = True
     deployment: Literal["local", "cloud"] = "cloud"
+    recognition_mode: Literal["streaming", "segmented"] = "streaming"
 
     @property
     def realtime_eligible(self) -> bool:
-        return self.streaming_audio and (
+        return self.recognition_mode == "streaming" and self.streaming_audio and (
             self.partial_transcript or self.final_transcript
         )
+
+    @property
+    def caption_eligible(self) -> bool:
+        if not self.final_transcript:
+            return False
+        if self.recognition_mode == "streaming":
+            return self.streaming_audio
+        return self.recognition_mode == "segmented"
 
 
 @dataclass(frozen=True, slots=True)

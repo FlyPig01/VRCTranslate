@@ -10,6 +10,7 @@ from PySide6.QtWidgets import (
     QGridLayout,
     QHBoxLayout,
     QLabel,
+    QProgressBar,
     QPushButton,
     QSizePolicy,
     QVBoxLayout,
@@ -135,11 +136,15 @@ class _SpeechProfileRow(QFrame):
 
 
 class VoiceSettingsPage(QWidget):
-    """Three-provider realtime ASR profiles and audio activity settings."""
+    """Cloud and local ASR profiles plus shared audio activity settings."""
 
     structure_changed = Signal()
     active_profile_changed = Signal()
     test_requested = Signal()
+    model_install_requested = Signal()
+    model_verify_requested = Signal()
+    model_remove_requested = Signal()
+    model_cancel_requested = Signal()
 
     def __init__(self, i18n: I18nManager) -> None:
         super().__init__()
@@ -150,6 +155,17 @@ class VoiceSettingsPage(QWidget):
         self._profile_rows: dict[str, _SpeechProfileRow] = {}
         self._validation_labels: dict[str, QPushButton] = {}
         self._compact = False
+        self._model_installed = False
+        self._model_busy = False
+        self._model_version = ""
+        self._model_installed_size = 0
+        self._model_download_size = 0
+        self._model_completed = 0
+        self._model_total = 0
+        self._model_path = ""
+        self._model_error = ""
+        self._model_operation = ""
+        self._model_removal_pending = False
         self._build_ui()
         self._retranslate()
         i18n.language_changed.connect(lambda _: self._retranslate())
@@ -162,6 +178,48 @@ class VoiceSettingsPage(QWidget):
             Qt.ScrollBarPolicy.ScrollBarAlwaysOff
         )
         root.addWidget(self.scroll)
+
+        model, model_layout = card("")
+        self._model_title = model_layout.itemAt(0).widget()
+        self._model_surface = QFrame()
+        self._model_surface.setObjectName("ocrModelCard")
+        model_surface_layout = QVBoxLayout(self._model_surface)
+        model_surface_layout.setContentsMargins(14, 12, 14, 12)
+        model_surface_layout.setSpacing(8)
+        model_header = QHBoxLayout()
+        self._model_name = QLabel("SenseVoiceSmall INT8")
+        self._model_name.setObjectName("ocrModelName")
+        self._model_status = QLabel()
+        self._model_status.setObjectName("ocrModelStatus")
+        model_header.addWidget(self._model_name)
+        model_header.addStretch()
+        model_header.addWidget(self._model_status)
+        model_surface_layout.addLayout(model_header)
+        self._model_detail = QLabel()
+        self._model_detail.setObjectName("ocrModelDetail")
+        self._model_detail.setWordWrap(True)
+        model_surface_layout.addWidget(self._model_detail)
+        self._model_progress = QProgressBar()
+        self._model_progress.setTextVisible(True)
+        model_surface_layout.addWidget(self._model_progress)
+        model_actions = QHBoxLayout()
+        model_actions.addStretch()
+        self._model_install = QPushButton()
+        self._model_install.setObjectName("primaryButton")
+        self._model_verify = QPushButton()
+        self._model_remove = QPushButton()
+        self._model_cancel = QPushButton()
+        model_actions.addWidget(self._model_install)
+        model_actions.addWidget(self._model_verify)
+        model_actions.addWidget(self._model_remove)
+        model_actions.addWidget(self._model_cancel)
+        model_surface_layout.addLayout(model_actions)
+        model_layout.addWidget(self._model_surface)
+        self._model_note = QLabel()
+        self._model_note.setObjectName("inlineNotice")
+        self._model_note.setWordWrap(True)
+        model_layout.addWidget(self._model_note)
+        layout.addWidget(model)
 
         management, management_layout = card("")
         self._management_title = management_layout.itemAt(0).widget()
@@ -245,9 +303,19 @@ class VoiceSettingsPage(QWidget):
         layout.addStretch()
 
         self.new_profile_button.clicked.connect(self._new_profile)
+        self._model_install.clicked.connect(self.model_install_requested)
+        self._model_verify.clicked.connect(self.model_verify_requested)
+        self._model_remove.clicked.connect(self.model_remove_requested)
+        self._model_cancel.clicked.connect(self.model_cancel_requested)
 
     def _retranslate(self) -> None:
         t = self._i18n.tr
+        self._model_title.setText(t("speech_models.title"))
+        self._model_install.setText(t("speech_models.install"))
+        self._model_verify.setText(t("speech_models.verify"))
+        self._model_remove.setText(t("speech_models.remove"))
+        self._model_cancel.setText(t("speech_models.cancel"))
+        self._model_note.setText(t("speech_models.note"))
         self._management_title.setText(t("speech_profile.management_title"))
         self._profile_column.setText(t("profile_management.profile"))
         self._service_column.setText(t("speech_profile.service_provider"))
@@ -265,6 +333,7 @@ class VoiceSettingsPage(QWidget):
             t("voice_settings.minimum_speech_help")
         )
         self._rebuild_profile_list()
+        self._render_model()
 
     def load_settings(self, settings: AppSettings) -> None:
         voice = settings.voice
@@ -323,6 +392,97 @@ class VoiceSettingsPage(QWidget):
         self.validation_notice.setText(message)
         self.validation_notice.setVisible(bool(message))
         self.structure_changed.emit()
+
+    def set_model_status(
+        self,
+        installed: bool,
+        version: str,
+        installed_size: int,
+        download_size: int,
+        path: str,
+        *,
+        busy: bool = False,
+        error: str = "",
+        operation: str = "",
+        removal_pending: bool = False,
+    ) -> None:
+        self._model_installed = installed
+        self._model_version = version
+        self._model_installed_size = max(0, installed_size)
+        self._model_download_size = max(0, download_size)
+        self._model_total = max(0, download_size)
+        self._model_completed = 0
+        self._model_path = path
+        self._model_busy = busy
+        self._model_error = error
+        self._model_operation = operation if busy else ""
+        self._model_removal_pending = removal_pending
+        self._render_model()
+
+    def set_model_progress(self, completed: int, total: int) -> None:
+        self._model_busy = True
+        self._model_error = ""
+        self._model_operation = "install"
+        self._model_completed = max(0, completed)
+        self._model_total = max(0, total)
+        self._render_model()
+
+    def _render_model(self) -> None:
+        t = self._i18n.tr
+        mib = 1024 * 1024
+        if self._model_removal_pending:
+            self._model_status.setText(t("speech_models.removal_pending"))
+            self._model_detail.setText(
+                t("speech_models.removal_pending_detail", path=self._model_path)
+            )
+        elif self._model_busy:
+            if self._model_operation == "verify":
+                self._model_status.setText(t("speech_models.verifying"))
+                self._model_detail.setText(t("speech_models.verifying_detail"))
+            else:
+                self._model_status.setText(t("speech_models.downloading"))
+                self._model_detail.setText(
+                    t(
+                        "speech_models.progress",
+                        completed=f"{self._model_completed / mib:.1f}",
+                        total=f"{self._model_total / mib:.1f}",
+                    )
+                )
+        elif self._model_error:
+            self._model_status.setText(t("speech_models.failed"))
+            self._model_detail.setText(self._model_error)
+        elif self._model_installed:
+            self._model_status.setText(t("speech_models.installed"))
+            self._model_detail.setText(
+                t(
+                    "speech_models.installed_detail",
+                    version=self._model_version,
+                    size=f"{self._model_installed_size / mib:.1f}",
+                    path=self._model_path,
+                )
+            )
+        else:
+            self._model_status.setText(t("speech_models.not_installed"))
+            self._model_detail.setText(
+                t(
+                    "speech_models.download_detail",
+                    size=f"{self._model_download_size / mib:.1f}",
+                )
+            )
+        total = max(1, self._model_total)
+        self._model_progress.setRange(0, total)
+        self._model_progress.setValue(min(total, self._model_completed))
+        installing = (
+            self._model_busy
+            and self._model_operation != "verify"
+            and not self._model_removal_pending
+        )
+        self._model_progress.setVisible(installing)
+        ready = not self._model_busy and not self._model_removal_pending
+        self._model_install.setVisible(not self._model_installed and ready)
+        self._model_verify.setVisible(self._model_installed and ready)
+        self._model_remove.setVisible(self._model_installed and ready)
+        self._model_cancel.setVisible(installing)
 
     def resizeEvent(self, event: QResizeEvent) -> None:
         super().resizeEvent(event)
@@ -392,7 +552,7 @@ class VoiceSettingsPage(QWidget):
         self.active_profile_changed.emit()
 
     def _request_validation(self, profile_id: str) -> None:
-        if not self._is_realtime(self._profile(profile_id)):
+        if not self._is_caption_eligible(self._profile(profile_id)):
             return
         self._validation_profile_id = profile_id
         self.test_requested.emit()
@@ -440,9 +600,9 @@ class VoiceSettingsPage(QWidget):
             row.set_compact(compact)
 
     @staticmethod
-    def _is_realtime(profile: SpeechRecognitionProfile) -> bool:
+    def _is_caption_eligible(profile: SpeechRecognitionProfile) -> bool:
         descriptor = speech_service_descriptor(profile.provider)
-        return bool(descriptor and descriptor.capabilities.realtime_eligible)
+        return bool(descriptor and descriptor.capabilities.caption_eligible)
 
     def _provider_name(self, provider: str) -> str:
         return self._i18n.tr(f"speech_profile.provider.{provider}")

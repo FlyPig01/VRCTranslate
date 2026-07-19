@@ -48,14 +48,18 @@ class _FakeWebSocket:
         self.closed = True
 
 
-def test_service_catalog_only_creates_the_two_asr_providers() -> None:
+def test_service_catalog_creates_cloud_and_local_asr_providers() -> None:
     descriptors = creatable_speech_services()
 
     assert {item.provider for item in descriptors} == {
         "tencent_realtime",
         "aliyun_nls_realtime",
+        "local_offline",
     }
     assert all(item.capabilities.final_transcript for item in descriptors)
+    local = next(item for item in descriptors if item.provider == "local_offline")
+    assert local.capabilities.recognition_mode == "segmented"
+    assert local.capabilities.deployment == "local"
 
 
 def test_tencent_signature_is_sorted_and_fully_url_encoded() -> None:

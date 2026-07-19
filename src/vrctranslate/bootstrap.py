@@ -29,8 +29,12 @@ from vrctranslate.infrastructure.paths import discover_app_paths
 from vrctranslate.infrastructure.settings.json_repository import JsonSettingsRepository
 from vrctranslate.infrastructure.speech import (
     AliyunNlsRealtimeSpeechRecognizer,
+    SenseVoiceLocalSpeechRecognizer,
     SpeechRecognitionRouter,
     TencentRealtimeSpeechRecognizer,
+)
+from vrctranslate.infrastructure.speech.local_component_manager import (
+    SenseVoiceComponentManager,
 )
 from vrctranslate.infrastructure.text.wanakana_converter import WanaKanaRomajiConverter
 from vrctranslate.infrastructure.translation.deepl_translator import DeepLTranslator
@@ -172,10 +176,16 @@ def build_main_window() -> MainWindow:
         translate_visual=translate_visual,
         visual_frame_encoder=PillowVisualFrameEncoder(),
     )
+    speech_models = SenseVoiceComponentManager(
+        paths.data_root / "models" / "speech" / "sensevoice-small-int8",
+        paths.data_root / "components" / "local-asr" / "sherpa-onnx-1.13.4",
+        paths.cache_dir / "speech-models",
+    )
     speech_router = SpeechRecognitionRouter(
         [
             TencentRealtimeSpeechRecognizer(),
             AliyunNlsRealtimeSpeechRecognizer(),
+            SenseVoiceLocalSpeechRecognizer(speech_models),
         ]
     )
     settings_controller = SettingsController(
@@ -190,6 +200,7 @@ def build_main_window() -> MainWindow:
         glossary_repository=glossary_repository,
         translate_visual=translate_visual,
         speech_validator=speech_router,
+        speech_models=speech_models,
     )
     voice_controller = VoiceTranslationController(
         voice_page,

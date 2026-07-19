@@ -8,6 +8,13 @@
     background: transparent;
 }
 
+#voiceCaptionScroll,
+#voiceCaptionScroll > QWidget > QWidget,
+#voiceCaptionContainer {
+    background: transparent;
+    border: none;
+}
+
 #voiceOverlayTitle {
     color: #b9eafa;
     font-size: 12px;

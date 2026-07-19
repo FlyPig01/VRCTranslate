@@ -81,6 +81,10 @@ class SettingsPage(QWidget):
     ocr_model_install_requested = Signal(str)
     ocr_model_remove_requested = Signal(str)
     ocr_model_cancel_requested = Signal(str)
+    speech_model_install_requested = Signal()
+    speech_model_verify_requested = Signal()
+    speech_model_remove_requested = Signal()
+    speech_model_cancel_requested = Signal()
     discard_requested = Signal()
     glossary_import_requested = Signal(str)
     glossary_export_requested = Signal(str, object)
@@ -212,6 +216,10 @@ class SettingsPage(QWidget):
             self._schedule_voice_profile_save
         )
         self.voice_page.test_requested.connect(self.speech_profile_test_requested)
+        self.voice_page.model_install_requested.connect(self.speech_model_install_requested)
+        self.voice_page.model_verify_requested.connect(self.speech_model_verify_requested)
+        self.voice_page.model_remove_requested.connect(self.speech_model_remove_requested)
+        self.voice_page.model_cancel_requested.connect(self.speech_model_cancel_requested)
         self.ocr_page.capture_test_requested.connect(self.capture_test_requested)
         self.ocr_page.model_install_requested.connect(self.ocr_model_install_requested)
         self.ocr_page.model_remove_requested.connect(self.ocr_model_remove_requested)
@@ -315,6 +323,34 @@ class SettingsPage(QWidget):
         message: str,
     ) -> None:
         self.voice_page.set_validation_result(profile_id, state, message)
+
+    def set_speech_model_status(
+        self,
+        installed: bool,
+        version: str,
+        installed_size: int,
+        download_size: int,
+        path: str,
+        *,
+        busy: bool = False,
+        error: str = "",
+        operation: str = "",
+        removal_pending: bool = False,
+    ) -> None:
+        self.voice_page.set_model_status(
+            installed,
+            version,
+            installed_size,
+            download_size,
+            path,
+            busy=busy,
+            error=error,
+            operation=operation,
+            removal_pending=removal_pending,
+        )
+
+    def set_speech_model_progress(self, completed: int, total: int) -> None:
+        self.voice_page.set_model_progress(completed, total)
 
     def set_glossary_entries(self, builtin: tuple, user: tuple) -> None:
         self.translation_page.load_glossary_entries(builtin, user)

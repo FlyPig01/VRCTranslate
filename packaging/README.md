@@ -10,7 +10,7 @@ python -m pip install -e ".[build]"
 
 ## 构建
 
-发布版包含在线翻译、测试回显和本地 OCR：
+发布版包含在线翻译、测试回显、本地 OCR 运行能力和本地语音组件管理能力：
 
 ```powershell
 $env:PYINSTALLER_CONFIG_DIR = "$PWD\data\cache\pyinstaller"
@@ -20,8 +20,11 @@ Remove-Item Env:PYINSTALLER_CONFIG_DIR
 
 输出目录为 `dist\VRCTranslate\`。
 
+构建时不会把开发机 `data` 中的 OCR 或 SenseVoice 模型复制进发布目录。本地语音用户需在软件内主动下载约 246.3 MiB 的 SenseVoiceSmall INT8 与 sherpa-onnx 运行库；组件只写入 exe 同级 `data`。
+
 发布前应在 D/E 盘的干净目录中解压并验证：
 
 - exe 同级存在 `_internal`、`data`、使用说明和 `THIRD_PARTY_NOTICES.md`。
 - 配置、日志和缓存只写到 exe 同级 `data`。
+- 发布目录没有预置 `data\models\speech`、`data\components\local-asr` 或开发机测试语料。
 - 不从压缩包内直接运行，也不放到 `Program Files` 等不可写目录。

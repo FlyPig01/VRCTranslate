@@ -23,6 +23,7 @@ SUPPORTED_SPEECH_RECOGNITION_PROVIDERS = frozenset(
     {
         "tencent_realtime",
         "aliyun_nls_realtime",
+        "local_offline",
     }
 )
 LEGACY_SPEECH_RECOGNITION_PROVIDERS = frozenset(
@@ -32,7 +33,9 @@ LEGACY_SPEECH_RECOGNITION_PROVIDERS = frozenset(
         "audio_chat_completions",
     }
 )
-REALTIME_SPEECH_PROVIDERS = SUPPORTED_SPEECH_RECOGNITION_PROVIDERS
+REALTIME_SPEECH_PROVIDERS = frozenset(
+    {"tencent_realtime", "aliyun_nls_realtime"}
+)
 
 
 @dataclass(slots=True)
@@ -202,7 +205,7 @@ class VoiceTranslationSettings:
     def asr_profile(self) -> SpeechRecognitionProfile:
         self.ensure_profiles()
         if not self.asr_profiles:
-            raise ValueError("尚未配置实时语音识别档案")
+            raise ValueError("尚未配置语音识别档案")
         for profile in self.asr_profiles:
             if profile.id == self.asr_profile_id:
                 return profile

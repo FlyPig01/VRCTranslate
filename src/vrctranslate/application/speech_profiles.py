@@ -67,6 +67,20 @@ _SERVICES = {
             final_transcript=True,
         ),
     ),
+    "local_offline": SpeechServiceDescriptor(
+        provider="local_offline",
+        vendor="local",
+        model_ids=("sensevoice-small-int8",),
+        capabilities=SpeechServiceCapabilities(
+            provider="local_offline",
+            streaming_audio=False,
+            partial_transcript=False,
+            final_transcript=True,
+            source_language_auto=True,
+            deployment="local",
+            recognition_mode="segmented",
+        ),
+    ),
 }
 
 def speech_service_descriptor(provider: str) -> SpeechServiceDescriptor | None:
@@ -100,7 +114,7 @@ def profile_fingerprint(profile: SpeechRecognitionProfile) -> str:
 
 def profile_validation_state(profile: SpeechRecognitionProfile) -> str:
     descriptor = speech_service_descriptor(profile.provider)
-    if descriptor is None or not descriptor.capabilities.realtime_eligible:
+    if descriptor is None or not descriptor.capabilities.caption_eligible:
         return "incompatible"
     state = str(profile.options.get("validation_state", "pending"))
     if state == "verified" and profile.options.get("validation_fingerprint") != profile_fingerprint(profile):

@@ -44,7 +44,7 @@ class SpeechRecognitionRouter:
         capabilities = self.capabilities(profile)
         if not capabilities.realtime_eligible:
             raise SpeechRecognitionError(
-                "configuration", "该档案属于旧协议，当前版本不支持启动"
+                "configuration", "该语音档案不是流式识别服务"
             )
         adapter = self._adapters.get(profile.provider)
         if adapter is None or not hasattr(adapter, "open_session"):
@@ -57,7 +57,7 @@ class SpeechRecognitionRouter:
         self, profile: SpeechRecognitionProfile
     ) -> SpeechProfileValidationResult:
         capabilities = self.capabilities(profile)
-        if not capabilities.realtime_eligible:
+        if not capabilities.caption_eligible:
             return SpeechProfileValidationResult(
                 "incompatible", "该档案属于旧协议，当前版本不支持启动"
             )
@@ -80,3 +80,8 @@ class SpeechRecognitionRouter:
                 f"当前版本不支持语音识别类型：{profile.provider}",
             )
         return adapter.transcribe(request, profile)
+
+    def release(self, profile: SpeechRecognitionProfile) -> None:
+        adapter = self._adapters.get(profile.provider)
+        if adapter is not None and hasattr(adapter, "release"):
+            adapter.release(profile)

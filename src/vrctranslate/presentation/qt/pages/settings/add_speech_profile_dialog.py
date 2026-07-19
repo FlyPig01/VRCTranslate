@@ -193,6 +193,10 @@ class AddSpeechProfileDialog(QDialog):
             self.provider_help.setText(
                 t("speech_profile.aliyun_language_help")
             )
+        elif provider == "local_offline":
+            self._model_label.setText(t("voice_settings.model"))
+            self._set_provider_rows(False, False, False, True, False)
+            self.provider_help.setText(t("speech_profile.local_help"))
         else:
             self._field_one_label.setText(t("speech_profile.legacy_credential"))
             self.field_one_edit.setEchoMode(QLineEdit.EchoMode.Password)
@@ -323,6 +327,8 @@ class AddSpeechProfileDialog(QDialog):
                 if one and two and three
                 else None
             )
+        if provider == "local_offline":
+            return ("", model, {"service_vendor": "local"}) if model else None
         if self._source is not None:
             return one, self.legacy_model_edit.text().strip(), {}
         return None

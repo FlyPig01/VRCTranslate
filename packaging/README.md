@@ -20,7 +20,7 @@ Remove-Item Env:PYINSTALLER_CONFIG_DIR
 
 输出目录为 `dist\VRCTranslate\`。
 
-构建时不会把开发机 `data` 中的 OCR 或 SenseVoice 模型复制进发布目录。本地语音用户需在软件内主动下载约 246.3 MiB 的 SenseVoiceSmall INT8 与 sherpa-onnx 运行库；组件只写入 exe 同级 `data`。
+构建时不会把开发机 `data` 中的 OCR 或 SenseVoice 模型复制进发布目录。本地语音用户需在软件内主动下载约 246.3 MiB 的 SenseVoiceSmall INT8 与 sherpa-onnx 运行库；组件只写入 exe 同级 `data`。模型安装器会在内存中并行小样本测速 Hugging Face 官方源与国内镜像，自动选择较快来源并在失败时换源。
 
 发布前应在 D/E 盘的干净目录中解压并验证：
 

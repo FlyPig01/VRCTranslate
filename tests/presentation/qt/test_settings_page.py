@@ -671,6 +671,64 @@ def test_google_free_new_profile_has_default_endpoint(qtbot) -> None:
     assert profile.base_url == dialog.machine_base_url.text()
 
 
+def test_tencent_new_and_legacy_profiles_show_the_effective_endpoint(qtbot) -> None:
+    dialog = AddProfileDialog(_FAKE_I18N)
+    qtbot.addWidget(dialog)
+    dialog.machine_provider.setCurrentIndex(
+        dialog.machine_provider.findData("tencent")
+    )
+
+    assert dialog.machine_base_url.text() == "tmt.tencentcloudapi.com"
+
+    legacy = TranslationProfile(
+        id="tencent-legacy",
+        name="Tencent legacy",
+        provider="tencent",
+        base_url="",
+        api_key="secret-id",
+        model="secret-key",
+    )
+    edit_dialog = AddProfileDialog(_FAKE_I18N, profile=legacy)
+    qtbot.addWidget(edit_dialog)
+
+    assert edit_dialog.machine_base_url.text() == "tmt.tencentcloudapi.com"
+    edited = edit_dialog._machine_profile()
+    assert edited is not None
+    assert edited.base_url == "tmt.tencentcloudapi.com"
+
+
+def test_deepseek_new_profile_uses_canonical_endpoint_without_version_suffix(
+    qtbot,
+) -> None:
+    dialog = AddProfileDialog(_FAKE_I18N)
+    qtbot.addWidget(dialog)
+    dialog.model_vendor.setCurrentIndex(
+        dialog.model_vendor.findData("deepseek")
+    )
+
+    assert dialog.model_base_url.text() == "https://api.deepseek.com"
+
+
+def test_selecting_a_profile_does_not_mark_settings_as_unsaved(qtbot, tmp_path) -> None:
+    page = SettingsPage(_FAKE_I18N)
+    qtbot.addWidget(page)
+    settings = AppSettings()
+    settings.translation.profiles.append(
+        TranslationProfile(
+            id="google-free",
+            name="Google",
+            provider="google_free",
+            base_url="https://translate.googleapis.com/translate_a/single",
+        )
+    )
+    page.load_settings(settings, str(tmp_path / "config.json"))
+
+    assert not page.has_unsaved_changes
+    page.translation_page.profile_editor._select_from_list("google-free")
+
+    assert not page.has_unsaved_changes
+
+
 def test_edit_profile_dialog_preserves_identity_and_protocol(qtbot) -> None:
     original = TranslationProfile(
         id="google-free",

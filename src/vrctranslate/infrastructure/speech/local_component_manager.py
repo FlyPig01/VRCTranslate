@@ -27,6 +27,9 @@ from vrctranslate.infrastructure.speech.local_component_catalog import (
     SPEECH_COMPONENT_FILES,
     SpeechComponentFile,
 )
+from vrctranslate.infrastructure.speech.download_source_selector import (
+    AdaptiveDownloadSourceSelector,
+)
 
 
 class _Digest(Protocol):
@@ -46,6 +49,7 @@ class SenseVoiceComponentManager:
         *,
         files: tuple[SpeechComponentFile, ...] | None = None,
         client_factory: Callable[[], httpx.Client] | None = None,
+        source_selector: AdaptiveDownloadSourceSelector | None = None,
     ) -> None:
         self.models_root = models_root
         self.runtime_root = runtime_root
@@ -58,6 +62,7 @@ class SenseVoiceComponentManager:
                 verify=_windows_trust_context(),
             )
         )
+        self._source_selector = source_selector or AdaptiveDownloadSourceSelector()
         self._management_lock = Lock()
         self._cleanup_pending_removal()
 
@@ -275,7 +280,11 @@ class SenseVoiceComponentManager:
         complete.unlink(missing_ok=True)
         partial = self.cache_root / f"{spec.sha256}.part"
         last_error: httpx.HTTPError | None = None
-        for url in (spec.url, *spec.fallback_urls):
+        urls = self._source_selector.order(
+            client,
+            (spec.url, *spec.fallback_urls),
+        )
+        for url in urls:
             try:
                 written, digest = self._transfer(
                     client,

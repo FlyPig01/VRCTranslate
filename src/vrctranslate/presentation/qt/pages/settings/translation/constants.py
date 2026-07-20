@@ -20,6 +20,14 @@ MACHINE_TRANSLATION_PROVIDERS = [
     ("provider.tencent", "tencent"),
 ]
 
+GOOGLE_FREE_ENDPOINT = "https://translate.googleapis.com/translate_a/single"
+TENCENT_TRANSLATION_ENDPOINT = "tmt.tencentcloudapi.com"
+
+MACHINE_TRANSLATION_DEFAULT_ENDPOINTS = {
+    "google_free": GOOGLE_FREE_ENDPOINT,
+    "tencent": TENCENT_TRANSLATION_ENDPOINT,
+}
+
 ALIYUN_REGIONS = [
     ("aliyun.region.cn_hangzhou", "cn-hangzhou"),
     ("aliyun.region.cn_shanghai", "cn-shanghai"),
@@ -48,7 +56,7 @@ def aliyun_endpoint_for_region(region: str) -> str:
     return ""
 
 MODEL_VENDORS = [
-    ("model_vendor.deepseek", "deepseek", "https://api.deepseek.com/v1"),
+    ("model_vendor.deepseek", "deepseek", "https://api.deepseek.com"),
     (
         "model_vendor.qwen",
         "qwen",

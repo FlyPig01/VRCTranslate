@@ -232,9 +232,13 @@ class SettingsPage(QWidget):
             self.translation_page.profile_combo,
         }
         for edit in self.findChildren(QLineEdit):
-            edit.textChanged.connect(self._mark_dirty)
+            if not edit.property("skipDirtyTracking"):
+                edit.textChanged.connect(self._mark_dirty)
         for combo in self.findChildren(QComboBox):
-            if combo not in ignored_combos:
+            if (
+                combo not in ignored_combos
+                and not combo.property("skipDirtyTracking")
+            ):
                 combo.currentIndexChanged.connect(self._mark_dirty)
         for check in self.findChildren(QCheckBox):
             check.checkStateChanged.connect(self._mark_dirty)

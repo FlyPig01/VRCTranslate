@@ -25,14 +25,12 @@ from vrctranslate.presentation.qt.widgets import NoWheelComboBox, NumericLineEdi
 
 from .constants import (
     ALIYUN_REGIONS,
+    MACHINE_TRANSLATION_DEFAULT_ENDPOINTS,
     MACHINE_TRANSLATION_PROVIDERS,
     MODEL_VENDORS,
     aliyun_endpoint_for_region,
     model_vendor_from_profile,
 )
-
-
-GOOGLE_FREE_ENDPOINT = "https://translate.googleapis.com/translate_a/single"
 
 
 class AddProfileDialog(QDialog):
@@ -305,22 +303,47 @@ class AddProfileDialog(QDialog):
                 "profile.aliyun_endpoint" if is_aliyun else "profile.interface"
             )
         )
-        if provider == "google_free":
-            self.machine_base_url.setText(GOOGLE_FREE_ENDPOINT)
+        default_endpoint = MACHINE_TRANSLATION_DEFAULT_ENDPOINTS.get(provider, "")
+        previous_default = str(
+            self.machine_base_url.property("machineDefaultEndpoint") or ""
+        )
+        if default_endpoint:
+            current = self.machine_base_url.text().strip()
+            automatic_aliyun = str(
+                self.machine_base_url.property("aliyunAutoEndpoint") or ""
+            )
+            known_defaults = {
+                *MACHINE_TRANSLATION_DEFAULT_ENDPOINTS.values(),
+                previous_default,
+                automatic_aliyun,
+            }
+            if (
+                previous_provider != provider
+                or not current
+                or current in known_defaults
+            ):
+                self.machine_base_url.setText(default_endpoint)
+            self.machine_base_url.setProperty(
+                "machineDefaultEndpoint", default_endpoint
+            )
+            self.machine_base_url.setProperty("aliyunAutoEndpoint", "")
         elif is_aliyun:
             if previous_provider != "aliyun":
                 self.machine_base_url.clear()
                 self.machine_base_url.setProperty("aliyunAutoEndpoint", "")
+            self.machine_base_url.setProperty("machineDefaultEndpoint", "")
             self._aliyun_region_changed()
         else:
             automatic_aliyun = str(
                 self.machine_base_url.property("aliyunAutoEndpoint") or ""
             )
             if self.machine_base_url.text().strip() in {
-                GOOGLE_FREE_ENDPOINT,
+                *MACHINE_TRANSLATION_DEFAULT_ENDPOINTS.values(),
+                previous_default,
                 automatic_aliyun,
             }:
                 self.machine_base_url.clear()
+            self.machine_base_url.setProperty("machineDefaultEndpoint", "")
             self.machine_base_url.setProperty("aliyunAutoEndpoint", "")
         self.machine_base_url.setPlaceholderText(
             self._i18n.tr(
@@ -454,9 +477,10 @@ class AddProfileDialog(QDialog):
                 self.machine_provider.findData(profile.provider)
             )
             self.machine_name.setText(profile.name)
-            self.machine_base_url.setText(profile.base_url or (
-                GOOGLE_FREE_ENDPOINT if profile.provider == "google_free" else ""
-            ))
+            self.machine_base_url.setText(
+                profile.base_url
+                or MACHINE_TRANSLATION_DEFAULT_ENDPOINTS.get(profile.provider, "")
+            )
             self.machine_key.setText(profile.api_key)
             self.machine_secret.setText(profile.model)
             if profile.provider == "aliyun":

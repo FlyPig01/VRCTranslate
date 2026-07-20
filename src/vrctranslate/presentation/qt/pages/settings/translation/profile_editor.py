@@ -31,9 +31,11 @@ from vrctranslate.presentation.qt.widgets import NoWheelComboBox, NumericLineEdi
 
 from .add_profile_dialog import AddProfileDialog
 from .constants import (
+    GOOGLE_FREE_ENDPOINT,
     LARGE_MODEL_PROVIDERS,
     MODEL_VENDORS,
     PROVIDERS,
+    TENCENT_TRANSLATION_ENDPOINT,
     model_vendor_from_profile,
 )
 from .helpers import set_combo
@@ -129,6 +131,19 @@ class ProfileEditor(QWidget):
             120.0,
             1,
         )
+        # These controls only remain for compatibility with older callers.
+        # The visible editor is the modal AddProfileDialog, so programmatic
+        # synchronization here must never make the settings page look edited.
+        for compatibility_widget in (
+            self.profile_name_edit,
+            self.provider_combo,
+            self.model_vendor_combo,
+            self.base_url_edit,
+            self.api_key_edit,
+            self.model_edit,
+            self.timeout_spin,
+        ):
+            compatibility_widget.setProperty("skipDirtyTracking", True)
         self._profile_name_label = QLabel()
         self._provider_label = QLabel()
         self._model_vendor_label = QLabel()
@@ -231,8 +246,8 @@ class ProfileEditor(QWidget):
         if self._syncing_selection:
             return
         if self._loaded_profile_id:
-            self._commit_profile_editor()
-            self.profiles_changed.emit()
+            if self._commit_profile_editor():
+                self.profiles_changed.emit()
         profile_id = str(self.profile_combo.currentData() or "")
         if not profile_id:
             return
@@ -254,13 +269,14 @@ class ProfileEditor(QWidget):
         self._select_profile_row(profile_id)
         self._update_provider_fields()
 
-    def _commit_profile_editor(self) -> None:
+    def _commit_profile_editor(self) -> bool:
         if not self._loaded_profile_id:
-            return
+            return False
         try:
             profile = self._profile(self._loaded_profile_id)
         except KeyError:
-            return
+            return False
+        before = deepcopy(profile)
         profile.name = (
             self.profile_name_edit.text().strip()
             or self._i18n.tr("translation.unnamed_profile")
@@ -280,6 +296,7 @@ class ProfileEditor(QWidget):
         label = self._profile_name_labels.get(profile.id)
         if label is not None:
             label.setText(profile.name)
+        return profile != before
 
     def _new_profile(self) -> None:
         self._commit_profile_editor()
@@ -586,9 +603,9 @@ class ProfileEditor(QWidget):
         )
         self._update_provider_placeholders()
         if provider == "google_free" and not self.base_url_edit.text().strip():
-            self.base_url_edit.setText(
-                "https://translate.googleapis.com/translate_a/single"
-            )
+            self.base_url_edit.setText(GOOGLE_FREE_ENDPOINT)
+        elif provider == "tencent" and not self.base_url_edit.text().strip():
+            self.base_url_edit.setText(TENCENT_TRANSLATION_ENDPOINT)
 
     def _update_provider_placeholders(self) -> None:
         provider = str(self.provider_combo.currentData())

@@ -5,6 +5,7 @@ import io
 import shutil
 import zipfile
 from pathlib import Path
+from time import sleep
 from types import SimpleNamespace
 
 import pytest
@@ -12,9 +13,15 @@ import pytest
 from vrctranslate.application.dto import SpeechRecognitionProfile
 from vrctranslate.application.ports.speech_models import SpeechModelPaths
 from vrctranslate.domain.speech import SpeechRecognitionRequest
-from vrctranslate.infrastructure.speech.local_component_catalog import SpeechComponentFile
+from vrctranslate.infrastructure.speech.local_component_catalog import (
+    SPEECH_COMPONENT_FILES,
+    SpeechComponentFile,
+)
 from vrctranslate.infrastructure.speech.local_component_manager import (
     SenseVoiceComponentManager,
+)
+from vrctranslate.infrastructure.speech.download_source_selector import (
+    AdaptiveDownloadSourceSelector,
 )
 from vrctranslate.infrastructure.speech.sensevoice_local import (
     SenseVoiceLocalSpeechRecognizer,
@@ -41,6 +48,18 @@ def _spec(kind: str, path: str, payload: bytes, *, wheel: bool = False):
         hashlib.sha256(payload).hexdigest(),
         len(payload),
         wheel,
+    )
+
+
+def test_sensevoice_model_download_declares_mirror_then_official_fallback() -> None:
+    model_files = [item for item in SPEECH_COMPONENT_FILES if item.kind == "model"]
+
+    assert model_files
+    assert all(item.url.startswith("https://hf-mirror.com/") for item in model_files)
+    assert all(
+        item.fallback_urls
+        and item.fallback_urls[0].startswith("https://huggingface.co/")
+        for item in model_files
     )
 
 
@@ -73,9 +92,158 @@ class _Client:
     def __exit__(self, *_args):
         return False
 
-    def stream(self, _method: str, url: str, *, headers=None):
+    def stream(self, _method: str, url: str, *, headers=None, timeout=None):
         del headers
+        del timeout
         return _Response(self.payloads[url])
+
+
+class _DelayedResponse(_Response):
+    def __init__(self, payload: bytes, delay: float) -> None:
+        super().__init__(payload)
+        self.delay = delay
+
+    def iter_bytes(self, _size: int):
+        sleep(self.delay)
+        yield self.payload
+
+
+class _TimedClient:
+    def __init__(self, payload: bytes, delays: dict[str, float]) -> None:
+        self.payload = payload
+        self.delays = delays
+        self.requests: list[tuple[str, dict[str, str] | None]] = []
+
+    def stream(self, _method: str, url: str, *, headers=None, timeout=None):
+        del timeout
+        self.requests.append((url, headers))
+        return _DelayedResponse(self.payload, self.delays[url])
+
+
+class _PartlyUnavailableClient(_TimedClient):
+    def __init__(
+        self,
+        payload: bytes,
+        delays: dict[str, float],
+        unavailable_url: str,
+    ) -> None:
+        super().__init__(payload, delays)
+        self.unavailable_url = unavailable_url
+
+    def stream(self, _method: str, url: str, *, headers=None, timeout=None):
+        if url == self.unavailable_url:
+            raise OSError("source unavailable")
+        return super().stream(
+            _method,
+            url,
+            headers=headers,
+            timeout=timeout,
+        )
+
+
+def test_download_source_selector_measures_real_transfer_and_reuses_host_order() -> None:
+    payload = b"x" * (64 * 1024)
+    official = "https://huggingface.co/example/model.bin"
+    mirror = "https://hf-mirror.com/example/model.bin"
+    client = _TimedClient(
+        payload,
+        {
+            official: 0.04,
+            mirror: 0.005,
+        },
+    )
+    selector = AdaptiveDownloadSourceSelector(
+        probe_bytes=len(payload),
+        probe_timeout_seconds=1.0,
+    )
+
+    ordered = selector.order(  # type: ignore[arg-type]
+        client,
+        (official, mirror),
+    )
+
+    assert ordered == (mirror, official)
+    assert len(client.requests) == 2
+    assert all(
+        request_headers == {"Range": f"bytes=0-{len(payload) - 1}"}
+        for _url, request_headers in client.requests
+    )
+
+    token_urls = (
+        "https://huggingface.co/example/tokens.txt",
+        "https://hf-mirror.com/example/tokens.txt",
+    )
+    assert selector.order(  # type: ignore[arg-type]
+        client,
+        token_urls,
+    ) == tuple(reversed(token_urls))
+    assert len(client.requests) == 2
+
+
+def test_download_source_selector_keeps_unavailable_source_as_fallback() -> None:
+    payload = b"x" * (64 * 1024)
+    unavailable = "https://primary.example/model.bin"
+    available = "https://backup.example/model.bin"
+    client = _PartlyUnavailableClient(
+        payload,
+        {available: 0.001},
+        unavailable,
+    )
+    selector = AdaptiveDownloadSourceSelector(
+        probe_bytes=len(payload),
+        probe_timeout_seconds=1.0,
+    )
+
+    assert selector.order(  # type: ignore[arg-type]
+        client,
+        (unavailable, available),
+    ) == (available, unavailable)
+
+
+def test_component_manager_downloads_from_the_measured_faster_source(
+    tmp_path: Path,
+) -> None:
+    payload = b"m" * (64 * 1024)
+    slower = "https://slower.example/model.bin"
+    faster = "https://faster.example/model.bin"
+    spec = SpeechComponentFile(
+        "model",
+        "model.bin",
+        slower,
+        hashlib.sha256(payload).hexdigest(),
+        len(payload),
+        fallback_urls=(faster,),
+    )
+    client = _TimedClient(
+        payload,
+        {
+            slower: 0.04,
+            faster: 0.005,
+        },
+    )
+    selector = AdaptiveDownloadSourceSelector(
+        probe_bytes=len(payload),
+        probe_timeout_seconds=1.0,
+    )
+    manager = SenseVoiceComponentManager(
+        tmp_path / "models",
+        tmp_path / "runtime",
+        tmp_path / "cache",
+        files=(spec,),
+        source_selector=selector,
+    )
+    manager.cache_root.mkdir(parents=True)
+
+    downloaded = manager._download(  # type: ignore[arg-type]
+        client,
+        spec,
+        0,
+        len(payload),
+        None,
+    )
+
+    assert downloaded.read_bytes() == payload
+    assert client.requests[-1] == (faster, None)
 
 
 def test_component_manager_installs_verified_portable_runtime(tmp_path: Path) -> None:

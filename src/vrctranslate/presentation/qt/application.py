@@ -8,6 +8,7 @@ from PySide6.QtWidgets import QApplication, QMainWindow, QMessageBox
 
 from vrctranslate.presentation.qt.app_style import VrcTranslateStyle
 from vrctranslate.presentation.qt.icon_resources import load_icon
+from vrctranslate.presentation.qt.tab_key_filter import TabKeyFilter
 
 
 def run_qt_application(window_factory: Callable[[], QMainWindow]) -> int:
@@ -17,6 +18,8 @@ def run_qt_application(window_factory: Callable[[], QMainWindow]) -> int:
     application.setWindowIcon(load_icon("app.ico"))
     application.setQuitOnLastWindowClosed(True)
     application.setStyle(VrcTranslateStyle(application.style()))
+    tab_key_filter = TabKeyFilter(application)
+    application.installEventFilter(tab_key_filter)
     styles = files("vrctranslate.presentation.qt").joinpath("resources", "styles")
     style_order = (
         "base.qss",

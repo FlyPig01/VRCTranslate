@@ -593,6 +593,7 @@
   "voice_overlay.title": "VRCTranslate 语音字幕",
   "voice_overlay.caption_title": "语音字幕",
   "voice_overlay.collapse": "折叠为悬浮球",
+  "voice_overlay.resize": "拖动调整字幕浮窗大小",
   "voice_overlay.orb_tooltip": "左键展开语音字幕；拖动可移动悬浮球",
   "voice_overlay.start_recognition": "开始识别",
   "voice_overlay.starting_recognition": "正在启动…",

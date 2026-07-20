@@ -593,6 +593,7 @@
   "voice_overlay.title": "VRCTranslate 音声字幕",
   "voice_overlay.caption_title": "音声字幕",
   "voice_overlay.collapse": "フローティングボタンに折りたたむ",
+  "voice_overlay.resize": "ドラッグして字幕ウィンドウのサイズを変更",
   "voice_overlay.orb_tooltip": "左クリックで字幕を展開、ドラッグで移動",
   "voice_overlay.start_recognition": "認識を開始",
   "voice_overlay.starting_recognition": "起動中…",

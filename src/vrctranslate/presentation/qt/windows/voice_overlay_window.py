@@ -31,6 +31,9 @@ from vrctranslate.domain.speech import VoiceCaption
 from vrctranslate.presentation.qt.font_utils import font_with_pixel_height
 from vrctranslate.presentation.qt.i18n import I18nManager
 from vrctranslate.presentation.qt.icon_resources import load_icon
+from vrctranslate.presentation.qt.windows.ocr_overlay.interaction import (
+    OverlaySizeGrip,
+)
 
 
 class VoiceOverlayWindow(QWidget):
@@ -62,6 +65,7 @@ class VoiceOverlayWindow(QWidget):
         )
         self._captions: deque[VoiceCaption] = deque()
         self._live_caption: VoiceCaption | None = None
+        self._latest_caption_item: QWidget | None = None
         self._has_saved_position = False
         self._start_recognition_icon = load_icon("ui/action_play.svg")
         self._starting_recognition_icon = load_icon("ui/action_loading.svg")
@@ -150,10 +154,27 @@ class VoiceOverlayWindow(QWidget):
         )
         self.caption_scroll.setWidget(self.caption_container)
         surface_layout.addWidget(self.caption_scroll, 1)
+        resize_row = QHBoxLayout()
+        resize_row.setContentsMargins(0, 0, 0, 0)
+        resize_row.addStretch()
+        self.size_grip = OverlaySizeGrip(self.surface)
+        self.size_grip.setObjectName("voiceOverlaySizeGrip")
+        self.size_grip.setFixedSize(18, 18)
+        resize_row.addWidget(self.size_grip)
+        surface_layout.addLayout(resize_row)
         self._caption_scroll_timer = QTimer(self)
         self._caption_scroll_timer.setSingleShot(True)
         self._caption_scroll_timer.setInterval(0)
         self._caption_scroll_timer.timeout.connect(self._scroll_to_latest_caption)
+        self._caption_scroll_settle_timer = QTimer(self)
+        self._caption_scroll_settle_timer.setSingleShot(True)
+        self._caption_scroll_settle_timer.setInterval(40)
+        self._caption_scroll_settle_timer.timeout.connect(
+            self._scroll_to_latest_caption
+        )
+        self.caption_scroll.verticalScrollBar().rangeChanged.connect(
+            self._caption_scroll_range_changed
+        )
         self._outer.addWidget(self.surface)
 
         self._geometry_animation = QPropertyAnimation(
@@ -187,6 +208,11 @@ class VoiceOverlayWindow(QWidget):
             if self._i18n is not None
             else "折叠为悬浮球"
         )
+        self.size_grip.setToolTip(
+            self._i18n.tr("voice_overlay.resize")
+            if self._i18n is not None
+            else "拖动调整字幕浮窗大小"
+        )
         self._refresh_recognition_button()
         self.setToolTip(
             self._i18n.tr("voice_overlay.orb_tooltip")
@@ -202,7 +228,10 @@ class VoiceOverlayWindow(QWidget):
     def apply_settings(self, settings: VoiceOverlaySettings) -> None:
         self._finish_transition_immediately()
         self._settings = settings
-        self._expanded_size = QSize(settings.width, settings.height)
+        self._expanded_size = QSize(
+            max(320, settings.width),
+            max(140, settings.height),
+        )
         visible = self.isVisible()
         self.setWindowFlag(Qt.WindowType.WindowStaysOnTopHint, settings.topmost)
         self.setWindowOpacity(1.0 if self._collapsed else settings.opacity)
@@ -360,7 +389,10 @@ class VoiceOverlayWindow(QWidget):
 
     def reset_geometry(self, settings: VoiceOverlaySettings) -> None:
         self._has_saved_position = False
-        self._expanded_size = QSize(settings.width, settings.height)
+        self._expanded_size = QSize(
+            max(320, settings.width),
+            max(140, settings.height),
+        )
         if not self._collapsed:
             self.resize(self._expanded_size)
         screen = QGuiApplication.primaryScreen()
@@ -377,6 +409,7 @@ class VoiceOverlayWindow(QWidget):
         self.close()
 
     def _rebuild_items(self) -> None:
+        self._latest_caption_item = None
         while self._layout.count() > 1:
             item = self._layout.takeAt(1)
             widget = item.widget()
@@ -437,12 +470,29 @@ class VoiceOverlayWindow(QWidget):
                 )
                 layout.addWidget(translated)
             self._layout.addWidget(item)
+            self._latest_caption_item = item
         self._layout.addStretch(1)
         self._caption_scroll_timer.start()
+        self._caption_scroll_settle_timer.start()
 
     def _scroll_to_latest_caption(self) -> None:
+        self._layout.activate()
+        self.caption_container.adjustSize()
+        if self._latest_caption_item is not None:
+            self.caption_scroll.ensureWidgetVisible(
+                self._latest_caption_item,
+                0,
+                0,
+            )
         bar = self.caption_scroll.verticalScrollBar()
         bar.setValue(bar.maximum())
+
+    def _caption_scroll_range_changed(
+        self,
+        _minimum: int,
+        maximum: int,
+    ) -> None:
+        self.caption_scroll.verticalScrollBar().setValue(maximum)
 
     def _exclude_from_capture(self) -> None:
         if self._capture_excluder is not None and self.isVisible():
@@ -507,6 +557,8 @@ class VoiceOverlayWindow(QWidget):
 
     def resizeEvent(self, event) -> None:  # type: ignore[no-untyped-def]
         super().resizeEvent(event)
+        if not self._collapsed and not self._animating_geometry:
+            self._expanded_size = event.size().expandedTo(QSize(320, 140))
         self._emit_geometry_changed()
 
     def _emit_geometry_changed(self) -> None:
@@ -584,6 +636,8 @@ class VoiceOverlayWindow(QWidget):
             self.orb_button.hide()
             self.surface.show()
             self._outer.setContentsMargins(8, 8, 8, 8)
+            self.setMinimumSize(320, 140)
+            self.setMaximumSize(16777215, 16777215)
             self.setWindowOpacity(self._settings.opacity)
         self._animating_geometry = False
         self._exclude_from_capture()

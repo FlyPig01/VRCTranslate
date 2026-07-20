@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 
-from PySide6.QtCore import QAbstractAnimation, Qt
+from PySide6.QtCore import QAbstractAnimation, QSize, Qt
 from PySide6.QtGui import QGuiApplication
 from PySide6.QtWidgets import (
     QApplication,
@@ -435,6 +435,68 @@ def test_voice_overlay_keeps_only_configured_caption_count(qtbot) -> None:
     overlay.add_caption(VoiceCaption(3, "three", "三"))
 
     assert [caption.sequence for caption in overlay._captions] == [2, 3]
+
+
+def test_voice_overlay_resizes_and_keeps_the_expanded_size(qtbot) -> None:
+    overlay = VoiceOverlayWindow(i18n=I18nManager("zh_CN"))
+    qtbot.addWidget(overlay)
+    settings = AppSettings().voice.overlay
+    settings.width = 480
+    settings.height = 200
+    overlay.apply_settings(settings)
+    geometries: list[tuple[int, int, int, int]] = []
+    overlay.geometry_changed.connect(
+        lambda x, y, width, height: geometries.append((x, y, width, height))
+    )
+
+    overlay.show_overlay()
+    qtbot.waitUntil(lambda: not overlay._animating_geometry, timeout=1000)
+    assert overlay.size_grip.isVisible()
+    assert overlay.size_grip.toolTip() == "拖动调整字幕浮窗大小"
+
+    overlay.resize(720, 330)
+
+    assert overlay._expanded_size == QSize(720, 330)
+    assert geometries[-1][2:] == (720, 330)
+    overlay.collapse_to_orb()
+    qtbot.waitUntil(overlay.is_collapsed, timeout=1000)
+    overlay.expand_from_orb()
+    qtbot.waitUntil(lambda: not overlay._animating_geometry, timeout=1000)
+    assert overlay.size() == QSize(720, 330)
+
+
+def test_voice_overlay_jumps_to_latest_caption_after_layout_updates(qtbot) -> None:
+    overlay = VoiceOverlayWindow(i18n=I18nManager("zh_CN"))
+    qtbot.addWidget(overlay)
+    settings = AppSettings().voice.overlay
+    settings.width = 320
+    settings.height = 170
+    settings.font_size = 24
+    settings.max_items = 10
+    overlay.apply_settings(settings)
+    overlay.show_overlay()
+    qtbot.waitUntil(lambda: not overlay._animating_geometry, timeout=1000)
+
+    for sequence in range(1, 5):
+        overlay.add_caption(
+            VoiceCaption(
+                sequence,
+                f"original {sequence} " * 12,
+                f"translation {sequence} " * 12,
+            )
+        )
+    bar = overlay.caption_scroll.verticalScrollBar()
+    qtbot.waitUntil(lambda: bar.maximum() > 0, timeout=1000)
+    bar.setValue(0)
+
+    overlay.add_caption(
+        VoiceCaption(5, "latest original " * 12, "latest translation " * 12)
+    )
+
+    qtbot.waitUntil(
+        lambda: bar.maximum() > 0 and bar.value() == bar.maximum(),
+        timeout=1000,
+    )
 
 
 def test_voice_page_previews_overlay_style_changes(qtbot) -> None:

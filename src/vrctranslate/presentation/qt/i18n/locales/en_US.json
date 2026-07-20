@@ -593,6 +593,7 @@
   "voice_overlay.title": "VRCTranslate voice subtitles",
   "voice_overlay.caption_title": "Voice subtitles",
   "voice_overlay.collapse": "Collapse to voice orb",
+  "voice_overlay.resize": "Drag to resize the subtitle overlay",
   "voice_overlay.orb_tooltip": "Left-click to expand subtitles; drag to move the orb",
   "voice_overlay.start_recognition": "Start recognition",
   "voice_overlay.starting_recognition": "Starting…",

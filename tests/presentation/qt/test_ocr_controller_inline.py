@@ -202,6 +202,42 @@ def test_single_mode_inline_result_has_no_time_expiry(qtbot) -> None:
     assert inline.items[0][3] is None
 
 
+def test_single_mode_waits_for_every_queued_inline_result(qtbot) -> None:
+    del qtbot
+    controller, overlay, inline = _controller("inline")
+    controller._settings.current.ocr.recognition_mode = "single"
+    controller._single_capture_finished = True
+    controller._scheduler = SimpleNamespace(
+        pending_count=0,
+        stop=lambda: None,
+    )
+    controller._translation_context = SimpleNamespace(clear=lambda: None)
+    controller._set_visual_state = lambda _state: None
+    _add_pending(controller, request_id="line-1")
+    _add_pending(controller, request_id="line-2")
+    _add_pending(controller, request_id="line-3")
+
+    _complete(controller, "line-1")
+
+    assert controller._ocr_active is True
+    assert [item[0] for item in inline.items] == ["line-1"]
+
+    _complete(controller, "line-2")
+
+    assert controller._ocr_active is True
+    assert [item[0] for item in inline.items] == ["line-1", "line-2"]
+
+    _complete(controller, "line-3")
+
+    assert controller._ocr_active is False
+    assert [item[0] for item in inline.items] == [
+        "line-1",
+        "line-2",
+        "line-3",
+    ]
+    assert overlay.items == []
+
+
 def test_slow_result_keeps_valid_inline_geometry(qtbot) -> None:
     del qtbot
     controller, overlay, inline = _controller("inline")

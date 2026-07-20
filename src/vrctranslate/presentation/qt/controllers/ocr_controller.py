@@ -689,7 +689,11 @@ class OcrController(QObject):
                 else self._tr("page.ocr.translation_failed", message=str(error))
             )
             self._page.set_status(message)
-        if self._single_capture_finished and self._scheduler.pending_count == 0:
+        if (
+            self._single_capture_finished
+            and self._scheduler.pending_count == 0
+            and not self._pending_inline
+        ):
             self._finish_single()
 
     def _visual_result_ready(self, value: object) -> None:
@@ -783,7 +787,7 @@ class OcrController(QObject):
             return
         if self._settings.current.ocr.recognition_mode == "single":
             self._single_capture_finished = True
-            if self._scheduler.pending_count == 0:
+            if self._scheduler.pending_count == 0 and not self._pending_inline:
                 self._finish_single()
             else:
                 self._page.set_status(self._tr("ctrl.ocr_translating_result"))

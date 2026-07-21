@@ -331,6 +331,10 @@ def test_component_install_rejects_insufficient_portable_disk_space(
 class _Components:
     def __init__(self, root: Path) -> None:
         self.verify_calls = 0
+        root.mkdir(parents=True, exist_ok=True)
+        (root / "model.int8.onnx").write_bytes(b"model")
+        (root / "tokens.txt").write_text("tokens", encoding="utf-8")
+        (root / "runtime").mkdir(exist_ok=True)
         self.paths = SpeechModelPaths(
             root / "model.int8.onnx",
             root / "tokens.txt",
@@ -364,9 +368,11 @@ class _Recognizer:
 
 
 class _Factory:
+    languages: list[str] = []
+
     @staticmethod
     def from_sense_voice(**kwargs):
-        assert kwargs["language"] == "auto"
+        _Factory.languages.append(kwargs["language"])
         assert kwargs["provider"] == "cpu"
         return _Recognizer()
 
@@ -378,6 +384,7 @@ class _Adapter(SenseVoiceLocalSpeechRecognizer):
 
 
 def test_sensevoice_adapter_normalizes_language_and_vrchat_terms(tmp_path: Path) -> None:
+    _Factory.languages = []
     components = _Components(tmp_path)
     adapter = _Adapter(components)  # type: ignore[arg-type]
     profile = SpeechRecognitionProfile(
@@ -395,6 +402,34 @@ def test_sensevoice_adapter_normalizes_language_and_vrchat_terms(tmp_path: Path)
         SpeechRecognitionRequest("request-2", b"\x01\x00" * 1600, 16_000, "auto"),
         profile,
     )
+    assert components.verify_calls == 1
+    assert _Factory.languages == ["auto"]
+
+
+def test_sensevoice_adapter_applies_explicit_supported_language(tmp_path: Path) -> None:
+    _Factory.languages = []
+    components = _Components(tmp_path)
+    adapter = _Adapter(components)  # type: ignore[arg-type]
+    profile = SpeechRecognitionProfile(
+        provider="local_offline", model="sensevoice-small-int8"
+    )
+    pcm = b"\x01\x00" * 1600
+
+    japanese = adapter.transcribe(
+        SpeechRecognitionRequest("ja-1", pcm, 16_000, "ja"),
+        profile,
+    )
+    adapter.transcribe(
+        SpeechRecognitionRequest("ja-2", pcm, 16_000, "ja"),
+        profile,
+    )
+    adapter.transcribe(
+        SpeechRecognitionRequest("en-1", pcm, 16_000, "en"),
+        profile,
+    )
+
+    assert japanese.detected_language == "en"
+    assert _Factory.languages == ["ja", "en"]
     assert components.verify_calls == 1
 
 

@@ -73,6 +73,83 @@ def test_rapidocr_keeps_boxes_in_original_frame_coordinates(monkeypatch) -> None
     assert result[0].background_luminance == pytest.approx(32 / 255)
 
 
+def test_rapidocr_upscales_small_text_and_maps_retry_boxes_back(monkeypatch) -> None:
+    class Models:
+        models_root = Path("models")
+
+        def signature(self, _language):
+            return (("model", 1, 1),)
+
+        def paths(self, language):
+            return OcrModelPaths(
+                language,
+                Path("det.onnx"),
+                Path("cls.onnx"),
+                Path("rec.onnx"),
+                "PP-OCRv5",
+                "server",
+            )
+
+    class FakeRapidOCR:
+        def __init__(self, *, params):
+            del params
+            self.calls = 0
+
+        def __call__(self, frame):
+            self.calls += 1
+            if self.calls == 1:
+                return type(
+                    "Output",
+                    (),
+                    {
+                        "boxes": np.array(
+                            [[[10, 10], [80, 10], [80, 26], [10, 26]]]
+                        ),
+                        "txts": ("错",),
+                        "scores": (0.4,),
+                    },
+                )()
+            assert frame.shape[:2] == (224, 424)
+            return type(
+                "Output",
+                (),
+                {
+                    "boxes": np.array(
+                        [[[32, 32], [172, 32], [172, 64], [32, 64]]]
+                    ),
+                    "txts": ("正确",),
+                    "scores": (0.95,),
+                },
+            )()
+
+    monkeypatch.setattr("rapidocr.RapidOCR", FakeRapidOCR)
+    frame = np.full((100, 200, 3), 32, dtype=np.uint8)
+
+    result = RapidOcrEngine(Models(), "zh-CN").recognize(frame)  # type: ignore[arg-type]
+
+    assert result[0].text == "正确"
+    assert result[0].box == ((10, 10), (80, 10), (80, 26), (10, 26))
+    assert result[0].canvas_size == (200, 100)
+
+
+def test_rapidocr_releases_previous_session_when_package_changes(monkeypatch) -> None:
+    engine = RapidOcrEngine(object(), "ja")  # type: ignore[arg-type]
+    previous = object()
+    engine._engine = previous
+    engine._model_signature = (("model", 1, 1),)
+    collected = []
+    monkeypatch.setattr(
+        "vrctranslate.infrastructure.ocr.rapidocr_engine.gc.collect",
+        lambda: collected.append(True),
+    )
+
+    engine.set_source_language("latin")
+
+    assert engine._engine is None
+    assert engine._model_signature == ()
+    assert collected == [True]
+
+
 def test_rapidocr_uses_english_mobile_recognition_settings(monkeypatch) -> None:
     from rapidocr import LangRec, ModelType, OCRVersion
 

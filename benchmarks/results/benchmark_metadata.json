@@ -1,0 +1,27 @@
+{
+  "date": "2026-07-21",
+  "version": "0.10.0",
+  "machine": {
+    "platform": "Windows-10-10.0.26200-SP0",
+    "processor": "AMD Ryzen 7 7840H w/ Radeon 780M Graphics",
+    "logical_cpu_count": 16,
+    "physical_cpu_count": 8,
+    "memory_total_gib": 15.19,
+    "memory_available_gib_at_start": 3.57,
+    "workspace_drive_free_gib": 17.32
+  },
+  "report": "多语言全链路质量与性能测试报告.md",
+  "charts": [
+    "asr_performance.svg",
+    "asr_quality.svg",
+    "asr_robustness.svg",
+    "domain_preservation.svg",
+    "end_to_end_latency.svg",
+    "ocr_performance.svg",
+    "ocr_quality.svg",
+    "ocr_stress.svg",
+    "translation_latency.svg",
+    "translation_quality.svg"
+  ],
+  "secrets_included": false
+}

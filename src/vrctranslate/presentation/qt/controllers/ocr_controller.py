@@ -106,6 +106,7 @@ class OcrController(QObject):
         self._inline_available = True
         self._layout_generation = 0
         self._pending_inline: dict[str, _PendingInlineLayout] = {}
+        self._latest_texts: list[OcrText] | None = None
         self._scheduler = OcrTranslationScheduler(translate_text, self._scheduler_outcome.emit)
         self._translation_context = RecentOcrContext()
         self._scheduler_outcome.connect(self._translation_completed)
@@ -241,7 +242,7 @@ class OcrController(QObject):
         if hasattr(settings, "translation"):
             settings.translation.ensure_routes()
             route = settings.translation.ocr_route
-            self._ocr_engine.set_source_language(route.source_language)
+            self._ocr_engine.set_source_language(settings.ocr.model_package)
             profile = settings.translation.profile_for_purpose("ocr")
             self._page.set_runtime_summary(
                 mode=settings.ocr.recognition_mode,
@@ -368,6 +369,7 @@ class OcrController(QObject):
             self._scheduler.start(self._settings.current.translation)
         self._translation_context.clear()
         self._pending_inline.clear()
+        self._latest_texts = None
         self._ocr_active = True
         self._stopping = False
         self._single_capture_finished = False
@@ -402,6 +404,7 @@ class OcrController(QObject):
         self._scheduler.stop()
         self._translation_context.clear()
         self._pending_inline.clear()
+        self._latest_texts = None
         if self._session.is_running:
             self._session.stop()
         elif self._visual_session is not None and self._visual_session.is_running:
@@ -599,11 +602,13 @@ class OcrController(QObject):
         if window is None:
             return
         if self._scheduler.pending_count:
+            self._latest_texts = list(items)
             self._logger.info(
-                "ocr_frame_skipped reason=previous_translation_pending blocks=%s",
+                "ocr_frame_deferred reason=previous_translation_pending policy=latest blocks=%s",
                 len(items),
             )
             return
+        self._latest_texts = None
         group_id = uuid4().hex
         pairs = [
             (
@@ -695,6 +700,18 @@ class OcrController(QObject):
             and not self._pending_inline
         ):
             self._finish_single()
+        elif (
+            getattr(self, "_latest_texts", None) is not None
+            and self._scheduler.pending_count == 0
+            and not self._pending_inline
+        ):
+            QTimer.singleShot(0, self._flush_latest_texts)
+
+    def _flush_latest_texts(self) -> None:
+        items = self._latest_texts
+        self._latest_texts = None
+        if items and self._ocr_active:
+            self._texts_ready(items)
 
     def _visual_result_ready(self, value: object) -> None:
         if not isinstance(value, MultimodalOcrOutcome) or not self._ocr_active:
@@ -767,6 +784,7 @@ class OcrController(QObject):
         self._scheduler.stop()
         self._translation_context.clear()
         self._pending_inline.clear()
+        self._latest_texts = None
         self._inline.clear()
         self._set_error(message)
 
@@ -793,6 +811,7 @@ class OcrController(QObject):
                 self._page.set_status(self._tr("ctrl.ocr_translating_result"))
             return
         self._ocr_active = False
+        self._latest_texts = None
         self._set_visual_state("idle")
         self.tray_state_changed.emit("normal")
 
@@ -801,6 +820,7 @@ class OcrController(QObject):
         self._ocr_active = False
         self._scheduler.stop()
         self._translation_context.clear()
+        self._latest_texts = None
         self._set_visual_state("idle")
         self._page.set_status(self._tr("ctrl.ocr_single_finished"))
         self.tray_state_changed.emit("normal")
@@ -839,6 +859,7 @@ class OcrController(QObject):
     def _invalidate_inline_layout(self) -> None:
         self._layout_generation += 1
         self._pending_inline.clear()
+        self._latest_texts = None
         self._inline.clear()
         self._overlay.clear()
 
@@ -856,6 +877,7 @@ class OcrController(QObject):
         self._shutting_down = True
         self._pending_start_mode = None
         self._ocr_active = False
+        self._latest_texts = None
         self._scheduler.shutdown()
         self._target_timer.stop()
         if self._ui_settings_timer.isActive():

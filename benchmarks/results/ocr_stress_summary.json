@@ -1,0 +1,326 @@
+[
+  {
+    "language": "zh-CN",
+    "language_name": "简体中文",
+    "condition": "baseline",
+    "cases": 5,
+    "cer": 0.018219461697722567,
+    "exact_rate": 0.6,
+    "latency_p50_ms": 710.8036000026914
+  },
+  {
+    "language": "zh-CN",
+    "language_name": "简体中文",
+    "condition": "low_contrast",
+    "cases": 5,
+    "cer": 0.008695652173913044,
+    "exact_rate": 0.6,
+    "latency_p50_ms": 647.0740000004298
+  },
+  {
+    "language": "zh-CN",
+    "language_name": "简体中文",
+    "condition": "gaussian_blur",
+    "cases": 5,
+    "cer": 0.009523809523809523,
+    "exact_rate": 0.8,
+    "latency_p50_ms": 706.6248000010091
+  },
+  {
+    "language": "zh-CN",
+    "language_name": "简体中文",
+    "condition": "tight_crop",
+    "cases": 5,
+    "cer": 0.02691511387163561,
+    "exact_rate": 0.6,
+    "latency_p50_ms": 685.6618999991042
+  },
+  {
+    "language": "zh-TW",
+    "language_name": "繁體中文",
+    "condition": "baseline",
+    "cases": 5,
+    "cer": 0.0,
+    "exact_rate": 0.8,
+    "latency_p50_ms": 689.201299999695
+  },
+  {
+    "language": "zh-TW",
+    "language_name": "繁體中文",
+    "condition": "low_contrast",
+    "cases": 5,
+    "cer": 0.0,
+    "exact_rate": 0.8,
+    "latency_p50_ms": 612.9044000008435
+  },
+  {
+    "language": "zh-TW",
+    "language_name": "繁體中文",
+    "condition": "gaussian_blur",
+    "cases": 5,
+    "cer": 0.0,
+    "exact_rate": 0.8,
+    "latency_p50_ms": 598.3143000012205
+  },
+  {
+    "language": "zh-TW",
+    "language_name": "繁體中文",
+    "condition": "tight_crop",
+    "cases": 5,
+    "cer": 0.0,
+    "exact_rate": 0.8,
+    "latency_p50_ms": 606.5105999987281
+  },
+  {
+    "language": "en",
+    "language_name": "English",
+    "condition": "baseline",
+    "cases": 5,
+    "cer": 0.015555555555555555,
+    "exact_rate": 0.6,
+    "latency_p50_ms": 518.4025000016845
+  },
+  {
+    "language": "en",
+    "language_name": "English",
+    "condition": "low_contrast",
+    "cases": 5,
+    "cer": 0.005555555555555555,
+    "exact_rate": 0.8,
+    "latency_p50_ms": 530.1942000005511
+  },
+  {
+    "language": "en",
+    "language_name": "English",
+    "condition": "gaussian_blur",
+    "cases": 5,
+    "cer": 0.005555555555555555,
+    "exact_rate": 0.8,
+    "latency_p50_ms": 522.5814000004902
+  },
+  {
+    "language": "en",
+    "language_name": "English",
+    "condition": "tight_crop",
+    "cases": 5,
+    "cer": 0.0,
+    "exact_rate": 1.0,
+    "latency_p50_ms": 519.8454999990645
+  },
+  {
+    "language": "ja",
+    "language_name": "日本語",
+    "condition": "baseline",
+    "cases": 5,
+    "cer": 0.0,
+    "exact_rate": 1.0,
+    "latency_p50_ms": 648.1633000003058
+  },
+  {
+    "language": "ja",
+    "language_name": "日本語",
+    "condition": "low_contrast",
+    "cases": 5,
+    "cer": 0.0,
+    "exact_rate": 1.0,
+    "latency_p50_ms": 619.9102999999013
+  },
+  {
+    "language": "ja",
+    "language_name": "日本語",
+    "condition": "gaussian_blur",
+    "cases": 5,
+    "cer": 0.0,
+    "exact_rate": 1.0,
+    "latency_p50_ms": 625.0385000021197
+  },
+  {
+    "language": "ja",
+    "language_name": "日本語",
+    "condition": "tight_crop",
+    "cases": 5,
+    "cer": 0.0,
+    "exact_rate": 1.0,
+    "latency_p50_ms": 649.6618000019225
+  },
+  {
+    "language": "ko",
+    "language_name": "한국어",
+    "condition": "baseline",
+    "cases": 5,
+    "cer": 0.00909090909090909,
+    "exact_rate": 0.8,
+    "latency_p50_ms": 480.97000000052503
+  },
+  {
+    "language": "ko",
+    "language_name": "한국어",
+    "condition": "low_contrast",
+    "cases": 5,
+    "cer": 0.03262032085561497,
+    "exact_rate": 0.6,
+    "latency_p50_ms": 465.95000000161235
+  },
+  {
+    "language": "ko",
+    "language_name": "한국어",
+    "condition": "gaussian_blur",
+    "cases": 5,
+    "cer": 0.00909090909090909,
+    "exact_rate": 0.8,
+    "latency_p50_ms": 500.51449999955366
+  },
+  {
+    "language": "ko",
+    "language_name": "한국어",
+    "condition": "tight_crop",
+    "cases": 5,
+    "cer": 0.13131313131313133,
+    "exact_rate": 0.6,
+    "latency_p50_ms": 579.5833999982278
+  },
+  {
+    "language": "fr",
+    "language_name": "Français",
+    "condition": "baseline",
+    "cases": 5,
+    "cer": 0.015789473684210527,
+    "exact_rate": 0.8,
+    "latency_p50_ms": 556.9002000011096
+  },
+  {
+    "language": "fr",
+    "language_name": "Français",
+    "condition": "low_contrast",
+    "cases": 5,
+    "cer": 0.0,
+    "exact_rate": 1.0,
+    "latency_p50_ms": 557.7704999996058
+  },
+  {
+    "language": "fr",
+    "language_name": "Français",
+    "condition": "gaussian_blur",
+    "cases": 5,
+    "cer": 0.0064516129032258064,
+    "exact_rate": 0.8,
+    "latency_p50_ms": 545.8983999997145
+  },
+  {
+    "language": "fr",
+    "language_name": "Français",
+    "condition": "tight_crop",
+    "cases": 5,
+    "cer": 0.012903225806451613,
+    "exact_rate": 0.8,
+    "latency_p50_ms": 544.7304000008444
+  },
+  {
+    "language": "de",
+    "language_name": "Deutsch",
+    "condition": "baseline",
+    "cases": 5,
+    "cer": 0.0,
+    "exact_rate": 1.0,
+    "latency_p50_ms": 532.8817999979947
+  },
+  {
+    "language": "de",
+    "language_name": "Deutsch",
+    "condition": "low_contrast",
+    "cases": 5,
+    "cer": 0.0,
+    "exact_rate": 1.0,
+    "latency_p50_ms": 521.7950000005658
+  },
+  {
+    "language": "de",
+    "language_name": "Deutsch",
+    "condition": "gaussian_blur",
+    "cases": 5,
+    "cer": 0.0,
+    "exact_rate": 1.0,
+    "latency_p50_ms": 531.0418999979447
+  },
+  {
+    "language": "de",
+    "language_name": "Deutsch",
+    "condition": "tight_crop",
+    "cases": 5,
+    "cer": 0.005,
+    "exact_rate": 0.8,
+    "latency_p50_ms": 543.6625000002095
+  },
+  {
+    "language": "es",
+    "language_name": "Español",
+    "condition": "baseline",
+    "cases": 5,
+    "cer": 0.0,
+    "exact_rate": 1.0,
+    "latency_p50_ms": 517.2505999980785
+  },
+  {
+    "language": "es",
+    "language_name": "Español",
+    "condition": "low_contrast",
+    "cases": 5,
+    "cer": 0.0,
+    "exact_rate": 1.0,
+    "latency_p50_ms": 519.2845999990823
+  },
+  {
+    "language": "es",
+    "language_name": "Español",
+    "condition": "gaussian_blur",
+    "cases": 5,
+    "cer": 0.0,
+    "exact_rate": 1.0,
+    "latency_p50_ms": 521.2629000016022
+  },
+  {
+    "language": "es",
+    "language_name": "Español",
+    "condition": "tight_crop",
+    "cases": 5,
+    "cer": 0.0,
+    "exact_rate": 1.0,
+    "latency_p50_ms": 519.9188000005961
+  },
+  {
+    "language": "ru",
+    "language_name": "Русский",
+    "condition": "baseline",
+    "cases": 5,
+    "cer": 0.014634146341463414,
+    "exact_rate": 0.8,
+    "latency_p50_ms": 572.2819000002346
+  },
+  {
+    "language": "ru",
+    "language_name": "Русский",
+    "condition": "low_contrast",
+    "cases": 5,
+    "cer": 0.005714285714285714,
+    "exact_rate": 0.8,
+    "latency_p50_ms": 543.8711000024341
+  },
+  {
+    "language": "ru",
+    "language_name": "Русский",
+    "condition": "gaussian_blur",
+    "cases": 5,
+    "cer": 0.054738675958188154,
+    "exact_rate": 0.2,
+    "latency_p50_ms": 536.9430999999167
+  },
+  {
+    "language": "ru",
+    "language_name": "Русский",
+    "condition": "tight_crop",
+    "cases": 5,
+    "cer": 0.01951219512195122,
+    "exact_rate": 0.6,
+    "latency_p50_ms": 563.9110000010987
+  }
+]

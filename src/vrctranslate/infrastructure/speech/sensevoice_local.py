@@ -67,6 +67,8 @@ class SenseVoiceLocalSpeechRecognizer:
         self._num_threads = max(1, int(num_threads))
         self._lock = RLock()
         self._recognizer: Any | None = None
+        self._recognizer_language = ""
+        self._verified_paths: SpeechModelPaths | None = None
         self._runtime_module: Any | None = None
         self._dll_handle: Any | None = None
 
@@ -84,7 +86,8 @@ class SenseVoiceLocalSpeechRecognizer:
         try:
             self._validate_profile_selection(profile)
             paths = self._components.verify()
-            self._ensure_recognizer(paths)
+            self._verified_paths = paths
+            self._ensure_recognizer(paths, "auto")
         except (OSError, ImportError, RuntimeError, SpeechRecognitionError) as exc:
             return SpeechProfileValidationResult("failed", self._safe_message(exc))
         return SpeechProfileValidationResult(
@@ -106,7 +109,12 @@ class SenseVoiceLocalSpeechRecognizer:
         samples *= 1.0 / 32768.0
         try:
             with self._lock:
-                recognizer = self._ensure_recognizer()
+                recognition_language = self._recognition_language(
+                    request.source_language
+                )
+                recognizer = self._ensure_recognizer(
+                    language=recognition_language
+                )
                 stream = recognizer.create_stream()
                 stream.accept_waveform(16_000, samples)
                 recognizer.decode_stream(stream)
@@ -121,6 +129,8 @@ class SenseVoiceLocalSpeechRecognizer:
         language = _LANGUAGE_CODES.get(
             str(getattr(result, "lang", "")).strip(), ""
         )
+        if not language and request.source_language in {"zh-CN", "en", "ja", "ko"}:
+            language = request.source_language
         return SpeechRecognitionResult(request.request_id, text, language)
 
     def release(self, profile: SpeechRecognitionProfile) -> None:
@@ -128,6 +138,7 @@ class SenseVoiceLocalSpeechRecognizer:
             return
         with self._lock:
             self._recognizer = None
+            self._recognizer_language = ""
         gc.collect()
 
     def _validate_profile_selection(self, profile: SpeechRecognitionProfile) -> None:
@@ -137,13 +148,31 @@ class SenseVoiceLocalSpeechRecognizer:
             raise SpeechRecognitionError("configuration", "不支持所选本地语音模型")
 
     def _ensure_recognizer(
-        self, verified_paths: SpeechModelPaths | None = None
+        self,
+        verified_paths: SpeechModelPaths | None = None,
+        language: str = "auto",
     ) -> Any:
         with self._lock:
-            if self._recognizer is not None:
+            if (
+                self._recognizer is not None
+                and self._recognizer_language == language
+            ):
                 return self._recognizer
+            cached_paths = self._verified_paths
+            if cached_paths is not None and not (
+                cached_paths.model.is_file()
+                and cached_paths.tokens.is_file()
+                and cached_paths.runtime_root.is_dir()
+            ):
+                cached_paths = None
+                self._verified_paths = None
             try:
-                paths = verified_paths or self._components.verify()
+                paths = (
+                    verified_paths
+                    or cached_paths
+                    or self._components.verify()
+                )
+                self._verified_paths = paths
             except (OSError, FileNotFoundError) as exc:
                 raise SpeechRecognitionError(
                     "model_missing", "SenseVoice 本地语音模型未安装或校验失败"
@@ -154,15 +183,25 @@ class SenseVoiceLocalSpeechRecognizer:
                     model=str(paths.model),
                     tokens=str(paths.tokens),
                     num_threads=self._num_threads,
-                    language="auto",
+                    language=language,
                     use_itn=True,
                     provider="cpu",
                 )
+                self._recognizer_language = language
             except Exception as exc:
                 raise SpeechRecognitionError(
                     "model_load", "SenseVoice 本地语音模型加载失败"
                 ) from exc
             return self._recognizer
+
+    @staticmethod
+    def _recognition_language(source_language: str) -> str:
+        return {
+            "zh-CN": "zh",
+            "en": "en",
+            "ja": "ja",
+            "ko": "ko",
+        }.get(source_language, "auto")
 
     def _load_runtime(self, root: Path) -> Any:
         if self._runtime_module is not None:

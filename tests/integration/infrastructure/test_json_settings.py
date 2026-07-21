@@ -107,6 +107,49 @@ def test_v12_round_trip_keeps_ocr_region_coordinate_space(tmp_path) -> None:
     assert repository.load().ocr.region_coordinate_space == "screen"
 
 
+def test_ocr_model_package_is_independent_from_translation_source(tmp_path) -> None:
+    repository = JsonSettingsRepository(tmp_path / "config.json")
+    settings = AppSettings()
+    settings.ocr.model_package = "latin"
+    settings.translation.ocr_route.source_language = "auto"
+
+    repository.save(settings)
+    loaded = repository.load()
+
+    assert loaded.ocr.model_package == "latin"
+    assert loaded.translation.ocr_route.source_language == "auto"
+
+
+def test_existing_config_derives_ocr_package_once_from_old_source_language(
+    tmp_path,
+) -> None:
+    path = tmp_path / "config.json"
+    path.write_text(
+        json.dumps(
+            {
+                "version": 12,
+                "translation": {
+                    "profiles": [{"id": "test", "provider": "test"}],
+                    "ocr_route": {
+                        "profile_id": "test",
+                        "source_language": "fr",
+                        "target_language": "zh-CN",
+                    },
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    loaded = JsonSettingsRepository(path).load()
+
+    assert loaded.ocr.model_package == "latin"
+    assert loaded.translation.ocr_route.source_language == "fr"
+    assert json.loads(path.read_text(encoding="utf-8"))["ocr"][
+        "model_package"
+    ] == "latin"
+
+
 def test_legacy_voice_show_original_maps_to_new_display_mode(tmp_path) -> None:
     path = tmp_path / "config.json"
     path.write_text(

@@ -145,3 +145,23 @@ def test_google_free_reports_when_both_free_paths_fail() -> None:
     assert raised.value.category == "response"
     assert "备用翻译未返回译文" in raised.value.user_message
     assert "原免费接口同时失败" in raised.value.user_message
+
+
+def test_google_free_opens_circuit_after_repeated_failures() -> None:
+    _Client.responses = [_Response(status=429) for _ in range(3)]
+    translator = GoogleFreeTranslator()
+    profile = TranslationProfile(
+        provider="google_free",
+        base_url="https://mirror.example/translate",
+        timeout_seconds=8,
+    )
+
+    for _ in range(3):
+        with pytest.raises(TranslationError):
+            translator.translate(_request(), profile)
+
+    with pytest.raises(TranslationError, match="临时冷却") as raised:
+        translator.translate(_request(), profile)
+
+    assert raised.value.category == "service"
+    assert len(_Client.calls) == 3

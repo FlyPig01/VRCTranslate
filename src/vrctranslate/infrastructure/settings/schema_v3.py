@@ -15,6 +15,7 @@ from vrctranslate.application.dto import (
     TranslationSettings,
     UiSettings,
 )
+from vrctranslate.domain.languages import OCR_MODEL_PACKAGE_IDS
 
 
 def settings_v3_to_dict(settings: AppSettings) -> dict[str, Any]:
@@ -133,9 +134,13 @@ def osc_from_dict(raw: dict[str, Any]) -> OscSettings:
 
 def ocr_from_dict(raw: dict[str, Any]) -> OcrSettings:
     backend = str(raw.get("capture_backend", "auto"))
+    model_package = str(raw.get("model_package", "ja"))
     mode = str(raw.get("recognition_mode", "continuous"))
     return OcrSettings(
         capture_backend=backend if backend in {"auto", "windows", "screen"} else "auto",
+        model_package=(
+            model_package if model_package in OCR_MODEL_PACKAGE_IDS else "ja"
+        ),
         recognition_mode=mode if mode in {"single", "continuous"} else "continuous",
         interval_ms=int_in_range(raw.get("interval_ms"), 900, 250, 10000),
         confidence=float_in_range(raw.get("confidence"), 0.68, 0, 1),

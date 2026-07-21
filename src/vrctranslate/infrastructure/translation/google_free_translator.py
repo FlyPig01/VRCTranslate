@@ -3,6 +3,7 @@ from __future__ import annotations
 from html.parser import HTMLParser
 import random
 import time
+from threading import Lock
 
 import httpx
 
@@ -40,6 +41,8 @@ _KNOWN_JSON_ENDPOINTS = frozenset(
 )
 _MOBILE_FALLBACK_ENDPOINT = "https://translate.google.com/m"
 _MOBILE_FALLBACK_SECONDS = 15 * 60
+_FAILURE_THRESHOLD = 3
+_FAILURE_COOLDOWN_SECONDS = 5 * 60
 
 
 class _MobileResultParser(HTMLParser):
@@ -82,6 +85,9 @@ class _MobileResultParser(HTMLParser):
 class GoogleFreeTranslator:
     def __init__(self) -> None:
         self._mobile_fallback_until = 0.0
+        self._consecutive_failures = 0
+        self._unavailable_until = 0.0
+        self._state_lock = Lock()
 
     def capabilities(self) -> TranslationCapabilities:
         return TranslationCapabilities(
@@ -90,7 +96,7 @@ class GoogleFreeTranslator:
             online=True,
             supports_auto_detect=True,
             supports_batch=False,
-            realtime_recommended=True,
+            realtime_recommended=False,
             requires_api_key=False,
             glossary_mode="local_placeholder",
             supported_languages=tuple(_LANGUAGE_CODES),
@@ -101,6 +107,7 @@ class GoogleFreeTranslator:
         request: TranslationRequest,
         profile: TranslationProfile,
     ) -> TranslationResult:
+        self._ensure_available()
         target = _LANGUAGE_CODES.get(request.target_language)
         if target is None:
             raise TranslationError("configuration", "Google 翻译不支持当前目标语言")
@@ -123,12 +130,17 @@ class GoogleFreeTranslator:
         }
         can_use_fallback = endpoint.rstrip("/") in _KNOWN_JSON_ENDPOINTS
         if can_use_fallback and time.monotonic() < self._mobile_fallback_until:
-            translated_text = self._translate_with_mobile_page(
-                source,
-                target,
-                text,
-                profile.timeout_seconds,
-            )
+            try:
+                translated_text = self._translate_with_mobile_page(
+                    source,
+                    target,
+                    text,
+                    profile.timeout_seconds,
+                )
+            except TranslationError:
+                self._record_failure()
+                raise
+            self._record_success()
             return self._result(request, text, translated_text, request.source_language)
 
         try:
@@ -205,6 +217,7 @@ class GoogleFreeTranslator:
                 if _LANGUAGE_CODES[code].lower() == detected_code.lower():
                     detected_source = code
                     break
+        self._record_success()
         return self._result(request, text, translated_text, detected_source)
 
     def _fallback_or_raise(
@@ -219,6 +232,7 @@ class GoogleFreeTranslator:
         cause: Exception,
     ) -> TranslationResult:
         if not can_use_fallback:
+            self._record_failure()
             raise primary_error from cause
         try:
             translated_text = self._translate_with_mobile_page(
@@ -228,6 +242,7 @@ class GoogleFreeTranslator:
                 timeout_seconds,
             )
         except TranslationError as fallback_error:
+            self._record_failure()
             raise TranslationError(
                 fallback_error.category,
                 (
@@ -236,7 +251,30 @@ class GoogleFreeTranslator:
                 ),
             ) from fallback_error
         self._mobile_fallback_until = time.monotonic() + _MOBILE_FALLBACK_SECONDS
+        self._record_success()
         return self._result(request, text, translated_text, request.source_language)
+
+    def _ensure_available(self) -> None:
+        with self._state_lock:
+            remaining = self._unavailable_until - time.monotonic()
+        if remaining > 0:
+            raise TranslationError(
+                "service",
+                "Google 免费翻译连续失败，已进入临时冷却，请稍后重试或更换翻译档案",
+            )
+
+    def _record_failure(self) -> None:
+        with self._state_lock:
+            self._consecutive_failures += 1
+            if self._consecutive_failures >= _FAILURE_THRESHOLD:
+                self._unavailable_until = (
+                    time.monotonic() + _FAILURE_COOLDOWN_SECONDS
+                )
+
+    def _record_success(self) -> None:
+        with self._state_lock:
+            self._consecutive_failures = 0
+            self._unavailable_until = 0.0
 
     @staticmethod
     def _translate_with_mobile_page(

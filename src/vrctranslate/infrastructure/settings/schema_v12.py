@@ -6,6 +6,7 @@ from vrctranslate.application.dto import (
     CONFIG_VERSION,
     AppSettings,
 )
+from vrctranslate.domain.languages import ocr_package_for_language
 from vrctranslate.infrastructure.settings.schema_v11 import (
     settings_v11_from_dict,
     settings_v11_to_dict,
@@ -32,6 +33,10 @@ def settings_v12_from_dict(raw: dict[str, Any]) -> AppSettings:
     settings.ocr.region_coordinate_space = (
         coordinate_space if coordinate_space in {"window", "screen"} else "window"
     )
+    if "model_package" not in ocr:
+        settings.ocr.model_package = ocr_package_for_language(
+            settings.translation.ocr_route.source_language
+        )
     settings.translation.voice_route.translation_strategy = "text_profile"
     settings.voice.ensure_profiles()
     settings.translation.ensure_routes()

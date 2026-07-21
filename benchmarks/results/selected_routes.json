@@ -1,0 +1,24 @@
+{
+  "translation": {
+    "zh-CN": "aliyun:阿里通用:general",
+    "zh-TW": "aliyun:阿里专业:professional",
+    "en": "tencent:腾讯云翻译:default",
+    "ja": "tencent:腾讯云翻译:default",
+    "ko": "tencent:腾讯云翻译:default",
+    "fr": "tencent:腾讯云翻译:default",
+    "de": "tencent:腾讯云翻译:default",
+    "es": "tencent:腾讯云翻译:default",
+    "ru": "tencent:腾讯云翻译:default"
+  },
+  "asr": {
+    "zh-CN": "sensevoice_forced_candidate",
+    "en": "sensevoice_forced_candidate",
+    "ja": "sensevoice_forced_candidate",
+    "ko": "sensevoice_forced_candidate",
+    "fr": "whisper_cpp_small_q5_1",
+    "de": "whisper_cpp_small_q5_1",
+    "es": "whisper_cpp_small_q5_1",
+    "ru": "whisper_cpp_small_q5_1"
+  },
+  "selection_rule": "Translation: highest FLORES chrF with >=90% success, then lowest latency. ASR: among engines within 2 percentage points of the lowest primary error rate, choose the lowest RTF."
+}

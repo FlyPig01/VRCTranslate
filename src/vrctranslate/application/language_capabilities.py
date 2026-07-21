@@ -32,7 +32,7 @@ def translation_language_codes(
     ocr: bool = False,
 ) -> tuple[str, ...]:
     languages = OCR_SOURCE_LANGUAGE_CODES if ocr and source else TRANSLATION_LANGUAGE_CODES
-    if source and provider in _TRANSLATION_AUTO_DETECT and not ocr:
+    if source and provider in _TRANSLATION_AUTO_DETECT:
         return ("auto", *languages)
     return languages
 

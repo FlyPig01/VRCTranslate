@@ -8,6 +8,7 @@ from PySide6.QtGui import QWheelEvent
 from PySide6.QtWidgets import (
     QApplication,
     QDialog,
+    QFrame,
     QLabel,
     QScrollArea,
     QSpinBox,
@@ -82,7 +83,18 @@ def test_settings_has_five_discoverable_sections_and_fixed_save(qtbot, tmp_path)
     assert [
         page.translation_page.routes_tab.ocr_source_combo.itemData(index)
         for index in range(page.translation_page.routes_tab.ocr_source_combo.count())
-    ] == ["zh-CN", "zh-TW", "en", "ja", "ko", "fr", "de", "es", "ru"]
+        ] == [
+            "auto",
+            "zh-CN",
+            "zh-TW",
+            "en",
+            "ja",
+            "ko",
+            "fr",
+            "de",
+            "es",
+            "ru",
+        ]
     assert set(page.ocr_page._model_install_buttons) == {
         "zh-CN",
         "ja",
@@ -152,6 +164,67 @@ def test_route_languages_follow_translation_and_speech_profiles(qtbot) -> None:
         tab.voice_source_combo.itemData(index)
         for index in range(tab.voice_source_combo.count())
     ] == ["ja"]
+
+
+def test_route_quality_hint_is_advisory_and_keeps_current_profile(qtbot) -> None:
+    tab = RoutesTab(I18nManager("zh_CN"))
+    qtbot.addWidget(tab)
+    settings = TranslationSettings(
+        profiles=[
+            TranslationProfile(
+                id="tencent",
+                name="Tencent",
+                provider="tencent",
+            ),
+            TranslationProfile(
+                id="aliyun",
+                name="Aliyun",
+                provider="aliyun",
+                options={"aliyun_api": "general"},
+            ),
+        ]
+    )
+    settings.self_route.profile_id = "tencent"
+    settings.self_route.source_language = "en"
+    settings.self_route.target_language = "zh-CN"
+
+    tab.load_settings(settings)
+
+    assert not tab.self_quality_hint.isHidden()
+    assert "当前档案是此方向的候选" in tab.self_quality_hint.text()
+    assert tab.self_profile_combo.currentData() == "tencent"
+
+    tab.self_source_combo.setCurrentIndex(
+        tab.self_source_combo.findData("zh-CN")
+    )
+    tab.self_target_combo.setCurrentIndex(
+        tab.self_target_combo.findData("en")
+    )
+
+    assert "阿里云" in tab.self_quality_hint.text()
+    assert tab.self_profile_combo.currentData() == "tencent"
+
+
+def test_google_free_route_is_marked_experimental(qtbot) -> None:
+    tab = RoutesTab(I18nManager("zh_CN"))
+    qtbot.addWidget(tab)
+    settings = TranslationSettings(
+        profiles=[
+            TranslationProfile(
+                id="google",
+                name="Google free",
+                provider="google_free",
+            )
+        ]
+    )
+    settings.self_route.profile_id = "google"
+    settings.self_route.source_language = "en"
+    settings.self_route.target_language = "zh-CN"
+
+    tab.load_settings(settings)
+
+    assert "不建议用于实时默认路线" in tab.self_quality_hint.text()
+    assert tab.self_quality_hint.property("state") == "experimental"
 
 
 def test_tencent_profile_uses_secret_id_and_secret_key_labels(qtbot, tmp_path) -> None:
@@ -519,6 +592,47 @@ def test_ocr_model_download_shows_real_progress_and_only_cancel_action(qtbot) ->
     assert model_page._model_install_buttons["ja"].isHidden()
     assert model_page._model_remove_buttons["ja"].isHidden()
     assert not model_page._model_cancel_buttons["ja"].isHidden()
+
+
+def test_ocr_model_manager_uses_one_scalable_detail_card(qtbot) -> None:
+    page = SettingsPage(_FAKE_I18N)
+    qtbot.addWidget(page)
+    model_page = page.ocr_page
+
+    cards = model_page.findChildren(QFrame, "ocrModelCard")
+    assert len(cards) == 1
+    assert model_page.model_selector.count() == 6
+
+    model_page.set_model_status(
+        "en",
+        True,
+        "PP-OCRv5-mobile",
+        8_000_000,
+        exclusive_size=8_000_000,
+    )
+    installed_filter = model_page.model_filter_combo.findData("installed")
+    model_page.model_filter_combo.setCurrentIndex(installed_filter)
+
+    assert model_page.model_selector.count() == 1
+    assert model_page.model_selector.currentData() == "en"
+    assert model_page._model_install_summary.text() == (
+        "ocr_models.installed_count"
+    )
+
+
+def test_ocr_model_action_targets_selected_model(qtbot) -> None:
+    page = SettingsPage(_FAKE_I18N)
+    qtbot.addWidget(page)
+    model_page = page.ocr_page
+    requested: list[str] = []
+    model_page.model_install_requested.connect(requested.append)
+
+    model_page.model_selector.setCurrentIndex(
+        model_page.model_selector.findData("ja")
+    )
+    model_page._model_install_button.click()
+
+    assert requested == ["ja"]
 
 
 def test_numeric_input_has_no_wheel_or_arrow_stepping(qtbot) -> None:

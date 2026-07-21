@@ -66,7 +66,28 @@ QLabel#capturePreview {
 }
 QScrollArea#settingsContentScroll { background: transparent; border: none; }
 
+QFrame#ocrModelToolbar {
+    background: #eef3f8;
+    border: 1px solid #d8e1ec;
+    border-radius: 9px;
+}
+QLabel#ocrModelToolbarLabel {
+    color: #4e6076;
+    font-size: 12px;
+    font-weight: 600;
+}
+QComboBox#ocrModelSelector,
+QComboBox#ocrModelFilter {
+    min-height: 34px;
+    padding-left: 10px;
+    background: #ffffff;
+    border: 1px solid #cbd8e5;
+    border-radius: 7px;
+}
+QComboBox#ocrModelSelector { min-width: 160px; }
+QComboBox#ocrModelFilter { min-width: 100px; max-width: 170px; }
 QFrame#ocrModelCard {
+    min-height: 108px;
     background: #f8fafc;
     border: 1px solid #d6e0eb;
     border-radius: 10px;
@@ -106,6 +127,14 @@ QLabel#ocrModelStorage {
     border: 1px solid #d8e1ec;
     border-radius: 8px;
     padding: 8px 10px;
+}
+QLabel#ocrModelCount {
+    color: #216a45;
+    background: #dff2e8;
+    border: 1px solid #c2e3d1;
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-weight: 700;
 }
 
 QWidget#settingsChoicePanel {
@@ -279,4 +308,22 @@ QTabWidget#profileTypeTabs QTabBar::tab:selected {
     color: #145e76;
     background: #ffffff;
     font-weight: 700;
+}
+QLabel#routeQualityHint {
+    padding: 7px 9px;
+    color: #456077;
+    background: #eef4f8;
+    border: 1px solid #d5e2ea;
+    border-radius: 7px;
+    font-size: 11px;
+}
+QLabel#routeQualityHint[state="candidate"] {
+    color: #216a45;
+    background: #e6f4ec;
+    border-color: #bddfca;
+}
+QLabel#routeQualityHint[state="experimental"] {
+    color: #8a5a18;
+    background: #fff3d8;
+    border-color: #ead5a3;
 }

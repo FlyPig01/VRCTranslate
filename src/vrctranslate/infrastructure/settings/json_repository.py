@@ -127,7 +127,13 @@ class JsonSettingsRepository:
             loaded_profile_ids = {
                 profile.id for profile in settings.voice.asr_profiles
             }
-            if persisted_profile_ids != loaded_profile_ids:
+            persisted_ocr = (
+                raw.get("ocr") if isinstance(raw.get("ocr"), dict) else {}
+            )
+            if (
+                persisted_profile_ids != loaded_profile_ids
+                or "model_package" not in persisted_ocr
+            ):
                 self.save(settings)
             return settings
         except (OSError, ValueError, json.JSONDecodeError):

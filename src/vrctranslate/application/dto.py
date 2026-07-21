@@ -229,6 +229,7 @@ class OscSettings:
 @dataclass(slots=True)
 class OcrSettings:
     capture_backend: str = "auto"
+    model_package: str = "ja"
     recognition_mode: str = "continuous"
     interval_ms: int = 900
     confidence: float = 0.68

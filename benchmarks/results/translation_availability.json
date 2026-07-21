@@ -1,0 +1,52 @@
+{
+  "tencent": {
+    "configured": true,
+    "profiles": [
+      {
+        "name": "腾讯云翻译",
+        "complete": true,
+        "stored_mode": null,
+        "tested_mode": null
+      }
+    ]
+  },
+  "aliyun": {
+    "configured": true,
+    "profiles": [
+      {
+        "name": "阿里通用",
+        "complete": true,
+        "stored_mode": "general",
+        "tested_mode": "general"
+      },
+      {
+        "name": "阿里专业",
+        "complete": true,
+        "stored_mode": "general",
+        "tested_mode": "professional"
+      }
+    ]
+  },
+  "deepl": {
+    "configured": false,
+    "profiles": []
+  },
+  "google_cloud": {
+    "configured": false,
+    "profiles": []
+  },
+  "google_free": {
+    "configured": true,
+    "profiles": [
+      {
+        "name": "Google翻译（免费）",
+        "complete": true
+      }
+    ],
+    "unofficial_endpoint": true
+  },
+  "openai_compatible": {
+    "configured": false,
+    "profiles": []
+  }
+}

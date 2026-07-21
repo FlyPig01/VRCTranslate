@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import gc
 from typing import Any
 
 import numpy as np
@@ -34,12 +35,50 @@ class RapidOcrEngine:
         img = img.filter(ImageFilter.SHARPEN)
         return np.array(img)
 
+    @staticmethod
+    def _small_text_retry_frame(pixels: np.ndarray) -> np.ndarray:
+        padding = 6
+        padded = np.pad(
+            pixels,
+            ((padding, padding), (padding, padding), (0, 0)),
+            mode="edge",
+        )
+        image = Image.fromarray(padded)
+        image = image.resize(
+            (image.width * 2, image.height * 2),
+            Image.Resampling.BICUBIC,
+        )
+        return np.array(image.filter(ImageFilter.SHARPEN))
+
     def recognize(self, frame: object) -> list[OcrText]:
         engine = self._get_engine()
         try:
             output = engine(self._preprocess(frame))
         except Exception as exc:
             raise OcrUnavailable(f"OCR 识别失败：{type(exc).__name__}") from exc
+        items = self._recognized_items(output, frame)
+        if not self._should_retry_small_text(frame, items):
+            return items
+        try:
+            retry_output = engine(self._small_text_retry_frame(frame))
+        except Exception:
+            return items
+        retry_items = self._recognized_items(
+            retry_output,
+            frame,
+            scale=2.0,
+            padding=6,
+        )
+        return self._prefer_retry(items, retry_items)
+
+    def _recognized_items(
+        self,
+        output: object,
+        frame: np.ndarray,
+        *,
+        scale: float = 1.0,
+        padding: int = 0,
+    ) -> list[OcrText]:
         boxes = getattr(output, "boxes", None)
         texts = getattr(output, "txts", None)
         scores = getattr(output, "scores", None)
@@ -58,7 +97,13 @@ class RapidOcrEngine:
             box: tuple[tuple[int, int], ...] = ()
             try:
                 box = tuple(
-                    (round(float(point[0])), round(float(point[1])))
+                    self._map_point(
+                        point,
+                        scale=scale,
+                        padding=padding,
+                        width=width,
+                        height=height,
+                    )
                     for point in box_raw
                 )
             except (TypeError, ValueError, IndexError):
@@ -74,6 +119,55 @@ class RapidOcrEngine:
                 )
             )
         return items
+
+    @staticmethod
+    def _map_point(
+        point: object,
+        *,
+        scale: float,
+        padding: int,
+        width: int,
+        height: int,
+    ) -> tuple[int, int]:
+        x = round(float(point[0]) / scale - padding)  # type: ignore[index]
+        y = round(float(point[1]) / scale - padding)  # type: ignore[index]
+        return (
+            min(max(0, x), max(0, width - 1)),
+            min(max(0, y), max(0, height - 1)),
+        )
+
+    @staticmethod
+    def _should_retry_small_text(
+        frame: np.ndarray,
+        items: list[OcrText],
+    ) -> bool:
+        heights = [
+            max(point[1] for point in item.box)
+            - min(point[1] for point in item.box)
+            for item in items
+            if item.box
+        ]
+        if heights:
+            return float(np.median(heights)) < 22.0
+        height, width = frame.shape[:2]
+        return min(height, width) <= 320
+
+    @staticmethod
+    def _prefer_retry(
+        original: list[OcrText],
+        retry: list[OcrText],
+    ) -> list[OcrText]:
+        if not retry:
+            return original
+        if not original:
+            return retry
+
+        def score(items: list[OcrText]) -> tuple[int, float, int]:
+            characters = sum(len(item.text) for item in items)
+            confidence = sum(item.confidence for item in items) / len(items)
+            return characters, confidence, len(items)
+
+        return retry if score(retry) > score(original) else original
 
     def ensure_available(self) -> None:
         """Fail before capture starts when the selected language pack is absent."""
@@ -155,13 +249,22 @@ class RapidOcrEngine:
         if source_language == self._source_language:
             return
         self._source_language = source_language
-        self._engine = None  # Force rebuild with new model
+        self.release_recognition_session()
+
+    def release_recognition_session(self) -> None:
+        previous = self._engine
+        self._engine = None
+        self._model_signature = ()
+        if previous is not None:
+            del previous
+            gc.collect()
 
     def _get_engine(self) -> Any:
         signature = self._model_manager.signature(self._source_language)
         if self._engine is not None and signature == self._model_signature:
             return self._engine
         if not signature:
+            self.release_recognition_session()
             raise self._missing_model_error()
         try:
             from rapidocr import LangDet, LangRec, ModelType, OCRVersion, RapidOCR

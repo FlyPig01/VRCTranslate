@@ -1,0 +1,191 @@
+[
+  {
+    "language": "zh-CN",
+    "language_name": "简体中文",
+    "ocr_package": "zh-CN",
+    "cases": 80,
+    "cer": 0.05865683229813664,
+    "wer": null,
+    "exact_rate": 0.6,
+    "average_confidence": 0.9680169602505757,
+    "cold_start_ms": 2550.4381000009744,
+    "latency_p50_ms": 866.4066000001185,
+    "latency_p95_ms": 1130.4021500001909,
+    "model_exclusive_mib": 80.65893363952637,
+    "resources": {
+      "elapsed_seconds": 71.06138889999966,
+      "cpu_seconds": 155.125,
+      "average_cpu_percent": 13.643573043081975,
+      "peak_rss_mib": 925.828125,
+      "rss_delta_mib": 883.59375
+    }
+  },
+  {
+    "language": "zh-TW",
+    "language_name": "繁體中文",
+    "ocr_package": "zh-CN",
+    "cases": 80,
+    "cer": 0.007091979578392622,
+    "wer": null,
+    "exact_rate": 0.6375,
+    "average_confidence": 0.9839954247335253,
+    "cold_start_ms": 1718.2959000001574,
+    "latency_p50_ms": 911.6168500013373,
+    "latency_p95_ms": 1285.6554850006432,
+    "model_exclusive_mib": 80.65893363952637,
+    "resources": {
+      "elapsed_seconds": 77.66205020000052,
+      "cpu_seconds": 171.09375,
+      "average_cpu_percent": 13.769092301145466,
+      "peak_rss_mib": 579.53125,
+      "rss_delta_mib": 483.2734375
+    }
+  },
+  {
+    "language": "en",
+    "language_name": "English",
+    "ocr_package": "en",
+    "cases": 80,
+    "cer": 0.015297568107260021,
+    "wer": 0.05992739898989898,
+    "exact_rate": 0.7375,
+    "average_confidence": 0.9924537502721155,
+    "cold_start_ms": 1958.2793999998103,
+    "latency_p50_ms": 785.0326499992661,
+    "latency_p95_ms": 1575.0794500000666,
+    "model_exclusive_mib": 7.507658958435059,
+    "resources": {
+      "elapsed_seconds": 74.9774354000001,
+      "cpu_seconds": 163.109375,
+      "average_cpu_percent": 13.59653858939537,
+      "peak_rss_mib": 830.91796875,
+      "rss_delta_mib": 732.23828125
+    }
+  },
+  {
+    "language": "ja",
+    "language_name": "日本語",
+    "ocr_package": "ja",
+    "cases": 80,
+    "cer": 0.0015,
+    "wer": null,
+    "exact_rate": 0.95,
+    "average_confidence": 0.9990220814387465,
+    "cold_start_ms": 1157.4014999987412,
+    "latency_p50_ms": 918.5996000005616,
+    "latency_p95_ms": 1054.7730449999108,
+    "model_exclusive_mib": 73.08004760742188,
+    "resources": {
+      "elapsed_seconds": 72.98854879999999,
+      "cpu_seconds": 159.796875,
+      "average_cpu_percent": 13.683385752560683,
+      "peak_rss_mib": 581.9609375,
+      "rss_delta_mib": 480.6796875
+    }
+  },
+  {
+    "language": "ko",
+    "language_name": "한국어",
+    "ocr_package": "ko",
+    "cases": 80,
+    "cer": 0.2385792271454036,
+    "wer": null,
+    "exact_rate": 0.4875,
+    "average_confidence": 0.8875319913289952,
+    "cold_start_ms": 1635.2824000005057,
+    "latency_p50_ms": 695.6359500009057,
+    "latency_p95_ms": 1447.4283150002518,
+    "model_exclusive_mib": 12.863872528076172,
+    "resources": {
+      "elapsed_seconds": 66.2008163999999,
+      "cpu_seconds": 142.9375,
+      "average_cpu_percent": 13.494688186352963,
+      "peak_rss_mib": 879.13671875,
+      "rss_delta_mib": 776.79296875
+    }
+  },
+  {
+    "language": "fr",
+    "language_name": "Français",
+    "ocr_package": "latin",
+    "cases": 80,
+    "cer": 0.012934024183195992,
+    "wer": 0.05170454545454546,
+    "exact_rate": 0.7,
+    "average_confidence": 0.9928632150741764,
+    "cold_start_ms": 1471.564400000716,
+    "latency_p50_ms": 569.8727499993765,
+    "latency_p95_ms": 1087.6439550005668,
+    "model_exclusive_mib": 7.538331031799316,
+    "resources": {
+      "elapsed_seconds": 54.6299338000008,
+      "cpu_seconds": 120.6875,
+      "average_cpu_percent": 13.807391342655972,
+      "peak_rss_mib": 802.15234375,
+      "rss_delta_mib": 699.5625
+    }
+  },
+  {
+    "language": "de",
+    "language_name": "Deutsch",
+    "ocr_package": "latin",
+    "cases": 80,
+    "cer": 0.002537020905923345,
+    "wer": 0.011507936507936507,
+    "exact_rate": 0.925,
+    "average_confidence": 0.9976067058991548,
+    "cold_start_ms": 1367.19279999852,
+    "latency_p50_ms": 560.1226499993572,
+    "latency_p95_ms": 1155.7580600006986,
+    "model_exclusive_mib": 7.538331031799316,
+    "resources": {
+      "elapsed_seconds": 53.792305200000555,
+      "cpu_seconds": 120.421875,
+      "average_cpu_percent": 13.991531241349223,
+      "peak_rss_mib": 784.74609375,
+      "rss_delta_mib": 680.7578125
+    }
+  },
+  {
+    "language": "es",
+    "language_name": "Español",
+    "ocr_package": "latin",
+    "cases": 80,
+    "cer": 0.00729251012145749,
+    "wer": 0.053125,
+    "exact_rate": 0.825,
+    "average_confidence": 0.9967152581239219,
+    "cold_start_ms": 1376.1151999988215,
+    "latency_p50_ms": 558.2703500003845,
+    "latency_p95_ms": 1012.9896699999335,
+    "model_exclusive_mib": 7.538331031799316,
+    "resources": {
+      "elapsed_seconds": 52.992969099999755,
+      "cpu_seconds": 118.84375,
+      "average_cpu_percent": 14.016452561817363,
+      "peak_rss_mib": 839.7265625,
+      "rss_delta_mib": 735.44140625
+    }
+  },
+  {
+    "language": "ru",
+    "language_name": "Русский",
+    "ocr_package": "cyrillic",
+    "cases": 80,
+    "cer": 0.044888937282229965,
+    "wer": 0.17738095238095236,
+    "exact_rate": 0.325,
+    "average_confidence": 0.9753660387360454,
+    "cold_start_ms": 906.4443999996001,
+    "latency_p50_ms": 567.922099999123,
+    "latency_p95_ms": 1168.7019799992413,
+    "model_exclusive_mib": 7.700054168701172,
+    "resources": {
+      "elapsed_seconds": 53.790863700000045,
+      "cpu_seconds": 120.03125,
+      "average_cpu_percent": 13.946519183702927,
+      "peak_rss_mib": 816.2890625,
+      "rss_delta_mib": 713.83203125
+    }
+  }
+]

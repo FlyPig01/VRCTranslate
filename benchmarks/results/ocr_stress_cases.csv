@@ -1,0 +1,181 @@
+﻿actual,cer,condition,exact,expected,language,latency_ms,sample
+他补充道： 7 “我们现在有4个月大没有糖尿病的老鼠,0.047619047619047616,baseline,False,他补充道：“我们现在有 4 个月大没有糖尿病的老鼠,zh-CN,1888.1049000010535,0
+他补充道： “我们现在有4个月大没有糖尿病的老鼠,0.0,low_contrast,False,他补充道：“我们现在有 4 个月大没有糖尿病的老鼠,zh-CN,673.2078999993973,0
+他补充道：我们现在有有4个月大没有糖尿病的老鼠,0.047619047619047616,gaussian_blur,False,他补充道：“我们现在有 4 个月大没有糖尿病的老鼠,zh-CN,707.7061000018148,0
+他补充道： “我们现在有4个月大没有糖尿病的老鼠1,0.047619047619047616,tight_crop,False,他补充道：“我们现在有 4 个月大没有糖尿病的老鼠,zh-CN,877.5674999997136,0
+埃胡德·乌尔博士(新斯科舍省哈利法克斯市达尔豪西大学,0.0,baseline,True,埃胡德·乌尔博士（新斯科舍省哈利法克斯市达尔豪西大学,zh-CN,741.8747000010626,1
+埃胡德·乌尔博士（新斯科舍省哈利法克斯市达尔豪西大学,0.0,low_contrast,True,埃胡德·乌尔博士（新斯科舍省哈利法克斯市达尔豪西大学,zh-CN,646.882099998038,1
+埃胡德·乌尔博士(新斯科舍省哈利法克斯市达尔豪西大学,0.0,gaussian_blur,True,埃胡德·乌尔博士（新斯科舍省哈利法克斯市达尔豪西大学,zh-CN,656.8691000029503,1
+埃胡德·乌尔博士(新斯科舍省哈利法克斯市达尔豪西大学,0.0,tight_crop,True,埃胡德·乌尔博士（新斯科舍省哈利法克斯市达尔豪西大学,zh-CN,685.6618999991042,1
+和其他一些专家一样，他对糖尿病能否治愈持怀疑态度。他,0.0,baseline,True,和其他一些专家一样，他对糖尿病能否治愈持怀疑态度。他,zh-CN,607.6384999978472,2
+和其他一些专家一样，他对糖尿病能否治愈持怀疑态度。他,0.0,low_contrast,True,和其他一些专家一样，他对糖尿病能否治愈持怀疑态度。他,zh-CN,570.3129000030458,2
+和其他一些专家一样，他对糖尿病能否治愈持怀疑态度。他,0.0,gaussian_blur,True,和其他一些专家一样，他对糖尿病能否治愈持怀疑态度。他,zh-CN,707.9235999990487,2
+和其他一些专家一样，他对糖尿病能否治愈持怀疑态度。他,0.0,tight_crop,True,和其他一些专家一样，他对糖尿病能否治愈持怀疑态度。他,zh-CN,589.3821999998181,2
+周一，瑞典学院诺贝尔文学委员会常务秘书萨拉·丹尼尔斯,0.0,baseline,True,周一，瑞典学院诺贝尔文学委员会常务秘书萨拉·丹尼尔斯,zh-CN,698.7356999998156,3
+周一，瑞典学院诺贝尔文学委员会常务秘书萨拉·丹尼尔斯,0.0,low_contrast,True,周一，瑞典学院诺贝尔文学委员会常务秘书萨拉·丹尼尔斯,zh-CN,647.0740000004298,3
+周一，瑞典学院诺贝尔文学委员会常务秘书萨拉·丹尼尔斯,0.0,gaussian_blur,True,周一，瑞典学院诺贝尔文学委员会常务秘书萨拉·丹尼尔斯,zh-CN,706.6248000010091,3
+周一，瑞典学院诺贝尔文学委员会常务秘书萨拉·丹尼尔斯,0.0,tight_crop,True,周一，瑞典学院诺贝尔文学委员会常务秘书萨拉·丹尼尔斯,zh-CN,666.0237999967649,3
+达尼厄斯说道： 1目前我们保持按兵不动。我给他关系最好,0.043478260869565216,baseline,False,达尼厄斯说道：“目前我们保持按兵不动。我给他关系最好,zh-CN,710.8036000026914,4
+达尼厄斯说道： 7目前我们保持按兵不动。我给他关系最好,0.043478260869565216,low_contrast,False,达尼厄斯说道：“目前我们保持按兵不动。我给他关系最好,zh-CN,722.0635000012408,4
+达尼厄斯说道：目前我们保持按兵不动。我给他关系最好,0.0,gaussian_blur,True,达尼厄斯说道：“目前我们保持按兵不动。我给他关系最好,zh-CN,657.3009999992792,4
+达尼厄斯说道： 1f目前我们保持按兵不动。我给他关系最好,0.08695652173913043,tight_crop,False,达尼厄斯说道：“目前我们保持按兵不动。我给他关系最好,zh-CN,703.0210999982955,4
+我們有４個月大曾經罹患糖尿病老鼠現在沒有糖尿病,0.0,baseline,False,「我們有 4 個月大曾經罹患糖尿病老鼠現在沒有糖尿病,zh-TW,967.1500999975251,0
+-我們有４個月大曾經罹患糖尿病老鼠現在沒有糖尿病,0.0,low_contrast,False,「我們有 4 個月大曾經罹患糖尿病老鼠現在沒有糖尿病,zh-TW,724.9121000022569,0
+我們有4個月大曾經罹患糖尿病老鼠現在沒有糖尿病,0.0,gaussian_blur,False,「我們有 4 個月大曾經罹患糖尿病老鼠現在沒有糖尿病,zh-TW,598.3143000012205,0
+我們有４個月大曾經罹患糖尿病老鼠現在沒有糖尿病,0.0,tight_crop,False,「我們有 4 個月大曾經罹患糖尿病老鼠現在沒有糖尿病,zh-TW,730.1939999997558,0
+位於新斯科舍省哈利法克斯的戴爾豪斯大學醫學教授、加拿,0.0,baseline,True,位於新斯科舍省哈利法克斯的戴爾豪斯大學醫學教授、加拿,zh-TW,709.6869000015431,1
+位於新斯科舍省哈利法克斯的戴爾豪斯大學醫學教授、加拿,0.0,low_contrast,True,位於新斯科舍省哈利法克斯的戴爾豪斯大學醫學教授、加拿,zh-TW,612.9044000008435,1
+位於新斯科舍省哈利法克斯的戴爾豪斯大學醫學教授、加拿,0.0,gaussian_blur,True,位於新斯科舍省哈利法克斯的戴爾豪斯大學醫學教授、加拿,zh-TW,585.1298999987193,1
+位於新斯科舍省哈利法克斯的戴爾豪斯大學醫學教授、加拿,0.0,tight_crop,True,位於新斯科舍省哈利法克斯的戴爾豪斯大學醫學教授、加拿,zh-TW,581.5215000002354,1
+如同其他專家·他對糖尿病是否可以治癒存疑，並指出這些,0.0,baseline,True,如同其他專家，他對糖尿病是否可以治癒存疑，並指出這些,zh-TW,615.1890000001004,2
+如同其他專家，他對糖尿病是否可以治癒存疑，並指出這些,0.0,low_contrast,True,如同其他專家，他對糖尿病是否可以治癒存疑，並指出這些,zh-TW,572.2845999989659,2
+如同其他專家·他對糖尿病是否可以治癒存疑·並指出這些,0.0,gaussian_blur,True,如同其他專家，他對糖尿病是否可以治癒存疑，並指出這些,zh-TW,612.3693999979878,2
+如同其他專家，他對糖尿病是否可以治癒存疑，並指出這些,0.0,tight_crop,True,如同其他專家，他對糖尿病是否可以治癒存疑，並指出這些,zh-TW,604.7916999996232,2
+瑞典學院諾貝爾文學委員會常任秘書莎拉·戴紐斯，週一在,0.0,baseline,True,瑞典學院諾貝爾文學委員會常任秘書莎拉．戴紐斯，週一在,zh-TW,606.5430999988166,3
+瑞典學院諾貝爾文學委員會常任秘書莎拉·戴紐斯·週一在,0.0,low_contrast,True,瑞典學院諾貝爾文學委員會常任秘書莎拉．戴紐斯，週一在,zh-TW,573.2486000015342,3
+瑞典學院諾貝爾文學委員會常任秘書莎拉·戴紐斯·週一在,0.0,gaussian_blur,True,瑞典學院諾貝爾文學委員會常任秘書莎拉．戴紐斯，週一在,zh-TW,594.2531000000599,3
+瑞典學院諾貝爾文學委員會常任秘書莎拉·戴紐斯，週一在,0.0,tight_crop,True,瑞典學院諾貝爾文學委員會常任秘書莎拉．戴紐斯，週一在,zh-TW,606.5105999987281,3
+戴紐斯說：「現在我們什麼都不做。我打過電話、也寄了電,0.0,baseline,True,戴紐斯說：「現在我們什麼都不做。我打過電話、也寄了電,zh-TW,689.201299999695,4
+戴紐斯說：「現在我們什麼都不做·我打過電話、也寄了電,0.0,low_contrast,True,戴紐斯說：「現在我們什麼都不做。我打過電話、也寄了電,zh-TW,705.4934999978286,4
+戴紐斯說：現在我們什麼都不做。我打過電話、也寄了電,0.0,gaussian_blur,True,戴紐斯說：「現在我們什麼都不做。我打過電話、也寄了電,zh-TW,697.0342999993591,4
+戴紐斯說：「現在我們什麼都不做。我打過電話、也寄了電,0.0,tight_crop,True,戴紐斯說：「現在我們什麼都不做。我打過電話、也寄了電,zh-TW,691.9056000006094,4
+"""We r now have 4-month-old mice that are r non-diabetic",0.05,baseline,False,"""We now have 4-month-old mice that are non-diabetic",en,854.0388000001258,0
+"""We now have 4-month-old mice that are non-diabetic",0.0,low_contrast,True,"""We now have 4-month-old mice that are non-diabetic",en,523.4555999995791,0
+"""We now have 4-month-old mice that are non-diabetic",0.0,gaussian_blur,True,"""We now have 4-month-old mice that are non-diabetic",en,530.2706999973452,0
+"""We now have 4-month-old mice that are non-diabetic",0.0,tight_crop,True,"""We now have 4-month-old mice that are non-diabetic",en,623.2656000029237,0
+"Dr. Ehud Ur, professor of medicine at Dalhousie",0.0,baseline,True,"Dr. Ehud Ur, professor of medicine at Dalhousie",en,518.0634999996983,1
+"Dr. Ehud Ur, professor of medicine at Dalhousie",0.0,low_contrast,True,"Dr. Ehud Ur, professor of medicine at Dalhousie",en,547.0596999984991,1
+"Dr. Ehud Ur, professor of medicine at Dalhousie",0.0,gaussian_blur,True,"Dr. Ehud Ur, professor of medicine at Dalhousie",en,521.5119999993476,1
+"Dr. Ehud Ur, professor of medicine at Dalhousie",0.0,tight_crop,True,"Dr. Ehud Ur, professor of medicine at Dalhousie",en,519.1296999983024,1
+"Like some other experts, he is skeptical about",0.0,baseline,True,"Like some other experts, he is skeptical about",en,518.4025000016845,2
+"Like some other experts, he is skeptical about",0.0,low_contrast,True,"Like some other experts, he is skeptical about",en,529.1298000011011,2
+"Like some other experts, he is skeptical about",0.0,gaussian_blur,True,"Like some other experts, he is skeptical about",en,526.250800001435,2
+"Like some other experts, he is skeptical about",0.0,tight_crop,True,"Like some other experts, he is skeptical about",en,524.4096999995236,2
+"On Monday, Sara Danius, permanent secretary of the",0.0,baseline,True,"On Monday, Sara Danius, permanent secretary of the",en,500.35319999733474,3
+"On Monday, Sara Danius, permanent secretary of the",0.0,low_contrast,True,"On Monday, Sara Danius, permanent secretary of the",en,530.1942000005511,3
+"On Monday, Sara Danius, permanent secretary of the",0.0,gaussian_blur,True,"On Monday, Sara Danius, permanent secretary of the",en,522.5814000004902,3
+"On Monday, Sara Danius, permanent secretary of the",0.0,tight_crop,True,"On Monday, Sara Danius, permanent secretary of the",en,515.2288999997836,3
+"Danius said, 'Right now we are doing nothing.",0.027777777777777776,baseline,False,"Danius said, ""Right now we are doing nothing. I",en,522.3223000029975,4
+"Danius said, 'Right now we are doing nothing.",0.027777777777777776,low_contrast,False,"Danius said, ""Right now we are doing nothing. I",en,537.0892999999342,4
+"Danius said, ""Right now we are doing nothing.",0.027777777777777776,gaussian_blur,False,"Danius said, ""Right now we are doing nothing. I",en,519.4379999993544,4
+"Danius said, 'Right now we are doing nothing. I",0.0,tight_crop,True,"Danius said, ""Right now we are doing nothing. I",en,519.8454999990645,4
+「我々が飼っている生後4か月のマウスはかつて糖尿病で,0.0,baseline,True,「我々が飼っている生後4か月のマウスはかつて糖尿病で,ja,969.7960999983479,0
+「我々が飼っている生後4か月のマウスはかつて糖尿病で,0.0,low_contrast,True,「我々が飼っている生後4か月のマウスはかつて糖尿病で,ja,582.5621000003594,0
+「我々が飼っている生後4か月のマウスはかつて糖尿病で,0.0,gaussian_blur,True,「我々が飼っている生後4か月のマウスはかつて糖尿病で,ja,625.0385000021197,0
+「我々が飼っている生後4か月のマウスはかつて糖尿病で,0.0,tight_crop,True,「我々が飼っている生後4か月のマウスはかつて糖尿病で,ja,719.8371999984374,0
+ノバスコシア州ハリファックスにあるダルハウジー大学医,0.0,baseline,True,ノバスコシア州ハリファックスにあるダルハウジー大学医,ja,607.8806000004988,1
+ノバスコシア州ハリファックスにあるダルハウジー大学医,0.0,low_contrast,True,ノバスコシア州ハリファックスにあるダルハウジー大学医,ja,619.9102999999013,1
+ノバスコシア州ハリファックスにあるダルハウジー大学医,0.0,gaussian_blur,True,ノバスコシア州ハリファックスにあるダルハウジー大学医,ja,607.2619000005943,1
+ノバスコシア州ハリファックスにあるダルハウジー大学医,0.0,tight_crop,True,ノバスコシア州ハリファックスにあるダルハウジー大学医,ja,612.0005000011588,1
+他の専門家たちと同様に、彼は糖尿病を完治できるかどう,0.0,baseline,True,他の専門家たちと同様に、彼は糖尿病を完治できるかどう,ja,719.0413000025728,2
+他の専門家たちと同様に、彼は糖尿病を完治できるかどう,0.0,low_contrast,True,他の専門家たちと同様に、彼は糖尿病を完治できるかどう,ja,642.3260000010487,2
+他の専門家たちと同様に、彼は糖尿病を完治できるかどう,0.0,gaussian_blur,True,他の専門家たちと同様に、彼は糖尿病を完治できるかどう,ja,677.5629000003391,2
+他の専門家たちと同様に、彼は糖尿病を完治できるかどう,0.0,tight_crop,True,他の専門家たちと同様に、彼は糖尿病を完治できるかどう,ja,649.6618000019225,2
+スウェーデンアカデミーのノーベル文学委員会の常任幹事,0.0,baseline,True,スウェーデンアカデミーのノーベル文学委員会の常任幹事,ja,625.4040999992867,3
+スウェーデンアカデミーのノーベル文学委員会の常任幹事,0.0,low_contrast,True,スウェーデンアカデミーのノーベル文学委員会の常任幹事,ja,611.3530000002356,3
+スウェーデンアカデミーのノーベル文学委員会の常任幹事,0.0,gaussian_blur,True,スウェーデンアカデミーのノーベル文学委員会の常任幹事,ja,624.7925999996369,3
+スウェーデンアカデミーのノーベル文学委員会の常任幹事,0.0,tight_crop,True,スウェーデンアカデミーのノーベル文学委員会の常任幹事,ja,566.8350999985705,3
+ダニアスは「今は何もしていない。彼の親しい協力者に電,0.0,baseline,True,ダニアスは「今は何もしていない。彼の親しい協力者に電,ja,648.1633000003058,4
+ダニアスは「今は何もしていない。彼の親しい協力者に電,0.0,low_contrast,True,ダニアスは「今は何もしていない。彼の親しい協力者に電,ja,650.0218999972276,4
+ダニアスは「今は何もしていない。彼の親しい協力者に電,0.0,gaussian_blur,True,ダニアスは「今は何もしていない。彼の親しい協力者に電,ja,636.4023000023735,4
+ダニアスは「今は何もしていない。彼の親しい協力者に電,0.0,tight_crop,True,ダニアスは「今は何もしていない。彼の親しい協力者に電,ja,654.4790000007197,4
+그는“ '현재 4개월 된 당뇨병에서 치료된 생,0.0,baseline,True,"""그는 """"현재 4개월 된 당뇨병에서 치료된 생",ko,822.1146000032604,0
+II그는“” ‘현재 4개월 된 당뇨병에서 치료된 생,0.11764705882352941,low_contrast,False,"""그는 """"현재 4개월 된 당뇨병에서 치료된 생",ko,563.0692000013369,0
+그는“” '현재 4개월 된 당뇨병에서 치료된 생,0.0,gaussian_blur,True,"""그는 """"현재 4개월 된 당뇨병에서 치료된 생",ko,532.9755999991903,0
+"그는“ ""현재 4개월 된 당뇨병에서 치료된 생",0.0,tight_crop,True,"""그는 """"현재 4개월 된 당뇨병에서 치료된 생",ko,630.3385000028356,0
+노바스코샤주핼리팩스의 델하우지대학교 의과 교수,0.045454545454545456,baseline,False,노바스코샤주 핼리팩스의 댈하우지대학교 의과 교수,ko,502.2122999980638,1
+노바스코샤주핼리팩스의 델하우지대학교 의과 교수,0.045454545454545456,low_contrast,False,노바스코샤주 핼리팩스의 댈하우지대학교 의과 교수,ko,496.89500000022235,1
+노바스코샤주핼리팩스의델하우지대학교의과교수,0.045454545454545456,gaussian_blur,False,노바스코샤주 핼리팩스의 댈하우지대학교 의과 교수,ko,528.257099998882,1
+노바스코샤주 핼리팩스의 델하우지대학교 의과 교수,0.045454545454545456,tight_crop,False,노바스코샤주 핼리팩스의 댈하우지대학교 의과 교수,ko,486.8825999983528,1
+"다른 전문가들과 마찬가지로,그는 당뇨병의 치료",0.0,baseline,True,"다른 전문가들과 마찬가지로, 그는 당뇨병의 치료",ko,480.97000000052503,2
+"다른 전문가들과 마찬가지로,그는 당뇨병의 치료",0.0,low_contrast,True,"다른 전문가들과 마찬가지로, 그는 당뇨병의 치료",ko,465.95000000161235,2
+"다른 전문가들과 마찬가지로,그는 당뇨병의 치료",0.0,gaussian_blur,True,"다른 전문가들과 마찬가지로, 그는 당뇨병의 치료",ko,464.4414999966102,2
+"다른 전문가들과 마찬가지로,그는 당뇨병의 치료",0.0,tight_crop,True,"다른 전문가들과 마찬가지로, 그는 당뇨병의 치료",ko,579.5833999982278,2
+월요일 스웨덴 한림원 노벨상 문학위원회 사무총장,0.0,baseline,True,월요일 스웨덴 한림원 노벨상 문학위원회 사무총장,ko,479.0257000022393,3
+월요일 스웨덴 한림원 노벨상 문학위원회 사무총장,0.0,low_contrast,True,월요일 스웨덴 한림원 노벨상 문학위원회 사무총장,ko,463.84929999840097,3
+월요일 스웨덴 한림원 노벨상 문학위원회 사무총장,0.0,gaussian_blur,True,월요일 스웨덴 한림원 노벨상 문학위원회 사무총장,ko,478.8607000009506,3
+월요일 스웨덴 한림원 노벨상 문학위원회 사무총장,0.0,tight_crop,True,월요일 스웨덴 한림원 노벨상 문학위원회 사무총장,ko,482.4874000005366,3
+"'대니어스(Danius)는""지금 우리는 아무",0.0,baseline,True,"""대니어스(Danius)는 """"지금 우리는 아무",ko,478.32780000317143,4
+"'대니어스(Danius)는""지금 우리는 아무",0.0,low_contrast,True,"""대니어스(Danius)는 """"지금 우리는 아무",ko,463.7423999993189,4
+"""대니어스(Danius)는“— '지금 우리는 아무",0.0,gaussian_blur,True,"""대니어스(Danius)는 """"지금 우리는 아무",ko,500.51449999955366,4
+II1 9 (Danius) —— ㅁ <아,0.6111111111111112,tight_crop,False,"""대니어스(Danius)는 """"지금 우리는 아무",ko,1177.9987000008987,4
+Nous avons s à présent t des s souris de 4 mois qui ne,0.07894736842105263,baseline,False,« Nous avons à présent des souris de 4 mois qui ne,fr,828.0574999989767,0
+« Nous avons à présent des souris de 4 mois qui ne,0.0,low_contrast,True,« Nous avons à présent des souris de 4 mois qui ne,fr,615.9800999994332,0
+« Nous avons à présent des souris de 4 mois qui ne,0.0,gaussian_blur,True,« Nous avons à présent des souris de 4 mois qui ne,fr,574.5456000004197,0
+« Nous avons à présent des souris de 4 mois qui ne,0.0,tight_crop,True,« Nous avons à présent des souris de 4 mois qui ne,fr,667.9045999990194,0
+"Le Dr Ehud Ur, professeur de médecine à",0.0,baseline,True,"Le Dr Ehud Ur, professeur de médecine à",fr,556.9002000011096,1
+"Le Dr Ehud Ur, professeur de médecine à",0.0,low_contrast,True,"Le Dr Ehud Ur, professeur de médecine à",fr,546.9650999984879,1
+"Le Dr Ehud Ur, professeur de médecine a",0.03225806451612903,gaussian_blur,False,"Le Dr Ehud Ur, professeur de médecine à",fr,543.1886000005761,1
+Le Dr Ehud professeur de médecine à,0.06451612903225806,tight_crop,False,"Le Dr Ehud Ur, professeur de médecine à",fr,1176.2211999994179,1
+"À l'instar d'autres experts, il se montre sceptique",0.0,baseline,True,"À l'instar d'autres experts, il se montre sceptique",fr,522.6259999981266,2
+"À l'instar d'autres experts, il se montre sceptique",0.0,low_contrast,True,"À l'instar d'autres experts, il se montre sceptique",fr,526.3410000006843,2
+"À l'instar d'autres experts, il se montre sceptique",0.0,gaussian_blur,True,"À l'instar d'autres experts, il se montre sceptique",fr,534.3379999976605,2
+"À l'instar d'autres experts, il se montre sceptique",0.0,tight_crop,True,"À l'instar d'autres experts, il se montre sceptique",fr,516.5024000016274,2
+"Lundi, lors d'une émission de radio sur Sveriges",0.0,baseline,True,"Lundi, lors d'une émission de radio sur Sveriges",fr,547.3019000019121,3
+"Lundi, lors d' une émission de radio sur Sveriges",0.0,low_contrast,True,"Lundi, lors d'une émission de radio sur Sveriges",fr,557.7704999996058,3
+"Lundi, lors d'une émission de radio sur Sveriges",0.0,gaussian_blur,True,"Lundi, lors d'une émission de radio sur Sveriges",fr,545.8983999997145,3
+"Lundi, lors d'une émission de radio sur Sveriges",0.0,tight_crop,True,"Lundi, lors d'une émission de radio sur Sveriges",fr,542.4512999998115,3
+"Danius a déclaré : « En ce moment, nous ne faisons",0.0,baseline,True,"Danius a déclaré : « En ce moment, nous ne faisons",fr,636.4720999990823,4
+"Danius a déclaré: « En ce moment, nous ne faisons",0.0,low_contrast,True,"Danius a déclaré : « En ce moment, nous ne faisons",fr,575.8923000030336,4
+"Danius a déclaré: « En ce moment, nous ne faisons",0.0,gaussian_blur,True,"Danius a déclaré : « En ce moment, nous ne faisons",fr,574.9606999997923,4
+"Danius a déclaré : « En ce moment, nous ne faisons",0.0,tight_crop,True,"Danius a déclaré : « En ce moment, nous ne faisons",fr,544.7304000008444,4
+"„Wir haben jetzt 4 Monate alte Mäuse, die Diabetes",0.0,baseline,True,"„Wir haben jetzt 4 Monate alte Mäuse, die Diabetes",de,763.3554999993066,0
+"Wir haben jetzt 4 Monate alte Mäuse, die Diabetes",0.0,low_contrast,True,"„Wir haben jetzt 4 Monate alte Mäuse, die Diabetes",de,590.1268000015989,0
+"Wir haben jetzt 4 Monate alte Mäuse, die Diabetes",0.0,gaussian_blur,True,"„Wir haben jetzt 4 Monate alte Mäuse, die Diabetes",de,550.6037000013748,0
+"„Wir haben jetzt t 4 Monate alte Mäuse, die Diabetes",0.025,tight_crop,False,"„Wir haben jetzt 4 Monate alte Mäuse, die Diabetes",de,621.7093999985082,0
+"Dr. Ehud Ur, Professor für Medizin an der Dalhousie",0.0,baseline,True,"Dr. Ehud Ur, Professor für Medizin an der Dalhousie",de,536.952200000087,1
+"Dr. Ehud Ur, Professor für Medizin an der Dalhousie",0.0,low_contrast,True,"Dr. Ehud Ur, Professor für Medizin an der Dalhousie",de,535.5913000021246,1
+"Dr. Ehud Ur, Professor für Medizin an der Dalhousie",0.0,gaussian_blur,True,"Dr. Ehud Ur, Professor für Medizin an der Dalhousie",de,534.880900002463,1
+"Dr. Ehud Ur, Professor für Medizin an der Dalhousie",0.0,tight_crop,True,"Dr. Ehud Ur, Professor für Medizin an der Dalhousie",de,543.6625000002095,1
+Wie einige andere Experten zeigte er sich,0.0,baseline,True,Wie einige andere Experten zeigte er sich,de,517.0438999994076,2
+Wie einige andere Experten zeigte er sich,0.0,low_contrast,True,Wie einige andere Experten zeigte er sich,de,514.3416999999317,2
+Wie einige andere Experten zeigte er sich,0.0,gaussian_blur,True,Wie einige andere Experten zeigte er sich,de,512.2647999996843,2
+Wie einige andere Experten zeigte er sich,0.0,tight_crop,True,Wie einige andere Experten zeigte er sich,de,515.0754999995115,2
+"Am Montag gab Sara Danius, Ständige Sekretärin des",0.0,baseline,True,"Am Montag gab Sara Danius, Ständige Sekretärin des",de,532.8817999979947,3
+"Am Montag gab Sara Danius, Ständige Sekretärin des",0.0,low_contrast,True,"Am Montag gab Sara Danius, Ständige Sekretärin des",de,521.7950000005658,3
+"Am Montag gab Sara Danius, Ständige Sekretärin des",0.0,gaussian_blur,True,"Am Montag gab Sara Danius, Ständige Sekretärin des",de,531.0418999979447,3
+"Am Montag gab Sara Danius, Ständige Sekretärin des",0.0,tight_crop,True,"Am Montag gab Sara Danius, Ständige Sekretärin des",de,548.0112000004738,3
+Danius sagte: „Im Moment unternehmen wir nichts,0.0,baseline,True,Danius sagte: „Im Moment unternehmen wir nichts,de,505.18969999757246,4
+Danius sagte: „Im Moment unternehmen wir nichts,0.0,low_contrast,True,Danius sagte: „Im Moment unternehmen wir nichts,de,520.3499999988708,4
+Danius sagte: „Im Moment unternehmen wir nichts,0.0,gaussian_blur,True,Danius sagte: „Im Moment unternehmen wir nichts,de,517.0207999981358,4
+Danius sagte: „Im Moment unternehmen wir nichts,0.0,tight_crop,True,Danius sagte: „Im Moment unternehmen wir nichts,de,505.12280000111787,4
+"«Actualmente, tenemos ratones de cuatro meses de",0.0,baseline,True,"«Actualmente, tenemos ratones de cuatro meses de",es,815.9078000026057,0
+"«Actualmente, tenemos ratones de cuatro meses de",0.0,low_contrast,True,"«Actualmente, tenemos ratones de cuatro meses de",es,519.2845999990823,0
+"«Actualmente, tenemos ratones de cuatro meses de",0.0,gaussian_blur,True,"«Actualmente, tenemos ratones de cuatro meses de",es,526.457299998583,0
+"«Actualmente, tenemos ratones de cuatro meses de",0.0,tight_crop,True,"«Actualmente, tenemos ratones de cuatro meses de",es,517.9133000019647,0
+La investigación todavía se ubica en su etapa,0.0,baseline,True,La investigación todavía se ubica en su etapa,es,636.0114000017347,1
+La investigación todavía se ubica en su etapa,0.0,low_contrast,True,La investigación todavía se ubica en su etapa,es,524.1406999994069,1
+La investigación todavía se ubica en su etapa,0.0,gaussian_blur,True,La investigación todavía se ubica en su etapa,es,521.2629000016022,1
+La investigación todavía se ubica en su etapa,0.0,tight_crop,True,La investigación todavía se ubica en su etapa,es,523.7330000018119,1
+"Al igual que otros especialistas, es escéptico",0.0,baseline,True,"Al igual que otros especialistas, es escéptico",es,517.2505999980785,2
+"Al igual que otros especialistas, es escéptico",0.0,low_contrast,True,"Al igual que otros especialistas, es escéptico",es,515.0556999979017,2
+"Al igual que otros especialistas, es escéptico",0.0,gaussian_blur,True,"Al igual que otros especialistas, es escéptico",es,514.0212000005704,2
+"Al igual que otros especialistas, es escéptico",0.0,tight_crop,True,"Al igual que otros especialistas, es escéptico",es,570.0161999993725,2
+"El lunes, Sara Danius, secretaria permanente del",0.0,baseline,True,"El lunes, Sara Danius, secretaria permanente del",es,515.6530999993265,3
+"El lunes, Sara Danius, secretaria permanente del",0.0,low_contrast,True,"El lunes, Sara Danius, secretaria permanente del",es,522.0774000008532,3
+"El lunes, Sara Danius, secretaria permanente del",0.0,gaussian_blur,True,"El lunes, Sara Danius, secretaria permanente del",es,526.1191000026884,3
+"El lunes, Sara Danius, secretaria permanente del",0.0,tight_crop,True,"El lunes, Sara Danius, secretaria permanente del",es,519.9188000005961,3
+Danius declaró: «Actualmente no estamos haciendo,0.0,baseline,True,Danius declaró: «Actualmente no estamos haciendo,es,504.95860000228276,4
+Danius declaró: «Actualmente no estamos haciendo,0.0,low_contrast,True,Danius declaró: «Actualmente no estamos haciendo,es,510.69250000000466,4
+Danius declaró: «Actualmente no estamos haciendo,0.0,gaussian_blur,True,Danius declaró: «Actualmente no estamos haciendo,es,513.1957000012335,4
+Danius declaró: «Actualmente no estamos haciendo,0.0,tight_crop,True,Danius declaró: «Actualmente no estamos haciendo,es,505.94379999893135,4
+"""Теперь у нас: есть четырёхмесячные мыши, у которых",0.0,baseline,True,"""Теперь у нас есть четырёхмесячные мыши, у которых",ru,852.4773999997706,0
+"""Теперь у нас есть четырёхмесячные мыши, у которых",0.0,low_contrast,True,"""Теперь у нас есть четырёхмесячные мыши, у которых",ru,543.8711000024341,0
+"""Теперь y нas есть четырёхмесячные мыши, у которых",0.07317073170731707,gaussian_blur,False,"""Теперь у нас есть четырёхмесячные мыши, у которых",ru,549.4287999972585,0
+"""Теперь ь у нас есть четырёхмесячные мыши, у которых",0.024390243902439025,tight_crop,False,"""Теперь у нас есть четырёхмесячные мыши, у которых",ru,525.2359000005526,0
+Согласно предупреждению доктора Эхуда Ура (Ehud,0.0,baseline,True,Согласно предупреждению доктора Эхуда Ура (Ehud,ru,572.2819000002346,1
+Согласно предупреждению доктора Эхуда Ура (Ehud,0.0,low_contrast,True,Согласно предупреждению доктора Эхуда Ура (Ehud,ru,544.6044000018446,1
+Согласно предупреждению доктора Эхуда Ура (Ehud,0.0,gaussian_blur,True,Согласно предупреждению доктора Эхуда Ура (Ehud,ru,523.2613999978639,1
+Согласно предупреждению доктора Эхуда Ура (Ehud,0.0,tight_crop,True,Согласно предупреждению доктора Эхуда Ура (Ehud,ru,622.9512999998406,1
+"Как и некоторые другие эксперты, он сомневается",0.0,baseline,True,"Как и некоторые другие эксперты, он сомневается",ru,597.544200001721,2
+"Как и некоторые другие эксперты, он сомневается",0.0,low_contrast,True,"Как и некоторые другие эксперты, он сомневается",ru,537.6223000021128,2
+"Как И некоторые другие эксперты, OH сомневается",0.05,gaussian_blur,False,"Как и некоторые другие эксперты, он сомневается",ru,536.9430999999167,2
+"Как, и некоторые другие эксперты, он сомневается",0.0,tight_crop,True,"Как и некоторые другие эксперты, он сомневается",ru,581.8466999990051,2
+"В понедельник Capа Даниус, постоянный секретарь",0.07317073170731707,baseline,False,"В понедельник Сара Даниус, постоянный секретарь",ru,503.8858000007167,3
+"В понедельник Сара Даниус, постоянный секретарь",0.0,low_contrast,True,"В понедельник Сара Даниус, постоянный секретарь",ru,505.25370000104886,3
+"B понедельник Capa Даниус, постоянный секретарь",0.12195121951219512,gaussian_blur,False,"В понедельник Сара Даниус, постоянный секретарь",ru,561.1743000008573,3
+"В понедельник Capа Даниус, постоянный секретарь",0.07317073170731707,tight_crop,False,"В понедельник Сара Даниус, постоянный секретарь",ru,563.9110000010987,3
+"Даниус заявил: ""Сейчас мы ничего не делаем. Я",0.0,baseline,True,"Даниус заявил: ""Сейчас мы ничего не делаем. Я",ru,528.850999999122,4
+Даниус заявил: п ’Сейчас мы ничего не делаем. Я,0.02857142857142857,low_contrast,False,"Даниус заявил: ""Сейчас мы ничего не делаем. Я",ru,572.8147999980138,4
+"Даниус заявил: ""Сейчас МЫ ничего не делаем. R",0.02857142857142857,gaussian_blur,False,"Даниус заявил: ""Сейчас мы ничего не делаем. Я",ru,532.1523999991769,4
+"Даниус заявил: ""Сейчас мы ничего не делаем. Я",0.0,tight_crop,True,"Даниус заявил: ""Сейчас мы ничего не делаем. Я",ru,522.4729000001389,4

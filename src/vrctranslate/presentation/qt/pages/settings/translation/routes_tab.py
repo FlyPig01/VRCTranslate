@@ -14,6 +14,10 @@ from vrctranslate.application.language_capabilities import (
     speech_source_language_codes,
     translation_language_codes,
 )
+from vrctranslate.application.translation_quality import (
+    TranslationQualityAdvice,
+    translation_quality_advice,
+)
 from vrctranslate.presentation.qt.i18n import I18nManager
 from vrctranslate.presentation.qt.options import formats, languages
 from vrctranslate.presentation.qt.pages.settings.common import card, form_layout, scroll_page
@@ -83,6 +87,10 @@ class RoutesTab(QWidget):
         self.self_glossary_status.setObjectName("fieldHint")
         self.self_glossary_status.setWordWrap(True)
         osc_form.addRow("", self.self_glossary_status)
+        self.self_quality_hint = QLabel()
+        self.self_quality_hint.setObjectName("routeQualityHint")
+        self.self_quality_hint.setWordWrap(True)
+        osc_form.addRow("", self.self_quality_hint)
         self.self_romaji_help = QLabel()
         self.self_romaji_help.setWordWrap(True)
         self.self_romaji_help.setObjectName("fieldHint")
@@ -124,6 +132,10 @@ class RoutesTab(QWidget):
         self.ocr_glossary_status.setObjectName("fieldHint")
         self.ocr_glossary_status.setWordWrap(True)
         ocr_form.addRow("", self.ocr_glossary_status)
+        self.ocr_quality_hint = QLabel()
+        self.ocr_quality_hint.setObjectName("routeQualityHint")
+        self.ocr_quality_hint.setWordWrap(True)
+        ocr_form.addRow("", self.ocr_quality_hint)
         self.ocr_romaji_help = QLabel()
         self.ocr_romaji_help.setWordWrap(True)
         self.ocr_romaji_help.setObjectName("fieldHint")
@@ -165,6 +177,10 @@ class RoutesTab(QWidget):
         self.voice_glossary_status.setObjectName("fieldHint")
         self.voice_glossary_status.setWordWrap(True)
         voice_form.addRow("", self.voice_glossary_status)
+        self.voice_quality_hint = QLabel()
+        self.voice_quality_hint.setObjectName("routeQualityHint")
+        self.voice_quality_hint.setWordWrap(True)
+        voice_form.addRow("", self.voice_quality_hint)
         voice_layout.addLayout(voice_form)
         layout.addWidget(voice_card)
         layout.addStretch()
@@ -451,6 +467,77 @@ class RoutesTab(QWidget):
         self._update_ocr_warning()
         self._update_romaji_help()
         self._update_glossary_status()
+        self._update_quality_hints()
+
+    def _update_quality_hints(self) -> None:
+        for profile_combo, source_combo, target_combo, label in (
+            (
+                self.self_profile_combo,
+                self.self_source_combo,
+                self.self_target_combo,
+                self.self_quality_hint,
+            ),
+            (
+                self.ocr_profile_combo,
+                self.ocr_source_combo,
+                self.ocr_target_combo,
+                self.ocr_quality_hint,
+            ),
+            (
+                self.voice_profile_combo,
+                self.voice_source_combo,
+                self.voice_target_combo,
+                self.voice_quality_hint,
+            ),
+        ):
+            profile = self._profile(str(profile_combo.currentData() or ""))
+            advice = translation_quality_advice(
+                profile,
+                str(source_combo.currentData() or ""),
+                str(target_combo.currentData() or ""),
+            )
+            self._render_quality_hint(label, advice)
+
+    def _render_quality_hint(
+        self,
+        label: QLabel,
+        advice: TranslationQualityAdvice,
+    ) -> None:
+        if advice.state == "none":
+            label.clear()
+            label.hide()
+            return
+        if advice.state == "experimental":
+            text = self._i18n.tr("route.quality_google_experimental")
+        elif advice.state == "candidate":
+            text = self._i18n.tr("route.quality_candidate_current")
+        else:
+            text = self._i18n.tr(
+                "route.quality_candidate_other",
+                service=self._quality_service_name(advice),
+            )
+        label.setText(text)
+        label.setProperty("state", advice.state)
+        label.style().unpolish(label)
+        label.style().polish(label)
+        label.show()
+
+    def _quality_service_name(self, advice: TranslationQualityAdvice) -> str:
+        provider_key = {
+            "tencent": "provider.tencent",
+            "aliyun": "provider.aliyun",
+        }.get(advice.candidate_provider)
+        name = (
+            self._i18n.tr(provider_key)
+            if provider_key is not None
+            else advice.candidate_provider
+        )
+        if advice.candidate_provider == "aliyun" and advice.candidate_variant:
+            variant = self._i18n.tr(
+                f"profile.aliyun_api_{advice.candidate_variant}"
+            )
+            return f"{name} · {variant}"
+        return name
 
     def _update_glossary_status(self) -> None:
         for profile_combo, enabled, label in (
@@ -524,6 +611,12 @@ class RoutesTab(QWidget):
             if profile.id == profile_id:
                 return profile.provider
         return ""
+
+    def _profile(self, profile_id: str) -> TranslationProfile | None:
+        return next(
+            (profile for profile in self._profiles if profile.id == profile_id),
+            None,
+        )
 
     def _update_ocr_warning(self) -> None:
         provider = self._profile_provider(

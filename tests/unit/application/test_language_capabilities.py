@@ -48,6 +48,9 @@ def test_translation_source_options_follow_provider_capabilities() -> None:
     assert "auto" not in translation_language_codes("tencent", source=True)
     assert translation_language_codes("deepl", source=True)[0] == "auto"
     assert "auto" not in translation_language_codes("deepl", source=False)
+    assert translation_language_codes(
+        "deepl", source=True, ocr=True
+    )[0] == "auto"
 
 
 def test_speech_source_options_follow_selected_profile() -> None:

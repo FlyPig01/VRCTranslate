@@ -15,6 +15,14 @@ logs/
 data/
 tmp/
 
+# 独立基准测试环境和可再下载的大文件，不进入正式项目。
+benchmarks/.venv/
+benchmarks/cache/
+benchmarks/datasets/
+benchmarks/models/
+benchmarks/tmp/
+benchmarks/tools/
+
 # 应用不应生成截图；若调试时意外生成，也不提交。
 *.bmp
 *.png

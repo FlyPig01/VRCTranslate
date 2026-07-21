@@ -1,0 +1,559 @@
+﻿cer,condition,duration_seconds,engine,exact,filename,hypothesis,language,latency_ms,reference,rtf,wer
+0.0,clean,11.9,sensevoice_forced_candidate,False,15022450660532469109.wav,他称，他制作了一个wifi门铃。,zh-CN,220.12829999948735,他称，他制作了一个 WiFi 门铃。,0.018498176470545157,0.75
+0.0,low_volume,11.9,sensevoice_forced_candidate,False,15022450660532469109.wav,他称，他制作了一个wifi门铃。,zh-CN,226.77359999943292,他称，他制作了一个 WiFi 门铃。,0.01905660504196915,0.75
+0.0,noise_10db,11.9,sensevoice_forced_candidate,False,15022450660532469109.wav,他称，他制作了一个wifi门铃。,zh-CN,214.13200000097277,他称，他制作了一个 WiFi 门铃。,0.01799428571436746,0.75
+0.0,fast_1_15x,10.3478125,sensevoice_forced_candidate,False,15022450660532469109.wav,他称，他制作了一个wifi门铃。,zh-CN,190.85679999989225,他称，他制作了一个 WiFi 门铃。,0.01844416875546327,0.75
+0.10526315789473684,clean,9.64,sensevoice_forced_candidate,False,11081214312128087497.wav,摆脱了湍积水流之后，游回来就没有那么困难了。,zh-CN,198.02039999922272,摆脱湍急水流之后，游回来就没有那么困难了。,0.020541535269628913,0.5
+0.10526315789473684,low_volume,9.64,sensevoice_forced_candidate,False,11081214312128087497.wav,摆脱了湍积水流之后，游回来就没有那么困难了。,zh-CN,203.1463999992411,摆脱湍急水流之后，游回来就没有那么困难了。,0.02107327800822003,0.5
+0.10526315789473684,noise_10db,9.64,sensevoice_forced_candidate,False,11081214312128087497.wav,摆脱了湍积水流之后，游回来就没有那么困难了。,zh-CN,197.3507000002428,摆脱湍急水流之后，游回来就没有那么困难了。,0.02047206431537788,0.5
+0.10526315789473684,fast_1_15x,8.382625,sensevoice_forced_candidate,False,11081214312128087497.wav,摆脱了湍积水流之后，游回来就没有那么困难了。,zh-CN,163.05990000182646,摆脱湍急水流之后，游回来就没有那么困难了。,0.019452128659200006,0.5
+0.0,clean,3.66,sensevoice_forced_candidate,True,13719601250695601702.wav,我觉得这毫无道理，显然不公平。,zh-CN,75.1936000015121,我觉得这毫无道理；显然不公平。,0.020544699453965053,0.0
+0.0,low_volume,3.66,sensevoice_forced_candidate,True,13719601250695601702.wav,我觉得这毫无道理，显然不公平。,zh-CN,75.08099999904516,我觉得这毫无道理；显然不公平。,0.020513934425968623,0.0
+0.0,noise_10db,3.66,sensevoice_forced_candidate,True,13719601250695601702.wav,我觉得这毫无道理，显然不公平。,zh-CN,81.92380000036792,我觉得这毫无道理；显然不公平。,0.02238355191266883,0.0
+0.0,fast_1_15x,3.182625,sensevoice_forced_candidate,True,13719601250695601702.wav,我觉得这毫无道理，显然不公平。,zh-CN,74.13649999944028,我觉得这毫无道理；显然不公平。,0.023294136129591227,0.0
+0.17857142857142858,clean,9.66,sensevoice_forced_candidate,False,6445599301852784472.wav,然而，我们80%的商品在中美洲国家被征收关税，我们对待你。,zh-CN,196.60519999888493,然而，我们百分之八十的商品在中美洲国家被征收关税。……我们对待你。,0.020352505175868004,0.6666666666666666
+0.17857142857142858,low_volume,9.66,sensevoice_forced_candidate,False,6445599301852784472.wav,然而，我们80%的商品在中美洲国家被征收关税，我们对待你。,zh-CN,197.37549999990733,然而，我们百分之八十的商品在中美洲国家被征收关税。……我们对待你。,0.020432246376802,0.6666666666666666
+0.2857142857142857,noise_10db,9.66,sensevoice_forced_candidate,False,6445599301852784472.wav,然而，我们80%的商品在中美部股票被征收关税，我们对待你。,zh-CN,202.27460000023711,然而，我们百分之八十的商品在中美洲国家被征收关税。……我们对待你。,0.02093939958594587,0.6666666666666666
+0.17857142857142858,fast_1_15x,8.4,sensevoice_forced_candidate,False,6445599301852784472.wav,然而，我们80%的商品在中美洲国家被征收关税，我们对待你。,zh-CN,173.68209999767714,然而，我们百分之八十的商品在中美洲国家被征收关税。……我们对待你。,0.020676440475913944,0.6666666666666666
+0.0,clean,7.62,sensevoice_forced_candidate,False,13767012080146307603.wav,咖喱饭菜既可以是干的，也可以是湿的，干湿情况取决于水量多少。,zh-CN,152.78290000060224,咖喱饭菜既可以是“干”的，也可以是“湿”的，干湿情况取决于水量多少。,0.020050249343911055,0.8571428571428571
+0.0,low_volume,7.62,sensevoice_forced_candidate,False,13767012080146307603.wav,咖喱饭菜既可以是干的，也可以是湿的，干湿情况取决于水量多少。,zh-CN,153.14460000081453,咖喱饭菜既可以是“干”的，也可以是“湿”的，干湿情况取决于水量多少。,0.020097716535539965,0.8571428571428571
+0.0,noise_10db,7.62,sensevoice_forced_candidate,False,13767012080146307603.wav,咖喱饭菜既可以是干的，也可以是湿的，干湿情况取决于水量多少。,zh-CN,152.08809999967343,咖喱饭菜既可以是“干”的，也可以是“湿”的，干湿情况取决于水量多少。,0.019959068241426958,0.8571428571428571
+0.0,fast_1_15x,6.6260625,sensevoice_forced_candidate,False,13767012080146307603.wav,咖喱饭菜既可以是干的，也可以是湿的，干湿情况取决于水量多少。,zh-CN,136.09770000039134,咖喱饭菜既可以是“干”的，也可以是“湿”的，干湿情况取决于水量多少。,0.02053975494502072,0.8571428571428571
+0.06976744186046512,clean,9.66,sensevoice_forced_candidate,False,1414652039016208614.wav,我们可以开始更环保的生活，加入环保运动，甚至成为环保积极分子，在一定程度上减少将来的灾难。,zh-CN,194.00859999950626,我们可以开始更环保地生活，加入环保运动，甚至可以成为环保积极分子，在一定程度上减少将来的灾难。,0.020083706004089676,0.5
+0.06976744186046512,low_volume,9.66,sensevoice_forced_candidate,False,1414652039016208614.wav,我们可以开始更环保的生活，加入环保运动，甚至成为环保积极分子，在一定程度上减少将来的灾难。,zh-CN,203.11149999906775,我们可以开始更环保地生活，加入环保运动，甚至可以成为环保积极分子，在一定程度上减少将来的灾难。,0.021026035196590864,0.5
+0.06976744186046512,noise_10db,9.66,sensevoice_forced_candidate,False,1414652039016208614.wav,我们可以开始更环保的生活，加入环保运动，甚至成为环保积极分子，在一定程度上减少将来的灾难。,zh-CN,194.9246000003768,我们可以开始更环保地生活，加入环保运动，甚至可以成为环保积极分子，在一定程度上减少将来的灾难。,0.020178530020742942,0.5
+0.06976744186046512,fast_1_15x,8.4,sensevoice_forced_candidate,False,1414652039016208614.wav,我们可以开始更环保的生活，加入环保运动，甚至成为环保积极分子，在一定程度上减少将来的灾难。,zh-CN,161.390900000697,我们可以开始更环保地生活，加入环保运动，甚至可以成为环保积极分子，在一定程度上减少将来的灾难。,0.019213202381035358,0.5
+0.0,clean,8.82,sensevoice_forced_candidate,False,14296266344817400800.wav,与其他地方提供的更详细的信息相比，这里所提供的建议往往较为粗略笼统且过于简单。,zh-CN,169.40819999945234,与其他地方提供的更详细的信息相比，这里所提供的建议往往较为粗略、笼统且过于简单。,0.01920727891150253,0.6666666666666666
+0.0,low_volume,8.82,sensevoice_forced_candidate,False,14296266344817400800.wav,与其他地方提供的更详细的信息相比，这里所提供的建议往往较为粗略笼统且过于简单。,zh-CN,170.31870000209892,与其他地方提供的更详细的信息相比，这里所提供的建议往往较为粗略、笼统且过于简单。,0.019310510204319606,0.6666666666666666
+0.0,noise_10db,8.82,sensevoice_forced_candidate,False,14296266344817400800.wav,与其他地方提供的更详细的信息相比，这里所提供的建议往往较为粗略笼统且过于简单。,zh-CN,174.36190000080387,与其他地方提供的更详细的信息相比，这里所提供的建议往往较为粗略、笼统且过于简单。,0.019768922902585473,0.6666666666666666
+0.0,fast_1_15x,7.6695625,sensevoice_forced_candidate,False,14296266344817400800.wav,与其他地方提供的更详细的信息相比，这里所提供的建议往往较为粗略笼统且过于简单。,zh-CN,164.05389999999898,与其他地方提供的更详细的信息相比，这里所提供的建议往往较为粗略、笼统且过于简单。,0.02139025531117309,0.6666666666666666
+0.06451612903225806,clean,5.82,sensevoice_forced_candidate,False,8410171656423330739.wav,你可以在黑暗中看到金字塔，在节目开始前，你可以看到他们默默的在那里。,zh-CN,168.96800000176881,你可以在黑暗中看到金字塔，在节目开始前你可以看到它们默默地在那里。,0.0290323024058022,1.0
+0.06451612903225806,low_volume,5.82,sensevoice_forced_candidate,False,8410171656423330739.wav,你可以在黑暗中看到金字塔，在节目开始前，你可以看到他们默默的在那里。,zh-CN,137.8028999970411,你可以在黑暗中看到金字塔，在节目开始前你可以看到它们默默地在那里。,0.02367747422629572,1.0
+0.06451612903225806,noise_10db,5.82,sensevoice_forced_candidate,False,8410171656423330739.wav,你可以在黑暗中看到金字塔，在节目开始前，你可以看到他们默默的在那里。,zh-CN,126.95819999862579,你可以在黑暗中看到金字塔，在节目开始前你可以看到它们默默地在那里。,0.021814123711104087,1.0
+0.06451612903225806,fast_1_15x,5.060875,sensevoice_forced_candidate,False,8410171656423330739.wav,你可以在黑暗中看到金字塔，在节目开始前，你可以看到他们默默的在那里。,zh-CN,114.85929999980726,你可以在黑暗中看到金字塔，在节目开始前你可以看到它们默默地在那里。,0.022695541778804507,1.0
+0.0,clean,8.4,sensevoice_forced_candidate,True,4387025999390132883.wav,所有的这些都成为了独立的学科，着重为现实生活中的问题提供解决方案。,zh-CN,177.1915999997873,所有的这些都成为了独立的学科，着重为现实生活中的问题提供解决方案。,0.021094238095212773,0.0
+0.0,low_volume,8.4,sensevoice_forced_candidate,True,4387025999390132883.wav,所有的这些都成为了独立的学科，着重为现实生活中的问题提供解决方案。,zh-CN,166.74290000082692,所有的这些都成为了独立的学科，着重为现实生活中的问题提供解决方案。,0.019850345238193682,0.0
+0.0,noise_10db,8.4,sensevoice_forced_candidate,True,4387025999390132883.wav,所有的这些都成为了独立的学科，着重为现实生活中的问题提供解决方案。,zh-CN,173.71650000131922,所有的这些都成为了独立的学科，着重为现实生活中的问题提供解决方案。,0.020680535714442762,0.0
+0.0,fast_1_15x,7.304375,sensevoice_forced_candidate,True,4387025999390132883.wav,所有的这些都成为了独立的学科，着重为现实生活中的问题提供解决方案。,zh-CN,157.32829999979003,所有的这些都成为了独立的学科，着重为现实生活中的问题提供解决方案。,0.021538913322466335,0.0
+0.12121212121212122,clean,9.54,sensevoice_forced_candidate,False,12443932414113215660.wav,几个世界后，从美国从美洲或亚洲传入欧洲的食物不可能出现在古罗马人的饮食当中。,zh-CN,392.2195000013744,几个世纪后从美洲或亚洲传入欧洲的食物不可能出现在古罗马人的饮食当中。,0.041113155136412415,2.0
+0.12121212121212122,low_volume,9.54,sensevoice_forced_candidate,False,12443932414113215660.wav,几个世界后，从美国从美洲或亚洲传入欧洲的食物不可能出现在古罗马人的饮食当中。,zh-CN,364.4387000022107,几个世纪后从美洲或亚洲传入欧洲的食物不可能出现在古罗马人的饮食当中。,0.03820112159352314,2.0
+0.15151515151515152,noise_10db,9.54,sensevoice_forced_candidate,False,12443932414113215660.wav,几个世界后，从美国从美洲或亚洲传入欧洲的食物不可能出现在普罗马人的饮食当中。,zh-CN,384.0224000014132,几个世纪后从美洲或亚洲传入欧洲的食物不可能出现在古罗马人的饮食当中。,0.040253920335577904,2.0
+0.12121212121212122,fast_1_15x,8.295625,sensevoice_forced_candidate,False,12443932414113215660.wav,几个世界后，从美国从美洲或亚洲传入欧洲的食物不可能出现在古罗马人的饮食当中。,zh-CN,322.53990000026533,几个世纪后从美洲或亚洲传入欧洲的食物不可能出现在古罗马人的饮食当中。,0.03888072327284145,2.0
+0.09022556390977443,clean,8.76,sensevoice_forced_candidate,False,5115550914045731532.wav,"Skiing is a major activity with many enthusiasts, occasionally known as ski bs, planning entire vacations around skiing at a particular location.",en,355.64529999828665,"Skiing is a major travelling activity with many enthusiasts, occasionally known as ""ski bums,"" planning entire vacations around skiing at a particular location.",0.040598778538617195,0.08695652173913043
+0.09022556390977443,low_volume,8.76,sensevoice_forced_candidate,False,5115550914045731532.wav,"Skiing is a major activity with many enthusiasts, occasionally known as ski bs, planning entire vacations around skiing at a particular location.",en,330.4234000024735,"Skiing is a major travelling activity with many enthusiasts, occasionally known as ""ski bums,"" planning entire vacations around skiing at a particular location.",0.03771956621032803,0.08695652173913043
+0.3157894736842105,noise_10db,8.76,sensevoice_forced_candidate,False,5115550914045731532.wav,"Scam is a leisure activity with many e diseases, sufficiently known as ski bones, requiring entire vacations around skiing at a particular location.",en,322.14460000250256,"Skiing is a major travelling activity with many enthusiasts, occasionally known as ""ski bums,"" planning entire vacations around skiing at a particular location.",0.03677449771718066,0.34782608695652173
+0.08270676691729323,fast_1_15x,7.617375,sensevoice_forced_candidate,False,5115550914045731532.wav,"Skiing is a major activity with many enthusiasts, occasionally known as ski bumps, planning entire vacations around skiing at a particular location.",en,308.8802999991458,"Skiing is a major travelling activity with many enthusiasts, occasionally known as ""ski bums,"" planning entire vacations around skiing at a particular location.",0.04054944124441107,0.08695652173913043
+0.0,clean,7.74,sensevoice_forced_candidate,True,6261800542187882882.wav,The report opens with plea for open debate and the formation of a consensus in the United States about the policy towards the Middle East.,en,285.8182999989367,The Report opens with plea for open debate and the formation of a consensus in the United States about the policy towards the Middle East.,0.0369274289404311,0.0
+0.0,low_volume,7.74,sensevoice_forced_candidate,True,6261800542187882882.wav,The report opens with plea for open debate and the formation of a consensus in the United States about the policy towards the Middle East.,en,287.5413000001572,The Report opens with plea for open debate and the formation of a consensus in the United States about the policy towards the Middle East.,0.037150038759710236,0.0
+0.017699115044247787,noise_10db,7.74,sensevoice_forced_candidate,False,6261800542187882882.wav,The report opens with clear for open debate and the formation of a consensus in the United States about the policy towards the Middle East.,en,324.3548999998893,The Report opens with plea for open debate and the formation of a consensus in the United States about the policy towards the Middle East.,0.04190631782944306,0.04
+0.0,fast_1_15x,6.7304375,sensevoice_forced_candidate,True,6261800542187882882.wav,The report opens with plea for open debate and the formation of a consensus in the United States about the policy towards the Middle East.,en,265.3282000028412,The Report opens with plea for open debate and the formation of a consensus in the United States about the policy towards the Middle East.,0.03942213266267478,0.0
+0.0,clean,10.62,sensevoice_forced_candidate,True,15859719143124778312.wav,"Before an organization can be innovative, leadership must create a culture of innovation, as well as shared knowledge and organizational learning.",en,423.87779999990016,"Before an organization can be innovative, leadership must create a culture of innovation as well as shared knowledge and organizational learning.",0.039913163841798514,0.0
+0.0,low_volume,10.62,sensevoice_forced_candidate,True,15859719143124778312.wav,"Before an organization can be innovative, leadership must create a culture of innovation, as well as shared knowledge and organizational learning.",en,412.3422999982722,"Before an organization can be innovative, leadership must create a culture of innovation as well as shared knowledge and organizational learning.",0.03882695856857554,0.0
+0.10569105691056911,noise_10db,10.62,sensevoice_forced_candidate,False,15859719143124778312.wav,"If foreign organization can be innovative, leadership must create a culture of innovation, as well as shared knowledge and organization environment.",en,396.2169000005815,"Before an organization can be innovative, leadership must create a culture of innovation as well as shared knowledge and organizational learning.",0.03730855932208866,0.19047619047619047
+0.0,fast_1_15x,9.2348125,sensevoice_forced_candidate,True,15859719143124778312.wav,"Before an organization can be innovative, leadership must create a culture of innovation, as well as shared knowledge and organizational learning.",en,344.84519999750773,"Before an organization can be innovative, leadership must create a culture of innovation as well as shared knowledge and organizational learning.",0.037341873481189544,0.0
+0.021505376344086023,clean,11.86,sensevoice_forced_candidate,False,15135467702098055722.wav,"Combined with its relative inaccessibility, Timmbukktu has come to be used as a metaphor for exotic, distant lands.",en,409.5947999994678,"Combined with its relative inaccessibility, ""Timbuktu"" has come to be used as a metaphor for exotic, distant lands.",0.03453581787516592,0.05555555555555555
+0.021505376344086023,low_volume,11.86,sensevoice_forced_candidate,False,15135467702098055722.wav,"Combined with its relative inaccessibility, Timmbbuktu has come to be used as a metaphor for exotic, distant lands.",en,433.4024000017962,"Combined with its relative inaccessibility, ""Timbuktu"" has come to be used as a metaphor for exotic, distant lands.",0.036543204047368986,0.05555555555555555
+0.11827956989247312,noise_10db,11.86,sensevoice_forced_candidate,False,15135467702098055722.wav,"Combined with its relative inaccessible view, Ibuktu has claimed to be used as a metaphor for exotic distant lands.",en,448.8216999998258,"Combined with its relative inaccessibility, ""Timbuktu"" has come to be used as a metaphor for exotic, distant lands.",0.037843313659344506,0.2222222222222222
+0.021505376344086023,fast_1_15x,10.3130625,sensevoice_forced_candidate,False,15135467702098055722.wav,"Combined with its relative inaccessibility, Timmbukktu has come to be used as a metaphor for exotic, distant lands.",en,374.457000001712,"Combined with its relative inaccessibility, ""Timbuktu"" has come to be used as a metaphor for exotic, distant lands.",0.03630900132736634,0.05555555555555555
+0.0,clean,7.02,sensevoice_forced_candidate,True,10885549230041454053.wav,Research in AI involves making machines to automate tasks that require intelligent behavior.,en,259.05989999955636,Research in AI involves making machines to automate tasks that require intelligent behavior.,0.03690311965805646,0.0
+0.0,low_volume,7.02,sensevoice_forced_candidate,True,10885549230041454053.wav,Research in AI involves making machines to automate tasks that require intelligent behavior.,en,267.1359999985725,Research in AI involves making machines to automate tasks that require intelligent behavior.,0.03805356125335791,0.0
+0.012658227848101266,noise_10db,7.02,sensevoice_forced_candidate,False,10885549230041454053.wav,Research in AI involved making machines to automate tasks that require intelligent behavior.,en,253.07239999892772,Research in AI involves making machines to automate tasks that require intelligent behavior.,0.036050199430046684,0.07692307692307693
+0.0,fast_1_15x,6.104375,sensevoice_forced_candidate,True,10885549230041454053.wav,Research in AI involves making machines to automate tasks that require intelligent behavior.,en,242.76689999896917,Research in AI involves making machines to automate tasks that require intelligent behavior.,0.03976932937425521,0.0
+0.03636363636363636,clean,4.38,sensevoice_forced_candidate,False,6415341913845555034.wav,The results of ploting analysis will be posted to a public website.,en,189.02559999696678,The result of plotting analysis will be posted to a public website.,0.04315652967967278,0.16666666666666666
+0.01818181818181818,low_volume,4.38,sensevoice_forced_candidate,False,6415341913845555034.wav,The results of plotting analysis will be posted to a public website.,en,191.1997999995947,The result of plotting analysis will be posted to a public website.,0.04365292237433669,0.08333333333333333
+0.07272727272727272,noise_10db,4.38,sensevoice_forced_candidate,False,6415341913845555034.wav,The results of flooding analysis will be posted to a public website.,en,170.73760000130278,The result of plotting analysis will be posted to a public website.,0.03898118721490931,0.16666666666666666
+0.03636363636363636,fast_1_15x,3.8086875,sensevoice_forced_candidate,False,6415341913845555034.wav,The results of ploting analysis will be posted to a public website.,en,165.52909999882104,The result of plotting analysis will be posted to a public website.,0.04346092978193171,0.16666666666666666
+0.104,clean,11.7,sensevoice_forced_candidate,False,12464490090562922959.wav,"Examples on all site activities including hunting, fishing, photography, bird watching and visiting park and stunninging information about the ecosystem.",en,463.8386000005994,"Examples of on-site activities include hunting, fishing, photography, bird watching, and visiting parks and studying information about the ecosystem.",0.03964432478637602,0.25
+0.096,low_volume,11.7,sensevoice_forced_candidate,False,12464490090562922959.wav,"Examples on all site activities including hunting, fishing, photography, bird watching and visiting parks and stunninging information about the ecosystem.",en,449.0249999980733,"Examples of on-site activities include hunting, fishing, photography, bird watching, and visiting parks and studying information about the ecosystem.",0.03837820512804046,0.2
+0.08,noise_10db,11.7,sensevoice_forced_candidate,False,12464490090562922959.wav,"Examples on all site activities including hunting, fishing, photography, bird watching, and visiting park and stunning information about the ecosystem.",en,413.74370000266936,"Examples of on-site activities include hunting, fishing, photography, bird watching, and visiting parks and studying information about the ecosystem.",0.03536270940193755,0.25
+0.08,fast_1_15x,10.1739375,sensevoice_forced_candidate,False,12464490090562922959.wav,"Examples on all site activities including hunting, fishing, photography, bird watching, and visiting park and stunning information about the ecosystem.",en,378.2255999976769,"Examples of on-site activities include hunting, fishing, photography, bird watching, and visiting parks and studying information about the ecosystem.",0.037175931147373074,0.25
+0.007042253521126761,clean,11.16,sensevoice_forced_candidate,False,16893502586280184429.wav,"The Olympic gold medalist was due to swim in the 100 m and 200 m freestyle and in three relays at the Commonwealth Games. But due to his complaints, his fitness had been in doubt.",en,378.0877999997756,"The Olympic gold medalist was due to swim in the 100m and 200m freestyle and in three relays at the Commonwealth Games, but due to his complaints his fitness has been in doubt.",0.03387883512542792,0.15151515151515152
+0.007042253521126761,low_volume,11.16,sensevoice_forced_candidate,False,16893502586280184429.wav,"The Olympic gold medalist was due to swim in the 100 m and 200 m freestyle and in three relays at the Commonwealth Games. But due to his complaints, his fitness had been in doubt.",en,379.2436000003363,"The Olympic gold medalist was due to swim in the 100m and 200m freestyle and in three relays at the Commonwealth Games, but due to his complaints his fitness has been in doubt.",0.03398240143372189,0.15151515151515152
+0.007042253521126761,noise_10db,11.16,sensevoice_forced_candidate,False,16893502586280184429.wav,"The Olympic gold medalist was due to swim in the 100 M and 200 m freestyle and in three relays at the Commonwealth Games. But due to his complaints, his fitness had been in doubt.",en,411.87300000092364,"The Olympic gold medalist was due to swim in the 100m and 200m freestyle and in three relays at the Commonwealth Games, but due to his complaints his fitness has been in doubt.",0.036906182795781686,0.15151515151515152
+0.007042253521126761,fast_1_15x,9.704375,sensevoice_forced_candidate,False,16893502586280184429.wav,"The Olympic gold medalist was due to swim in the 100 m and 200 m freestyle and in three relays at the Commonwealth Games. But due to his complaints, his fitness had been in doubt.",en,385.52119999803836,"The Olympic gold medalist was due to swim in the 100m and 200m freestyle and in three relays at the Commonwealth Games, but due to his complaints his fitness has been in doubt.",0.03972653571178343,0.15151515151515152
+0.15555555555555556,clean,8.3,sensevoice_forced_candidate,False,4543532225426899415.wav,Then Laha singh took the lead in seeing the Bahajas.,en,315.2821000003314,"Then, Lakkha Singh took the lead in singing the bhajans.",0.03798579518076282,0.3
+0.15555555555555556,low_volume,8.3,sensevoice_forced_candidate,False,4543532225426899415.wav,Then Laha singh took the lead in seeing the Bahajas.,en,296.4584000001196,"Then, Lakkha Singh took the lead in singing the bhajans.",0.03571787951808669,0.3
+0.4888888888888889,noise_10db,8.3,sensevoice_forced_candidate,False,4543532225426899415.wav,Then Waha sing quickly in seeing the the Hazhang.,en,307.7551999995194,"Then, Lakkha Singh took the lead in singing the bhajans.",0.03707893975897824,0.8
+0.4444444444444444,fast_1_15x,7.217375,sensevoice_forced_candidate,False,4543532225426899415.wav,Then Lak Ha singing totally in the Bahajas.,en,266.11659999980475,"Then, Lakkha Singh took the lead in singing the bhajans.",0.03687166040282024,0.7
+0.03,clean,10.56,sensevoice_forced_candidate,False,11800444469883449996.wav,wideidespread looting reportedly continued overnight as law enforcement officers were not present on Bishkek's streets.,en,398.0754000003799,"Widespread looting reportedly continued overnight, as law enforcement officers were not present on Bishkek's streets.",0.03769653409094506,0.0625
+0.03,low_volume,10.56,sensevoice_forced_candidate,False,11800444469883449996.wav,wideidespread looting reportedly continued overnight as law enforcement officers were not present on Bishkek's streets.,en,371.33429999812506,"Widespread looting reportedly continued overnight, as law enforcement officers were not present on Bishkek's streets.",0.0351642329543679,0.0625
+0.02,noise_10db,10.56,sensevoice_forced_candidate,False,11800444469883449996.wav,Winidespread looting reportedly continued overnight as law enforcement officers were not present on Bishkek's streets.,en,365.8590000013646,"Widespread looting reportedly continued overnight, as law enforcement officers were not present on Bishkek's streets.",0.03464573863649286,0.0625
+0.0,fast_1_15x,9.182625,sensevoice_forced_candidate,True,11800444469883449996.wav,Widespread looting reportedly continued overnight as law enforcement officers were not present on Bishkek's streets.,en,385.719900001277,"Widespread looting reportedly continued overnight, as law enforcement officers were not present on Bishkek's streets.",0.042005406950765926,0.0
+0.1,clean,6.72,sensevoice_forced_candidate,False,2493802856426045210.wav,モルドバの主な宗教は政党派キリスト教です。,ja,232.25389999788604,モルドバの主な宗教は正統派キリスト教です。,0.03456159226159018,1.0
+0.1,low_volume,6.72,sensevoice_forced_candidate,False,2493802856426045210.wav,モルドバの主な宗教は政統派ーキリスト教です。,ja,238.7496999981522,モルドバの主な宗教は正統派キリスト教です。,0.0355282291663917,1.0
+0.1,noise_10db,6.72,sensevoice_forced_candidate,False,2493802856426045210.wav,モルドバの主な宗教は政徒派キリスト教です。,ja,234.55549999926006,モルドバの主な宗教は正統派キリスト教です。,0.03490409226179465,1.0
+0.1,fast_1_15x,5.8435,sensevoice_forced_candidate,False,2493802856426045210.wav,モルドバの主な宗教は政党派キリスト教です。,ja,203.48480000029667,モルドバの主な宗教は正統派キリスト教です。,0.03482241807141211,1.0
+0.0,clean,10.26,sensevoice_forced_candidate,False,14786998584945627530.wav,カレーは水分量に応じて、ドライかウェットのどちらかに分類されます。,ja,326.97319999715546,カレーは水分量に応じて「ドライ」か「ウェット」のどちらかに分類されます。,0.03186873294319254,0.8
+0.0,low_volume,10.26,sensevoice_forced_candidate,False,14786998584945627530.wav,カレーは水分量に応じ て、ドライかウェットのどちらかに分類されます。,ja,315.77529999776743,カレーは水分量に応じて「ドライ」か「ウェット」のどちらかに分類されます。,0.030777319687891564,1.0
+0.0,noise_10db,10.26,sensevoice_forced_candidate,False,14786998584945627530.wav,カレーは水分量に応じてドライかウェットのどちらかに分類されます。,ja,343.90300000086427,カレーは水分量に応じて「ドライ」か「ウェット」のどちらかに分類されます。,0.033518810916263575,1.0
+0.03225806451612903,fast_1_15x,8.92175,sensevoice_forced_candidate,False,14786998584945627530.wav,カレーは成分量に応じて、ドライかウェットのどちら かに分類されます。,ja,301.16869999983464,カレーは水分量に応じて「ドライ」か「ウェット」のどちらかに分類されます。,0.03375668450694479,1.0
+0.23809523809523808,clean,6.6,sensevoice_forced_candidate,False,17468873847526062022.wav,彼はワイフイでなるドアベルを作ったそうです。,ja,237.78430000311346,彼はWi-Fiで鳴るドアベルを作ったそうです。,0.03602792424289598,1.0
+0.2857142857142857,low_volume,6.6,sensevoice_forced_candidate,False,17468873847526062022.wav,彼はワイファイでなるドアベルを作ったそうです。,ja,231.7046999996819,彼はWi-Fiで鳴るドアベルを作ったそうです。,0.03510677272722453,1.0
+0.38095238095238093,noise_10db,6.6,sensevoice_forced_candidate,False,17468873847526062022.wav,あれはワイフイでなるドーベルを作ったそうです。,ja,221.30850000030478,彼はWi-Fiで鳴るドアベルを作ったそうです。,0.03353159090913709,1.0
+0.2857142857142857,fast_1_15x,5.739125,sensevoice_forced_candidate,False,17468873847526062022.wav,彼はワイファイでなるドアベルを作ったそうです。,ja,196.03970000025583,彼はWi-Fiで鳴るドアベルを作ったそうです。,0.03415846492283333,1.0
+0.03333333333333333,clean,8.58,sensevoice_forced_candidate,False,14672974986823750874.wav,宇宙にある人工衛星を通話を受信して、ほぼ瞬時にそれを反映します。,ja,313.526499998261,宇宙にある人工衛星は通話を受信して、ほぼ瞬時にそれを反映します。,0.03654155011634743,0.5
+0.03333333333333333,low_volume,8.58,sensevoice_forced_candidate,False,14672974986823750874.wav,宇宙にある人工衛星を通話を受信して、ほぼ瞬時にそれを反映します。,ja,305.4836000010255,宇宙にある人工衛星は通話を受信して、ほぼ瞬時にそれを反映します。,0.035604149184268706,0.5
+0.03333333333333333,noise_10db,8.58,sensevoice_forced_candidate,False,14672974986823750874.wav,宇宙にある人工衛星を通話を受信して、ほぼ瞬時にそれを反映します。,ja,282.75740000026417,宇宙にある人工衛星は通話を受信して、ほぼ瞬時にそれを反映します。,0.03295540792543871,0.5
+0.03333333333333333,fast_1_15x,7.460875,sensevoice_forced_candidate,False,14672974986823750874.wav,宇宙にある人工衛星を通話を受信して、ほぼ瞬時にそれを反映します。,ja,274.1898000022047,宇宙にある人工衛星は通話を受信して、ほぼ瞬時にそれを反映します。,0.03675035434881361,0.5
+0.021739130434782608,clean,10.92,sensevoice_forced_candidate,False,7736135123644969726.wav,フェスティバルによっては、幼いお好供連れ家族向けに特別なキャンプ場を設けているところもあります。,ja,372.19810000169673,フェスティバルによっては、幼いお子供連れ家族向けに特別なキャンプ場を設けているところもあります。,0.03408407509173047,0.5
+0.021739130434782608,low_volume,10.92,sensevoice_forced_candidate,False,7736135123644969726.wav,フェスティバルによっては、幼いお好供連れ家族向けに特別なキャンプ場を設けているところもあります。,ja,371.8644000000495,フェスティバルによっては、幼いお子供連れ家族向けに特別なキャンプ場を設けているところもあります。,0.034053516483521014,0.5
+0.043478260869565216,noise_10db,10.92,sensevoice_forced_candidate,False,7736135123644969726.wav,フェスティバルによっては、幼いおこ供ずれ家族向けに特別なキャンプ場を設けているところもあります。,ja,369.38170000212267,フェスティバルによっては、幼いお子供連れ家族向けに特別なキャンプ場を設けているところもあります。,0.033826163003857386,0.5
+0.0,fast_1_15x,9.495625,sensevoice_forced_candidate,False,7736135123644969726.wav,フェスティバルによっては幼いお子供連れ家族向けに特別なキャンプ場を設けているところもあります。,ja,335.2534999976342,フェスティバルによっては、幼いお子供連れ家族向けに特別なキャンプ場を設けているところもあります。,0.03530610149385998,1.0
+0.023255813953488372,clean,9.96,sensevoice_forced_candidate,False,13500619166784260063.wav,嗜工芸品は大量生産された類似品よりも歴史は浅いのですが、骨董品と定義されることもあります。,ja,348.71539999949164,手工芸品は、大量生産された類似品よりも歴史は浅いのですが、骨董品と定義されることもあります。,0.035011586345330484,0.6666666666666666
+0.046511627906976744,low_volume,9.96,sensevoice_forced_candidate,False,13500619166784260063.wav,嗜工原品は大量生産された類似品よりも歴史は浅いのですが、骨董品と定義されることもあります。,ja,352.03829999954905,手工芸品は、大量生産された類似品よりも歴史は浅いのですが、骨董品と定義されることもあります。,0.035345210843328215,0.6666666666666666
+0.13953488372093023,noise_10db,9.96,sensevoice_forced_candidate,False,13500619166784260063.wav,嗜工原品は大量生産されたルチ品よりも歴史は浅いのですが、没頭品と定義されることもあります。,ja,341.9849999991129,手工芸品は、大量生産された類似品よりも歴史は浅いのですが、骨董品と定義されることもあります。,0.03433584337340491,1.0
+0.046511627906976744,fast_1_15x,8.660875,sensevoice_forced_candidate,False,13500619166784260063.wav,嗜好芸品は大量生産された類似品よりも歴史は浅いのですが、骨董品と定義されることもあります。,ja,320.71429999996326,手工芸品は、大量生産された類似品よりも歴史は浅いのですが、骨董品と定義されることもあります。,0.0370302423253959,0.6666666666666666
+0.06060606060606061,clean,10.08,sensevoice_forced_candidate,False,14211506847417900348.wav,教会の墓地では興味深い大理石製の旗の彫刻が一部の箱に飾られています。,ja,358.4795999995549,教会の墓地では、興味深い大理石製の鳩の彫刻が一部の墓に飾られています。,0.035563452380908224,1.0
+0.06060606060606061,low_volume,10.08,sensevoice_forced_candidate,False,14211506847417900348.wav,教会の墓地では、興味深い大理石製の旗の彫刻が一部の箱に飾られています。,ja,338.7765000006766,教会の墓地では、興味深い大理石製の鳩の彫刻が一部の墓に飾られています。,0.03360877976197189,0.5
+0.12121212121212122,noise_10db,10.08,sensevoice_forced_candidate,False,14211506847417900348.wav,教会の墓地では興味深い大理石地の旗の彫宝が一部の箱に飾られています。,ja,363.1098000005295,教会の墓地では、興味深い大理石製の鳩の彫刻が一部の墓に飾られています。,0.03602279761910015,1.0
+0.09090909090909091,fast_1_15x,8.7651875,sensevoice_forced_candidate,False,14211506847417900348.wav,教会の墓地では興味深い大理石製の旗の彫宝が一部の箱に飾られています。,ja,307.9093999986071,教会の墓地では、興味深い大理石製の鳩の彫刻が一部の墓に飾られています。,0.035128672375645945,1.0
+0.16666666666666666,clean,11.76,sensevoice_forced_candidate,False,12090560248408007785.wav,当初の装いは、東方の未残珍文化の影響を強く受けたものでした。,ja,389.0893000025244,当初の装いは東方のビザンチン文化の影響を強く受けたものでした。,0.03308582483014663,2.0
+0.2,low_volume,11.76,sensevoice_forced_candidate,False,12090560248408007785.wav,当初の装いは、当方の未残珍文化の影響を強く受けたものでした。,ja,389.1189999994822,当初の装いは東方のビザンチン文化の影響を強く受けたものでした。,0.033088350340092026,2.0
+0.06666666666666667,noise_10db,11.76,sensevoice_forced_candidate,False,12090560248408007785.wav,当初の装いは東方のビザチ文化の影響を強く受けたものでした。,ja,399.96610000162036,当初の装いは東方のビザンチン文化の影響を強く受けたものでした。,0.034010722789253434,1.0
+0.2,fast_1_15x,10.2260625,sensevoice_forced_candidate,False,12090560248408007785.wav,当初の想いは、東方の未山珍文化の影響を強く受けたものでした。,ja,332.98629999990226,当初の装いは東方のビザンチン文化の影響を強く受けたものでした。,0.03256251367521979,2.0
+0.06,clean,11.34,sensevoice_forced_candidate,False,5601142683797907650.wav,科学者たちはオセロッと地面の匂いを嗅いでサになる動物、獲物が通った場所を探し、追いかけると考えています。,ja,383.29460000022664,科学者たちは、オセロットは地面の匂いを嗅いで餌になる動物（獲物）が通った場所を探し、追いかけると考えています。,0.03380022927691593,0.8
+0.06,low_volume,11.34,sensevoice_forced_candidate,False,5601142683797907650.wav,科学者たちはオセロッと地面の匂いを嗅いでサになる動物、獲物が通った場所を探し、追いかけると考えています。,ja,369.68200000046636,科学者たちは、オセロットは地面の匂いを嗅いで餌になる動物（獲物）が通った場所を探し、追いかけると考えています。,0.03259982363319809,0.8
+0.14,noise_10db,11.34,sensevoice_forced_candidate,False,5601142683797907650.wav,科学者たちは恐セらくた地面の匂いを嗅いで餌になる動物、獣が通った場所を探し、追いかけると考えています。,ja,362.4572000007902,科学者たちは、オセロットは地面の匂いを嗅いで餌になる動物（獲物）が通った場所を探し、追いかけると考えています。,0.031962716049452396,0.8
+0.1,fast_1_15x,9.860875,sensevoice_forced_candidate,False,5601142683797907650.wav,科学者たちはおセロっと地面の匂いを嗅いで差になる動物、獲物が通った場所を探し、追いかけると考えています。,ja,350.90560000026016,科学者たちは、オセロットは地面の匂いを嗅いで餌になる動物（獲物）が通った場所を探し、追いかけると考えています。,0.03558564529012488,0.8
+0.02127659574468085,clean,12.0,sensevoice_forced_candidate,False,8432487110292314572.wav,報告書の冒頭は公開討論と中東政策について米国内のコンセンサス形成を嘆願する一説で始まっています。,ja,428.7216999982775,報告書の冒頭は、公開討論と中東政策について米国内のコンセンサス形成を嘆願する一節で始まっています。,0.03572680833318979,1.0
+0.02127659574468085,low_volume,12.0,sensevoice_forced_candidate,False,8432487110292314572.wav,報告書の冒頭は公開討論と中東政策について米国内のコンセンサス形成を嘆願する一説で始まっています。,ja,394.0211000008276,報告書の冒頭は、公開討論と中東政策について米国内のコンセンサス形成を嘆願する一節で始まっています。,0.03283509166673563,1.0
+0.02127659574468085,noise_10db,12.0,sensevoice_forced_candidate,False,8432487110292314572.wav,報告書の冒頭は公開討論と中東政策について米国内のコンセンサス形成を嘆願する一設で始まっています。,ja,403.9020999989589,報告書の冒頭は、公開討論と中東政策について米国内のコンセンサス形成を嘆願する一節で始まっています。,0.03365850833324657,1.0
+0.02127659574468085,fast_1_15x,10.4348125,sensevoice_forced_candidate,False,8432487110292314572.wav,報告書の冒頭は公開討論と中東政策について米国内のコンセンサス形成を嘆願する一説で始まっています。,ja,352.1828999982972,報告書の冒頭は、公開討論と中東政策について米国内のコンセンサス形成を嘆願する一節で始まっています。,0.03375076456795915,1.0
+0.09523809523809523,clean,10.68,sensevoice_forced_candidate,False,2141381220709808076.wav,택배 사는 물건을 빨리 배달해주는 대가로 많은 모습을 봤습니다. 종종 업무 서류 긴급 수를 위한 상품이나 예비부품의 경우에는 시간이 매우 중요합니다.,ko,358.76030000144965,"택배회사는 물건을 빨리 배달해 주는 대가로 많은 보수를 받습니다. 종종 업무 서류, 긴급 수리를 위한 상품이나 예비 부품의 경우에는 시간이 매우 중요합니다.",0.033591788389648845,0.4090909090909091
+0.09523809523809523,low_volume,10.68,sensevoice_forced_candidate,False,2141381220709808076.wav,택배 사는 물건을 빨리 배달해주는 대가로 많은 모습을 봤습니다. 종종 업무 서류 긴급 수를 위한 상품이나 예비부품의 경우에는 시간이 매우 중요합니다.,ko,363.9097000013862,"택배회사는 물건을 빨리 배달해 주는 대가로 많은 보수를 받습니다. 종종 업무 서류, 긴급 수리를 위한 상품이나 예비 부품의 경우에는 시간이 매우 중요합니다.",0.03407394194769534,0.4090909090909091
+0.15873015873015872,noise_10db,10.68,sensevoice_forced_candidate,False,2141381220709808076.wav,택배에서는 물건을 빨리 배달해주는  대가로 많은 모습을 받습니다 공정 업무 서류 긴급 수리를 위한 상품이나 예비부의 경우에는이 매우 중요합니다.,ko,352.4681999988388,"택배회사는 물건을 빨리 배달해 주는 대가로 많은 보수를 받습니다. 종종 업무 서류, 긴급 수리를 위한 상품이나 예비 부품의 경우에는 시간이 매우 중요합니다.",0.033002640449329476,0.4090909090909091
+0.09523809523809523,fast_1_15x,9.2869375,sensevoice_forced_candidate,False,2141381220709808076.wav,택배에서는 물건을 빨리 배달해주는 대가로 많은 모습을 받습니다 종종 업무 서류 긴급 수리를 위한 상품이나 예비부의 경우에는 시간이 매우 중요합니다.,ko,309.83610000112094,"택배회사는 물건을 빨리 배달해 주는 대가로 많은 보수를 받습니다. 종종 업무 서류, 긴급 수리를 위한 상품이나 예비 부품의 경우에는 시간이 매우 중요합니다.",0.033362569738530155,0.2727272727272727
+0.034482758620689655,clean,7.8,sensevoice_forced_candidate,False,11667888958665146980.wav,화요일에 베어 쓰러뜨릴 예정이었으나 긴급법의 판결로 구조되었다.,ko,268.37540000269655,화요일에 베어 쓰러뜨릴 예정이었으나 긴급 법원의 판결로 구조되었다.,0.034407102564448275,0.25
+0.034482758620689655,low_volume,7.8,sensevoice_forced_candidate,False,11667888958665146980.wav,화요일에 베어 쓰러뜨릴 예정이었으나 긴급법의 판결로 구조되었다.,ko,268.05959999910556,화요일에 베어 쓰러뜨릴 예정이었으나 긴급 법원의 판결로 구조되었다.,0.03436661538450071,0.25
+0.034482758620689655,noise_10db,7.8,sensevoice_forced_candidate,False,11667888958665146980.wav,화요일에 베어 쓰럿뜨릴 예정이었으나 긴급 법원의 판결로 구조되었다.,ko,274.2103999989922,화요일에 베어 쓰러뜨릴 예정이었으나 긴급 법원의 판결로 구조되었다.,0.035155179487050284,0.125
+0.0,fast_1_15x,6.782625,sensevoice_forced_candidate,True,11667888958665146980.wav,화요일에 베어 쓰러뜨릴 예정이었으나 긴급 법원의 판결로 구조되었다.,ko,248.79950000104145,화요일에 베어 쓰러뜨릴 예정이었으나 긴급 법원의 판결로 구조되었다.,0.03668188938663739,0.0
+0.02040816326530612,clean,9.9,sensevoice_forced_candidate,False,15704353857314520582.wav,이 시점에서 이라크의 행동이 종파적인 전쟁이나 폭력이 증가하는 것 혹은 혼돈의 상태를 막을 수 있다는 데 보장은 없다.,ko,353.9887999977509,"이 시점에서 이라크의 행동이 종파적인 전쟁이나 폭력이 증가하는 것, 혹은 혼돈의 상태를 막을 수 있다는 데에 보장은 없다.",0.03575644444421726,0.05555555555555555
+0.02040816326530612,low_volume,9.9,sensevoice_forced_candidate,False,15704353857314520582.wav,이 시점에서 이라크의 행동이 종파적인 전쟁이나 폭력이 증가하는 것 혹은 혼돈의 상태를 막을 수 있다는 데 보장은 없다.,ko,326.9655000003695,"이 시점에서 이라크의 행동이 종파적인 전쟁이나 폭력이 증가하는 것, 혹은 혼돈의 상태를 막을 수 있다는 데에 보장은 없다.",0.0330268181818555,0.05555555555555555
+0.061224489795918366,noise_10db,9.9,sensevoice_forced_candidate,False,15704353857314520582.wav,"이 시점에서 이라크의 행동이 종파적인 전쟁이나 폭력이 증가하는 것, 혹은 헌변의 상태를 막을 수 있다는 데 보장은 없다.",ko,340.74429999964195,"이 시점에서 이라크의 행동이 종파적인 전쟁이나 폭력이 증가하는 것, 혹은 혼돈의 상태를 막을 수 있다는 데에 보장은 없다.",0.03441861616157999,0.1111111111111111
+0.02040816326530612,fast_1_15x,8.6086875,sensevoice_forced_candidate,False,15704353857314520582.wav,이 시점에서 이라크의 행동이 종파적인 전쟁이나 폭력이 증가하는 것 혹은 혼돈의 상태를 막을 수 있다는 데 보장은 없다.,ko,317.41669999973965,"이 시점에서 이라크의 행동이 종파적인 전쟁이나 폭력이 증가하는 것, 혹은 혼돈의 상태를 막을 수 있다는 데에 보장은 없다.",0.03687167178501248,0.05555555555555555
+0.024390243902439025,clean,11.82,sensevoice_forced_candidate,False,7931296107475066465.wav,아랍인들을 통해서도 이슬람교가 전해 지졌으며 코모로스와 마요트 지방에서 큰 변화가 일어났습니다.,ko,376.6832999972394,"아랍인들을 통해서도 이슬람교가 전해졌으며, 코모로스와 마요트 지방에서 큰 변화가 일어났습니다.",0.03186829949215223,0.2
+0.04878048780487805,low_volume,11.82,sensevoice_forced_candidate,False,7931296107475066465.wav,아랍인들을 통해서도 이슬람교가 전해 지셨으며 코모로스와 마요트 지방에서 큰 변화가 일어났습니다.,ko,372.42549999791663,"아랍인들을 통해서도 이슬람교가 전해졌으며, 코모로스와 마요트 지방에서 큰 변화가 일어났습니다.",0.031508079526050475,0.2
+0.04878048780487805,noise_10db,11.82,sensevoice_forced_candidate,False,7931296107475066465.wav,아랍인들을 통해서도 이슬람교가 전해 지셨으며 코모로스와 마요트 지방에서 큰 변화가 일어났습니다.,ko,391.03999999861117,"아랍인들을 통해서도 이슬람교가 전해졌으며, 코모로스와 마요트 지방에서 큰 변화가 일어났습니다.",0.0330829103213715,0.2
+0.04878048780487805,fast_1_15x,10.27825,sensevoice_forced_candidate,False,7931296107475066465.wav,아랍인들을 통해서도 이슬람교가 전해주셨으며 코모로스와 마요트 지방에서 큰 변화가 일어났습니다.,ko,343.5852000002342,"아랍인들을 통해서도 이슬람교가 전해졌으며, 코모로스와 마요트 지방에서 큰 변화가 일어났습니다.",0.03342837545304251,0.1
+0.17647058823529413,clean,11.04,sensevoice_forced_candidate,False,11543408116050555970.wav,대부분의 경우 해외 앱 이어코에 등록하면 실제로 고국에서 고등교육에 진학할 가능성을 높일 수 있습니다.,ko,342.5396000020555,"대부분의 경우, 해외 갭 이어(gap-year) 코스에 등록하면 실제로 고국에서 고등 교육에 진학할 가능성을 높일 수 있습니다.",0.03102713768134561,0.3888888888888889
+0.17647058823529413,low_volume,11.04,sensevoice_forced_candidate,False,11543408116050555970.wav,대부분의 경우 해외 앱 이어코에 등록하면 실제로 고국에서 고등교육에 진학할 가능성을 높일 수 있습니다.,ko,357.0766000011645,"대부분의 경우, 해외 갭 이어(gap-year) 코스에 등록하면 실제로 고국에서 고등 교육에 진학할 가능성을 높일 수 있습니다.",0.03234389492764171,0.3888888888888889
+0.17647058823529413,noise_10db,11.04,sensevoice_forced_candidate,False,11543408116050555970.wav,대부분의 경우 해외계비어 코스에 등록하면 실제로 고국에서 고등교육에 진학할 가능성을 높일 수 있습니다.,ko,357.5463999986823,"대부분의 경우, 해외 갭 이어(gap-year) 코스에 등록하면 실제로 고국에서 고등 교육에 진학할 가능성을 높일 수 있습니다.",0.032386449275242965,0.3888888888888889
+0.1568627450980392,fast_1_15x,9.6,sensevoice_forced_candidate,False,11543408116050555970.wav,대부분의 경우 해외 앱 이어 코스에 등록하면 실제로 고국에서 고등교육에 진학할 가능성을 높일 수 있습니다.,ko,347.27099999872735,"대부분의 경우, 해외 갭 이어(gap-year) 코스에 등록하면 실제로 고국에서 고등 교육에 진학할 가능성을 높일 수 있습니다.",0.03617406249986743,0.2777777777777778
+0.0,clean,6.96,sensevoice_forced_candidate,True,5267577748770289706.wav,경찰은 시체가 하루 정도 있었던 것으로 보인다고 말했습니다.,ko,251.64020000011078,경찰은 시체가 하루 정도 있었던 것으로 보인다고 말했습니다.,0.03615520114944121,0.0
+0.0,low_volume,6.96,sensevoice_forced_candidate,True,5267577748770289706.wav,경찰은 시체가 하루 정도 있었던 것으로 보인다고 말했습니다.,ko,229.8573000007309,경찰은 시체가 하루 정도 있었던 것으로 보인다고 말했습니다.,0.03302547413803605,0.0
+0.04,noise_10db,6.96,sensevoice_forced_candidate,False,5267577748770289706.wav,경찰은 실체가 하루 정도 있었던 것으로 보인다고 말했습니다.,ko,231.87959999995655,경찰은 시체가 하루 정도 있었던 것으로 보인다고 말했습니다.,0.03331603448275238,0.125
+0.04,fast_1_15x,6.0521875,sensevoice_forced_candidate,False,5267577748770289706.wav,경찰은 시 체가 하루 정도 었  있었던 것으로 보인다고 말했습니다.,ko,229.3110999999044,경찰은 시체가 하루 정도 있었던 것으로 보인다고 말했습니다.,0.0378889616357564,0.375
+0.0,clean,8.22,sensevoice_forced_candidate,True,11841411276404353831.wav,차가 집에 충돌했을 때 세 명이 안에 있었지만 그들 중 한 명도 다치지 않았다.,ko,278.90540000225883,"차가 집에 충돌했을 때 세 명이 안에 있었지만, 그들 중 한 명도 다치지 않았다.",0.033930097323875766,0.0
+0.0,low_volume,8.22,sensevoice_forced_candidate,True,11841411276404353831.wav,차가 집에 충돌했을 때 세 명이 안에 있었지만 그들 중 한 명도 다치지 않았다.,ko,285.07920000265585,"차가 집에 충돌했을 때 세 명이 안에 있었지만, 그들 중 한 명도 다치지 않았다.",0.03468116788353477,0.0
+0.0,noise_10db,8.22,sensevoice_forced_candidate,True,11841411276404353831.wav,차가 집에 충돌했을 때 세 명이 안에 있었지만 그들 중 한 명도 다치지 않았다.,ko,278.14540000326815,"차가 집에 충돌했을 때 세 명이 안에 있었지만, 그들 중 한 명도 다치지 않았다.",0.03383763990307398,0.0
+0.0,fast_1_15x,7.1478125,sensevoice_forced_candidate,True,11841411276404353831.wav,차가 집에 충돌했을 때 세 명이 안에 있었지만 그들 중 한 명도 다치지 않았다.,ko,242.99529999916558,"차가 집에 충돌했을 때 세 명이 안에 있었지만, 그들 중 한 명도 다치지 않았다.",0.03399575744315699,0.0
+0.17307692307692307,clean,11.94,sensevoice_forced_candidate,False,3988998781452247698.wav,상대적인 접근이 불가능한 의미를 결합하여 팀부크투는 이국적이고 멀리 떨어진 지역에 대한 의유로 사용하게 되었다.,ko,377.78919999982463,"상대적인 접근이 불가능한 의미를 결합하여, 'Timbuktu'는 이국적이고 멀리 떨어진 지역에 대한 은유로 사용하게 되었다.",0.03164063651589821,0.2
+0.19230769230769232,low_volume,11.94,sensevoice_forced_candidate,False,3988998781452247698.wav,상대적인 접근이 불가능한 의미를 결합하여 팀부크투는 이국적이고 멀리 떨어진 지역에 대한 의로 사용하게 되었다.,ko,386.7974000022514,"상대적인 접근이 불가능한 의미를 결합하여, 'Timbuktu'는 이국적이고 멀리 떨어진 지역에 대한 은유로 사용하게 되었다.",0.03239509212749174,0.2
+0.19230769230769232,noise_10db,11.94,sensevoice_forced_candidate,False,3988998781452247698.wav,상대적인 접근이 불가능한 의미를 결합하여 팀보크추는 이국적이고 멀리 떨어진 지역에 대한 의미로 사용하게 되었다.,ko,387.25909999993746,"상대적인 접근이 불가능한 의미를 결합하여, 'Timbuktu'는 이국적이고 멀리 떨어진 지역에 대한 은유로 사용하게 되었다.",0.03243376046900649,0.2
+0.19230769230769232,fast_1_15x,10.382625,sensevoice_forced_candidate,False,3988998781452247698.wav,상대적인 접근이 불가능한 의미를 결합하여 팀부크투는 이국적이고 멀리 떨어진 지역에 대한 의로 사용하게 되었다.,ko,332.2638999998162,"상대적인 접근이 불가능한 의미를 결합하여, 'Timbuktu'는 이국적이고 멀리 떨어진 지역에 대한 은유로 사용하게 되었다.",0.03200191666363913,0.2
+0.1724137931034483,clean,8.46,sensevoice_forced_candidate,False,962804827140334596.wav,수천 킬로미터 마 떨어진 사람과 통화한다면 인공위성을 쓰고 있는 겁니다.,ko,295.92679999768734,수천 km(마일) 떨어진 사람과 통화한다면 인공위성을 쓰고 있는 겁니다.,0.03497952718648786,0.2
+0.1724137931034483,low_volume,8.46,sensevoice_forced_candidate,False,962804827140334596.wav,수천 킬로미터 마 떨어진 사람과 통화한다면 인공위성을 쓰고 있는 겁니다.,ko,307.0458999973198,수천 km(마일) 떨어진 사람과 통화한다면 인공위성을 쓰고 있는 겁니다.,0.036293841607248196,0.2
+0.1724137931034483,noise_10db,8.46,sensevoice_forced_candidate,False,962804827140334596.wav,수천 킬로미터 마 떨어진 사람과 통화한다면 인공위성을 쓰고 있는 겁니다.,ko,278.1388000003062,수천 km(마일) 떨어진 사람과 통화한다면 인공위성을 쓰고 있는 겁니다.,0.032876926713984185,0.2
+0.1724137931034483,fast_1_15x,7.3565,sensevoice_forced_candidate,False,962804827140334596.wav,수천 킬로미터 마 떨어진 사람과 통화한다면 인공위성을 쓰고 있는 겁니다.,ko,272.0466999999189,수천 km(마일) 떨어진 사람과 통화한다면 인공위성을 쓰고 있는 겁니다.,0.0369804526609011,0.2
+0.0,clean,8.16,sensevoice_forced_candidate,True,13842930443009797362.wav,한 전직 필리핀 경찰관이 필리핀의 수도 마닐라에서 버스를 납치하여 홍콩 관광객들을 인질로 삼았다.,ko,297.700299997814,한 전직 필리핀 경찰관이 필리핀의 수도 마닐라에서 버스를 납치하여 홍콩 관광객들을 인질로 삼았다.,0.03648287990169289,0.0
+0.0,low_volume,8.16,sensevoice_forced_candidate,True,13842930443009797362.wav,한 전직 필리핀 경찰관이 필리핀의 수도 마닐라에서 버스를 납치하여 홍콩 관광객들을 인질로 삼았다.,ko,272.3108999998658,한 전직 필리핀 경찰관이 필리핀의 수도 마닐라에서 버스를 납치하여 홍콩 관광객들을 인질로 삼았다.,0.033371433823512965,0.0
+0.04878048780487805,noise_10db,8.16,sensevoice_forced_candidate,False,13842930443009797362.wav,한 전직 필리핀 경찰 관이 필리핀의 수도 마닐라 에서 버스 를 납 피하 여 홍콩 관광객 들 을 인질로 담 았 다.,ko,269.566399998439,한 전직 필리핀 경찰관이 필리핀의 수도 마닐라에서 버스를 납치하여 홍콩 관광객들을 인질로 삼았다.,0.03303509803902439,1.1538461538461537
+0.0,fast_1_15x,7.095625,sensevoice_forced_candidate,False,13842930443009797362.wav,한 전직 필리핀 경찰 관이 필리핀의 수도 마닐라 에서 버스 를 납 치하 여 홍콩 관광객 들 을 인질로 삼 았 다.,ko,245.54910000006203,한 전직 필리핀 경찰관이 필리핀의 수도 마닐라에서 버스를 납치하여 홍콩 관광객들을 인질로 삼았다.,0.034605704219157866,1.1538461538461537
+0.1125,clean,3.96,whisper_cpp_small_q5_1,False,622196158886216764.wav,"Noël est l'une des fêtes les plus importantes de la chrét
+iennité et s'élève en la naissance de Jésus.",fr,2540.1695999971707,"Noël est l'une des fêtes les plus importantes de la chrétienté, elle célèbre la naissance de Jésus.",0.6414569696962552,0.3333333333333333
+0.1125,low_volume,3.96,whisper_cpp_small_q5_1,False,622196158886216764.wav,"Noël est l'une des fêtes les plus importantes de la chrét
+iennité et s'élève en la naissance de Jésus.",fr,2492.9976999992505,"Noël est l'une des fêtes les plus importantes de la chrétienté, elle célèbre la naissance de Jésus.",0.6295448737371845,0.3333333333333333
+0.4625,noise_10db,3.96,whisper_cpp_small_q5_1,False,622196158886216764.wav,"Et les doutes des pétales les plus importantes de la crétin
+ité est dorée dans les noups de lignes.",fr,2495.9655000020575,"Noël est l'une des fêtes les plus importantes de la chrétienté, elle célèbre la naissance de Jésus.",0.6302943181823377,0.7222222222222222
+0.2,fast_1_15x,3.4435,whisper_cpp_small_q5_1,False,622196158886216764.wav,"Oui, les lignes des fêtes les plus importantes de la chrét
+iennité, elles s'élèvent à la naissance de Jésus.",fr,2494.936499999312,"Noël est l'une des fêtes les plus importantes de la chrétienté, elle célèbre la naissance de Jésus.",0.7245350660663025,0.5555555555555556
+0.1981981981981982,clean,7.92,whisper_cpp_small_q5_1,False,18305287484434816969.wav,"Selon les scientifiques, les osselots au track et trouvent
+ des animaux à manger proie par
+ l'odorant renéfin, on est retrajet sur le sol.",fr,2539.6655999975337,"Selon les scientifiques, les ocelots traquent et trouvent les animaux à manger (proies) par l'odorat, en reniflant leur trajet sur le sol.",0.3206648484845371,0.43478260869565216
+0.26126126126126126,low_volume,7.92,whisper_cpp_small_q5_1,False,18305287484434816969.wav,"Selon les scientifiques, les osselots au tract et trouvent
+ les animaux à manger,
+ pourquoi par l'autorahore n'est fin de leur trager sur le
+ sol ?",fr,2535.3896000015084,"Selon les scientifiques, les ocelots traquent et trouvent les animaux à manger (proies) par l'odorat, en reniflant leur trajet sur le sol.",0.3201249494951399,0.43478260869565216
+0.6126126126126126,noise_10db,7.92,whisper_cpp_small_q5_1,False,18305287484434816969.wav,"Seulement, ils satisfiquent les essuieurs de traquures qu'
+ils trouvent des amis de la magie,
+ pourquoi pas leur donner une forme de trajet sur le sang.",fr,2610.5439999992086,"Selon les scientifiques, les ocelots traquent et trouvent les animaux à manger (proies) par l'odorat, en reniflant leur trajet sur le sol.",0.3296141414140415,0.9130434782608695
+0.36936936936936937,fast_1_15x,6.8869375,whisper_cpp_small_q5_1,False,18305287484434816969.wav,"Selon les scientifiques et les socios au track, ils trou
+vent les animaux à manger et pourront parler d'autres en ren
+éfin, mais y les retrager sur le sol.",fr,2563.1454000031226,"Selon les scientifiques, les ocelots traquent et trouvent les animaux à manger (proies) par l'odorat, en reniflant leur trajet sur le sol.",0.37217491809721265,0.782608695652174
+0.15454545454545454,clean,10.02,whisper_cpp_small_q5_1,False,5379801877211157215.wav,"En principe, le bouddhisme Tibetain est très simple et se
+ compose de kundalini yoga,
+ de la mini-éditation de la voix de l'amour intérieur.",fr,2558.169400002953,"En principe, le bouddhisme tibétain est très simple. Il se compose du Kundalini Yoga, de la méditation et de la voie de l'amour universel.",0.2553063273456041,0.28
+0.15454545454545454,low_volume,10.02,whisper_cpp_small_q5_1,False,5379801877211157215.wav,"En principe, le bouddhisme Tibetain est très simple et se
+ compose de kundalini yoga,
+ de la mini-éditation de la voix de l'amour intérieur.",fr,2587.2420000014245,"En principe, le bouddhisme tibétain est très simple. Il se compose du Kundalini Yoga, de la méditation et de la voie de l'amour universel.",0.2582077844312799,0.28
+0.36363636363636365,noise_10db,10.02,whisper_cpp_small_q5_1,False,5379801877211157215.wav,"En principe, le bouddhisme est un petit béton très simple
+ et se compose de plus
+ d'un niveau de la fabrication et de la voie de la nouvelle
+ diversité.",fr,2561.1089000012726,"En principe, le bouddhisme tibétain est très simple. Il se compose du Kundalini Yoga, de la méditation et de la voie de l'amour universel.",0.2555996906188895,0.56
+0.22727272727272727,fast_1_15x,8.7130625,whisper_cpp_small_q5_1,False,5379801877211157215.wav,"En principe, le Bodhi, mon petit bétin est très simple et
+ se compose de kundali yoga,
+ de la même méditation et de la voix, de l'amour, il est
+ vertiel.",fr,2606.1913999983517,"En principe, le bouddhisme tibétain est très simple. Il se compose du Kundalini Yoga, de la méditation et de la voie de l'amour universel.",0.2991131304289797,0.48
+0.024096385542168676,clean,5.76,whisper_cpp_small_q5_1,False,16779044087085422178.wav,"On essaie encore de déterminer qu'elle a été l'ampleur de l
+'accident et comment la terre sera infectée.",fr,2470.6790999989607,On essaie encore de déterminer quelle a été l'ampleur de l'accident et comment la Terre sera affectée.,0.42893734374981957,0.15789473684210525
+0.060240963855421686,low_volume,5.76,whisper_cpp_small_q5_1,False,16779044087085422178.wav,"On essaie encore de déterminer qu'elle a été l'empereur de
+ l'accident et comment la terre sera infectée.",fr,2546.907399999327,On essaie encore de déterminer quelle a été l'ampleur de l'accident et comment la Terre sera affectée.,0.4421714236109943,0.21052631578947367
+0.10843373493975904,noise_10db,5.76,whisper_cpp_small_q5_1,False,16779044087085422178.wav,"On essaie encore de déterminer qu'elle a été l'incorps de l
+'accident et comment la terre sera infectée.",fr,2501.3648999993165,On essaie encore de déterminer quelle a été l'ampleur de l'accident et comment la Terre sera affectée.,0.4342647395832147,0.21052631578947367
+0.0963855421686747,fast_1_15x,5.0086875,whisper_cpp_small_q5_1,False,16779044087085422178.wav,"On essaie encore de déterminer qu'il n'a été l'empereur de
+ l'accident et comment la terre sera infectée.",fr,2537.9095999996935,On essaie encore de déterminer quelle a été l'ampleur de l'accident et comment la Terre sera affectée.,0.5067015260983428,0.2631578947368421
+0.0,clean,9.9,whisper_cpp_small_q5_1,False,9212787143273761793.wav,"Un plat au curry peut être solide ou liquide selon la quant
+ité de sauce qu'il contient.",fr,2464.136899998266,"Un plat au curry peut être « solide » ou « liquide », selon la quantité de sauce qu'il contient.",0.24890271717154203,0.11764705882352941
+0.0,low_volume,9.9,whisper_cpp_small_q5_1,False,9212787143273761793.wav,"Un plat au curry peut être solide ou liquide selon la quant
+ité de sauce qu'il contient.",fr,2449.5865999997477,"Un plat au curry peut être « solide » ou « liquide », selon la quantité de sauce qu'il contient.",0.2474329898989644,0.11764705882352941
+0.05714285714285714,noise_10db,9.9,whisper_cpp_small_q5_1,False,9212787143273761793.wav,"Un plat occurie peut être solide ou liquide, selon la quant
+ité de sauce qu'il contient.",fr,2470.8473999999114,"Un plat au curry peut être « solide » ou « liquide », selon la quantité de sauce qu'il contient.",0.2495805454545365,0.23529411764705882
+0.0,fast_1_15x,8.6086875,whisper_cpp_small_q5_1,False,9212787143273761793.wav,"Un plat au curry peut être solide ou liquide selon la quant
+ité de sauce qu'il contient.",fr,2498.707900002046,"Un plat au curry peut être « solide » ou « liquide », selon la quantité de sauce qu'il contient.",0.29025422284198904,0.11764705882352941
+0.0,clean,4.14,whisper_cpp_small_q5_1,True,3920926992201662587.wav,"Cela ne me semblait pas logique, ce n'était certainement
+ pas juste.",fr,2474.291300000914,Cela ne me semblait pas logique ; ce n'était certainement pas juste.,0.5976549033818633,0.0
+0.0,low_volume,4.14,whisper_cpp_small_q5_1,True,3920926992201662587.wav,"Cela ne me semblait pas logique, ce n'était certainement
+ pas juste.",fr,2431.306999998924,Cela ne me semblait pas logique ; ce n'était certainement pas juste.,0.5872722222219623,0.0
+0.4074074074074074,noise_10db,4.14,whisper_cpp_small_q5_1,False,3920926992201662587.wav,"Ce vin ne me semblait pas logique, c'est une petite sérén
+ance en juste.",fr,2501.304400000663,Cela ne me semblait pas logique ; ce n'était certainement pas juste.,0.6041798067634452,0.75
+0.0,fast_1_15x,3.6,whisper_cpp_small_q5_1,True,3920926992201662587.wav,"Cela ne me semblait pas logique, ce n'était certainement
+ pas juste.",fr,2441.315600000962,Cela ne me semblait pas logique ; ce n'était certainement pas juste.,0.6781432222224895,0.0
+0.01818181818181818,clean,7.98,whisper_cpp_small_q5_1,False,12825999561010912089.wav,"Les dépenses de guerre de l'impérialisme américain dans la
+ conquête des Philippines ont été payées par le peuple
+ Philippin de lui-même.",fr,2524.1936999991594,Les dépenses de guerre de l'impérialisme américain dans la conquête des Philippines ont été payées par le peuple philippin lui-même.,0.31631499999989465,0.045454545454545456
+0.01818181818181818,low_volume,7.98,whisper_cpp_small_q5_1,False,12825999561010912089.wav,"Les dépenses de guerre de l'impérialisme américain dans la
+ conquête des Philippines ont été payées par le peuple
+ Philippin de lui-même.",fr,2565.2068000017607,Les dépenses de guerre de l'impérialisme américain dans la conquête des Philippines ont été payées par le peuple philippin lui-même.,0.32145448621575945,0.045454545454545456
+0.2636363636363636,noise_10db,7.98,whisper_cpp_small_q5_1,False,12825999561010912089.wav,"Les Défenses de guerre de l'impérialisme américain dans la
+ conquête des filles Pines
+ étaient payées par le peuple qui les prendait non plus.",fr,2565.5258000006143,Les dépenses de guerre de l'impérialisme américain dans la conquête des Philippines ont été payées par le peuple philippin lui-même.,0.32149446115295915,0.4090909090909091
+0.01818181818181818,fast_1_15x,6.939125,whisper_cpp_small_q5_1,False,12825999561010912089.wav,"Les dépenses de guerre de l'impérialisme américain dans la
+ conquête des Philippines
+ ont été payées par le peuple Philippin de lui-même.",fr,2590.1119000009203,Les dépenses de guerre de l'impérialisme américain dans la conquête des Philippines ont été payées par le peuple philippin lui-même.,0.37326203231688726,0.045454545454545456
+0.07608695652173914,clean,10.38,whisper_cpp_small_q5_1,False,475129543623066238.wav,"Bien que trois personnes n'étaient présentes dans la maison
+ quand la voiture l'a percuté,
+ aucune n'a été blessée.",fr,2542.5782999991497,"Bien que trois personnes aient été présentes dans la maison quand la voiture l'a percutée, aucune n'a été blessée.",0.24494973988431112,0.14285714285714285
+0.09782608695652174,low_volume,10.38,whisper_cpp_small_q5_1,False,475129543623066238.wav,"Bien que trois personnes n'étaient présentes dans la maison
+ quand la voiture la percutait,
+ aucune n'a été blessée.",fr,2479.5839999969758,"Bien que trois personnes aient été présentes dans la maison quand la voiture l'a percutée, aucune n'a été blessée.",0.23888092485519996,0.23809523809523808
+0.15217391304347827,noise_10db,10.38,whisper_cpp_small_q5_1,False,475129543623066238.wav,"Bien que trois personnes n'étaient présentes dans la maison
+ quand la voiture l'a faire quitter, aucune n'a été blessée.",fr,2511.114400000224,"Bien que trois personnes aient été présentes dans la maison quand la voiture l'a percutée, aucune n'a été blessée.",0.24191853564549365,0.19047619047619047
+0.07608695652173914,fast_1_15x,9.0260625,whisper_cpp_small_q5_1,False,475129543623066238.wav,"Bien que trois personnes n'étaient présentes dans la maison
+ quand la voiture l'a percuté,
+ aucune n'a été blessée.",fr,2494.0453999988677,"Bien que trois personnes aient été présentes dans la maison quand la voiture l'a percutée, aucune n'a été blessée.",0.276315990499608,0.14285714285714285
+0.04477611940298507,clean,8.94,whisper_cpp_small_q5_1,False,10998385404014074843.wav,"Il y avertit que personne ne peut garantir que toute action
+ en Irak a ce stade
+ métraphin à la guerre sectaire, à la violence croissante ou
+ au glissement vers le chaos.",fr,2627.963399998407,"Il avertit que personne ne peut garantir que toute action en Irak à ce stade mettra fin à la guerre sectaire, à la violence croissante ou au glissement vers le chaos.",0.29395563758371446,0.12903225806451613
+0.04477611940298507,low_volume,8.94,whisper_cpp_small_q5_1,False,10998385404014074843.wav,"Il y avertit que personne ne peut garantir que toute action
+ en Irak a ce stade
+ métraphin à la guerre sectaire, à la violence croissante ou
+ au glissement vers le chaos.",fr,2590.161899999657,"Il avertit que personne ne peut garantir que toute action en Irak à ce stade mettra fin à la guerre sectaire, à la violence croissante ou au glissement vers le chaos.",0.2897272818791563,0.12903225806451613
+0.22388059701492538,noise_10db,8.94,whisper_cpp_small_q5_1,False,10998385404014074843.wav,"Il y a bien que personne ne peut garantir que toute action
+ n'est rien qu'à ce stade,
+ mais trafant la guerre s'éteint, la violence croissante, ou
+ au guissement vers le cas où.",fr,2673.97009999695,"Il avertit que personne ne peut garantir que toute action en Irak à ce stade mettra fin à la guerre sectaire, à la violence croissante ou au glissement vers le chaos.",0.29910180089451344,0.4838709677419355
+0.05970149253731343,fast_1_15x,7.7739375,whisper_cpp_small_q5_1,False,10998385404014074843.wav,"Il avertit que personne ne peut garantir que toute action
+ en Irak aie sous-stade mes trafins à la guerre sectaire, à
+ la violence croissante ou au glissement vers le chaos.",fr,2663.067299999966,"Il avertit que personne ne peut garantir que toute action en Irak à ce stade mettra fin à la guerre sectaire, à la violence croissante ou au glissement vers le chaos.",0.342563507874866,0.12903225806451613
+0.05063291139240506,clean,6.42,whisper_cpp_small_q5_1,False,4058888282216101530.wav,"L'argent peut être échangé à la seule banque des îles situ
+ées à Stalier, en face du magasin FIC West.",fr,2511.3920999974653,"L'argent peut être échangé à la seule banque des îles située à Stanley, en face du magasin FIC West.",0.3911825700930631,0.15
+0.05063291139240506,low_volume,6.42,whisper_cpp_small_q5_1,False,4058888282216101530.wav,"L'argent peut être échangé à la seule banque des îles situ
+ées à Stalier, en face du magasin FIC West.",fr,2556.7018000001553,"L'argent peut être échangé à la seule banque des îles située à Stanley, en face du magasin FIC West.",0.3982401557632641,0.15
+0.1518987341772152,noise_10db,6.42,whisper_cpp_small_q5_1,False,4058888282216101530.wav,"L'argent peut être échangé à la seule banque des instituts
+ installés en face du magasin FEC West.",fr,2513.679500003491,"L'argent peut être échangé à la seule banque des îles située à Stanley, en face du magasin FIC West.",0.3915388629288927,0.25
+0.05063291139240506,fast_1_15x,5.582625,whisper_cpp_small_q5_1,False,4058888282216101530.wav,"L'argent peut être échangé à la seule banque des îles situ
+ées à Stalé, en face du magasin FIC West.",fr,2559.9881000016467,"L'argent peut être échangé à la seule banque des îles située à Stanley, en face du magasin FIC West.",0.45856350731092393,0.15
+0.04065040650406504,clean,7.26,whisper_cpp_small_q5_1,False,18207654776144412982.wav,"Nach den Erlebnissen der Schrecken und Kräueltaten im Er
+sten Weltkrieg wollten die Nationen
+ eine weitere solche Situation in der Zukunft vermeiden.",de,2592.6837000006344,Nach dem Erlebnis der Schrecken und Gräueltaten im Ersten Weltkrieg wollten die Nationen eine weitere solche Situation in der Zukunft vermeiden.,0.35711896694223616,0.23809523809523808
+0.04065040650406504,low_volume,7.26,whisper_cpp_small_q5_1,False,18207654776144412982.wav,"Nach den Erlebnissen der Schrecken und Kräueltaten im Er
+sten Weltkrieg wollten die Nationen
+ eine weitere solche Situation in der Zukunft vermeiden.",de,2525.0178999995114,Nach dem Erlebnis der Schrecken und Gräueltaten im Ersten Weltkrieg wollten die Nationen eine weitere solche Situation in der Zukunft vermeiden.,0.34779860881535973,0.23809523809523808
+0.14634146341463414,noise_10db,7.26,whisper_cpp_small_q5_1,False,18207654776144412982.wav,"Nach den Erlebnissen der Schreckung im Kreueltat im ersten
+ Weltkrieg wollte die Nation
+ eine weitere solche Situation in Zukunft vermeiden.",de,2526.185599999735,Nach dem Erlebnis der Schrecken und Gräueltaten im Ersten Weltkrieg wollten die Nationen eine weitere solche Situation in der Zukunft vermeiden.,0.3479594490357762,0.38095238095238093
+0.04065040650406504,fast_1_15x,6.3130625,whisper_cpp_small_q5_1,False,18207654776144412982.wav,"Nach den Erlebnissen der Schrecken und Kräueltaten im Er
+sten Weltkrieg wollten die Nationen
+ eine weitere solche Situation in der Zukunft vermeiden.",de,2535.7951000005414,Nach dem Erlebnis der Schrecken und Gräueltaten im Ersten Weltkrieg wollten die Nationen eine weitere solche Situation in der Zukunft vermeiden.,0.40167432209019654,0.23809523809523808
+0.008620689655172414,clean,8.76,whisper_cpp_small_q5_1,False,15605906788798742889.wav,"Die Portugiesen zerstörten sie und bauten sie unter den
+ Namen Casa Branca wieder auf,
+ nur um sie nach einem Erdbeben im Jahr 1755 aufzugeben.",de,2614.1416000027675,"Die Portugiesen zerstörten sie und bauten sie unter dem Namen Casa Branca wieder auf, nur um sie nach einem Erdbeben im Jahr 1755 aufzugeben.",0.29841799086789583,0.041666666666666664
+0.034482758620689655,low_volume,8.76,whisper_cpp_small_q5_1,False,15605906788798742889.wav,"Die Portugiesen zerstörten sie und bauten sie unter den
+ Namen Casa Branca wieder auf, um sie nach einem Erdbeben im
+ Jahr 1755 aufzugeben.",de,2547.621000001527,"Die Portugiesen zerstörten sie und bauten sie unter dem Namen Casa Branca wieder auf, nur um sie nach einem Erdbeben im Jahr 1755 aufzugeben.",0.2908243150686675,0.08333333333333333
+0.16379310344827586,noise_10db,8.76,whisper_cpp_small_q5_1,False,15605906788798742889.wav,"Die Portugiesen zersperrten sie im Norden unter den Namen
+ Casabranca wieder auf, um sie nach einem Erdbeer im Jahr 17
+55 aufzugeben.",de,2575.543099999777,"Die Portugiesen zerstörten sie und bauten sie unter dem Namen Casa Branca wieder auf, nur um sie nach einem Erdbeben im Jahr 1755 aufzugeben.",0.29401176940636725,0.4583333333333333
+0.07758620689655173,fast_1_15x,7.617375,whisper_cpp_small_q5_1,False,15605906788798742889.wav,"Die Portugiesen zerstörten sie und behorden sie unter den
+ Namen Casa Branca wieder auf,
+ um sie nach einem Erdbeben im Jahr 1755 aufzugeben.",de,2590.4995999990206,"Die Portugiesen zerstörten sie und bauten sie unter dem Namen Casa Branca wieder auf, nur um sie nach einem Erdbeben im Jahr 1755 aufzugeben.",0.340077730189077,0.125
+0.022222222222222223,clean,4.86,whisper_cpp_small_q5_1,False,288964152477235644.wav,US-Präsident George W. Bush begrüßt die Bekanntgabe.,de,2395.889499999612,U.S.-Präsident George W. Bush begrüßte die Bekanntgabe.,0.49298137860074315,0.3333333333333333
+0.022222222222222223,low_volume,4.86,whisper_cpp_small_q5_1,False,288964152477235644.wav,US-Präsident George W. Bush begrüßt die Bekanntgabe.,de,2465.801999998803,U.S.-Präsident George W. Bush begrüßte die Bekanntgabe.,0.5073666666664203,0.3333333333333333
+0.2222222222222222,noise_10db,4.86,whisper_cpp_small_q5_1,False,288964152477235644.wav,Westpräsident George W. Bush bequeste die Bekannte.,de,2671.0916999982146,U.S.-Präsident George W. Bush begrüßte die Bekanntgabe.,0.549607345678645,0.5555555555555556
+0.022222222222222223,fast_1_15x,4.2260625,whisper_cpp_small_q5_1,False,288964152477235644.wav,US-Präsident George W. Bush begrüßt die Bekanntgabe.,de,2453.642700002092,U.S.-Präsident George W. Bush begrüßte die Bekanntgabe.,0.5805978259910004,0.3333333333333333
+0.008403361344537815,clean,7.44,whisper_cpp_small_q5_1,False,12898282519703898066.wav,"Naturwissenschaftler und Philosophen konzentrieren sich auf
+ klassische Texte und dabei besonders auf die Bibel in late
+inischer Sprache.",de,2551.1490999997477,Naturwissenschaftler und Philosophen konzentrierten sich auf klassische Texte und dabei besonders auf die Bibel in lateinischer Sprache.,0.34289638440856823,0.17647058823529413
+0.008403361344537815,low_volume,7.44,whisper_cpp_small_q5_1,False,12898282519703898066.wav,"Naturwissenschaftler und Philosophen konzentrieren sich auf
+ klassische Texte und dabei besonders auf die Bibel in late
+inischer Sprache.",de,2488.384499996755,Naturwissenschaftler und Philosophen konzentrierten sich auf klassische Texte und dabei besonders auf die Bibel in lateinischer Sprache.,0.33446028225762836,0.17647058823529413
+0.1092436974789916,noise_10db,7.44,whisper_cpp_small_q5_1,False,12898282519703898066.wav,"Naturwissenschaftler und Philosophen konzentrieren sich auf
+ klasse Texte und dabei besonders auf die Bibel im Dateien
+ versprach.",de,2493.299299996579,Naturwissenschaftler und Philosophen konzentrierten sich auf klassische Texte und dabei besonders auf die Bibel in lateinischer Sprache.,0.3351208736554542,0.29411764705882354
+0.04201680672268908,fast_1_15x,6.4695625,whisper_cpp_small_q5_1,False,12898282519703898066.wav,"Naturwissenschaftler und Philosophen konzentrieren sich auf
+ klassische Texte und dabei besonders auf die Bibel in der
+ teilischer Sprache.",de,2508.745800001634,Naturwissenschaftler und Philosophen konzentrierten sich auf klassische Texte und dabei besonders auf die Bibel in lateinischer Sprache.,0.38777673142529095,0.17647058823529413
+0.02666666666666667,clean,8.28,whisper_cpp_small_q5_1,False,18282264406951735761.wav,"Auf dem Friedhof gibt es über einigen Gräber interessante
+ Marmoskulpturen von Tauben.",de,2444.3251000011514,Auf dem Friedhof gibt es über einigen Gräbern interessante Marmorskulpturen von Tauben.,0.2952083454107671,0.16666666666666666
+0.02666666666666667,low_volume,8.28,whisper_cpp_small_q5_1,False,18282264406951735761.wav,"Auf dem Friedhof gibt es über einigen Gräber interessante
+ Marmoskulpturen von Tauben.",de,2469.8820000012347,Auf dem Friedhof gibt es über einigen Gräbern interessante Marmorskulpturen von Tauben.,0.29829492753638104,0.16666666666666666
+0.17333333333333334,noise_10db,8.28,whisper_cpp_small_q5_1,False,18282264406951735761.wav,"Auf dem Friedhof gibt es über einigen Dreh bei interess
+anten Marmos-Gesprüfen von Tauben.",de,2504.065900000569,Auf dem Friedhof gibt es über einigen Gräbern interessante Marmorskulpturen von Tauben.,0.30242341787446486,0.5
+0.05333333333333334,fast_1_15x,7.2,whisper_cpp_small_q5_1,False,18282264406951735761.wav,"Auf dem Friedhof gibt es über einigen Gräber interessante M
+amoskulturen von Tauben.",de,2471.7194000004383,Auf dem Friedhof gibt es über einigen Gräbern interessante Marmorskulpturen von Tauben.,0.343294361111172,0.25
+0.0,clean,11.76,whisper_cpp_small_q5_1,False,6540480103745453992.wav,"In vielen Fällen kann die Teilnahme in einem Auslandsüberbr
+ückungsjahrprogramm ihre
+ Chancen auf eine Hochschulausbildung in ihrem Heimatland
+ tatsächlich verbessern.",de,2622.6978000013332,"In vielen Fällen, kann die Teilnahme in einem Auslands-Überbrückungsjahr-Programm Ihre Chancen auf eine Hochschulausbildung in Ihrem Heimatland tatsächlich verbessern.",0.22301852040827663,0.14285714285714285
+0.0,low_volume,11.76,whisper_cpp_small_q5_1,False,6540480103745453992.wav,"In vielen Fällen kann die Teilnahme in einem Auslandsüberbr
+ückungsjahrprogramm ihre
+ Chancen auf eine Hochschulausbildung in ihrem Heimatland
+ tatsächlich verbessern.",de,2594.7082999991835,"In vielen Fällen, kann die Teilnahme in einem Auslands-Überbrückungsjahr-Programm Ihre Chancen auf eine Hochschulausbildung in Ihrem Heimatland tatsächlich verbessern.",0.22063846088428432,0.14285714285714285
+0.2689655172413793,noise_10db,11.76,whisper_cpp_small_q5_1,False,6540480103745453992.wav,"In vielen Fällen kann die Teilnahme in einem Ausland über R
+öhrungsjahr vom Raum ihre
+ Chance haben auf einen Hochschul auszusetzen in ihrem He
+imatland.
+ Das wäre richtig zu erscheinen.",de,2647.9899999976624,"In vielen Fällen, kann die Teilnahme in einem Auslands-Überbrückungsjahr-Programm Ihre Chancen auf eine Hochschulausbildung in Ihrem Heimatland tatsächlich verbessern.",0.22516921768687606,0.8571428571428571
+0.0,fast_1_15x,10.2260625,whisper_cpp_small_q5_1,False,6540480103745453992.wav,"In vielen Fällen kann die Teilnahme in einem Auslandsüberbr
+ückungsjahrprogramm ihre
+ Chancen auf eine Hochschulausbildung in ihrem Heimatland
+ tatsächlich verbessern.",de,2669.1414000015357,"In vielen Fällen, kann die Teilnahme in einem Auslands-Überbrückungsjahr-Programm Ihre Chancen auf eine Hochschulausbildung in Ihrem Heimatland tatsächlich verbessern.",0.2610136012763012,0.14285714285714285
+0.03,clean,8.16,whisper_cpp_small_q5_1,False,4616468964486999290.wav,"Die NHK berichtete zudem, dass das Atomkraftwerk von Kashiw
+asaki Kariva in der Präfektur Niigata normalen Betrieb war.",de,2627.1024999987276,"Die NHK berichtete zudem, dass das Atomkraftwerk von Kashiwazaki Kariwa in der Präfektur Niigata normal in Betrieb war.",0.3219488357841578,0.2777777777777778
+0.03,low_volume,8.16,whisper_cpp_small_q5_1,False,4616468964486999290.wav,"Die NHK berichtete zudem, dass das Atomkraftwerk von Kashiw
+asaki Kariva in der Präfektur Niigata normalen Betrieb war.",de,2564.1762999985076,"Die NHK berichtete zudem, dass das Atomkraftwerk von Kashiwazaki Kariwa in der Präfektur Niigata normal in Betrieb war.",0.3142372916664838,0.2777777777777778
+0.2,noise_10db,8.16,whisper_cpp_small_q5_1,False,4616468964486999290.wav,"Die NHK berichtet zu dem, dass das Atomkraftwerk von Kajiw
+azaki Kajiwa in der Präthiktoin
+ Gartvermalen getriebert.",de,2603.1837000009546,"Die NHK berichtete zudem, dass das Atomkraftwerk von Kashiwazaki Kariwa in der Präfektur Niigata normal in Betrieb war.",0.31901761029423464,0.6666666666666666
+0.08,fast_1_15x,7.095625,whisper_cpp_small_q5_1,False,4616468964486999290.wav,"Die NHK berichtete zudem, dass das Atomkraftwerk von Kashiw
+asaki Kariva in der Präfektur nie
+ gar der normalen Betrieb war.",de,2563.818899998296,"Die NHK berichtete zudem, dass das Atomkraftwerk von Kashiwazaki Kariwa in der Präfektur Niigata normal in Betrieb war.",0.3613239002904319,0.3888888888888889
+0.1597222222222222,clean,10.8,whisper_cpp_small_q5_1,False,5805796201296372774.wav,"Der Mexikaner Arli Velazquez kam beim Super Gider Herrens
+itzend als 15. ins Ziel.
+ Der Neuseelender Adam Hall kam beim Super Gider Herren steh
+end als 9. ins Ziel.",de,2635.023300001194,Der Mexikaner Arly Velasquez kam beim Super-G der Herren (sitzend) als fünfzehnter ins Ziel. Der Neuseeländer Adam Hall kam beim Super-G der Herren (stehend) als neunter ins Ziel.,0.24398363888899943,0.43333333333333335
+0.18055555555555555,low_volume,10.8,whisper_cpp_small_q5_1,False,5805796201296372774.wav,"Der Mexikaner Arli Velazquez kam beim Super Gider Herrens
+itzend als 15. ins Ziel.
+ Der Neuseelender Adam Hall kam beim Super Gider Herrensitz
+end als 9. ins Ziel.",de,2628.960800000641,Der Mexikaner Arly Velasquez kam beim Super-G der Herren (sitzend) als fünfzehnter ins Ziel. Der Neuseeländer Adam Hall kam beim Super-G der Herren (stehend) als neunter ins Ziel.,0.24342229629635564,0.43333333333333335
+0.22916666666666666,noise_10db,10.8,whisper_cpp_small_q5_1,False,5805796201296372774.wav,"Der Mexikaner Ali Velaste kann beim Superdieder Herren wüt
+end als 15er ins Ziel.
+ Der Neuseelender Adam Hall kann beim Superdieder Herren ste
+hend als 9er ins Ziel.",de,2669.931999997061,Der Mexikaner Arly Velasquez kam beim Super-G der Herren (sitzend) als fünfzehnter ins Ziel. Der Neuseeländer Adam Hall kam beim Super-G der Herren (stehend) als neunter ins Ziel.,0.2472159259256538,0.5666666666666667
+0.18055555555555555,fast_1_15x,9.3913125,whisper_cpp_small_q5_1,False,5805796201296372774.wav,"Der Mexikaner Arli Velazquez kam beim Super Gider Herrens
+itzend als 15. ins Ziel.
+ Der Neuseelender Adam Hall kam beim Super Gider Herrensitz
+end als 9. ins Ziel.",de,2623.931599999196,Der Mexikaner Arly Velasquez kam beim Super-G der Herren (sitzend) als fünfzehnter ins Ziel. Der Neuseeländer Adam Hall kam beim Super-G der Herren (stehend) als neunter ins Ziel.,0.27939988153936907,0.43333333333333335
+0.0,clean,5.76,whisper_cpp_small_q5_1,True,7379644843237828894.wav,"Obwohl sich drei Menschen im Haus befanden, als das Auto
+ hineinraste, wurde keiner von ihnen verletzt.",de,2497.813899997709,"Obwohl sich drei Menschen im Haus befanden, als das Auto hineinraste, wurde keiner von ihnen verletzt.",0.43364824652738004,0.0
+0.0,low_volume,5.76,whisper_cpp_small_q5_1,True,7379644843237828894.wav,"Obwohl sich drei Menschen im Haus befanden, als das Auto
+ hineinraste, wurde keiner von ihnen verletzt.",de,2466.153999997914,"Obwohl sich drei Menschen im Haus befanden, als das Auto hineinraste, wurde keiner von ihnen verletzt.",0.42815173611074897,0.0
+0.03571428571428571,noise_10db,5.76,whisper_cpp_small_q5_1,False,7379644843237828894.wav,"obwohl sich drei Menschen im Haus befanden, als das Auto
+ hineinrascht wurde, keiner von ihnen verletzt.",de,2503.6518999986583,"Obwohl sich drei Menschen im Haus befanden, als das Auto hineinraste, wurde keiner von ihnen verletzt.",0.43466178819421153,0.0625
+0.0,fast_1_15x,5.0086875,whisper_cpp_small_q5_1,True,7379644843237828894.wav,"Obwohl sich drei Menschen im Haus befanden, als das Auto
+ hineinraste, wurde keiner von ihnen verletzt.",de,2455.316199997469,"Obwohl sich drei Menschen im Haus befanden, als das Auto hineinraste, wurde keiner von ihnen verletzt.",0.4902114975225484,0.0
+0.06944444444444445,clean,9.0,whisper_cpp_small_q5_1,False,10249467818655484680.wav,"Der Amazonas ist auch der breiteste Fluss der Erde,
+ teilweise bis zu 6 Meilen breit.",de,2497.422099997493,"Der Amazonas ist auch der breiteste Fluss der Erde, teilweise bis zu sechs Meilen breit.",0.2774913444441659,0.06666666666666667
+0.06944444444444445,low_volume,9.0,whisper_cpp_small_q5_1,False,10249467818655484680.wav,"Der Amazonas ist auch der breiteste Fluss der Erde,
+ teilweise bis zu 6 Meilen breit.",de,2540.445799997542,"Der Amazonas ist auch der breiteste Fluss der Erde, teilweise bis zu sechs Meilen breit.",0.28227175555528244,0.06666666666666667
+0.1388888888888889,noise_10db,9.0,whisper_cpp_small_q5_1,False,10249467818655484680.wav,"Der Amazonas ist auch der bereiteste Fluss der Erde,
+ teilweise bis zu 6 Mal breit.",de,2454.8523999983445,"Der Amazonas ist auch der breiteste Fluss der Erde, teilweise bis zu sechs Meilen breit.",0.27276137777759385,0.2
+0.041666666666666664,fast_1_15x,7.8260625,whisper_cpp_small_q5_1,False,10249467818655484680.wav,"Der Amazonas ist auch der bereiteste Fluss der Erde,
+ teilweise bis zu sechs Malen breit.",de,2460.830199997872,"Der Amazonas ist auch der breiteste Fluss der Erde, teilweise bis zu sechs Meilen breit.",0.3144403970704134,0.13333333333333333
+0.0,clean,4.2,whisper_cpp_small_q5_1,True,7090415861364614454.wav,él dijo que construyó un timbre wifi,es,2353.016299999581,Él dijo que construyó un timbre wifi.,0.5602419761903764,0.0
+0.0,low_volume,4.2,whisper_cpp_small_q5_1,True,7090415861364614454.wav,él dijo que construyó un timbre wifi,es,2282.336899999791,Él dijo que construyó un timbre wifi.,0.5434135476189978,0.0
+0.06666666666666667,noise_10db,4.2,whisper_cpp_small_q5_1,False,7090415861364614454.wav,el hijo que construyó un timbre wifi,es,2438.9854000000923,Él dijo que construyó un timbre wifi.,0.5807108095238315,0.2857142857142857
+0.0,fast_1_15x,3.6521875,whisper_cpp_small_q5_1,True,7090415861364614454.wav,Él dijo que construyó un timbre wifi.,es,2430.369300000166,Él dijo que construyó un timbre wifi.,0.6654557850603688,0.0
+0.0,clean,8.82,whisper_cpp_small_q5_1,True,6898474509343206608.wav,"El satélite en el espacio recibe la llamada y luego la
+ refleja de vuelta casi de forma instantánea.",es,2453.19709999967,"El satélite en el espacio recibe la llamada y, luego, la refleja de vuelta casi de forma instantánea.",0.2781402607709377,0.0
+0.0,low_volume,8.82,whisper_cpp_small_q5_1,True,6898474509343206608.wav,"El satélite en el espacio recibe la llamada y luego la
+ refleja de vuelta casi de forma instantánea.",es,2501.660700003413,"El satélite en el espacio recibe la llamada y, luego, la refleja de vuelta casi de forma instantánea.",0.28363500000038694,0.0
+0.012345679012345678,noise_10db,8.82,whisper_cpp_small_q5_1,False,6898474509343206608.wav,"El satélite en el espacio recibe la llamada y luego la
+ refleja de vuelta casi de forma instantanea.",es,2463.026699999318,"El satélite en el espacio recibe la llamada y, luego, la refleja de vuelta casi de forma instantánea.",0.27925472789107914,0.05555555555555555
+0.0,fast_1_15x,7.6695625,whisper_cpp_small_q5_1,True,6898474509343206608.wav,"El satélite en el espacio recibe la llamada y luego la
+ refleja de vuelta casi de forma instantánea.",es,2419.678299997031,"El satélite en el espacio recibe la llamada y, luego, la refleja de vuelta casi de forma instantánea.",0.31549104658799393,0.0
+0.0,clean,6.48,whisper_cpp_small_q5_1,True,9072175803483717623.wav,"Los primeros casos de la enfermedad durante esta temporada
+ se registraron hacia fines de julio.",es,2434.396699998615,Los primeros casos de la enfermedad durante esta temporada se registraron hacia fines de julio.,0.375678503086206,0.0
+0.0,low_volume,6.48,whisper_cpp_small_q5_1,True,9072175803483717623.wav,"Los primeros casos de la enfermedad durante esta temporada
+ se registraron hacia fines de julio.",es,2414.7023999976227,Los primeros casos de la enfermedad durante esta temporada se registraron hacia fines de julio.,0.37263925925889235,0.0
+0.0,noise_10db,6.48,whisper_cpp_small_q5_1,True,9072175803483717623.wav,"Los primeros casos de la enfermedad durante esta temporada
+ se registraron hacia fines de julio.",es,2487.3302999985754,Los primeros casos de la enfermedad durante esta temporada se registraron hacia fines de julio.,0.38384726851829865,0.0
+0.0,fast_1_15x,5.6348125,whisper_cpp_small_q5_1,True,9072175803483717623.wav,"Los primeros casos de la enfermedad durante esta temporada
+ se registraron hacia fines de julio.",es,2415.2353999998013,Los primeros casos de la enfermedad durante esta temporada se registraron hacia fines de julio.,0.42862746542139624,0.0
+0.029411764705882353,clean,7.08,whisper_cpp_small_q5_1,False,8515974555592166175.wav,"La policía manifestó que el cadáver parecía haber estado
+ así alrededor de un día.",es,2367.7951999998186,La policía manifestó que el cadáver parecía haber estado allí alrededor de un día.,0.33443435028246027,0.07142857142857142
+0.029411764705882353,low_volume,7.08,whisper_cpp_small_q5_1,False,8515974555592166175.wav,"La policía manifestó que el cadáver parecía haber estado
+ así alrededor de un día.",es,2468.5691999984556,La policía manifestó que el cadáver parecía haber estado allí alrededor de un día.,0.34866796610147677,0.07142857142857142
+0.029411764705882353,noise_10db,7.08,whisper_cpp_small_q5_1,False,8515974555592166175.wav,"La policía manifestó que el cadáver parecía haber estado
+ así alrededor de un día.",es,2462.344200001098,La policía manifestó que el cadáver parecía haber estado allí alrededor de un día.,0.3477887288137144,0.07142857142857142
+0.029411764705882353,fast_1_15x,6.1565,whisper_cpp_small_q5_1,False,8515974555592166175.wav,"La policía manifestó que el cadáver parecía haber estado
+ así alrededor de un día.",es,2409.343199997238,La policía manifestó que el cadáver parecía haber estado allí alrededor de un día.,0.3913495005274487,0.07142857142857142
+0.14545454545454545,clean,5.7,whisper_cpp_small_q5_1,False,17828064149002081679.wav,"Después de eso, la Cacín pasó al frente para cantar los Baj
+ans.",es,2406.9899000023725,"Después de eso, Lakkha Singh pasó al frente para cantar los bhajans.",0.4222789298249776,0.3333333333333333
+0.14545454545454545,low_volume,5.7,whisper_cpp_small_q5_1,False,17828064149002081679.wav,"Después de eso, la Cacín pasó al frente para cantar los Baj
+ans.",es,2403.106999998272,"Después de eso, Lakkha Singh pasó al frente para cantar los bhajans.",0.42159771929794243,0.3333333333333333
+0.14545454545454545,noise_10db,5.7,whisper_cpp_small_q5_1,False,17828064149002081679.wav,"Después de eso, la casín pasó al frente para cantarlos baj
+an.",es,2344.3325999978697,"Después de eso, Lakkha Singh pasó al frente para cantar los bhajans.",0.4112864210522578,0.4166666666666667
+0.12727272727272726,fast_1_15x,4.9565,whisper_cpp_small_q5_1,False,17828064149002081679.wav,"Después de eso, la casín pasó al frente para cantar los Baj
+ans.",es,2370.1313999990816,"Después de eso, Lakkha Singh pasó al frente para cantar los bhajans.",0.4781865025721944,0.3333333333333333
+0.0,clean,5.76,whisper_cpp_small_q5_1,True,11868566924303017851.wav,"Merece la pena dedicar media hora a dar un paseo por el
+ fascinante pueblo.",es,2440.7570000003034,Merece la pena dedicar media hora a dar un paseo por el fascinante pueblo.,0.4237425347222749,0.0
+0.0,low_volume,5.76,whisper_cpp_small_q5_1,True,11868566924303017851.wav,"Merece la pena dedicar media hora a dar un paseo por el
+ fascinante pueblo.",es,2443.531400000211,Merece la pena dedicar media hora a dar un paseo por el fascinante pueblo.,0.4242242013889255,0.0
+0.0,noise_10db,5.76,whisper_cpp_small_q5_1,True,11868566924303017851.wav,"Merece la pena dedicar media hora a dar un paseo por el
+ fascinante pueblo.",es,2373.260599997593,Merece la pena dedicar media hora a dar un paseo por el fascinante pueblo.,0.4120244097218044,0.0
+0.0,fast_1_15x,5.0086875,whisper_cpp_small_q5_1,True,11868566924303017851.wav,"Merece la pena dedicar media hora a dar un paseo por el
+ fascinante pueblo.",es,2407.9182999994373,Merece la pena dedicar media hora a dar un paseo por el fascinante pueblo.,0.4807483597248655,0.0
+0.0,clean,8.34,whisper_cpp_small_q5_1,False,291343535012559954.wav,"Estas cuestiones se han vuelto disciplinas separadas enfoc
+adas en ofrecer soluciones a problemas de la vida real.",es,2438.7736999997287,"Estas cuestiones se han vuelto disciplinas separadas, enfocadas en ofrecer soluciones a problemas de la vida real.",0.29241890887286914,0.11764705882352941
+0.0,low_volume,8.34,whisper_cpp_small_q5_1,False,291343535012559954.wav,"Estas cuestiones se han vuelto disciplinas separadas enfoc
+adas en ofrecer soluciones a problemas de la vida real.",es,2429.3098999987706,"Estas cuestiones se han vuelto disciplinas separadas, enfocadas en ofrecer soluciones a problemas de la vida real.",0.2912841606713154,0.11764705882352941
+0.0,noise_10db,8.34,whisper_cpp_small_q5_1,False,291343535012559954.wav,"Estas cuestiones se han vuelto disciplinas separadas enfoc
+adas en ofrecer soluciones a problemas
+ de la vida real.",es,2456.9200000005367,"Estas cuestiones se han vuelto disciplinas separadas, enfocadas en ofrecer soluciones a problemas de la vida real.",0.29459472422068783,0.11764705882352941
+0.0,fast_1_15x,7.2521875,whisper_cpp_small_q5_1,False,291343535012559954.wav,"Estas cuestiones se han vuelto disciplinas separadas enfoc
+adas en ofrecer soluciones a problemas de la vida real.",es,2470.7505000005767,"Estas cuestiones se han vuelto disciplinas separadas, enfocadas en ofrecer soluciones a problemas de la vida real.",0.34069037790329837,0.11764705882352941
+0.0,clean,11.4,whisper_cpp_small_q5_1,True,12028938552784024884.wav,"La ubicación de las islas de África Oriental es frente a la
+ costa este de ese continente,
+ en el Océano Índico.",es,2507.003499998973,"La ubicación de las islas de África Oriental es frente a la costa este de ese continente, en el Océano Índico.",0.21991258771920816,0.0
+0.0,low_volume,11.4,whisper_cpp_small_q5_1,True,12028938552784024884.wav,"La ubicación de las islas de África Oriental es frente a la
+ costa este de ese continente,
+ en el Océano Índico.",es,2498.7356000019645,"La ubicación de las islas de África Oriental es frente a la costa este de ese continente, en el Océano Índico.",0.21918733333350565,0.0
+0.0,noise_10db,11.4,whisper_cpp_small_q5_1,True,12028938552784024884.wav,"La ubicación de las islas de África Oriental es frente a la
+ costa este de ese continente,
+ en el Océano Índico.",es,2541.033299999981,"La ubicación de las islas de África Oriental es frente a la costa este de ese continente, en el Océano Índico.",0.22289765789473517,0.0
+0.0,fast_1_15x,9.9130625,whisper_cpp_small_q5_1,True,12028938552784024884.wav,"La ubicación de las islas de África Oriental es frente a la
+ costa este de ese continente, en el océano Índico.",es,2517.8414000001794,"La ubicación de las islas de África Oriental es frente a la costa este de ese continente, en el Océano Índico.",0.25399228543148794,0.0
+0.016666666666666666,clean,11.04,whisper_cpp_small_q5_1,False,5549872575094949695.wav,"Al pasar el tiempo, a medida que la incipiente población se
+ va adaptando al nuevo etorno,
+ comienza a semejarse cada vez menos a la otra población.",es,2541.70239999803,"Al pasar el tiempo, a medida que la incipiente población se va adaptando al nuevo entorno, comienza a asemejarse cada vez menos a la otra población.",0.23022666666648825,0.07692307692307693
+0.016666666666666666,low_volume,11.04,whisper_cpp_small_q5_1,False,5549872575094949695.wav,"Al pasar el tiempo, a medida que la incipiente población se
+ va adaptando al nuevo etorno,
+ comienza a semejarse cada vez menos a la otra población.",es,2509.1247000018484,"Al pasar el tiempo, a medida que la incipiente población se va adaptando al nuevo entorno, comienza a asemejarse cada vez menos a la otra población.",0.2272757880436457,0.07692307692307693
+0.1,noise_10db,11.04,whisper_cpp_small_q5_1,False,5549872575094949695.wav,"Al pasar el tiempo, a medida que el incitiendo población se
+ va acando al nuevo torno,
+ comienza a semejarse cada vez menos a la otra población.",es,2482.0560999978625,"Al pasar el tiempo, a medida que la incipiente población se va adaptando al nuevo entorno, comienza a asemejarse cada vez menos a la otra población.",0.22482392210125568,0.19230769230769232
+0.016666666666666666,fast_1_15x,9.6,whisper_cpp_small_q5_1,False,5549872575094949695.wav,"Al pasar el tiempo, a medida que la incipiente población se
+ va adaptando al nuevo etorno,
+ comienza a semejarse cada vez menos a la otra población.",es,2531.3803999997617,"Al pasar el tiempo, a medida que la incipiente población se va adaptando al nuevo entorno, comienza a asemejarse cada vez menos a la otra población.",0.26368545833330853,0.07692307692307693
+0.011363636363636364,clean,9.06,whisper_cpp_small_q5_1,False,8569303995706128943.wav,"El propio pueblo filipino pagó los gastos de guerras del
+ imperialismo de EEUU en la conquista de Filipinas.",es,2446.8239000016183,El propio pueblo filipino pagó los gastos de guerra del imperialismo de E.E. U.U. en la conquista de Filipinas.,0.27006886313483647,0.23809523809523808
+0.011363636363636364,low_volume,9.06,whisper_cpp_small_q5_1,False,8569303995706128943.wav,"El propio pueblo filipino pagó los gastos de guerras del
+ imperialismo de EEUU en la conquista de Filipinas",es,2479.764099996828,El propio pueblo filipino pagó los gastos de guerra del imperialismo de E.E. U.U. en la conquista de Filipinas.,0.2737046467987669,0.23809523809523808
+0.06818181818181818,noise_10db,9.06,whisper_cpp_small_q5_1,False,8569303995706128943.wav,"El propio pueblo filipino pagó los gastos de guerras del
+ interiorismo de E.E.E.U.U. en la conquista de Filipinas.",es,2501.7835999969975,El propio pueblo filipino pagó los gastos de guerra del imperialismo de E.E. U.U. en la conquista de Filipinas.,0.2761350551873066,0.14285714285714285
+0.011363636363636364,fast_1_15x,7.87825,whisper_cpp_small_q5_1,False,8569303995706128943.wav,"El propio pueblo filipino pagó los gastos de guerras del
+ imperialismo de E.E.U.U. en la conquista de Filipinas.",es,2548.230300002615,El propio pueblo filipino pagó los gastos de guerra del imperialismo de E.E. U.U. en la conquista de Filipinas.,0.32345131215721956,0.047619047619047616
+0.0,clean,5.22,whisper_cpp_small_q5_1,True,15252986718200704764.wav,Президент США Джордж Буш приветствовал это заявление.,ru,2467.0806000031007,Президент США Джордж Буш приветствовал это заявление.,0.4726208045982952,0.0
+0.0,low_volume,5.22,whisper_cpp_small_q5_1,True,15252986718200704764.wav,Президент США Джордж Буш приветствовал это заявление.,ru,2453.4095999988494,Президент США Джордж Буш приветствовал это заявление.,0.4700018390802394,0.0
+0.0,noise_10db,5.22,whisper_cpp_small_q5_1,True,15252986718200704764.wav,Президент США Джордж Буш приветствовал это заявление.,ru,2500.1408999996784,Президент США Джордж Буш приветствовал это заявление.,0.47895419540223727,0.0
+0.0,fast_1_15x,4.539125,whisper_cpp_small_q5_1,True,15252986718200704764.wav,Президент США Джордж Буш приветствовал это заявление.,ru,2477.439199999935,Президент США Джордж Буш приветствовал это заявление.,0.545796645829303,0.0
+0.041666666666666664,clean,5.4,whisper_cpp_small_q5_1,False,4777896045482224388.wav,"У него также не было полномочий отменять налогово законод
+ательство и даривы штатов.",ru,2481.387600000744,У него также не было полномочий отменять налоговое законодательство и тарифы штатов.,0.45951622222236,0.3333333333333333
+0.041666666666666664,low_volume,5.4,whisper_cpp_small_q5_1,False,4777896045482224388.wav,"У него также не было полномочий отменять налогово законод
+ательство и даривы штатов.",ru,2526.73649999997,У него также не было полномочий отменять налоговое законодательство и тарифы штатов.,0.4679141666666611,0.3333333333333333
+0.20833333333333334,noise_10db,5.4,whisper_cpp_small_q5_1,False,4777896045482224388.wav,"У него также не было полномочия отменять налоговый законод
+авист в коридорибы штабах.",ru,2520.1639000006253,У него также не было полномочий отменять налоговое законодательство и тарифы штатов.,0.46669701851863427,0.5833333333333334
+0.041666666666666664,fast_1_15x,4.695625,whisper_cpp_small_q5_1,False,4777896045482224388.wav,"У него также не было полномочий отменять налогово законод
+ательство и даривы штатов.",ru,2547.005199998239,У него также не было полномочий отменять налоговое законодательство и тарифы штатов.,0.5424209130836127,0.3333333333333333
+0.0,clean,8.7,whisper_cpp_small_q5_1,False,3535671949711584204.wav,"Вариант, становящийся всё более популярным для тех, кто пл
+анирует взять академический год,
+ это путешествовать и учиться.",ru,2616.821499999787,"Вариант, становящийся всё более популярным для тех, кто планирует взять академический год, это путешествовать и учиться.",0.3007840804597457,0.125
+0.0,low_volume,8.7,whisper_cpp_small_q5_1,False,3535671949711584204.wav,"Вариант, становящийся всё более популярным для тех, кто пл
+анирует взять академический год,
+ это путешествовать и учиться.",ru,2606.3940999993065,"Вариант, становящийся всё более популярным для тех, кто планирует взять академический год, это путешествовать и учиться.",0.2995855287355525,0.125
+0.0,noise_10db,8.7,whisper_cpp_small_q5_1,False,3535671949711584204.wav,"Вариант, становящийся всё более популярным для тех, кто пл
+анирует взять академический год,
+ это путешествовать и учиться.",ru,2609.063599997171,"Вариант, становящийся всё более популярным для тех, кто планирует взять академический год, это путешествовать и учиться.",0.2998923678157668,0.125
+0.0,fast_1_15x,7.5651875,whisper_cpp_small_q5_1,False,3535671949711584204.wav,"Вариант, становящийся всё более популярным для тех, кто пл
+анирует взять академический год,
+ — это путешествовать и учиться.",ru,2593.6426000007486,"Вариант, становящийся всё более популярным для тех, кто планирует взять академический год, это путешествовать и учиться.",0.3428391695514154,0.125
+0.018518518518518517,clean,10.32,whisper_cpp_small_q5_1,False,1050167374088424092.wav,"Однако большинство знаков указывается только на каталонском
+ языке, поскольку он по закону является первым официальным
+ языком.",ru,2574.3607000003976,"Однако большинство знаков указываются только на каталанском языке, поскольку он по закону является первым официальным языком.",0.2494535562015889,0.125
+0.018518518518518517,low_volume,10.32,whisper_cpp_small_q5_1,False,1050167374088424092.wav,"Однако большинство знаков указывается только на каталонском
+ языке, поскольку он по закону является первым официальным
+ языком.",ru,2583.6237000003166,"Однако большинство знаков указываются только на каталанском языке, поскольку он по закону является первым официальным языком.",0.2503511337209609,0.125
+0.018518518518518517,noise_10db,10.32,whisper_cpp_small_q5_1,False,1050167374088424092.wav,"Однако большинство знаков указывается только на каталонском
+ языке,
+ поскольку он по закону является первым официальным языком.",ru,2531.344800001534,"Однако большинство знаков указываются только на каталанском языке, поскольку он по закону является первым официальным языком.",0.24528534883735795,0.125
+0.018518518518518517,fast_1_15x,8.9739375,whisper_cpp_small_q5_1,False,1050167374088424092.wav,"Однако большинство знаков указывается только на каталонском
+ языке, поскольку он по закону является первым официальным
+ языком.",ru,2556.8908999994164,"Однако большинство знаков указываются только на каталанском языке, поскольку он по закону является первым официальным языком.",0.2849240815416217,0.125
+0.0,clean,7.5,whisper_cpp_small_q5_1,True,6674922529925288605.wav,"Его планировали срубить во вторник, но постановлением
+ чрезвычайного суда оно было сохранено.",ru,2509.76300000184,"Его планировали срубить во вторник, но постановлением чрезвычайного суда оно было сохранено.",0.33463506666691195,0.0
+0.0,low_volume,7.5,whisper_cpp_small_q5_1,True,6674922529925288605.wav,"Его планировали срубить во вторник, но постановлением
+ чрезвычайного суда оно было сохранено.",ru,2485.7906000033836,"Его планировали срубить во вторник, но постановлением чрезвычайного суда оно было сохранено.",0.3314387466671178,0.0
+0.05063291139240506,noise_10db,7.5,whisper_cpp_small_q5_1,False,6674922529925288605.wav,"Его планировались рубить во вторник, но постановлением
+ привычайного суда оно было сохранено.",ru,2478.8733000023058,"Его планировали срубить во вторник, но постановлением чрезвычайного суда оно было сохранено.",0.33051644000030744,0.25
+0.0,fast_1_15x,6.52175,whisper_cpp_small_q5_1,True,6674922529925288605.wav,"Его планировали срубить во вторник, но постановлением
+ чрезвычайного суда оно было сохранено.",ru,2511.203000001842,"Его планировали срубить во вторник, но постановлением чрезвычайного суда оно было сохранено.",0.38505048491614097,0.0
+0.0625,clean,7.68,whisper_cpp_small_q5_1,False,2403257748663458276.wav,"На церковном кладбище над некоторыми могилами есть интерес
+ная мраморная скульптура голубей.",ru,2571.570399999473,На церковном кладбище над некоторыми могилами есть интересные мраморные скульптуры голубей.,0.33483989583326473,0.36363636363636365
+0.0625,low_volume,7.68,whisper_cpp_small_q5_1,False,2403257748663458276.wav,"На церковном кладбище над некоторыми могилами есть интерес
+ная мраморная скульптура голубей.",ru,2495.3367999987677,На церковном кладбище над некоторыми могилами есть интересные мраморные скульптуры голубей.,0.3249136458331729,0.36363636363636365
+0.1125,noise_10db,7.68,whisper_cpp_small_q5_1,False,2403257748663458276.wav,"На церковном кладбище над некоторыми могилами есть интерес
+ная мраморная скульптура до убит.",ru,2519.7436999987985,На церковном кладбище над некоторыми могилами есть интересные мраморные скульптуры голубей.,0.3280916276040102,0.5454545454545454
+0.0375,fast_1_15x,6.67825,whisper_cpp_small_q5_1,False,2403257748663458276.wav,"На церковном кладбище над некоторыми могилами есть интерес
+ный мраморный скульптур о голубей.",ru,2568.1871000015235,На церковном кладбище над некоторыми могилами есть интересные мраморные скульптуры голубей.,0.38455989218755265,0.45454545454545453
+0.13402061855670103,clean,11.76,whisper_cpp_small_q5_1,False,4534929749468861942.wav,"Робин Удхаппа набрал рекордное количество очков в ининге.
+ 70 ранов со всего 41 подачу.
+ Отбил 11,4 и 2 шестерки.",ru,2626.3154999978724,"Робин Утхаппа  набрал рекордное количество очков в иннинге: 70 ранов за всего 41 подачу, отбил 11 четвёрок и 2 шестёрки.",0.22332614795900277,0.25
+0.13402061855670103,low_volume,11.76,whisper_cpp_small_q5_1,False,4534929749468861942.wav,"Робин Удхаппа набрал рекордное количество очков в ининге.
+ 70 ранов со всего 41 подачу.
+ Отбил 11,4 и 2 шестерки.",ru,2626.5226999967126,"Робин Утхаппа  набрал рекордное количество очков в иннинге: 70 ранов за всего 41 подачу, отбил 11 четвёрок и 2 шестёрки.",0.2233437670065232,0.25
+0.27835051546391754,noise_10db,11.76,whisper_cpp_small_q5_1,False,4534929749468861942.wav,"Робин от Хаппа набрал рекордный количества очков Инги.
+ 70 равных со всего 41 подачи, обилл 1,4 и 2 жестерки.",ru,2602.215699997032,"Робин Утхаппа  набрал рекордное количество очков в иннинге: 70 ранов за всего 41 подачу, отбил 11 четвёрок и 2 шестёрки.",0.22127684523784286,0.65
+0.18556701030927836,fast_1_15x,10.2260625,whisper_cpp_small_q5_1,False,4534929749468861942.wav,"Робин Удхаппа набрал рекордное количество очков в ининге.
+ 70 ранов со всего 41 подачу.
+ Отбил 114 и 2 6-ки.",ru,2588.0894000001717,"Робин Утхаппа  набрал рекордное количество очков в иннинге: 70 ранов за всего 41 подачу, отбил 11 четвёрок и 2 шестёрки.",0.2530875789190778,0.35
+0.0,clean,5.64,whisper_cpp_small_q5_1,True,3254465622701946106.wav,"Большая часть жизни еврейской семьи проходила на открытом
+ воздухе.",ru,2456.7203000005975,Большая часть жизни еврейской семьи проходила на открытом воздухе.,0.4355887056738648,0.0
+0.0,low_volume,5.64,whisper_cpp_small_q5_1,True,3254465622701946106.wav,"Большая часть жизни еврейской семьи проходила на открытом
+ воздухе.",ru,2453.889699998399,Большая часть жизни еврейской семьи проходила на открытом воздухе.,0.43508682624085093,0.0
+0.10526315789473684,noise_10db,5.64,whisper_cpp_small_q5_1,False,3254465622701946106.wav,"Большая часть жизни зебридских семьи проходила на открытом
+ воздухе.",ru,2464.247700001579,Большая часть жизни еврейской семьи проходила на открытом воздухе.,0.43692335106410973,0.1111111111111111
+0.0,fast_1_15x,4.904375,whisper_cpp_small_q5_1,True,3254465622701946106.wav,"Большая часть жизни еврейской семьи проходила на открытом
+ воздухе.",ru,2406.61689999979,Большая часть жизни еврейской семьи проходила на открытом воздухе.,0.49070817382434867,0.0
+0.03305785123966942,clean,10.62,whisper_cpp_small_q5_1,False,9945998967616795899.wav,"В Японии первые празднования цитения сакур устраивались имп
+ератором только для себя и других членов арестократии при им
+ператорском дворе.",ru,2648.880000000645,В Японии первые празднования цветения сакуры устраивались императором только для себя и других членов аристократии при императорском дворе.,0.24942372881362007,0.3888888888888889
+0.03305785123966942,low_volume,10.62,whisper_cpp_small_q5_1,False,9945998967616795899.wav,"В Японии первые празднования цитения сакур устраивались имп
+ератором только для себя и других членов арестократии при им
+ператорском дворе.",ru,2662.1414000001096,В Японии первые празднования цветения сакуры устраивались императором только для себя и других членов аристократии при императорском дворе.,0.2506724482109331,0.3888888888888889
+0.049586776859504134,noise_10db,10.62,whisper_cpp_small_q5_1,False,9945998967616795899.wav,"В Японии первые празднования цитения сакур устраивались
+ императором только для себя и других членов арестокрытий
+ при императорском дворе.",ru,2710.5608000019856,В Японии первые празднования цветения сакуры устраивались императором только для себя и других членов аристократии при императорском дворе.,0.25523171374783293,0.16666666666666666
+0.04132231404958678,fast_1_15x,9.2348125,whisper_cpp_small_q5_1,False,9945998967616795899.wav,"В Японии первое празднование цитения сакуры устраивались им
+ператором только для себя и других членов арестократии при
+ императорском дворе.",ru,2688.5903000002145,В Японии первые празднования цветения сакуры устраивались императором только для себя и других членов аристократии при императорском дворе.,0.2911364253470457,0.3333333333333333
+0.0,clean,11.22,whisper_cpp_small_q5_1,False,10419862324962592525.wav,"Среди примеров активного отдыха на объекте охота рыбная лов
+ля,
+ фотографирование, наблюдение за птицами, посещение парков и
+ изучение
+ информации об экосистеме.",ru,2711.697800001275,"Среди примеров активного отдыха на объекте – охота, рыбная ловля, фотографирование, наблюдение за птицами, посещение парков и изучение информации об экосистеме.",0.2416842959002919,0.1
+0.0,low_volume,11.22,whisper_cpp_small_q5_1,False,10419862324962592525.wav,"Среди примеров активного отдыха на объекте охота рыбная лов
+ля,
+ фотографирование, наблюдение за птицами, посещение парков и
+ изучение
+ информации об экосистеме.",ru,2670.57659999773,"Среди примеров активного отдыха на объекте – охота, рыбная ловля, фотографирование, наблюдение за птицами, посещение парков и изучение информации об экосистеме.",0.23801930481263192,0.1
+0.04477611940298507,noise_10db,11.22,whisper_cpp_small_q5_1,False,10419862324962592525.wav,"среди примеров активного отдыха на аммекте охота рыбная лов
+ля,
+ фотографирование наблюдения за птицами, посещение парков и
+ изучение
+ информации раб экосистеме.",ru,2666.4347000005364,"Среди примеров активного отдыха на объекте – охота, рыбная ловля, фотографирование, наблюдение за птицами, посещение парков и изучение информации об экосистеме.",0.2376501515151993,0.25
+0.022388059701492536,fast_1_15x,9.7565,whisper_cpp_small_q5_1,False,10419862324962592525.wav,"Среди примеров активного отдыха на объекте охота рыбная лов
+ля,
+ фотографирование наблюдения за птицами, посещения парков и
+ изучения информации об экосистеме.",ru,2682.55770000178,"Среди примеров активного отдыха на объекте – охота, рыбная ловля, фотографирование, наблюдение за птицами, посещение парков и изучение информации об экосистеме.",0.27495082252875314,0.25

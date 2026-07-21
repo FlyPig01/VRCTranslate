@@ -17,6 +17,10 @@ from vrctranslate.application.ports.translator import Translator
 from vrctranslate.application.text_preprocessing.japanese_romaji import (
     preprocess_romaji,
 )
+from vrctranslate.application.text_preprocessing.invariants import (
+    InvariantProtection,
+    protect_invariants,
+)
 from vrctranslate.application.use_cases.glossary import (
     GlossaryProtection,
     match_glossary,
@@ -24,6 +28,7 @@ from vrctranslate.application.use_cases.glossary import (
     protect_matches,
 )
 from vrctranslate.domain.glossary import GlossaryInstruction
+from vrctranslate.domain.errors import TranslationError
 from vrctranslate.domain.translation import TranslationRequest, TranslationResult
 
 
@@ -35,6 +40,8 @@ class _PreparedRequest:
     request: TranslationRequest
     fallback: TranslationRequest
     protection: GlossaryProtection
+    request_invariants: InvariantProtection
+    fallback_invariants: InvariantProtection
     glossary_mode: str
 
 
@@ -197,28 +204,36 @@ class TranslateText:
                 protection,
             )
 
+        fallback_text = protection.restore_sources()
+        if glossary_mode == "prompt" and protection.bindings:
+            translated_text = fallback_text
+            glossary = self._limited_instructions(protection)
+        elif glossary_mode == "local_placeholder" and protection.bindings:
+            translated_text = protection.text
+            glossary = ()
+        else:
+            translated_text = fallback_text
+            glossary = ()
+
+        request_invariants = protect_invariants(translated_text)
+        fallback_invariants = protect_invariants(fallback_text)
         fallback = replace(
             request,
-            text=protection.restore_sources(),
+            text=fallback_invariants.text,
             source_language=processed_source,
             glossary=(),
         )
-        if glossary_mode == "prompt" and protection.bindings:
-            translated_request = replace(
-                fallback,
-                glossary=self._limited_instructions(protection),
-            )
-        elif glossary_mode == "local_placeholder" and protection.bindings:
-            translated_request = replace(
-                fallback,
-                text=protection.text,
-            )
-        else:
-            translated_request = fallback
+        translated_request = replace(
+            fallback,
+            text=request_invariants.text,
+            glossary=glossary,
+        )
         return _PreparedRequest(
             translated_request,
             fallback,
             protection,
+            request_invariants,
+            fallback_invariants,
             glossary_mode,
         )
 
@@ -237,7 +252,21 @@ class TranslateText:
         prepared: _PreparedRequest,
         original: TranslationRequest,
         profile: TranslationProfile,
+        *,
+        fallback: bool = False,
     ) -> TranslationResult | None:
+        invariant_protection = (
+            prepared.fallback_invariants if fallback else prepared.request_invariants
+        )
+        restored_invariants = invariant_protection.restore(result.translated)
+        if restored_invariants is None:
+            raise TranslationError(
+                "response",
+                "译文未通过内容保护校验，已阻止发送损坏的 URL、用户名或数字",
+            )
+        result = replace(result, translated=restored_invariants)
+        if fallback:
+            return self._restore_original(result, original)
         if prepared.glossary_mode != "local_placeholder" or not prepared.protection.bindings:
             if prepared.glossary_mode == "prompt" and prepared.protection.bindings:
                 with self._failure_lock:
@@ -278,7 +307,15 @@ class TranslateText:
         if finished is not None:
             return finished
         fallback = self._translator.translate(prepared.fallback, profile)
-        return self._restore_original(fallback, request)
+        restored_fallback = self._finish(
+            fallback,
+            prepared,
+            request,
+            profile,
+            fallback=True,
+        )
+        assert restored_fallback is not None
+        return restored_fallback
 
     def execute_batch(
         self,
@@ -307,6 +344,13 @@ class TranslateText:
             finished = self._finish(result, item, original, profile)
             if finished is None:
                 fallback = self._translator.translate(item.fallback, profile)
-                finished = self._restore_original(fallback, original)
+                finished = self._finish(
+                    fallback,
+                    item,
+                    original,
+                    profile,
+                    fallback=True,
+                )
+                assert finished is not None
             output.append(finished)
         return output

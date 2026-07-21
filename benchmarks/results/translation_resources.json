@@ -1,0 +1,58 @@
+[
+  {
+    "profile_key": "tencent:腾讯云翻译:default",
+    "profile_name": "腾讯云翻译",
+    "provider": "tencent",
+    "requests": 480,
+    "source_characters": 35395,
+    "resources": {
+      "elapsed_seconds": 204.36417930000061,
+      "cpu_seconds": 41.15625,
+      "average_cpu_percent": 1.258667557989206,
+      "peak_rss_mib": 79.328125,
+      "rss_delta_mib": 19.6875
+    }
+  },
+  {
+    "profile_key": "aliyun:阿里通用:general",
+    "profile_name": "阿里通用",
+    "provider": "aliyun",
+    "requests": 480,
+    "source_characters": 35395,
+    "resources": {
+      "elapsed_seconds": 170.37930899999992,
+      "cpu_seconds": 32.515625,
+      "average_cpu_percent": 1.1927660550026067,
+      "peak_rss_mib": 74.40625,
+      "rss_delta_mib": 1.29296875
+    }
+  },
+  {
+    "profile_key": "aliyun:阿里专业:professional",
+    "profile_name": "阿里专业",
+    "provider": "aliyun",
+    "requests": 480,
+    "source_characters": 35395,
+    "resources": {
+      "elapsed_seconds": 124.76994919999925,
+      "cpu_seconds": 24.5625,
+      "average_cpu_percent": 1.2303894165567308,
+      "peak_rss_mib": 76.54296875,
+      "rss_delta_mib": 2.09375
+    }
+  },
+  {
+    "profile_key": "google_free:public-endpoint",
+    "profile_name": "Google翻译（免费）",
+    "provider": "google_free",
+    "requests": 480,
+    "source_characters": 35395,
+    "resources": {
+      "elapsed_seconds": 1058.3968080999985,
+      "cpu_seconds": 201.453125,
+      "average_cpu_percent": 1.189612460670838,
+      "peak_rss_mib": 75.57421875,
+      "rss_delta_mib": 0.0546875
+    }
+  }
+]

@@ -155,6 +155,10 @@ shutil.copy2(
     release_root / "多语言翻译质量测试报告.md",
 )
 shutil.copy2(
+    ROOT / "多语言全链路质量与性能测试报告.md",
+    release_root / "多语言全链路质量与性能测试报告.md",
+)
+shutil.copy2(
     ROOT / "THIRD_PARTY_NOTICES.md",
     release_root / "THIRD_PARTY_NOTICES.md",
 )

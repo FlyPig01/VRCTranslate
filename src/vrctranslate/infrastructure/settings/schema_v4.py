@@ -4,6 +4,7 @@ from dataclasses import asdict
 from typing import Any
 
 from vrctranslate.application.dto import CONFIG_VERSION, AppSettings
+from vrctranslate.domain.languages import OCR_SOURCE_LANGUAGE_CODES
 from vrctranslate.infrastructure.settings.schema_v3 import (
     float_in_range,
     mapping,
@@ -19,7 +20,10 @@ def settings_v4_to_dict(settings: AppSettings) -> dict[str, Any]:
 
 def settings_v4_from_dict(raw: dict[str, Any]) -> AppSettings:
     settings = settings_v3_from_dict(raw)
-    if settings.translation.ocr_route.source_language not in {"zh-CN", "ja", "en"}:
+    if settings.translation.ocr_route.source_language not in {
+        "auto",
+        *OCR_SOURCE_LANGUAGE_CODES,
+    }:
         settings.translation.ocr_route.source_language = "ja"
     ui = mapping(raw.get("ui"))
     mode = str(ui.get("ocr_display_mode", "overlay"))

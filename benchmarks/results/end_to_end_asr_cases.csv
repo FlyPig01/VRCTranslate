@@ -1,0 +1,201 @@
+﻿asr_cer,asr_engine,asr_latency_ms,asr_wer,error,filename,language,pipeline,profile_key,recognized,reference,source,status,target_language,total_latency_ms,translated,translation_chrf,translation_latency_ms
+0.0,sensevoice_forced_candidate,244.93599999914295,0.75,,15022450660532469109.wav,zh-CN,asr_translation,aliyun:阿里通用:general,他称，他制作了一个wifi门铃。,"He built a WiFi door bell, he said.",他称，他制作了一个 WiFi 门铃。,ok,en,759.4806999986758,He said he made a Wi‑Fi doorbell.,41.12811825077781,514.5446999995329
+0.10526315789473684,sensevoice_forced_candidate,229.64649999994435,0.5,,11081214312128087497.wav,zh-CN,asr_translation,aliyun:阿里通用:general,摆脱了湍积水流之后，游回来就没有那么困难了。,"As soon as you get out of the current, swimming back is no more difficult than normally.",摆脱湍急水流之后，游回来就没有那么困难了。,ok,en,408.9616000019305,"Once we were clear of the turbulent rapids, swimming back wasn’t so difficult.",34.852975998738565,179.31510000198614
+0.0,sensevoice_forced_candidate,90.2803999997559,0.0,,13719601250695601702.wav,zh-CN,asr_translation,aliyun:阿里通用:general,我觉得这毫无道理，显然不公平。,That didn't seem to make sense to me; it certainly wasn't fair.,我觉得这毫无道理；显然不公平。,ok,en,341.852800000197,I think this makes no sense at all; it’s clearly unfair.,21.523538252348818,251.57240000044112
+0.17857142857142858,sensevoice_forced_candidate,233.96169999978156,0.6666666666666666,,6445599301852784472.wav,zh-CN,asr_translation,aliyun:阿里通用:general,然而，我们80%的商品在中美洲国家被征收关税，我们对待你。,Yet eighty percent of our goods were taxed through tariffs in Central American countries. we treat you.,然而，我们百分之八十的商品在中美洲国家被征收关税。……我们对待你。,ok,en,515.2817000016512,"However, 80% of our goods are subject to tariffs in Central American countries; this is how we treat you.",57.991393363544795,281.32000000186963
+0.0,sensevoice_forced_candidate,185.5264999976498,0.8571428571428571,,13767012080146307603.wav,zh-CN,asr_translation,aliyun:阿里通用:general,咖喱饭菜既可以是干的，也可以是湿的，干湿情况取决于水量多少。,"A curry can be either ""dry"" or ""wet"" depending on the amount of liquid.",咖喱饭菜既可以是“干”的，也可以是“湿”的，干湿情况取决于水量多少。,ok,en,466.2819999975909,"Curry rice can be either dry or wet, with the consistency depending on the amount of liquid used.",61.296410741883264,280.7554999999411
+0.06976744186046512,sensevoice_forced_candidate,232.11900000023888,0.5,,1414652039016208614.wav,zh-CN,asr_translation,aliyun:阿里通用:general,我们可以开始更环保的生活，加入环保运动，甚至成为环保积极分子，在一定程度上减少将来的灾难。,"We can start living more friendly to the environment, we can join to the environmental movement, and we can even be activists in order to reduce the future suffering in some degree.",我们可以开始更环保地生活，加入环保运动，甚至可以成为环保积极分子，在一定程度上减少将来的灾难。,ok,en,497.7233999998134,"We can start living more sustainably, join the environmental movement, and even become active advocates for sustainability, thereby helping to mitigate future disasters to some extent.",46.2987148320943,265.6043999995745
+0.0,sensevoice_forced_candidate,198.27540000187582,0.6666666666666666,,14296266344817400800.wav,zh-CN,asr_translation,aliyun:阿里通用:general,与其他地方提供的更详细的信息相比，这里所提供的建议往往较为粗略笼统且过于简单。,"The views presented are often cursory, general and oversimplified compared to the more detailed information available elsewhere.",与其他地方提供的更详细的信息相比，这里所提供的建议往往较为粗略、笼统且过于简单。,ok,en,368.10650000188616,"Compared with the more detailed information offered elsewhere, the advice provided here tends to be rather cursory, general, and overly simplistic.",52.004484787052576,169.83110000001034
+0.06451612903225806,sensevoice_forced_candidate,136.1971000005724,1.0,,8410171656423330739.wav,zh-CN,asr_translation,aliyun:阿里通用:general,你可以在黑暗中看到金字塔，在节目开始前，你可以看到他们默默的在那里。,You can see the pyramids in the dark and you can see them in silence before the show begins.,你可以在黑暗中看到金字塔，在节目开始前你可以看到它们默默地在那里。,ok,en,417.08160000416683,"You can see the pyramids in the darkness; before the show begins, you can watch them standing there in silence.",73.3998121144138,280.88450000359444
+0.0,sensevoice_forced_candidate,174.1744999999355,0.0,,4387025999390132883.wav,zh-CN,asr_translation,aliyun:阿里通用:general,所有的这些都成为了独立的学科，着重为现实生活中的问题提供解决方案。,"Such things have become separate disciplines, which focus on providing solutions to real life problems.",所有的这些都成为了独立的学科，着重为现实生活中的问题提供解决方案。,ok,en,345.22149999975227,"All of these have evolved into distinct academic disciplines, each focused on providing solutions to real-world problems.",52.83600316667768,171.04699999981676
+0.12121212121212122,sensevoice_forced_candidate,197.9076999996323,2.0,,12443932414113215660.wav,zh-CN,asr_translation,aliyun:阿里通用:general,几个世界后，从美国从美洲或亚洲传入欧洲的食物不可能出现在古罗马人的饮食当中。,Ancient Roman meals couldn't have included foods that came to Europe from America or from Asia in later centuries.,几个世纪后从美洲或亚洲传入欧洲的食物不可能出现在古罗马人的饮食当中。,ok,en,368.67630000051577,"A few millennia later, foods that were introduced to Europe from the Americas or Asia via the United States could not have appeared in the diet of ancient Romans.",43.307157969926735,170.76860000088345
+0.09022556390977443,sensevoice_forced_candidate,177.41709999972954,0.08695652173913043,,5115550914045731532.wav,en,asr_translation,tencent:腾讯云翻译:default,"Skiing is a major activity with many enthusiasts, occasionally known as ski bs, planning entire vacations around skiing at a particular location.",滑雪是许多滑雪爱好者的主要旅游活动，这些爱好者有时也被称为“滑雪狂人”，他们计划整个假期都在某个地点滑雪。,"Skiing is a major travelling activity with many enthusiasts, occasionally known as ""ski bums,"" planning entire vacations around skiing at a particular location.",ok,zh-CN,710.2556999998342,滑雪是许多爱好者的主要活动，偶尔被称为滑雪，计划在特定地点滑雪的整个假期。,22.604072207524048,532.8386000001046
+0.0,sensevoice_forced_candidate,178.52839999977732,0.0,,6261800542187882882.wav,en,asr_translation,tencent:腾讯云翻译:default,The report opens with plea for open debate and the formation of a consensus in the United States about the policy towards the Middle East.,该报告开篇呼吁美国就中东政策展开公开辩论并形成共识。,The Report opens with plea for open debate and the formation of a consensus in the United States about the policy towards the Middle East.,ok,zh-CN,580.3263999987394,该报告首先呼吁美国就中东政策进行公开辩论并达成共识。,41.19809693412178,401.79799999896204
+0.0,sensevoice_forced_candidate,210.15169999736827,0.0,,15859719143124778312.wav,en,asr_translation,tencent:腾讯云翻译:default,"Before an organization can be innovative, leadership must create a culture of innovation, as well as shared knowledge and organizational learning.",在组织能够创新前，领导必须创造出一种创新文化，分享知识，并进行有组织的学习。,"Before an organization can be innovative, leadership must create a culture of innovation as well as shared knowledge and organizational learning.",ok,zh-CN,515.2389999966545,在一个组织能够创新之前，领导层必须创建一种创新文化，以及共享知识和组织学习。,31.230767060046137,305.0872999992862
+0.021505376344086023,sensevoice_forced_candidate,234.48959999950603,0.05555555555555555,,15135467702098055722.wav,en,asr_translation,tencent:腾讯云翻译:default,"Combined with its relative inaccessibility, Timmbukktu has come to be used as a metaphor for exotic, distant lands.",又因为相对偏僻，“廷巴克图”被用来比喻遥远的异国他乡。,"Combined with its relative inaccessibility, ""Timbuktu"" has come to be used as a metaphor for exotic, distant lands.",ok,zh-CN,534.0585999983887,鉴于其相对不便，Timmbukktu已被用作异国情调、遥远土地的隐喻。,8.064421186470607,299.56899999888265
+0.0,sensevoice_forced_candidate,159.34489999926882,0.0,,10885549230041454053.wav,en,asr_translation,tencent:腾讯云翻译:default,Research in AI involves making machines to automate tasks that require intelligent behavior.,人工智能 (AI) 的研究涉及制造机器让需要智能行为的任务自动化。,Research in AI involves making machines to automate tasks that require intelligent behavior.,ok,zh-CN,391.3527000004251,人工智能的研究涉及制造机器来自动化需要智能行为的任务。,48.000935373212236,232.00780000115628
+0.03636363636363636,sensevoice_forced_candidate,103.96779999791761,0.16666666666666666,,6415341913845555034.wav,en,asr_translation,tencent:腾讯云翻译:default,The results of ploting analysis will be posted to a public website.,绘图分析的结果将发布在公网上。,The result of plotting analysis will be posted to a public website.,ok,zh-CN,354.1157999970892,情节分析的结果将发布到公共网站上。,40.36105449425072,250.1479999991716
+0.104,sensevoice_forced_candidate,247.5079000032565,0.25,,12464490090562922959.wav,en,asr_translation,tencent:腾讯云翻译:default,"Examples on all site activities including hunting, fishing, photography, bird watching and visiting park and stunninging information about the ecosystem.",现场活动包括打猎、钓鱼、摄影、观鸟、参观公园和研究生态系统。,"Examples of on-site activities include hunting, fishing, photography, bird watching, and visiting parks and studying information about the ecosystem.",ok,zh-CN,570.173000003706,所有现场活动的例子，包括狩猎、钓鱼、摄影、观鸟和参观公园以及有关生态系统的惊人信息。,37.173169797158565,322.66510000044946
+0.007042253521126761,sensevoice_forced_candidate,255.28489999851445,0.15151515151515152,,16893502586280184429.wav,en,asr_translation,tencent:腾讯云翻译:default,"The Olympic gold medalist was due to swim in the 100 m and 200 m freestyle and in three relays at the Commonwealth Games. But due to his complaints, his fitness had been in doubt.",这位奥运会金牌得主本应参加 100 米和 200 米自由泳和英联邦运动会的三项接力赛，但由于他的抱怨，他的健康状况一直受到质疑。,"The Olympic gold medalist was due to swim in the 100m and 200m freestyle and in three relays at the Commonwealth Games, but due to his complaints his fitness has been in doubt.",ok,zh-CN,577.614599998924,这位奥运会金牌得主原定于英联邦运动会上参加100米和200米自由泳以及三项接力赛。但由于他的抱怨，他的健康状况一直受到质疑。,62.59776046710278,322.3297000004095
+0.15555555555555556,sensevoice_forced_candidate,168.42430000178865,0.3,,4543532225426899415.wav,en,asr_translation,tencent:腾讯云翻译:default,Then Laha singh took the lead in seeing the Bahajas.,然后，拉卡·辛格带头唱了拜赞歌。,"Then, Lakkha Singh took the lead in singing the bhajans.",ok,zh-CN,320.0749000025098,然后拉哈辛格带头看到巴哈雅。,14.474756056602109,151.65060000072117
+0.03,sensevoice_forced_candidate,215.24289999797475,0.0625,,11800444469883449996.wav,en,asr_translation,tencent:腾讯云翻译:default,wideidespread looting reportedly continued overnight as law enforcement officers were not present on Bishkek's streets.,据报道，由于执法人员不在场，比什凯克街道上的大规模抢劫持续了一夜。,"Widespread looting reportedly continued overnight, as law enforcement officers were not present on Bishkek's streets.",ok,zh-CN,517.6037999990513,据报道，由于比什凯克街道上没有执法人员，大规模的抢劫行为一夜之间仍在继续。,33.083303966300285,302.3609000010765
+0.1,sensevoice_forced_candidate,161.0593000004883,1.0,,2493802856426045210.wav,ja,asr_translation,tencent:腾讯云翻译:default,モルドバの主な宗教は政党派キリスト教です。,摩尔多瓦 (Moldova) 的主要宗教是东正教。,モルドバの主な宗教は正統派キリスト教です。,ok,zh-CN,516.9163999999,摩尔多瓦的主要宗教是政党基督教。,24.11068042532829,355.85709999941173
+0.0,sensevoice_forced_candidate,208.326500000112,0.8,,14786998584945627530.wav,ja,asr_translation,tencent:腾讯云翻译:default,カレーは水分量に応じて、ドライかウェットのどちらかに分類されます。,咖喱饭菜既可以是“干”的，也可以是“湿”的，干湿情况取决于水量多少。,カレーは水分量に応じて「ドライ」か「ウェット」のどちらかに分類されます。,ok,zh-CN,497.5799999992887,咖喱可以分为干或湿两种，这取决于它的含水量。,9.146112712686644,289.2534999991767
+0.23809523809523808,sensevoice_forced_candidate,138.54500000161352,1.0,,17468873847526062022.wav,ja,asr_translation,tencent:腾讯云翻译:default,彼はワイフイでなるドアベルを作ったそうです。,他称，他制作了一个 WiFi 门铃。,彼はWi-Fiで鳴るドアベルを作ったそうです。,ok,zh-CN,396.81620000192197,他说他做了一个门铃，变成了一个哨子。,11.614765019619643,258.27120000030845
+0.03333333333333333,sensevoice_forced_candidate,194.27539999742294,0.5,,14672974986823750874.wav,ja,asr_translation,tencent:腾讯云翻译:default,宇宙にある人工衛星を通話を受信して、ほぼ瞬時にそれを反映します。,太空中的卫星接到电话后，几乎是立刻将其反射回去。,宇宙にある人工衛星は通話を受信して、ほぼ瞬時にそれを反映します。,ok,zh-CN,454.54899999458576,在太空中的卫星接收呼叫，并几乎立即反映出来。,22.09771064068506,260.2735999971628
+0.021739130434782608,sensevoice_forced_candidate,231.03750000154832,0.5,,7736135123644969726.wav,ja,asr_translation,tencent:腾讯云翻译:default,フェスティバルによっては、幼いお好供連れ家族向けに特別なキャンプ場を設けているところもあります。,有些音乐节会为带小孩的家庭设立特别的露营区。,フェスティバルによっては、幼いお子供連れ家族向けに特別なキャンプ場を設けているところもあります。,ok,zh-CN,466.25630000198726,在一些节日中，他们为有年幼子女的家庭提供了特别的露营地。,16.72035474077774,235.21880000043893
+0.023255813953488372,sensevoice_forced_candidate,209.28389999971841,0.6666666666666666,,13500619166784260063.wav,ja,asr_translation,tencent:腾讯云翻译:default,嗜工芸品は大量生産された類似品よりも歴史は浅いのですが、骨董品と定義されることもあります。,手工艺品可能会被定义为古董，尽管相比于批量生产的同类产品，手工艺品的年份要短得多。,手工芸品は、大量生産された類似品よりも歴史は浅いのですが、骨董品と定義されることもあります。,ok,zh-CN,535.5869999984861,虽然嗜热工艺品比大规模生产的同类产品的历史要短，但它们有时也被定义为古董。,22.903179906509994,326.3030999987677
+0.06060606060606061,sensevoice_forced_candidate,228.3067000025767,1.0,,14211506847417900348.wav,ja,asr_translation,tencent:腾讯云翻译:default,教会の墓地では興味深い大理石製の旗の彫刻が一部の箱に飾られています。,教堂墓地里，一些坟墓上方摆着有趣的大理石鸽子雕塑。,教会の墓地では、興味深い大理石製の鳩の彫刻が一部の墓に飾られています。,ok,zh-CN,470.858100001351,在教堂墓地，一些盒子上装饰着有趣的大理石旗帜雕塑。,30.90144120889463,242.5513999987743
+0.16666666666666666,sensevoice_forced_candidate,231.3116999976046,2.0,,12090560248408007785.wav,ja,asr_translation,tencent:腾讯云翻译:default,当初の装いは、東方の未残珍文化の影響を強く受けたものでした。,起初，裙装深受东方拜占庭文化的影响。,当初の装いは東方のビザンチン文化の影響を強く受けたものでした。,ok,zh-CN,474.80049999649054,最初的服装受到了东方罕见文化的强烈影响。,14.387668390781046,243.48879999888595
+0.06,sensevoice_forced_candidate,225.33219999968424,0.8,,5601142683797907650.wav,ja,asr_translation,tencent:腾讯云翻译:default,科学者たちはオセロッと地面の匂いを嗅いでサになる動物、獲物が通った場所を探し、追いかけると考えています。,科学家认为，美洲豹猫是通过气味和嗅探猎物在地面上的踪迹来跟踪和寻找要捕食的动物的。,科学者たちは、オセロットは地面の匂いを嗅いで餌になる動物（獲物）が通った場所を探し、追いかけると考えています。,ok,zh-CN,465.4277000008733,科学家们认为，他们会寻找那些能闻到地面气味的动物，或者猎物经过的地方，然后追逐它们。,11.581767792627296,240.09550000118907
+0.02127659574468085,sensevoice_forced_candidate,254.9749999998312,1.0,,8432487110292314572.wav,ja,asr_translation,tencent:腾讯云翻译:default,報告書の冒頭は公開討論と中東政策について米国内のコンセンサス形成を嘆願する一説で始まっています。,该报告开篇呼吁美国就中东政策展开公开辩论并形成共识。,報告書の冒頭は、公開討論と中東政策について米国内のコンセンサス形成を嘆願する一節で始まっています。,ok,zh-CN,491.2838999989617,报告的开头部分是公开辩论，并呼吁在美国就中东政策达成共识。,31.168464465330853,236.30889999913052
+0.09523809523809523,sensevoice_forced_candidate,211.68949999992037,0.4090909090909091,,2141381220709808076.wav,ko,asr_translation,tencent:腾讯云翻译:default,택배 사는 물건을 빨리 배달해주는 대가로 많은 모습을 봤습니다. 종종 업무 서류 긴급 수를 위한 상품이나 예비부품의 경우에는 시간이 매우 중요합니다.,快递公司可因快速交付货物而获取高酬劳。很多时候，时间对于商务文件、商品或用于紧急维修的零部件而言非常重要。,"택배회사는 물건을 빨리 배달해 주는 대가로 많은 보수를 받습니다. 종종 업무 서류, 긴급 수리를 위한 상품이나 예비 부품의 경우에는 시간이 매우 중요합니다.",ok,zh-CN,644.13489999788,为了快速送货买快递的东西 ， 我看到了很多人。通常 ， 对于工作文件的紧急数量的商品或备件来说 ， 时间是非常重要的。,12.25521906875958,432.4453999979596
+0.034482758620689655,sensevoice_forced_candidate,165.83639999953448,0.25,,11667888958665146980.wav,ko,asr_translation,tencent:腾讯云翻译:default,화요일에 베어 쓰러뜨릴 예정이었으나 긴급법의 판결로 구조되었다.,按照原计划，它将在周二被砍倒，但在法庭紧急裁决后幸免遇难。,화요일에 베어 쓰러뜨릴 예정이었으나 긴급 법원의 판결로 구조되었다.,ok,zh-CN,511.50620000044,熊原定于周二被打倒 ， 但被紧急法裁决救出。,11.233232344392423,345.6698000009055
+0.02040816326530612,sensevoice_forced_candidate,219.8707999996259,0.05555555555555555,,15704353857314520582.wav,ko,asr_translation,tencent:腾讯云翻译:default,이 시점에서 이라크의 행동이 종파적인 전쟁이나 폭력이 증가하는 것 혹은 혼돈의 상태를 막을 수 있다는 데 보장은 없다.,报告警告称，没有人能保证目前在伊拉克采取的任何行动能够阻止宗派战争、不断增长的暴力或走向混乱。,"이 시점에서 이라크의 행동이 종파적인 전쟁이나 폭력이 증가하는 것, 혹은 혼돈의 상태를 막을 수 있다는 데에 보장은 없다.",ok,zh-CN,523.4879000017827,在这一点上 ， 无法保证伊拉克的行动能够阻止宗派战争或暴力升级或混乱状态。,21.611957247270354,303.6171000021568
+0.024390243902439025,sensevoice_forced_candidate,280.1117000017257,0.2,,7931296107475066465.wav,ko,asr_translation,tencent:腾讯云翻译:default,아랍인들을 통해서도 이슬람교가 전해 지졌으며 코모로스와 마요트 지방에서 큰 변화가 일어났습니다.,阿拉伯人也把伊斯兰教带到了这片土地，这一教义在科摩罗和马约特国家盛行。,"아랍인들을 통해서도 이슬람교가 전해졌으며, 코모로스와 마요트 지방에서 큰 변화가 일어났습니다.",ok,zh-CN,516.759500002081,伊斯兰教也通过阿拉伯人传播 ， 在科摩罗和马约特省发生了巨大的变化。,24.797347840259835,236.64780000035535
+0.17647058823529413,sensevoice_forced_candidate,226.26859999945736,0.3888888888888889,,11543408116050555970.wav,ko,asr_translation,tencent:腾讯云翻译:default,대부분의 경우 해외 앱 이어코에 등록하면 실제로 고국에서 고등교육에 진학할 가능성을 높일 수 있습니다.,很多情况下，在国外参加间隔年课程可以实质上提升你回国升学的机会。,"대부분의 경우, 해외 갭 이어(gap-year) 코스에 등록하면 실제로 고국에서 고등 교육에 진학할 가능성을 높일 수 있습니다.",ok,zh-CN,481.1046999966493,在大多数情况下 ， 注册海外应用程序 Eiko 实际上可以增加您在本国接受高等教育的机会。,13.381265805860718,254.83609999719192
+0.0,sensevoice_forced_candidate,155.7159000003594,0.0,,5267577748770289706.wav,ko,asr_translation,tencent:腾讯云翻译:default,경찰은 시체가 하루 정도 있었던 것으로 보인다고 말했습니다.,警方说，尸体看上去在那里放了一天左右。,경찰은 시체가 하루 정도 있었던 것으로 보인다고 말했습니다.,ok,zh-CN,444.26559999919846,警方说 ， 尸体似乎已经存在了一天。,24.477342653629997,288.54969999883906
+0.0,sensevoice_forced_candidate,180.51120000018273,0.0,,11841411276404353831.wav,ko,asr_translation,tencent:腾讯云翻译:default,차가 집에 충돌했을 때 세 명이 안에 있었지만 그들 중 한 명도 다치지 않았다.,虽然车撞到房子时，房子里面有三个人，但最后并没有人受伤。,"차가 집에 충돌했을 때 세 명이 안에 있었지만, 그들 중 한 명도 다치지 않았다.",ok,zh-CN,403.9833000024373,汽车撞上房子时 ， 车内有三人 ， 但没有人受伤。,24.239494220163184,223.4721000022546
+0.17307692307692307,sensevoice_forced_candidate,259.97519999873475,0.2,,3988998781452247698.wav,ko,asr_translation,tencent:腾讯云翻译:default,상대적인 접근이 불가능한 의미를 결합하여 팀부크투는 이국적이고 멀리 떨어진 지역에 대한 의유로 사용하게 되었다.,又因为相对偏僻，“廷巴克图”被用来比喻遥远的异国他乡。,"상대적인 접근이 불가능한 의미를 결합하여, 'Timbuktu'는 이국적이고 멀리 떨어진 지역에 대한 은유로 사용하게 되었다.",ok,zh-CN,492.03249999845866,结合相对无法进入的含义 ， 廷巴克图被用作异国情调和遥远地区的代名词。,12.932744449261435,232.0572999997239
+0.1724137931034483,sensevoice_forced_candidate,182.24600000030478,0.2,,962804827140334596.wav,ko,asr_translation,tencent:腾讯云翻译:default,수천 킬로미터 마 떨어진 사람과 통화한다면 인공위성을 쓰고 있는 겁니다.,你给远在千里之外的人打电话，就会用到卫星。,수천 km(마일) 떨어진 사람과 통화한다면 인공위성을 쓰고 있는 겁니다.,ok,zh-CN,418.5741000001144,如果你和数千公里外的人通话 ， 你就在使用卫星。,14.458131367779703,236.32809999980964
+0.0,sensevoice_forced_candidate,182.90300000080606,0.0,,13842930443009797362.wav,ko,asr_translation,tencent:腾讯云翻译:default,한 전직 필리핀 경찰관이 필리핀의 수도 마닐라에서 버스를 납치하여 홍콩 관광객들을 인질로 삼았다.,菲律宾一名前警察在首都马尼拉劫持旅游大巴，将车上的香港游客作为人质。,한 전직 필리핀 경찰관이 필리핀의 수도 마닐라에서 버스를 납치하여 홍콩 관광객들을 인질로 삼았다.,ok,zh-CN,419.0810000000056,一名前菲律宾警察在菲律宾首都马尼拉劫持了一辆公共汽车 ， 并将香港游客劫持为人质。,28.791843180290243,236.17799999919953
+0.1125,whisper_cpp_small_q5_1,2645.071899998584,0.3333333333333333,,622196158886216764.wav,fr,asr_translation,tencent:腾讯云翻译:default,"Noël est l'une des fêtes les plus importantes de la chrét
+iennité et s'élève en la naissance de Jésus.",圣诞节是基督教最重要的节日之一，是为了庆祝基督诞辰而设立的。,"Noël est l'une des fêtes les plus importantes de la chrétienté, elle célèbre la naissance de Jésus.",ok,zh-CN,3111.3839999998163,"圣诞节是克里特岛最重要的节日之一
+在耶稣的诞生中 ， 生命和生命都被提升了。",23.363188400228452,466.31210000123247
+0.22522522522522523,whisper_cpp_small_q5_1,2623.002100001031,0.43478260869565216,,18305287484434816969.wav,fr,asr_translation,tencent:腾讯云翻译:default,"Selon les scientifiques, les osselots au track et trouvent
+ des animaux à manger proie par
+ l'odorant renéfin, on est retragés sur le sol.",科学家认为，美洲豹猫是通过气味和嗅探猎物在地面上的踪迹来跟踪和寻找要捕食的动物的。,"Selon les scientifiques, les ocelots traquent et trouvent les animaux à manger (proies) par l'odorat, en reniflant leur trajet sur le sol.",ok,zh-CN,3340.7592000003206,"根据科学家的说法 ， 骨头在轨道上发现
+动物被猎食
+芳香剂被重新清除 ， 留在地面上。",8.667660319438736,717.7570999992895
+0.17272727272727273,whisper_cpp_small_q5_1,2604.9922999991395,0.4,,5379801877211157215.wav,fr,asr_translation,tencent:腾讯云翻译:default,"En principe, le bouddhisme Tibetain est très simple et se
+ compose de kundalini yoga,
+ de la même méditation, de la voix, de l'amour, il est vert
+if.",原则上，藏传佛教是非常简单的。它包括昆达里尼瑜伽、冥想和普世之爱的方法。,"En principe, le bouddhisme tibétain est très simple. Il se compose du Kundalini Yoga, de la méditation et de la voie de l'amour universel.",ok,zh-CN,3133.9545999981056,"原则上， 藏传佛教是非常简单的。
+包括昆达里尼瑜伽 ，
+同样的冥想， 声音， 爱， 它是绿色的
+如果。",46.58696029658248,528.962299998966
+0.024096385542168676,whisper_cpp_small_q5_1,2524.0089999970223,0.15789473684210525,,16779044087085422178.wav,fr,asr_translation,tencent:腾讯云翻译:default,"On essaie encore de déterminer qu'elle a été l'ampleur de l
+'accident et comment la terre sera infectée.",他们仍在努力确定这次撞击的规模以及对地球的影响。,On essaie encore de déterminer quelle a été l'ampleur de l'accident et comment la Terre sera affectée.,ok,zh-CN,2810.9927999976208,"我们仍在试图确定它是 L 的规模。
+事故以及地球将如何被感染。",12.943333439320027,286.9838000005984
+0.0,whisper_cpp_small_q5_1,2473.344800000632,0.11764705882352941,,9212787143273761793.wav,fr,asr_translation,tencent:腾讯云翻译:default,"Un plat au curry peut être solide ou liquide selon la quant
+ité de sauce qu'il contient.",咖喱饭菜既可以是“干”的，也可以是“湿”的，干湿情况取决于水量多少。,"Un plat au curry peut être « solide » ou « liquide », selon la quantité de sauce qu'il contient.",ok,zh-CN,2910.8879000013985,"咖喱菜可以是固体或液体 ， 具体取决于咖喱的量。
+里面的酱汁。",9.271412327070177,437.5431000007666
+0.0,whisper_cpp_small_q5_1,2479.3736999999965,0.0,,3920926992201662587.wav,fr,asr_translation,tencent:腾讯云翻译:default,"Cela ne me semblait pas logique, ce n'était certainement
+ pas juste.",我觉得这毫无道理；显然不公平。,Cela ne me semblait pas logique ; ce n'était certainement pas juste.,ok,zh-CN,2731.4953000022797,"我觉得这不合逻辑 ， 绝对不是
+不公平。",19.9423919359505,252.12160000228323
+0.01818181818181818,whisper_cpp_small_q5_1,2562.434300001769,0.045454545454545456,,12825999561010912089.wav,fr,asr_translation,tencent:腾讯云翻译:default,"Les dépenses de guerre de l'impérialisme américain dans la
+ conquête des Philippines ont été payées par le peuple
+ Philippin de lui-même.",美帝国主义在征服菲律宾时的战争开支是由菲律宾人民自己支付的。,Les dépenses de guerre de l'impérialisme américain dans la conquête des Philippines ont été payées par le peuple philippin lui-même.,ok,zh-CN,2890.285199999198,"美帝国主义在美国的战争开支
+征服菲律宾的代价是人民付出的
+菲律宾人自己。",33.90163366411979,327.8508999974292
+0.07608695652173914,whisper_cpp_small_q5_1,2533.2720000005793,0.14285714285714285,,475129543623066238.wav,fr,asr_translation,tencent:腾讯云翻译:default,"Bien que trois personnes n'étaient présentes dans la maison
+ quand la voiture l'a percuté,
+ aucune n'a été blessée.",虽然车撞到房子时，房子里面有三个人，但最后并没有人受伤。,"Bien que trois personnes aient été présentes dans la maison quand la voiture l'a percutée, aucune n'a été blessée.",ok,zh-CN,2911.9016000004194,"虽然家里没有三个人
+当车撞到他时 ，
+没有人受伤。",24.581856299877703,378.62959999984014
+0.04477611940298507,whisper_cpp_small_q5_1,2644.7484999989683,0.12903225806451613,,10998385404014074843.wav,fr,asr_translation,tencent:腾讯云翻译:default,"Il y avertit que personne ne peut garantir que toute action
+ en Irak a ce stade
+ métraphin à la guerre sectaire, à la violence croissante ou
+ au glissement vers le chaos.",报告警告称，没有人能保证目前在伊拉克采取的任何行动能够阻止宗派战争、不断增长的暴力或走向混乱。,"Il avertit que personne ne peut garantir que toute action en Irak à ce stade mettra fin à la guerre sectaire, à la violence croissante ou au glissement vers le chaos.",ok,zh-CN,3025.3131999998004,"它警告说 ， 没有人能保证任何行动
+伊拉克目前的情况
+宗派战争、日益严重的暴力或
+走向混乱。",33.651952156780844,380.5647000008321
+0.05063291139240506,whisper_cpp_small_q5_1,2568.868999998813,0.15,,4058888282216101530.wav,fr,asr_translation,tencent:腾讯云翻译:default,"L'argent peut être échangé à la seule banque des îles situ
+ées à Stalé, en face du magasin FIC West.",可以在岛上唯一的银行兑换货币，该银行位于斯坦利，在 FIC West 商店对面。,"L'argent peut être échangé à la seule banque des îles située à Stanley, en face du magasin FIC West.",ok,zh-CN,2844.1650999993726,"货币可以在岛上唯一的银行兑换。
+位于 Stalé ， FIC West 商店对面。",59.93598106627477,275.2961000005598
+0.04065040650406504,whisper_cpp_small_q5_1,2726.8178000012995,0.23809523809523808,,18207654776144412982.wav,de,asr_translation,tencent:腾讯云翻译:default,"Nach den Erlebnissen der Schrecken und Kräueltaten im Er
+sten Weltkrieg wollten die Nationen
+ eine weitere solche Situation in der Zukunft vermeiden.",目睹第一次世界大战中的肆虐残暴后，各国都渴望避免重蹈覆辙。,Nach dem Erlebnis der Schrecken und Gräueltaten im Ersten Weltkrieg wollten die Nationen eine weitere solche Situation in der Zukunft vermeiden.,ok,zh-CN,3098.8406000033137,"在经历了他的恐怖和暴行之后
+世界大战 ， 各国要
+避免今后再出现这种情况。",11.282917259665828,372.02280000201426
+0.008620689655172414,whisper_cpp_small_q5_1,2623.126599999523,0.041666666666666664,,15605906788798742889.wav,de,asr_translation,tencent:腾讯云翻译:default,"Die Portugiesen zerstörten sie und bauten sie unter den
+ Namen Casa Branca wieder auf,
+ nur um sie nach einem Erdbeben im Jahr 1755 aufzugeben.",葡萄牙人毁灭了这座城并进行了重建，还将其命名为卡萨布兰卡 (Casa Branca) ，直到 1755 年地震后才遗弃了它。,"Die Portugiesen zerstörten sie und bauten sie unter dem Namen Casa Branca wieder auf, nur um sie nach einem Erdbeben im Jahr 1755 aufzugeben.",ok,zh-CN,3017.70729999771,"葡萄牙人摧毁了它 ， 并建造了它。
+白宫重新命名
+1755 年地震后 ， 它被遗弃了。",17.389441282747704,394.5806999981869
+0.022222222222222223,whisper_cpp_small_q5_1,2490.918100000272,0.3333333333333333,,288964152477235644.wav,de,asr_translation,tencent:腾讯云翻译:default,US-Präsident George W. Bush begrüßt die Bekanntgabe.,美国总统乔治·沃克·布什对这一公告表示支持。,U.S.-Präsident George W. Bush begrüßte die Bekanntgabe.,ok,zh-CN,2799.736600001779,美国总统乔治 W 。布什对此表示欢迎。,22.59327256141714,308.81850000150735
+0.008403361344537815,whisper_cpp_small_q5_1,2587.5009000010323,0.17647058823529413,,12898282519703898066.wav,de,asr_translation,tencent:腾讯云翻译:default,"Naturwissenschaftler und Philosophen konzentrieren sich auf
+ klassische Texte und dabei besonders auf die Bibel in late
+inischer Sprache.",自然主义者和哲学家关注古典文本，特别是拉丁文版的《圣经》。,Naturwissenschaftler und Philosophen konzentrierten sich auf klassische Texte und dabei besonders auf die Bibel in lateinischer Sprache.,ok,zh-CN,2927.263599998696,"哲学家和科学家专注于
+经典文本 ， 尤其是《圣经》
+印尼语。",15.546811125002804,339.76269999766373
+0.02666666666666667,whisper_cpp_small_q5_1,2509.7815999979503,0.16666666666666666,,18282264406951735761.wav,de,asr_translation,tencent:腾讯云翻译:default,"Auf dem Friedhof gibt es über einigen Gräber interessante
+ Marmoskulpturen von Tauben.",教堂墓地里，一些坟墓上方摆着有趣的大理石鸽子雕塑。,Auf dem Friedhof gibt es über einigen Gräbern interessante Marmorskulpturen von Tauben.,ok,zh-CN,2800.011399998766,"墓地里有很多有趣的墓碑。
+鸽子的大理石雕塑",17.796528900448106,290.2298000008159
+0.0,whisper_cpp_small_q5_1,2663.066199998866,0.14285714285714285,,6540480103745453992.wav,de,asr_translation,tencent:腾讯云翻译:default,"In vielen Fällen kann die Teilnahme in einem Auslandsüberbr
+ückungsjahrprogramm ihre
+ Chancen auf eine Hochschulausbildung in ihrem Heimatland
+ tatsächlich verbessern.",很多情况下，在国外参加间隔年课程可以实质上提升你回国升学的机会。,"In vielen Fällen, kann die Teilnahme in einem Auslands-Überbrückungsjahr-Programm Ihre Chancen auf eine Hochschulausbildung in Ihrem Heimatland tatsächlich verbessern.",ok,zh-CN,2964.506199998141,"在许多情况下 ， 参与国外的
+寒冷年计划
+在本国接受高等教育的机会
+实际上改善。",13.946353195473593,301.43999999927473
+0.03,whisper_cpp_small_q5_1,2559.4960000016727,0.2777777777777778,,4616468964486999290.wav,de,asr_translation,tencent:腾讯云翻译:default,"Die NHK berichtete zudem, dass das Atomkraftwerk von Kashiw
+asaki Kariva in der Präfektur Niigata normalen Betrieb war.",日本广播协会 (NHK) 还报道说，位于新泻县的柏崎刈羽 (Kashiwazaki Kariwa) 核电站运行正常。,"Die NHK berichtete zudem, dass das Atomkraftwerk von Kashiwazaki Kariwa in der Präfektur Niigata normal in Betrieb war.",ok,zh-CN,2909.160700000939,"NHK 报道称 ， 卡希夫核电站
+新潟县的 asaki kariva 正常运营。",10.566459558420254,349.6646999992663
+0.1597222222222222,whisper_cpp_small_q5_1,2715.3031999987434,0.43333333333333335,,5805796201296372774.wav,de,asr_translation,tencent:腾讯云翻译:default,"Der Mexikaner Arli Velazquez kam beim Super Gider Herrens
+itzend als 15. ins Ziel.
+ Der Neuseelender Adam Hall kam beim Super Gider Herren steh
+end als 9. ins Ziel.",墨西哥选手拉利·委拉斯开兹在男子坐姿超级大回转比赛中获得第 15 名的成绩。新西兰选手亚当·霍尔在男子站姿超级大回转比赛中获得第 9 名的成绩。,Der Mexikaner Arly Velasquez kam beim Super-G der Herren (sitzend) als fünfzehnter ins Ziel. Der Neuseeländer Adam Hall kam beim Super-G der Herren (stehend) als neunter ins Ziel.,ok,zh-CN,3075.300500000594,"墨西哥人 Arli Velazquez 赢得了 Super Gider
+十五岁时。进入目标。
+新西兰人 Adam Hall 在 Super Gider 男子站立
+结束于 9进入目标。",4.717212244831639,359.9973000018508
+0.0,whisper_cpp_small_q5_1,2620.296300003247,0.0,,7379644843237828894.wav,de,asr_translation,tencent:腾讯云翻译:default,"Obwohl sich drei Menschen im Haus befanden, als das Auto
+ hineinraste, wurde keiner von ihnen verletzt.",虽然车撞到房子时，房子里面有三个人，但最后并没有人受伤。,"Obwohl sich drei Menschen im Haus befanden, als das Auto hineinraste, wurde keiner von ihnen verletzt.",ok,zh-CN,2920.478900003218,"虽然有三个人在房子里 ， 但汽车
+冲进去 ， 没有人受伤。",24.72693386851386,300.182599999971
+0.06944444444444445,whisper_cpp_small_q5_1,2511.1051999992924,0.06666666666666667,,10249467818655484680.wav,de,asr_translation,tencent:腾讯云翻译:default,"Der Amazonas ist auch der breiteste Fluss der Erde,
+ teilweise bis zu 6 Meilen breit.",亚马逊河也是地球上最宽的河流，有些河段的宽度可达6英里。,"Der Amazonas ist auch der breiteste Fluss der Erde, teilweise bis zu sechs Meilen breit.",ok,zh-CN,3193.9607999993314,"亚马逊河也是地球上最宽的河流。
+部分宽度可达 6 英里。",57.98495055988031,682.855600000039
+0.0,whisper_cpp_small_q5_1,2532.903199997236,0.0,,7090415861364614454.wav,es,asr_translation,tencent:腾讯云翻译:default,él dijo que construyó un timbre wifi,他称，他制作了一个 WiFi 门铃。,Él dijo que construyó un timbre wifi.,ok,zh-CN,2919.7923999963677,他说他建了一个无线网络,7.902181676927354,386.88919999913196
+0.0,whisper_cpp_small_q5_1,2563.903099999152,0.0,,6898474509343206608.wav,es,asr_translation,tencent:腾讯云翻译:default,"El satélite en el espacio recibe la llamada y luego la
+ refleja de vuelta casi de forma instantánea.",太空中的卫星接到电话后，几乎是立刻将其反射回去。,"El satélite en el espacio recibe la llamada y, luego, la refleja de vuelta casi de forma instantánea.",ok,zh-CN,2874.0354999972624,"太空中的卫星接收电话 ， 然后
+它几乎瞬间反射回来。",26.833154221523632,310.1323999981105
+0.0,whisper_cpp_small_q5_1,2530.177000000549,0.0,,9072175803483717623.wav,es,asr_translation,tencent:腾讯云翻译:default,"Los primeros casos de la enfermedad durante esta temporada
+ se registraron hacia fines de julio.",7 月下旬报告了本季节的第一批病例。,Los primeros casos de la enfermedad durante esta temporada se registraron hacia fines de julio.,ok,zh-CN,2894.694899998285,"本季首例病例
+它们在 7 月底被记录下来。",13.580503155235519,364.5178999977361
+0.029411764705882353,whisper_cpp_small_q5_1,2499.7966999981145,0.07142857142857142,,8515974555592166175.wav,es,asr_translation,tencent:腾讯云翻译:default,"La policía manifestó que el cadáver parecía haber estado
+ así alrededor de un día.",警方说，尸体看上去在那里放了一天左右。,La policía manifestó que el cadáver parecía haber estado allí alrededor de un día.,ok,zh-CN,2687.0941999986826,"警方说 ， 尸体似乎被
+就这样一天左右。",30.343035634604863,187.2975000005681
+0.14545454545454545,whisper_cpp_small_q5_1,2489.069900002505,0.3333333333333333,,17828064149002081679.wav,es,asr_translation,tencent:腾讯云翻译:default,"Después de eso, la Cacín pasó al frente para cantar los Baj
+ans.",然后，拉卡·辛格带头唱了拜赞歌。,"Después de eso, Lakkha Singh pasó al frente para cantar los bhajans.",ok,zh-CN,2847.9225000046426,"在那之后 ， 卡辛走到前面唱巴杰。
+年。",6.230856943103505,358.8526000021375
+0.0,whisper_cpp_small_q5_1,2533.838100000139,0.0,,11868566924303017851.wav,es,asr_translation,tencent:腾讯云翻译:default,"Merece la pena dedicar media hora a dar un paseo por el
+ fascinante pueblo.",在这个迷人的村庄漫步半小时是值得的。,Merece la pena dedicar media hora a dar un paseo por el fascinante pueblo.,ok,zh-CN,2778.497300001618,"值得花半个小时在街上散步。
+迷人的村庄。",21.50370069832882,244.6592000014789
+0.0,whisper_cpp_small_q5_1,2538.5490999979083,0.11764705882352941,,291343535012559954.wav,es,asr_translation,tencent:腾讯云翻译:default,"Estas cuestiones se han vuelto disciplinas separadas enfoc
+adas en ofrecer soluciones a problemas de la vida real.",所有的这些都成为了独立的学科，着重为现实生活中的问题提供解决方案。,"Estas cuestiones se han vuelto disciplinas separadas, enfocadas en ofrecer soluciones a problemas de la vida real.",ok,zh-CN,2780.657600000268,"这些问题已成为单独的学科焦点。
+adas 为现实生活中的问题提供解决方案。",42.940206490905304,242.1085000023595
+0.0,whisper_cpp_small_q5_1,2653.251100000489,0.0,,12028938552784024884.wav,es,asr_translation,tencent:腾讯云翻译:default,"La ubicación de las islas de África Oriental es frente a la
+ costa este de ese continente,
+ en el Océano Índico.",东非岛屿位于非洲东海岸外的印度洋上。,"La ubicación de las islas de África Oriental es frente a la costa este de ese continente, en el Océano Índico.",ok,zh-CN,3454.7006000029796,"东非群岛的位置正对着
+非洲大陆东海岸 ，
+在印度洋上。",23.467454463231384,801.4495000024908
+0.016666666666666666,whisper_cpp_small_q5_1,2716.316599999118,0.07692307692307693,,5549872575094949695.wav,es,asr_translation,tencent:腾讯云翻译:default,"Al pasar el tiempo, a medida que la incipiente población se
+ va adaptando al nuevo etorno,
+ comienza a semejarse cada vez menos a la otra población.",随着时间的推移，新的种群开始适应新的环境，它们开始变得与其他种群越来越不相似了。,"Al pasar el tiempo, a medida que la incipiente población se va adaptando al nuevo entorno, comienza a asemejarse cada vez menos a la otra población.",ok,zh-CN,3249.0473999969254,"随着时间的推移 ， 随着新生人口的增加
+适应新的环境 ，
+它开始变得越来越不像其他种群。",37.100104483554006,532.7307999978075
+0.011363636363636364,whisper_cpp_small_q5_1,2581.0216999998374,0.23809523809523808,,8569303995706128943.wav,es,asr_translation,tencent:腾讯云翻译:default,"El propio pueblo filipino pagó los gastos de guerras del
+ imperialismo de EEUU en la conquista de Filipinas.",美帝国主义在征服菲律宾时的战争开支是由菲律宾人民自己支付的。,El propio pueblo filipino pagó los gastos de guerra del imperialismo de E.E. U.U. en la conquista de Filipinas.,ok,zh-CN,3022.0474999987346,"菲律宾人民自己支付了战争的费用。
+美国帝国主义征服菲律宾。",35.80828663868687,441.0257999988971
+0.0,whisper_cpp_small_q5_1,2490.7643999977154,0.0,,15252986718200704764.wav,ru,asr_translation,tencent:腾讯云翻译:default,Президент США Джордж Буш приветствовал это заявление.,美国总统乔治·沃克·布什对这一公告表示支持。,Президент США Джордж Буш приветствовал это заявление.,ok,zh-CN,2832.7388999969116,美国总统乔治 · 布什对这一声明表示欢迎。,37.19834931429366,341.97449999919627
+0.041666666666666664,whisper_cpp_small_q5_1,2460.1983000029577,0.3333333333333333,,4777896045482224388.wav,ru,asr_translation,tencent:腾讯云翻译:default,"У него также не было полномочий отменять налогово законод
+ательство и даривы штатов.",它也没有权力推翻各州之间的税法和关税。,У него также не было полномочий отменять налоговое законодательство и тарифы штатов.,ok,zh-CN,2915.748800005531,"他也没有权力废除税法。
+美国的礼物和礼物。",16.56037761918045,455.55050000257324
+0.0,whisper_cpp_small_q5_1,2559.0483999985736,0.125,,3535671949711584204.wav,ru,asr_translation,tencent:腾讯云翻译:default,"Вариант, становящийся всё более популярным для тех, кто пл
+анирует взять академический год,
+ это путешествовать и учиться.",对于那些计划怎么度过空档年的人来说，游学成为越来越受欢迎的选择。,"Вариант, становящийся всё более популярным для тех, кто планирует взять академический год, это путешествовать и учиться.",ok,zh-CN,2975.6797999980336,"越来越受欢迎的选择 ， 对于那些
+想要一个学年，
+旅行和学习。",25.92089019098195,416.63139999946
+0.018518518518518517,whisper_cpp_small_q5_1,2538.6502999972436,0.125,,1050167374088424092.wav,ru,asr_translation,tencent:腾讯云翻译:default,"Однако большинство знаков указывается только на каталонском
+ языке, поскольку он по закону является первым официальным
+ языком.",然而，大多数指示牌都只使用加泰罗尼亚语，因为这是法律规定的第一官方语言。,"Однако большинство знаков указываются только на каталанском языке, поскольку он по закону является первым официальным языком.",ok,zh-CN,3041.959299996961,"但是， 大多数标志只显示在加泰罗尼亚语。
+官方语言 ， 因为它是官方语言。
+语文。",22.646817524663827,503.30899999971734
+0.0,whisper_cpp_small_q5_1,2564.6011999997427,0.0,,6674922529925288605.wav,ru,asr_translation,tencent:腾讯云翻译:default,"Его планировали срубить во вторник, но постановлением
+ чрезвычайного суда оно было сохранено.",按照原计划，它将在周二被砍倒，但在法庭紧急裁决后幸免遇难。,"Его планировали срубить во вторник, но постановлением чрезвычайного суда оно было сохранено.",ok,zh-CN,2836.3038999996206,"周二 ， 他被解雇了 ， 但
+特别法庭被保留了下来。",6.315793831733398,271.70269999987795
+0.0625,whisper_cpp_small_q5_1,2551.05790000016,0.36363636363636365,,2403257748663458276.wav,ru,asr_translation,tencent:腾讯云翻译:default,"На церковном кладбище над некоторыми могилами есть интерес
+ная мраморная скульптура голубей.",教堂墓地里，一些坟墓上方摆着有趣的大理石鸽子雕塑。,На церковном кладбище над некоторыми могилами есть интересные мраморные скульптуры голубей.,ok,zh-CN,2890.6477999989875,"在一些坟墓上方的教堂墓地有兴趣
+鸽子的大理石雕塑。",31.510932578540974,339.5898999988276
+0.13402061855670103,whisper_cpp_small_q5_1,2653.270099999645,0.25,,4534929749468861942.wav,ru,asr_translation,tencent:腾讯云翻译:default,"Робин Удхаппа набрал рекордное количество очков в ининге.
+ 70 ранов со всего 41 подачу.
+ Отбил 11,4 и 2 шестерки.",罗宾·乌萨帕 (Robin Uthappa) 取得了本局的最高分，投出了 11 个四分球和 2 个六分球，仅投出 41 个球便赢得 70 分。,"Робин Утхаппа  набрал рекордное количество очков в иннинге: 70 ранов за всего 41 подачу, отбил 11 четвёрок и 2 шестёрки.",ok,zh-CN,3077.272399998037,"罗宾 · 乌德哈帕在一局中得分创纪录。
+总共 41 次发射 ， 70 次受伤。
+他丢掉了 11.4 和 2 个 6 。",10.221419647281042,424.0022999983921
+0.0,whisper_cpp_small_q5_1,2461.135000001377,0.0,,3254465622701946106.wav,ru,asr_translation,tencent:腾讯云翻译:default,"Большая часть жизни еврейской семьи проходила на открытом
+ воздухе.",希伯来家庭的生活大多是在户外度过的。,Большая часть жизни еврейской семьи проходила на открытом воздухе.,ok,zh-CN,2649.8776000044018,"犹太家庭的大部分生活都是在公开场合度过的。
+空气。",17.79724356685771,188.74260000302456
+0.03305785123966942,whisper_cpp_small_q5_1,2655.7155000009516,0.3888888888888889,,9945998967616795899.wav,ru,asr_translation,tencent:腾讯云翻译:default,"В Японии первые празднования цитения сакур устраивались имп
+ератором только для себя и других членов арестократии при им
+ператорском дворе.",在日本，最早的樱花派对是由天皇为他自己和皇室其他贵族成员在皇家御所举办的。,В Японии первые празднования цветения сакуры устраивались императором только для себя и других членов аристократии при императорском дворе.,ok,zh-CN,3078.7893000015174,"在日本 ， 第一个樱花引用的庆祝活动被安排了
+仅为自己和被捕的其他成员
+长官的庭院。",11.320725872965504,423.0738000005658
+0.0,whisper_cpp_small_q5_1,2651.824000000488,0.1,,10419862324962592525.wav,ru,asr_translation,tencent:腾讯云翻译:default,"Среди примеров активного отдыха на объекте охота рыбная лов
+ля,
+ фотографирование, наблюдение за птицами, посещение парков и
+ изучение
+ информации об экосистеме.",现场活动包括打猎、钓鱼、摄影、观鸟、参观公园和研究生态系统。,"Среди примеров активного отдыха на объекте – охота, рыбная ловля, фотографирование, наблюдение за птицами, посещение парков и изучение информации об экосистеме.",ok,zh-CN,3115.7007000001613,"在狩猎场所进行积极休闲活动的例子中 ， 捕鱼
+拉，
+摄影 ， 观鸟 ， 参观公园
+学习
+生态系统信息。",14.97752662580552,463.8766999996733

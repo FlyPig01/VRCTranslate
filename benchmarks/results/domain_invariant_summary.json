@@ -1,0 +1,29 @@
+[
+  {
+    "profile_key": "tencent:腾讯云翻译:default",
+    "profile_name": "腾讯云翻译",
+    "provider": "tencent",
+    "cases": 9,
+    "success_rate": 1.0,
+    "invariant_preservation_rate": 0.6444444444444445,
+    "glossary_compatible_rate": 0.2222222222222222
+  },
+  {
+    "profile_key": "aliyun:阿里通用:general",
+    "profile_name": "阿里通用",
+    "provider": "aliyun",
+    "cases": 9,
+    "success_rate": 1.0,
+    "invariant_preservation_rate": 0.8888888888888888,
+    "glossary_compatible_rate": 1.0
+  },
+  {
+    "profile_key": "aliyun:阿里专业:professional",
+    "profile_name": "阿里专业",
+    "provider": "aliyun",
+    "cases": 9,
+    "success_rate": 1.0,
+    "invariant_preservation_rate": 0.9333333333333333,
+    "glossary_compatible_rate": 1.0
+  }
+]

@@ -250,6 +250,38 @@ def test_slow_result_keeps_valid_inline_geometry(qtbot) -> None:
     assert [(item[0], item[2]) for item in inline.items] == [("request", "你好")]
 
 
+def test_continuous_ocr_keeps_only_the_latest_frame_while_translation_runs(
+    qtbot,
+) -> None:
+    del qtbot
+    controller, _overlay, _inline = _controller("overlay")
+    controller._set_visual_state = lambda _state: None
+    controller._latest_texts = None
+    controller._scheduler = SimpleNamespace(pending_count=1)
+    first = _source()
+    second = OcrText(
+        "newest",
+        first.confidence,
+        first.box,
+        first.line_boxes,
+        first.canvas_size,
+        first.background_luminance,
+    )
+
+    controller._texts_ready([first])
+    controller._texts_ready([second])
+
+    assert controller._latest_texts == [second]
+
+    flushed: list[list[OcrText]] = []
+    controller._ocr_active = True
+    controller._texts_ready = flushed.append  # type: ignore[method-assign]
+    controller._flush_latest_texts()
+
+    assert flushed == [[second]]
+    assert controller._latest_texts is None
+
+
 def test_unfittable_inline_result_falls_back_to_overlay(qtbot) -> None:
     del qtbot
     controller, overlay, inline = _controller("inline")

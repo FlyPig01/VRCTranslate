@@ -2,23 +2,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from vrctranslate.domain.languages import TRANSLATION_LANGUAGE_CODES
+
 if TYPE_CHECKING:
     from vrctranslate.presentation.qt.i18n import I18nManager
 
 
 def languages(i18n: I18nManager) -> list[tuple[str, str]]:
-    codes = [
-        "auto",
-        "zh-CN",
-        "zh-TW",
-        "en",
-        "ja",
-        "ko",
-        "fr",
-        "de",
-        "es",
-        "ru",
-    ]
+    codes = ["auto", *TRANSLATION_LANGUAGE_CODES]
     return [(i18n.tr(f"lang.{code.replace('-', '_')}"), code) for code in codes]
 
 

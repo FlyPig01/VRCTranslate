@@ -3,10 +3,9 @@ from __future__ import annotations
 import unicodedata
 from dataclasses import dataclass
 
+from vrctranslate.domain.languages import TRANSLATION_LANGUAGE_CODES
 
-GLOSSARY_LANGUAGES = frozenset(
-    {"any", "zh-CN", "zh-TW", "en", "ja", "ko", "fr", "de", "es", "ru"}
-)
+GLOSSARY_LANGUAGES = frozenset({"any", *TRANSLATION_LANGUAGE_CODES})
 GLOSSARY_SCOPES = frozenset({"self", "ocr", "both"})
 
 

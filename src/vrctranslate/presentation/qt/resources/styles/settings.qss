@@ -48,12 +48,14 @@ QTabWidget#settingsSubTabs QTabBar::tab:selected {
 }
 QLabel#settingsSaveState { color: #5c6c82; font-size: 13px; }
 QLabel#settingsSaveState[dirty="true"] { color: #b16615; font-weight: 600; }
-QPushButton#languageToggle {
+QComboBox#languageSelector {
     min-height: 30px;
+    min-width: 120px;
     padding: 0 10px;
     color: #1e6883;
     background: #eef5f8;
-    border-color: #c9dee8;
+    border: 1px solid #c9dee8;
+    border-radius: 7px;
 }
 QLabel#capturePreview {
     background: #141f32;

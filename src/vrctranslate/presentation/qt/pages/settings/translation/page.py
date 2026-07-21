@@ -5,7 +5,11 @@ from copy import deepcopy
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QTabWidget, QVBoxLayout, QWidget
 
-from vrctranslate.application.dto import AppSettings, TranslationProfile
+from vrctranslate.application.dto import (
+    AppSettings,
+    SpeechRecognitionProfile,
+    TranslationProfile,
+)
 from vrctranslate.presentation.qt.i18n import I18nManager
 
 from .profile_editor import ProfileEditor
@@ -159,6 +163,12 @@ class TranslationSettingsPage(QWidget):
 
     def selected_profile(self) -> TranslationProfile:
         return self.profile_editor.selected_profile()
+
+    def set_speech_profile(
+        self,
+        profile: SpeechRecognitionProfile | None,
+    ) -> None:
+        self.routes_tab.set_speech_profile(profile)
 
     def set_test_status(self, message: str, failed: bool = False) -> None:
         self.profile_editor.set_test_status(message, failed)

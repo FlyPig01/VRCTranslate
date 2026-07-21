@@ -26,6 +26,31 @@ def test_catalog_includes_verified_portable_english_model() -> None:
     )
 
 
+def test_catalog_includes_verified_multilingual_script_models() -> None:
+    expected = {
+        "ko": (
+            "ko/recognition.onnx",
+            13_488_748,
+            "cd6e2ea50f6943ca7271eb8c56a877a5a90720b7047fe9c41a2e541a25773c9b",
+        ),
+        "latin": (
+            "latin/recognition.onnx",
+            7_904_513,
+            "b20bd37c168a570f583afbc8cd7925603890efbcdc000a59e22c269d160b5f5a",
+        ),
+        "cyrillic": (
+            "cyrillic/recognition.onnx",
+            8_074_092,
+            "90f761b4bfcce0c8c561c0cb5c887b0971d3ec01c32164bdf7374a35b0982711",
+        ),
+    }
+    for package_id, (path, size, sha256) in expected.items():
+        recognition = OCR_MODEL_PACKAGES[package_id].files[-1]
+        assert recognition.relative_path == path
+        assert recognition.size == size
+        assert recognition.sha256 == sha256
+
+
 def _spec(path: str, content: bytes) -> OcrModelFile:
     return OcrModelFile(
         path,

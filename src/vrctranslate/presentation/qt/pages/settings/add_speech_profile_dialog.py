@@ -19,6 +19,7 @@ from PySide6.QtWidgets import (
 from vrctranslate.application.dto import SpeechRecognitionProfile
 from vrctranslate.application.speech_profiles import creatable_speech_services
 from vrctranslate.presentation.qt.i18n import I18nManager
+from vrctranslate.presentation.qt.options import languages
 from vrctranslate.presentation.qt.widgets import NoWheelComboBox
 
 
@@ -66,6 +67,7 @@ class AddSpeechProfileDialog(QDialog):
         self.field_two_edit = QLineEdit()
         self.field_three_edit = QLineEdit()
         self.model_combo = NoWheelComboBox()
+        self.language_combo = NoWheelComboBox()
         self.model_combo.setMinimumWidth(0)
         self.model_combo.setMinimumContentsLength(24)
         self.model_combo.setSizeAdjustPolicy(
@@ -83,6 +85,7 @@ class AddSpeechProfileDialog(QDialog):
         self._field_two_label = QLabel()
         self._field_three_label = QLabel()
         self._model_label = QLabel()
+        self._language_label = QLabel()
         self._custom_model_label = QLabel()
         self._legacy_model_label = QLabel()
         self.form.addRow(self._provider_label, self.provider_combo)
@@ -91,6 +94,7 @@ class AddSpeechProfileDialog(QDialog):
         self.form.addRow(self._field_two_label, self.field_two_edit)
         self.form.addRow(self._field_three_label, self.field_three_edit)
         self.form.addRow(self._model_label, self.model_combo)
+        self.form.addRow(self._language_label, self.language_combo)
         self.form.addRow(self._custom_model_label, self.custom_model_edit)
         self.form.addRow(self._legacy_model_label, self.legacy_model_edit)
         root.addLayout(self.form)
@@ -116,6 +120,7 @@ class AddSpeechProfileDialog(QDialog):
         self._title.setText(t(title_key))
         self._provider_label.setText(t("speech_profile.service"))
         self._name_label.setText(t("voice_settings.profile_name"))
+        self._language_label.setText(t("route.source"))
         current_provider = str(self.provider_combo.currentData() or "")
         self.provider_combo.blockSignals(True)
         self.provider_combo.clear()
@@ -155,6 +160,16 @@ class AddSpeechProfileDialog(QDialog):
         self.field_two_edit.setEchoMode(QLineEdit.EchoMode.Normal)
         self.field_three_edit.setEchoMode(QLineEdit.EchoMode.Password)
         self.model_combo.clear()
+        current_language = str(self.language_combo.currentData() or "zh-CN")
+        self.language_combo.clear()
+        for label, code in languages(self._i18n):
+            if code != "auto":
+                self.language_combo.addItem(label, code)
+        language_index = self.language_combo.findData(current_language)
+        self.language_combo.setCurrentIndex(
+            language_index if language_index >= 0 else 0
+        )
+        self.form.setRowVisible(self.language_combo, False)
         descriptor = next(
             (item for item in creatable_speech_services() if item.provider == provider),
             None,
@@ -190,6 +205,7 @@ class AddSpeechProfileDialog(QDialog):
             self._field_three_label.setText(t("speech_profile.aliyun_access_secret"))
             self.field_two_edit.setEchoMode(QLineEdit.EchoMode.Password)
             self._set_provider_rows(True, True, True, False, False)
+            self.form.setRowVisible(self.language_combo, True)
             self.provider_help.setText(
                 t("speech_profile.aliyun_language_help")
             )
@@ -248,6 +264,11 @@ class AddSpeechProfileDialog(QDialog):
                 str(profile.options.get("access_key_id", ""))
             )
             self.field_three_edit.setText(profile.api_key)
+            language_index = self.language_combo.findData(
+                str(profile.options.get("language", "zh-CN"))
+            )
+            if language_index >= 0:
+                self.language_combo.setCurrentIndex(language_index)
         else:
             self.field_one_edit.setText(profile.api_key)
             self.legacy_model_edit.setText(profile.model)
@@ -288,6 +309,7 @@ class AddSpeechProfileDialog(QDialog):
             "access_key_id",
             "access_token",
             "token_endpoint",
+            "language",
         ):
             options.pop(key, None)
         options.update(provider_options)
@@ -322,6 +344,9 @@ class AddSpeechProfileDialog(QDialog):
                         "service_vendor": "aliyun",
                         "app_key": one,
                         "access_key_id": two,
+                        "language": str(
+                            self.language_combo.currentData() or "zh-CN"
+                        ),
                     },
                 )
                 if one and two and three

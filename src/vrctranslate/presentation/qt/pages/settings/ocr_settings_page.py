@@ -15,12 +15,13 @@ from PySide6.QtWidgets import (
 )
 
 from vrctranslate.application.dto import AppSettings
+from vrctranslate.domain.languages import OCR_MODEL_PACKAGE_IDS
 from vrctranslate.presentation.qt.i18n import I18nManager
 from vrctranslate.presentation.qt.pages.settings.common import card, form_layout, scroll_page
 from vrctranslate.presentation.qt.widgets import NoWheelComboBox, NumericLineEdit
 
 
-_OCR_MODEL_LANGUAGES = ("zh-CN", "ja", "en")
+_OCR_MODEL_LANGUAGES = OCR_MODEL_PACKAGE_IDS
 
 
 @dataclass(slots=True)
@@ -199,6 +200,11 @@ class OcrSettingsPage(QWidget):
         self._model_names["zh-CN"].setText(self._i18n.tr("ocr_models.zh_name"))
         self._model_names["ja"].setText(self._i18n.tr("ocr_models.ja_name"))
         self._model_names["en"].setText(self._i18n.tr("ocr_models.en_name"))
+        self._model_names["ko"].setText(self._i18n.tr("ocr_models.ko_name"))
+        self._model_names["latin"].setText(self._i18n.tr("ocr_models.latin_name"))
+        self._model_names["cyrillic"].setText(
+            self._i18n.tr("ocr_models.cyrillic_name")
+        )
         for language in _OCR_MODEL_LANGUAGES:
             self._model_remove_buttons[language].setText(self._i18n.tr("ocr_models.remove"))
             self._model_cancel_buttons[language].setText(self._i18n.tr("ocr_models.cancel"))

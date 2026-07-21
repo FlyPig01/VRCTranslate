@@ -874,6 +874,25 @@ def test_local_speech_profile_requires_no_api_credentials(qtbot) -> None:
     assert dialog.profile.api_key == ""
 
 
+def test_aliyun_speech_profile_records_console_project_language(qtbot) -> None:
+    dialog = AddSpeechProfileDialog(I18nManager("zh_CN"))
+    qtbot.addWidget(dialog)
+    dialog.provider_combo.setCurrentIndex(
+        dialog.provider_combo.findData("aliyun_nls_realtime")
+    )
+
+    assert dialog.form.isRowVisible(dialog.language_combo)
+    dialog.language_combo.setCurrentIndex(dialog.language_combo.findData("ko"))
+    dialog.profile_name_edit.setText("Aliyun Korean")
+    dialog.field_one_edit.setText("synthetic-app-key")
+    dialog.field_two_edit.setText("synthetic-access-id")
+    dialog.field_three_edit.setText("synthetic-access-secret")
+    dialog._accept_profile()
+
+    assert dialog.profile is not None
+    assert dialog.profile.options["language"] == "ko"
+
+
 def test_tencent_engine_labels_are_localized_and_custom_values_are_editable(qtbot) -> None:
     expected = {
         "zh_CN": "多语种大模型",

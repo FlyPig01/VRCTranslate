@@ -2,6 +2,19 @@
 
 VRCTranslate uses the following third-party component in addition to the dependencies declared in `pyproject.toml`.
 
+## RapidOCR and PaddleOCR models
+
+- Runtime package: RapidOCR 3.9.x
+- Optional models: PP-OCRv5/PP-OCRv6 detection, orientation, Chinese, Japanese, English, Korean, Latin-script, and Cyrillic recognition models
+- Purpose: local in-memory OCR for the user-selected screen region
+- RapidOCR project: <https://github.com/RapidAI/RapidOCR>
+- PaddleOCR project: <https://github.com/PaddlePaddle/PaddleOCR>
+- Model mirror: <https://www.modelscope.cn/models/RapidAI/RapidOCR>
+- License: Apache License 2.0
+- License text: <https://www.apache.org/licenses/LICENSE-2.0>
+
+OCR model files are optional verified downloads stored under `data/models/ocr` beside the application. They are not included in the base release archive. VRCTranslate shares detection and orientation files between language packs and does not save recognized frames to disk.
+
 ## wanakana-python
 
 - Version: 1.2.2

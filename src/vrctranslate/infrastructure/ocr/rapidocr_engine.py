@@ -6,6 +6,7 @@ import numpy as np
 from PIL import Image, ImageFilter
 
 from vrctranslate.domain.errors import OcrUnavailable
+from vrctranslate.domain.languages import ocr_package_for_language
 from vrctranslate.domain.ocr import OcrText
 from vrctranslate.infrastructure.ocr.model_manager import OcrModelManager
 
@@ -86,7 +87,7 @@ class RapidOcrEngine:
             return
         raise OcrUnavailable(
             "多模态嵌字需要本地文字检测模型。请打开设置 → OCR → 本地 OCR 模型，"
-            "安装任意一个中文、日文或英文 OCR 模型后再试。"
+            "安装任意一个 OCR 模型后再试。"
         )
 
     def detect(self, frame: object) -> list[OcrText]:
@@ -171,6 +172,9 @@ class RapidOcrEngine:
             "zh-CN": LangRec.CH,
             "ja": LangRec.JAPAN,
             "en": LangRec.EN,
+            "ko": LangRec.KOREAN,
+            "latin": LangRec.LATIN,
+            "cyrillic": LangRec.CYRILLIC,
         }[self._source_language]
         rec_version = (
             OCRVersion.PPOCRV5
@@ -245,6 +249,9 @@ class RapidOcrEngine:
             "zh-CN": "中文",
             "ja": "日文",
             "en": "英文",
+            "ko": "韩文",
+            "latin": "拉丁文字",
+            "cyrillic": "西里尔文字",
         }[self._source_language]
         return OcrUnavailable(
             f"尚未安装{language_name} OCR 模型。请打开设置 → OCR → 本地 OCR 模型，"
@@ -253,10 +260,7 @@ class RapidOcrEngine:
 
     @staticmethod
     def _normalize_language(source_language: str) -> str:
-        if source_language in {"zh", "zh_CN", "zh-CN"}:
-            return "zh-CN"
-        if source_language in {"ja", "auto"}:
-            return "ja"
-        if source_language in {"en", "en-US", "en_US"}:
-            return "en"
-        raise OcrUnavailable("OCR 仅支持中文、日文或英文识别模型。")
+        try:
+            return ocr_package_for_language(source_language)
+        except ValueError as exc:
+            raise OcrUnavailable("当前语言没有可用的本地 OCR 模型。") from exc

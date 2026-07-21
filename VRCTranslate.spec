@@ -151,6 +151,10 @@ release_root = Path(DISTPATH) / product_name
 shutil.copy2(ROOT / "README.md", release_root / "README.md")
 shutil.copy2(ROOT / "使用说明.md", release_root / "使用说明.md")
 shutil.copy2(
+    ROOT / "多语言翻译质量测试报告.md",
+    release_root / "多语言翻译质量测试报告.md",
+)
+shutil.copy2(
     ROOT / "THIRD_PARTY_NOTICES.md",
     release_root / "THIRD_PARTY_NOTICES.md",
 )

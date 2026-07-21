@@ -116,6 +116,66 @@ def test_rapidocr_uses_english_mobile_recognition_settings(monkeypatch) -> None:
     assert captured["Rec.model_type"] == ModelType.MOBILE
 
 
+@pytest.mark.parametrize(
+    ("source_language", "package_id", "lang_name"),
+    (
+        ("ko", "ko", "KOREAN"),
+        ("fr", "latin", "LATIN"),
+        ("de", "latin", "LATIN"),
+        ("es", "latin", "LATIN"),
+        ("ru", "cyrillic", "CYRILLIC"),
+        ("zh-TW", "zh-CN", "CH"),
+    ),
+)
+def test_rapidocr_maps_languages_to_script_models(
+    monkeypatch,
+    source_language: str,
+    package_id: str,
+    lang_name: str,
+) -> None:
+    from rapidocr import LangRec
+
+    captured = {}
+    requested = []
+
+    class Models:
+        models_root = Path("models")
+
+        def signature(self, language):
+            requested.append(language)
+            return (("model", 1, 1),)
+
+        def paths(self, language):
+            return OcrModelPaths(
+                language,
+                Path("det.onnx"),
+                Path("cls.onnx"),
+                Path("rec.onnx"),
+                "PP-OCRv5",
+                "mobile",
+            )
+
+    class Output:
+        boxes = np.empty((0, 4, 2))
+        txts = ()
+        scores = ()
+
+    class FakeRapidOCR:
+        def __init__(self, params):
+            captured.update(params)
+
+        def __call__(self, _frame):
+            return Output()
+
+    monkeypatch.setattr("rapidocr.RapidOCR", FakeRapidOCR)
+    RapidOcrEngine(Models(), source_language).recognize(  # type: ignore[arg-type]
+        np.zeros((60, 160, 3), dtype=np.uint8)
+    )
+
+    assert requested == [package_id]
+    assert captured["Rec.lang_type"] == getattr(LangRec, lang_name)
+
+
 def test_rapidocr_detection_only_skips_recognition(monkeypatch) -> None:
     captured = {}
     call_options = {}

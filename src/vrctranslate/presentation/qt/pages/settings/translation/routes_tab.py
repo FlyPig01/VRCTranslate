@@ -5,7 +5,15 @@ from copy import deepcopy
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QCheckBox, QLabel, QVBoxLayout, QWidget
 
-from vrctranslate.application.dto import TranslationProfile, TranslationSettings
+from vrctranslate.application.dto import (
+    SpeechRecognitionProfile,
+    TranslationProfile,
+    TranslationSettings,
+)
+from vrctranslate.application.language_capabilities import (
+    speech_source_language_codes,
+    translation_language_codes,
+)
 from vrctranslate.presentation.qt.i18n import I18nManager
 from vrctranslate.presentation.qt.options import formats, languages
 from vrctranslate.presentation.qt.pages.settings.common import card, form_layout, scroll_page
@@ -22,6 +30,7 @@ class RoutesTab(QWidget):
         super().__init__()
         self._i18n = i18n
         self._profiles: list[TranslationProfile] = []
+        self._speech_profile: SpeechRecognitionProfile | None = None
         self._global_glossary_enabled = True
         self._build_ui()
         self.retranslate()
@@ -160,7 +169,12 @@ class RoutesTab(QWidget):
         layout.addWidget(voice_card)
         layout.addStretch()
 
-        self.ocr_profile_combo.currentIndexChanged.connect(self.update_warnings)
+        for combo in (
+            self.self_profile_combo,
+            self.ocr_profile_combo,
+            self.voice_profile_combo,
+        ):
+            combo.currentIndexChanged.connect(self._profile_changed)
         for combo in (
             self.self_profile_combo,
             self.self_source_combo,
@@ -220,6 +234,7 @@ class RoutesTab(QWidget):
             settings.ocr_route.profile_id,
             settings.voice_route.profile_id,
         )
+        self._rebuild_languages()
         set_combo(self.self_source_combo, settings.self_route.source_language)
         set_combo(self.self_target_combo, settings.self_route.target_language)
         set_combo(self.ocr_source_combo, settings.ocr_route.source_language)
@@ -284,6 +299,15 @@ class RoutesTab(QWidget):
         if not preserve or voice_id not in {p.id for p in text_profiles}:
             voice_id = text_profiles[0].id if text_profiles else ""
         self._populate_profile_combos(self_id, ocr_id, voice_id)
+        self._rebuild_languages()
+        self.update_warnings()
+
+    def set_speech_profile(
+        self,
+        profile: SpeechRecognitionProfile | None,
+    ) -> None:
+        self._speech_profile = deepcopy(profile)
+        self._rebuild_languages()
         self.update_warnings()
 
     def set_glossary_global_enabled(self, enabled: bool) -> None:
@@ -335,32 +359,65 @@ class RoutesTab(QWidget):
             combo.blockSignals(False)
 
     def _rebuild_languages(self) -> None:
-        for combo, include_auto in (
-            (self.self_source_combo, True),
-            (self.self_target_combo, False),
-            (self.ocr_target_combo, False),
-            (self.voice_source_combo, True),
-            (self.voice_target_combo, False),
-        ):
+        label_by_code = {value: label for label, value in languages(self._i18n)}
+        self_provider = self._profile_provider(
+            str(self.self_profile_combo.currentData() or "")
+        )
+        ocr_provider = self._profile_provider(
+            str(self.ocr_profile_combo.currentData() or "")
+        )
+        voice_provider = self._profile_provider(
+            str(self.voice_profile_combo.currentData() or "")
+        )
+        speech_codes = set(speech_source_language_codes(self._speech_profile))
+        voice_sources = tuple(
+            code
+            for code in translation_language_codes(voice_provider, source=True)
+            if code in speech_codes
+        )
+        combinations = (
+            (
+                self.self_source_combo,
+                translation_language_codes(self_provider, source=True),
+                "auto",
+            ),
+            (
+                self.self_target_combo,
+                translation_language_codes(self_provider, source=False),
+                "zh-CN",
+            ),
+            (
+                self.ocr_source_combo,
+                translation_language_codes(ocr_provider, source=True, ocr=True),
+                "ja",
+            ),
+            (
+                self.ocr_target_combo,
+                translation_language_codes(ocr_provider, source=False),
+                "zh-CN",
+            ),
+            (self.voice_source_combo, voice_sources, "auto"),
+            (
+                self.voice_target_combo,
+                translation_language_codes(voice_provider, source=False),
+                "zh-CN",
+            ),
+        )
+        for combo, codes, fallback in combinations:
             current = str(combo.currentData() or "")
             combo.blockSignals(True)
             combo.clear()
-            for label, value in languages(self._i18n):
-                if include_auto or value != "auto":
-                    combo.addItem(label, value)
-            set_combo(combo, current)
+            for code in codes:
+                combo.addItem(label_by_code.get(code, code), code)
+            selected = current if current in codes else fallback
+            if selected not in codes and codes:
+                selected = codes[0]
+            set_combo(combo, selected)
             combo.blockSignals(False)
-        current = str(self.ocr_source_combo.currentData() or "")
-        self.ocr_source_combo.blockSignals(True)
-        self.ocr_source_combo.clear()
-        for label, value in languages(self._i18n):
-            if value in {"zh-CN", "ja", "en"}:
-                self.ocr_source_combo.addItem(label, value)
-        set_combo(
-            self.ocr_source_combo,
-            current if current in {"zh-CN", "ja", "en"} else "ja",
-        )
-        self.ocr_source_combo.blockSignals(False)
+
+    def _profile_changed(self) -> None:
+        self._rebuild_languages()
+        self.update_warnings()
 
     def _rebuild_formats(self) -> None:
         current = str(self.format_combo.currentData() or "")

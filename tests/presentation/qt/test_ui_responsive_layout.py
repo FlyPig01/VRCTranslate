@@ -7,6 +7,7 @@ from PySide6.QtCore import QPoint, QRect, Qt
 from PySide6.QtGui import QColor, QImage, QPainter
 from PySide6.QtWidgets import (
     QListWidget,
+    QScrollArea,
     QStackedWidget,
     QStyle,
     QStyleOptionButton,
@@ -49,6 +50,41 @@ class _Settings:
 
 
 I18N = _I18n()
+
+
+@pytest.mark.parametrize(
+    "locale",
+    (
+        "zh_CN",
+        "zh_TW",
+        "en_US",
+        "ja_JP",
+        "ko_KR",
+        "fr_FR",
+        "de_DE",
+        "es_ES",
+        "ru_RU",
+    ),
+)
+def test_all_locales_keep_minimum_settings_layout_usable(qtbot, locale) -> None:
+    page = SettingsPage(I18nManager(locale))
+    qtbot.addWidget(page)
+    settings = AppSettings()
+    settings.ui.language = locale
+    page.resize(720, 520)
+    page.load_settings(settings, "data/config.json")
+    page.show()
+    qtbot.waitExposed(page)
+
+    assert page._lang_combo.isVisible()
+    assert page._save_button.isVisible()
+    assert page.section_nav.isVisible()
+    assert page._lang_combo.currentData() == locale
+    assert all(
+        scroll.horizontalScrollBarPolicy()
+        == Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+        for scroll in page.findChildren(QScrollArea)
+    )
 
 
 def _top_left(widget, parent) -> QPoint:  # noqa: ANN001

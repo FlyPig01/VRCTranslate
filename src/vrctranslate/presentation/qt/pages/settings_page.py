@@ -24,6 +24,7 @@ from vrctranslate.application.dto import (
     SpeechRecognitionProfile,
     TranslationProfile,
 )
+from vrctranslate.domain.languages import INTERFACE_LOCALES
 from vrctranslate.presentation.qt.i18n import I18nManager
 from vrctranslate.presentation.qt.icon_resources import load_icon
 from vrctranslate.presentation.qt.pages.settings import (
@@ -33,6 +34,7 @@ from vrctranslate.presentation.qt.pages.settings import (
     TranslationSettingsPage,
     VoiceSettingsPage,
 )
+from vrctranslate.presentation.qt.widgets import NoWheelComboBox
 from vrctranslate.presentation.qt.widgets.settings_section_nav import SettingsSectionNav
 from vrctranslate.presentation.qt.view_models.settings_draft import SettingsDraft
 
@@ -123,11 +125,12 @@ class SettingsPage(QWidget):
         actions = QHBoxLayout()
         actions.setSpacing(8)
         self._lang_label = QLabel()
-        self._lang_btn = QPushButton()
-        self._lang_btn.setObjectName("languageToggle")
-        self._lang_btn.setFlat(True)
-        self._lang_btn.clicked.connect(self._cycle_language)
-        self._lang_locales = ["zh_CN", "en_US", "ja_JP"]
+        self._lang_combo = NoWheelComboBox()
+        self._lang_combo.setObjectName("languageSelector")
+        self._lang_combo.setProperty("skipDirtyTracking", True)
+        self._lang_locales = [item.locale for item in INTERFACE_LOCALES]
+        for item in INTERFACE_LOCALES:
+            self._lang_combo.addItem(item.native_name, item.locale)
         self._lang_index = 0
         self._dirty_label = QLabel()
         self._dirty_label.setObjectName("settingsSaveState")
@@ -136,7 +139,7 @@ class SettingsPage(QWidget):
         self._discard_button = QPushButton()
         self._discard_button.setObjectName("secondaryButton")
         actions.addWidget(self._lang_label)
-        actions.addWidget(self._lang_btn)
+        actions.addWidget(self._lang_combo)
         actions.addWidget(self._dirty_label)
         actions.addWidget(self._discard_button)
         actions.addWidget(self._save_button)
@@ -176,6 +179,7 @@ class SettingsPage(QWidget):
         root.addLayout(footer)
 
         self.section_nav.section_changed.connect(self.section_stack.setCurrentIndex)
+        self._lang_combo.currentIndexChanged.connect(self._language_selected)
         self._save_button.clicked.connect(self.save_requested)
         self._discard_button.clicked.connect(self.discard_requested)
         self._save_shortcut = QShortcut(QKeySequence.StandardKey.Save, self)
@@ -192,16 +196,11 @@ class SettingsPage(QWidget):
             self._dirty_label.setText(t("page.settings.dirty"))
         else:
             self._dirty_label.setText(t("page.settings.saved"))
-        self._update_lang_button()
 
-    def _update_lang_button(self) -> None:
-        locale_map = {"zh_CN": "中文", "en_US": "English", "ja_JP": "日本語"}
-        locale = self._lang_locales[self._lang_index]
-        self._lang_btn.setText(locale_map.get(locale, locale))
-
-    def _cycle_language(self) -> None:
-        self._lang_index = (self._lang_index + 1) % len(self._lang_locales)
-        self._update_lang_button()
+    def _language_selected(self, index: int) -> None:
+        if index < 0 or self._loading:
+            return
+        self._lang_index = index
         self.save_requested.emit()
 
     def _forward_signals(self) -> None:
@@ -212,6 +211,9 @@ class SettingsPage(QWidget):
         page.glossary_tab.changed.connect(self._mark_dirty)
         page.profile_editor.structure_changed.connect(self._mark_dirty)
         self.voice_page.structure_changed.connect(self._mark_dirty)
+        self.voice_page.structure_changed.connect(
+            self._sync_speech_language_capability
+        )
         self.voice_page.active_profile_changed.connect(
             self._schedule_voice_profile_save
         )
@@ -255,7 +257,15 @@ class SettingsPage(QWidget):
 
     def _schedule_voice_profile_save(self) -> None:
         if not self._loading:
+            self._sync_speech_language_capability()
             self._voice_auto_save_timer.start()
+
+    def _sync_speech_language_capability(self) -> None:
+        try:
+            profile = self.voice_page.selected_profile()
+        except (ValueError, KeyError):
+            profile = None
+        self.translation_page.set_speech_profile(profile)
 
     def mark_saved(self) -> None:
         self._dirty = False
@@ -286,6 +296,7 @@ class SettingsPage(QWidget):
             self.osc_page.load_settings(settings)
             self.ocr_page.load_settings(settings)
             self.voice_page.load_settings(settings)
+            self._sync_speech_language_capability()
             self.data_page.load_location(location)
             self._location_summary.set_full_text(
                 self._i18n.tr("page.settings.config_location", path=location)
@@ -294,7 +305,9 @@ class SettingsPage(QWidget):
                           if settings.ui.language in self._lang_locales
                           else 0)
             self._lang_index = lang_index
-            self._update_lang_button()
+            self._lang_combo.blockSignals(True)
+            self._lang_combo.setCurrentIndex(lang_index)
+            self._lang_combo.blockSignals(False)
         finally:
             self._loading = False
         self.mark_saved()

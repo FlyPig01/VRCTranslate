@@ -24,7 +24,7 @@ Remove-Item Env:PYINSTALLER_CONFIG_DIR
 
 发布前应在 D/E 盘的干净目录中解压并验证：
 
-- exe 同级存在 `_internal`、`data`、使用说明和 `THIRD_PARTY_NOTICES.md`。
+- exe 同级存在 `_internal`、`data`、README、使用说明、多语言翻译质量测试报告和 `THIRD_PARTY_NOTICES.md`。
 - 配置、日志和缓存只写到 exe 同级 `data`。
 - 发布目录没有预置 `data\models\speech`、`data\components\local-asr` 或开发机测试语料。
 - 不从压缩包内直接运行，也不放到 `Program Files` 等不可写目录。

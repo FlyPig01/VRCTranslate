@@ -16,6 +16,7 @@ from PySide6.QtWidgets import (
 
 from vrctranslate.application.dto import (
     AppSettings,
+    SpeechRecognitionProfile,
     TranslationProfile,
     TranslationSettings,
 )
@@ -81,10 +82,76 @@ def test_settings_has_five_discoverable_sections_and_fixed_save(qtbot, tmp_path)
     assert [
         page.translation_page.routes_tab.ocr_source_combo.itemData(index)
         for index in range(page.translation_page.routes_tab.ocr_source_combo.count())
-    ] == ["zh-CN", "en", "ja"]
-    assert set(page.ocr_page._model_install_buttons) == {"zh-CN", "ja", "en"}
+    ] == ["zh-CN", "zh-TW", "en", "ja", "ko", "fr", "de", "es", "ru"]
+    assert set(page.ocr_page._model_install_buttons) == {
+        "zh-CN",
+        "ja",
+        "en",
+        "ko",
+        "latin",
+        "cyrillic",
+    }
     assert page.translation_page.routes_tab.self_romaji_combo.currentData() == "auto"
     assert page.translation_page.routes_tab.ocr_romaji_combo.currentData() == "off"
+
+
+def test_interface_language_uses_a_native_name_dropdown(qtbot) -> None:
+    page = SettingsPage(I18nManager("zh_CN"))
+    qtbot.addWidget(page)
+    page.load_settings(AppSettings(), "data/config.json")
+
+    assert not hasattr(page, "_lang_btn")
+    assert [
+        page._lang_combo.itemData(index)
+        for index in range(page._lang_combo.count())
+    ] == [
+        "zh_CN",
+        "zh_TW",
+        "en_US",
+        "ja_JP",
+        "ko_KR",
+        "fr_FR",
+        "de_DE",
+        "es_ES",
+        "ru_RU",
+    ]
+    assert page._lang_combo.itemText(4) == "한국어"
+
+
+def test_route_languages_follow_translation_and_speech_profiles(qtbot) -> None:
+    tab = RoutesTab(I18nManager("zh_CN"))
+    qtbot.addWidget(tab)
+    settings = TranslationSettings(
+        profiles=[
+            TranslationProfile(
+                id="tencent",
+                name="Tencent",
+                provider="tencent",
+            )
+        ]
+    )
+    settings.self_route.profile_id = "tencent"
+    settings.ocr_route.profile_id = "tencent"
+    settings.voice_route.profile_id = "tencent"
+    tab.load_settings(settings)
+
+    self_sources = {
+        tab.self_source_combo.itemData(index)
+        for index in range(tab.self_source_combo.count())
+    }
+    assert "auto" not in self_sources
+    assert "ko" in self_sources
+
+    tab.set_speech_profile(
+        SpeechRecognitionProfile(
+            provider="tencent_realtime",
+            model="16k_ja",
+        )
+    )
+    assert [
+        tab.voice_source_combo.itemData(index)
+        for index in range(tab.voice_source_combo.count())
+    ] == ["ja"]
 
 
 def test_tencent_profile_uses_secret_id_and_secret_key_labels(qtbot, tmp_path) -> None:

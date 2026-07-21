@@ -89,4 +89,52 @@ OCR_MODEL_PACKAGES: dict[str, OcrModelPackage] = {
             ),
         ),
     ),
+    "ko": OcrModelPackage(
+        "ko",
+        "PP-OCRv5-mobile-korean",
+        "PP-OCRv5",
+        "mobile",
+        (
+            DETECTION,
+            ORIENTATION,
+            OcrModelFile(
+                "ko/recognition.onnx",
+                f"{_BASE}/PP-OCRv5/rec/korean_PP-OCRv5_rec_mobile.onnx",
+                "cd6e2ea50f6943ca7271eb8c56a877a5a90720b7047fe9c41a2e541a25773c9b",
+                13_488_748,
+            ),
+        ),
+    ),
+    "latin": OcrModelPackage(
+        "latin",
+        "PP-OCRv5-mobile-latin",
+        "PP-OCRv5",
+        "mobile",
+        (
+            DETECTION,
+            ORIENTATION,
+            OcrModelFile(
+                "latin/recognition.onnx",
+                f"{_BASE}/PP-OCRv5/rec/latin_PP-OCRv5_rec_mobile.onnx",
+                "b20bd37c168a570f583afbc8cd7925603890efbcdc000a59e22c269d160b5f5a",
+                7_904_513,
+            ),
+        ),
+    ),
+    "cyrillic": OcrModelPackage(
+        "cyrillic",
+        "PP-OCRv5-mobile-cyrillic",
+        "PP-OCRv5",
+        "mobile",
+        (
+            DETECTION,
+            ORIENTATION,
+            OcrModelFile(
+                "cyrillic/recognition.onnx",
+                f"{_BASE}/PP-OCRv5/rec/cyrillic_PP-OCRv5_rec_mobile.onnx",
+                "90f761b4bfcce0c8c561c0cb5c887b0971d3ec01c32164bdf7374a35b0982711",
+                8_074_092,
+            ),
+        ),
+    ),
 }

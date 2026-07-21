@@ -14,6 +14,7 @@ from vrctranslate.application.ports.ocr_models import (
     OcrModelStatus,
     OcrModelStorage,
 )
+from vrctranslate.domain.languages import ocr_package_for_language
 from vrctranslate.infrastructure.ocr.model_catalog import (
     OCR_MODEL_PACKAGES,
     OcrModelFile,
@@ -202,9 +203,7 @@ class OcrModelManager:
         return str(path), stat.st_size, stat.st_mtime_ns
 
     def _package(self, language: str) -> OcrModelPackage:
-        normalized = "zh-CN" if language in {"zh", "zh_CN", "zh-CN"} else language
-        if normalized == "auto":
-            normalized = "ja"
+        normalized = ocr_package_for_language(language)
         try:
             return self._packages[normalized]
         except KeyError as exc:

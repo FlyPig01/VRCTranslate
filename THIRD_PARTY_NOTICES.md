@@ -45,6 +45,18 @@ VRCTranslate uses Pillow only for in-memory image processing. It does not add a 
 
 VRCTranslate implements each provider's documented authentication and realtime ASR framing on top of `websocket-client`. No provider SDK or file-transcription helper is bundled, and captured PCM remains in memory.
 
+## python-sounddevice and PortAudio
+
+- Runtime package: python-sounddevice 0.5.x
+- Bundled native library: PortAudio for Windows
+- Purpose: capture the user-selected microphone for explicitly enabled self-voice translation
+- python-sounddevice project: <https://github.com/spatialaudio/python-sounddevice>
+- PortAudio project: <https://github.com/PortAudio/portaudio>
+- License: MIT
+- License texts: <https://github.com/spatialaudio/python-sounddevice/blob/master/LICENSE> and <https://github.com/PortAudio/portaudio/blob/master/LICENSE.txt>
+
+The release bundle includes the PortAudio DLL supplied by the python-sounddevice wheel. Microphone capture is disabled by default; audio frames are processed in memory and are not saved by VRCTranslate.
+
 ## Alibaba Cloud Machine Translation SDK
 
 - Package: `alibabacloud-alimt20181012`

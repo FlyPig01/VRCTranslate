@@ -1,6 +1,7 @@
 import json
 
 from vrctranslate.application.dto import (
+    CONFIG_VERSION,
     AppSettings,
     SpeechRecognitionProfile,
     TranslationProfile,
@@ -16,7 +17,7 @@ def test_config_round_trip_keeps_plain_text_api_key(tmp_path) -> None:
     settings.translation.ocr_route.source_language = "en"
     repository.save(settings)
     raw = json.loads(path.read_text(encoding="utf-8"))
-    assert raw["version"] == 12
+    assert raw["version"] == CONFIG_VERSION
     assert raw["translation"]["profiles"][0]["api_key"] == "plain-test-key"
     assert repository.load().translation.profiles[0].api_key == "plain-test-key"
     assert "sync_typing" not in raw["osc"]
@@ -37,6 +38,8 @@ def test_config_round_trip_keeps_plain_text_api_key(tmp_path) -> None:
     assert raw["voice"]["asr_profile_id"] == ""
     assert raw["voice"]["asr_profiles"] == []
     assert raw["voice"]["overlay"]["display_mode"] == "both"
+    assert raw["ui"]["quick_input_hotkey"] == "Ctrl+Alt+I"
+    assert raw["self_voice"]["toggle_hotkey"] == "Ctrl+Alt+M"
     assert raw["ocr"]["multimodal_interval_ms"] == 3000
     assert "ocr_overlay_display_seconds" not in raw["ui"]
 
@@ -277,7 +280,7 @@ def test_broken_config_is_renamed_and_replaced_with_defaults(tmp_path) -> None:
     settings = JsonSettingsRepository(path).load()
     assert settings == AppSettings()
     assert path.exists()
-    assert json.loads(path.read_text(encoding="utf-8"))["version"] == 12
+    assert json.loads(path.read_text(encoding="utf-8"))["version"] == CONFIG_VERSION
     assert list(tmp_path.glob("config.json.broken-*"))
 
 
@@ -300,7 +303,7 @@ def test_version_one_is_migrated_to_profiles_and_independent_routes(tmp_path) ->
         encoding="utf-8",
     )
     settings = JsonSettingsRepository(path).load()
-    assert settings.version == 12
+    assert settings.version == CONFIG_VERSION
     assert settings.translation.profiles[0].api_key == "legacy-key"
     assert settings.translation.self_route.target_language == "ja"
     assert settings.translation.ocr_route.target_language == "ja"
@@ -329,7 +332,7 @@ def test_version_two_migrates_to_continuous_mode_without_duplicate_cooldown(tmp_
     settings = JsonSettingsRepository(path).load()
     raw = json.loads(path.read_text(encoding="utf-8"))
 
-    assert settings.version == 12
+    assert settings.version == CONFIG_VERSION
     assert settings.ocr.recognition_mode == "continuous"
     assert settings.ocr.change_threshold == 6
     assert "duplicate_seconds" not in raw["ocr"]
@@ -352,11 +355,11 @@ def test_version_three_adds_inline_defaults_and_explicit_ocr_language(tmp_path) 
     settings = JsonSettingsRepository(path).load()
     raw = json.loads(path.read_text(encoding="utf-8"))
 
-    assert settings.version == 12
+    assert settings.version == CONFIG_VERSION
     assert settings.translation.ocr_route.source_language == "ja"
     assert settings.ui.ocr_display_mode == "overlay"
     assert settings.ui.ocr_inline_opacity == 0.9
-    assert raw["version"] == 12
+    assert raw["version"] == CONFIG_VERSION
     assert path.with_name("config.json.v3-backup").exists()
 
 
@@ -378,7 +381,7 @@ def test_version_four_migrates_legacy_romaji_booleans_to_modes(tmp_path) -> None
     settings = JsonSettingsRepository(path).load()
     raw = json.loads(path.read_text(encoding="utf-8"))
 
-    assert settings.version == 12
+    assert settings.version == CONFIG_VERSION
     assert settings.translation.self_route.romaji_mode == "off"
     assert settings.translation.ocr_route.romaji_mode == "auto"
     assert raw["translation"]["self_route"]["romaji_mode"] == "off"
@@ -419,7 +422,7 @@ def test_version_five_renames_tencent_credential_fields(tmp_path) -> None:
         "profiles"
     ][0]
 
-    assert settings.version == 12
+    assert settings.version == CONFIG_VERSION
     assert settings.translation.profiles[0].api_key == "legacy-secret-id"
     assert settings.translation.profiles[0].model == "legacy-secret-key"
     assert raw_profile["secret_id"] == "legacy-secret-id"
@@ -447,12 +450,12 @@ def test_version_six_enables_local_glossary_without_remote_resources(tmp_path) -
     settings = JsonSettingsRepository(path).load()
     raw = json.loads(path.read_text(encoding="utf-8"))
 
-    assert settings.version == 12
+    assert settings.version == CONFIG_VERSION
     assert settings.glossary.enabled is True
     assert settings.glossary.builtin_enabled is True
     assert settings.translation.self_route.glossary_enabled is False
     assert settings.translation.ocr_route.glossary_enabled is True
-    assert raw["version"] == 12
+    assert raw["version"] == CONFIG_VERSION
     assert "remote_resources" not in raw["glossary"]
     assert "remote_id" not in raw["glossary"]
     assert "sync_mode" not in raw["glossary"]
@@ -477,10 +480,10 @@ def test_version_seven_removes_overlay_expiry_and_adds_multimodal_defaults(
     settings = JsonSettingsRepository(path).load()
     raw = json.loads(path.read_text(encoding="utf-8"))
 
-    assert settings.version == 12
+    assert settings.version == CONFIG_VERSION
     assert settings.ocr.interval_ms == 1200
     assert settings.ocr.multimodal_interval_ms == 3000
-    assert raw["version"] == 12
+    assert raw["version"] == CONFIG_VERSION
     assert "ocr_overlay_display_seconds" not in raw["ui"]
     assert path.with_name("config.json.v7-backup").exists()
 
@@ -495,12 +498,12 @@ def test_version_eight_adds_pc_process_voice_defaults(tmp_path) -> None:
     settings = JsonSettingsRepository(path).load()
     raw = json.loads(path.read_text(encoding="utf-8"))
 
-    assert settings.version == 12
+    assert settings.version == CONFIG_VERSION
     assert settings.translation.voice_route.source_language == "auto"
     assert settings.voice.target_process_name == "VRChat.exe"
     assert settings.voice.asr_profile_id == ""
     assert settings.voice.asr_profiles == []
-    assert raw["version"] == 12
+    assert raw["version"] == CONFIG_VERSION
     assert raw["voice"]["asr_profiles"] == []
     assert path.with_name("config.json.v8-backup").exists()
 
@@ -542,10 +545,10 @@ def test_version_nine_removes_obsolete_speech_protocols(tmp_path) -> None:
     settings = JsonSettingsRepository(path).load()
     raw = json.loads(path.read_text(encoding="utf-8"))
 
-    assert settings.version == 12
+    assert settings.version == CONFIG_VERSION
     assert settings.voice.asr_profiles == []
     assert settings.voice.asr_profile_id == ""
-    assert raw["version"] == 12
+    assert raw["version"] == CONFIG_VERSION
     assert path.with_name("config.json.v9-backup").exists()
 
 
@@ -587,7 +590,7 @@ def test_version_ten_deletes_legacy_voice_profiles(
 
     settings = JsonSettingsRepository(path).load()
 
-    assert settings.version == 12
+    assert settings.version == CONFIG_VERSION
     assert settings.voice.asr_profiles == []
     assert settings.voice.asr_profile_id == ""
     assert settings.translation.voice_route.translation_strategy == "text_profile"
@@ -623,11 +626,34 @@ def test_version_eleven_deletes_old_speech_credentials(tmp_path) -> None:
 
     settings = JsonSettingsRepository(path).load()
 
-    assert settings.version == 12
+    assert settings.version == CONFIG_VERSION
     assert settings.voice.asr_profiles == []
     assert settings.voice.asr_profile_id == ""
     assert settings.translation.voice_route.translation_strategy == "text_profile"
     assert path.with_name("config.json.v11-backup").exists()
+
+
+def test_version_twelve_adds_disabled_self_voice_defaults(tmp_path) -> None:
+    path = tmp_path / "config.json"
+    path.write_text(
+        json.dumps(
+            {
+                "version": 12,
+                "translation": {"profiles": [{"id": "test", "provider": "test"}]},
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    settings = JsonSettingsRepository(path).load()
+    persisted = json.loads(path.read_text(encoding="utf-8"))
+
+    assert settings.version == CONFIG_VERSION
+    assert settings.self_voice.enabled is False
+    assert settings.self_voice.activation_scope == "vrchat_foreground"
+    assert persisted["self_voice"]["enabled"] is False
+    assert persisted["version"] == CONFIG_VERSION
+    assert path.with_name("config.json.v12-backup").exists()
 
 
 def test_current_v12_file_persists_legacy_speech_cleanup(tmp_path) -> None:

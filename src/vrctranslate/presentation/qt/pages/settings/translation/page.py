@@ -92,7 +92,6 @@ class TranslationSettingsPage(QWidget):
             "ocr_profile_combo",
             "ocr_source_combo",
             "ocr_target_combo",
-            "format_combo",
             "overflow_combo",
             "self_romaji_combo",
             "ocr_romaji_combo",
@@ -142,6 +141,11 @@ class TranslationSettingsPage(QWidget):
         self.routes_tab.collect_settings(self._working.translation)
         self.glossary_tab.collect_settings(self._working.glossary)
         self._working.translation.ensure_routes()
+        # Message presentation is edited and auto-saved on the quick-input page.
+        # A settings page opened earlier must not overwrite that newer value.
+        self._working.translation.self_route.message_format = (
+            settings.translation.self_route.message_format
+        )
         settings.translation = deepcopy(self._working.translation)
         settings.glossary = deepcopy(self._working.glossary)
 

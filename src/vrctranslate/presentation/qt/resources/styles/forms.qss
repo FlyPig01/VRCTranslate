@@ -1,4 +1,4 @@
-QLineEdit, QComboBox, QSpinBox, QDoubleSpinBox {
+QLineEdit, QComboBox, QSpinBox, QDoubleSpinBox, QKeySequenceEdit {
     min-height: 36px;
     background: #fbfcfe;
     border: 1px solid #cdd7e4;
@@ -7,14 +7,14 @@ QLineEdit, QComboBox, QSpinBox, QDoubleSpinBox {
     selection-background-color: #1e788b;
     selection-color: #ffffff;
 }
-QLineEdit:focus, QComboBox:focus, QSpinBox:focus, QDoubleSpinBox:focus {
+QLineEdit:focus, QComboBox:focus, QSpinBox:focus, QDoubleSpinBox:focus, QKeySequenceEdit:focus {
     border: 2px solid #2388a0;
     background: #ffffff;
 }
-QLineEdit:hover, QComboBox:hover, QSpinBox:hover, QDoubleSpinBox:hover {
+QLineEdit:hover, QComboBox:hover, QSpinBox:hover, QDoubleSpinBox:hover, QKeySequenceEdit:hover {
     border-color: #b0c0d4;
 }
-QLineEdit:disabled, QComboBox:disabled, QSpinBox:disabled, QDoubleSpinBox:disabled {
+QLineEdit:disabled, QComboBox:disabled, QSpinBox:disabled, QDoubleSpinBox:disabled, QKeySequenceEdit:disabled {
     background: #eef1f6;
     color: #8d99a8;
     border-color: #dce3ee;
@@ -100,4 +100,56 @@ QProgressBar {
 QProgressBar::chunk {
     background: #2388a0;
     border-radius: 5px;
+}
+QProgressBar#selfVoiceLevel {
+    min-height: 14px;
+    max-height: 14px;
+    background: #e3eaf2;
+    border: 1px solid #cbd7e4;
+    border-radius: 7px;
+}
+QProgressBar#selfVoiceLevel::chunk {
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+        stop:0 #27a89f, stop:1 #2388a0);
+    border-radius: 6px;
+}
+QProgressBar#selfVoiceLevel[zone="medium"]::chunk {
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+        stop:0 #e0a63b, stop:1 #d88a2c);
+}
+QProgressBar#selfVoiceLevel[zone="high"]::chunk {
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+        stop:0 #e46d62, stop:1 #c94d59);
+}
+QKeySequenceEdit#hotkeySequenceEdit:disabled {
+    color: #25364d;
+    background: #f7f9fc;
+    border-color: #d1dbe7;
+}
+QPushButton#hotkeyIconButton {
+    min-width: 38px;
+    max-width: 38px;
+    min-height: 38px;
+    max-height: 38px;
+    padding: 0;
+}
+QPushButton#hotkeyConfirmButton {
+    min-height: 38px;
+    padding: 0 12px;
+    color: #ffffff;
+    background: #1e708b;
+    border-color: #1e708b;
+    font-weight: 600;
+}
+QPushButton#hotkeyConfirmButton:hover {
+    background: #185f78;
+    border-color: #185f78;
+}
+QPushButton#selfVoiceTestButton[testing="true"] {
+    color: #ffffff;
+    background: #7656b5;
+    border-color: #6849a5;
+}
+QPushButton#selfVoiceTestButton[testing="true"]:hover {
+    background: #6849a5;
 }

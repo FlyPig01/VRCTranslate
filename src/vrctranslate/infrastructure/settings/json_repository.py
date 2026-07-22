@@ -21,10 +21,11 @@ from vrctranslate.infrastructure.settings.migration_v8 import migrate_v8
 from vrctranslate.infrastructure.settings.migration_v9 import migrate_v9
 from vrctranslate.infrastructure.settings.migration_v10 import migrate_v10
 from vrctranslate.infrastructure.settings.migration_v11 import migrate_v11
+from vrctranslate.infrastructure.settings.migration_v12 import migrate_v12
 from vrctranslate.infrastructure.settings.schema_v3 import int_in_range
-from vrctranslate.infrastructure.settings.schema_v12 import (
-    settings_v12_from_dict,
-    settings_v12_to_dict,
+from vrctranslate.infrastructure.settings.schema_v13 import (
+    settings_v13_from_dict,
+    settings_v13_to_dict,
 )
 
 
@@ -116,7 +117,12 @@ class JsonSettingsRepository:
                 self._backup_version(11)
                 self.save(settings)
                 return settings
-            settings = settings_v12_from_dict(raw)
+            if version == 12:
+                settings = migrate_v12(raw)
+                self._backup_version(12)
+                self.save(settings)
+                return settings
+            settings = settings_v13_from_dict(raw)
             voice = raw.get("voice") if isinstance(raw.get("voice"), dict) else {}
             profiles = voice.get("asr_profiles") if isinstance(voice, dict) else []
             persisted_profile_ids = {
@@ -133,6 +139,7 @@ class JsonSettingsRepository:
             if (
                 persisted_profile_ids != loaded_profile_ids
                 or "model_package" not in persisted_ocr
+                or "self_voice" not in raw
             ):
                 self.save(settings)
             return settings
@@ -154,7 +161,7 @@ class JsonSettingsRepository:
         self._path.parent.mkdir(parents=True, exist_ok=True)
         temporary = self._path.with_suffix(self._path.suffix + ".tmp")
         temporary.write_text(
-            json.dumps(settings_v12_to_dict(settings), ensure_ascii=False, indent=2),
+            json.dumps(settings_v13_to_dict(settings), ensure_ascii=False, indent=2),
             encoding="utf-8",
         )
         temporary.replace(self._path)

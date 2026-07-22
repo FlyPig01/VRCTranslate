@@ -16,7 +16,10 @@ from vrctranslate.infrastructure.capture.windows_graphics_capture import (
     WindowsGraphicsCapture,
 )
 from vrctranslate.infrastructure.capture.windows_api import WindowsApi
-from vrctranslate.infrastructure.audio import WindowsProcessAudioCapture
+from vrctranslate.infrastructure.audio import (
+    SoundDeviceMicrophoneCapture,
+    WindowsProcessAudioCapture,
+)
 from vrctranslate.infrastructure.logging.setup import (
     clear_application_logs,
     configure_logging,
@@ -51,6 +54,10 @@ from vrctranslate.presentation.qt.application import run_qt_application
 from vrctranslate.presentation.qt.controllers.ocr_controller import OcrController
 from vrctranslate.presentation.qt.controllers.self_message_controller import (
     SelfMessageController,
+)
+from vrctranslate.infrastructure.hotkeys import WindowsGlobalHotkeys
+from vrctranslate.presentation.qt.controllers.self_voice_controller import (
+    SelfVoiceController,
 )
 from vrctranslate.presentation.qt.controllers.settings_controller import (
     SettingsController,
@@ -145,6 +152,7 @@ def build_main_window() -> MainWindow:
         i18n,
         voice_page,
         voice_overlay,
+        WindowsGlobalHotkeys(),
     )
 
     self_controller = SelfMessageController(
@@ -214,16 +222,29 @@ def build_main_window() -> MainWindow:
         i18n,
         window,
     )
+    self_voice_controller = SelfVoiceController(
+        self_page,
+        SoundDeviceMicrophoneCapture(),
+        speech_router,
+        settings,
+        windows_api,
+        self_controller,
+        logger,
+        i18n,
+        window,
+    )
     window.register_controllers(
         self_controller,
         ocr_controller,
         settings_controller,
         voice_controller,
+        self_voice_controller,
     )
     settings_controller.settings_changed.connect(self_controller.apply_settings)
     settings_controller.settings_changed.connect(ocr_controller.apply_settings)
     settings_controller.settings_changed.connect(window.apply_settings)
     settings_controller.settings_changed.connect(voice_controller.apply_settings)
+    settings_controller.settings_changed.connect(self_voice_controller.apply_settings)
     settings_page.capture_test_requested.connect(ocr_controller.test_capture)
     ocr_controller.capture_preview_ready.connect(settings_page.set_capture_preview)
     settings_controller.status_bar_message.connect(window.show_status)

@@ -1,6 +1,7 @@
 import logging
 
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QKeySequence
 
 from vrctranslate.application.dto import AppSettings
 from vrctranslate.application.use_cases.manage_settings import ManageSettings
@@ -53,6 +54,15 @@ class ProfileCapturingFake(EchoFake):
 
     def translate(self, request, profile):
         self.romaji_mode = profile.options.get("_romaji_mode")
+        return super().translate(request, profile)
+
+
+class RequestCapturingFake(EchoFake):
+    def __init__(self) -> None:
+        self.source_language = None
+
+    def translate(self, request, profile):
+        self.source_language = request.source_language
         return super().translate(request, profile)
 
 
@@ -147,8 +157,36 @@ def test_quick_input_passes_self_romaji_mode_to_translation_profile(qtbot) -> No
     quick.input.setText("konnichiwa")
     qtbot.keyPress(quick.input, Qt.Key.Key_Return)
     qtbot.waitUntil(lambda: gateway.messages == ["你好"], timeout=3000)
-
     assert translator.romaji_mode == "force"
+    controller.shutdown()
+
+
+def test_self_voice_uses_detected_language_with_auto_self_route(qtbot) -> None:
+    translator = RequestCapturingFake()
+    _, _, gateway, controller, repository = _controller(qtbot, translator)
+    repository.value.translation.self_route.source_language = "auto"
+
+    assert controller.submit_voice_text("こんにちは", "ja")
+    qtbot.waitUntil(lambda: gateway.messages == ["你好"], timeout=3000)
+
+    assert translator.source_language == "ja"
+    controller.shutdown()
+
+
+def test_self_voice_translation_reports_animation_states(qtbot) -> None:
+    translator = RequestCapturingFake()
+    _, _, gateway, controller, repository = _controller(qtbot, translator)
+    repository.value.translation.self_route.source_language = "auto"
+    states: list[str] = []
+    controller.voice_translation_status.connect(
+        lambda _message, state: states.append(state)
+    )
+
+    assert controller.submit_voice_text("hello", "en")
+    qtbot.waitUntil(lambda: gateway.messages == ["你好"], timeout=3000)
+
+    assert "translating" in states
+    assert "success" in states
     controller.shutdown()
 
 
@@ -157,10 +195,21 @@ def test_quick_input_page_settings_are_saved_automatically(qtbot) -> None:
 
     page.input_width_edit.setValue(640)
     page.input_topmost_check.setChecked(False)
+    page.message_format_combo.setCurrentIndex(
+        page.message_format_combo.findData("translation_then_original")
+    )
+    page.quick_input_hotkey_control.begin_edit()
+    page.quick_input_hotkey_edit.setKeySequence(QKeySequence("Ctrl+Shift+I"))
+    page.quick_input_hotkey_control.confirm_edit()
     qtbot.waitUntil(lambda: repository.save_count > 0, timeout=1500)
 
     assert repository.value.ui.input_width == 640
     assert repository.value.ui.input_topmost is False
+    assert repository.value.ui.quick_input_hotkey == "Ctrl+Shift+I"
+    assert (
+        repository.value.translation.self_route.message_format
+        == "translation_then_original"
+    )
     assert not hasattr(page, "save_bar")
     controller.shutdown()
 

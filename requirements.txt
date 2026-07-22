@@ -6,6 +6,7 @@ numpy>=1.26,<3
 Pillow>=10,<13
 rapidocr>=3.9,<4
 onnxruntime>=1.17,<2
+sounddevice>=0.5,<1
 windows-capture>=1.4,<2; sys_platform == "win32"
 wanakana-python>=1.2.2,<2
 websocket-client>=1.8,<2

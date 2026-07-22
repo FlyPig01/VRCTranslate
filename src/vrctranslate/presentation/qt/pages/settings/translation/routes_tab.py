@@ -19,7 +19,7 @@ from vrctranslate.application.translation_quality import (
     translation_quality_advice,
 )
 from vrctranslate.presentation.qt.i18n import I18nManager
-from vrctranslate.presentation.qt.options import formats, languages
+from vrctranslate.presentation.qt.options import languages
 from vrctranslate.presentation.qt.pages.settings.common import card, form_layout, scroll_page
 from vrctranslate.presentation.qt.widgets import NoWheelComboBox
 
@@ -55,19 +55,16 @@ class RoutesTab(QWidget):
         self.self_profile_combo = NoWheelComboBox()
         self.self_source_combo = NoWheelComboBox()
         self.self_target_combo = NoWheelComboBox()
-        self.format_combo = NoWheelComboBox()
         self.overflow_combo = NoWheelComboBox()
         self._self_profile_label = QLabel()
         self._self_source_label = QLabel()
         self._self_target_label = QLabel()
-        self._format_label = QLabel()
         self._overflow_label = QLabel()
         self._self_romaji_label = QLabel()
         for label in (
             self._self_profile_label,
             self._self_source_label,
             self._self_target_label,
-            self._format_label,
             self._overflow_label,
             self._self_romaji_label,
         ):
@@ -77,7 +74,6 @@ class RoutesTab(QWidget):
         osc_form.addRow(self._self_profile_label, self.self_profile_combo)
         osc_form.addRow(self._self_source_label, self.self_source_combo)
         osc_form.addRow(self._self_target_label, self.self_target_combo)
-        osc_form.addRow(self._format_label, self.format_combo)
         osc_form.addRow(self._overflow_label, self.overflow_combo)
         self.self_romaji_combo = NoWheelComboBox()
         osc_form.addRow(self._self_romaji_label, self.self_romaji_combo)
@@ -222,7 +218,6 @@ class RoutesTab(QWidget):
         self._ocr_target_label.setText(self._i18n.tr("route.target"))
         self._voice_source_label.setText(self._i18n.tr("route.source"))
         self._voice_target_label.setText(self._i18n.tr("route.target"))
-        self._format_label.setText(self._i18n.tr("route.format"))
         self._overflow_label.setText(self._i18n.tr("route.overflow"))
         self._self_romaji_label.setText(self._i18n.tr("route.romaji_mode"))
         self._ocr_romaji_label.setText(self._i18n.tr("route.romaji_mode"))
@@ -232,7 +227,6 @@ class RoutesTab(QWidget):
             self._i18n.tr("route.glossary_enabled")
         )
         self._rebuild_languages()
-        self._rebuild_formats()
         self._rebuild_overflow()
         self._rebuild_romaji_modes()
         self._refresh_profile_labels()
@@ -257,7 +251,6 @@ class RoutesTab(QWidget):
         set_combo(self.ocr_target_combo, settings.ocr_route.target_language)
         set_combo(self.voice_source_combo, settings.voice_route.source_language)
         set_combo(self.voice_target_combo, settings.voice_route.target_language)
-        set_combo(self.format_combo, settings.self_route.message_format)
         set_combo(self.overflow_combo, settings.self_route.overflow_policy)
         set_combo(self.self_romaji_combo, settings.self_route.romaji_mode)
         set_combo(self.ocr_romaji_combo, settings.ocr_route.romaji_mode)
@@ -283,7 +276,6 @@ class RoutesTab(QWidget):
             self.voice_target_combo.currentData()
         )
         settings.voice_route.translation_strategy = "text_profile"
-        settings.self_route.message_format = str(self.format_combo.currentData())
         settings.self_route.overflow_policy = str(self.overflow_combo.currentData())
         settings.self_route.romaji_mode = str(
             self.self_romaji_combo.currentData() or "auto"
@@ -434,13 +426,6 @@ class RoutesTab(QWidget):
     def _profile_changed(self) -> None:
         self._rebuild_languages()
         self.update_warnings()
-
-    def _rebuild_formats(self) -> None:
-        current = str(self.format_combo.currentData() or "")
-        self.format_combo.clear()
-        for label, value in formats(self._i18n):
-            self.format_combo.addItem(label, value)
-        set_combo(self.format_combo, current)
 
     def _rebuild_overflow(self) -> None:
         current = str(self.overflow_combo.currentData() or "")

@@ -28,10 +28,14 @@ class _PendingMessage:
     original: str
     profile: TranslationProfile
     route: TranslationRouteSettings
+    restore_on_failure: bool = True
+    from_voice: bool = False
 
 
 class SelfMessageController(QObject):
     status_bar_message = Signal(str, int)
+    hotkeys_changed = Signal()
+    voice_translation_status = Signal(str, str)
 
     def __init__(
         self,
@@ -104,13 +108,33 @@ class SelfMessageController(QObject):
         self._page.set_profile(profile.name)
         self._window.apply_settings(app_settings.ui)
         self._page.load_ui_settings(app_settings.ui)
+        self._page.load_route_settings(app_settings.translation.self_route)
 
-    def _preview_input_settings(self, topmost: bool, width: int) -> None:
+    def _preview_input_settings(
+        self,
+        topmost: bool,
+        width: int,
+        message_format: str,
+        quick_input_hotkey: str,
+    ) -> None:
         ui = self._settings.current.ui
         ui.input_topmost = topmost
         ui.input_width = width
+        self._settings.current.translation.self_route.message_format = (
+            message_format
+            if message_format in {
+                "translation_only",
+                "original_then_translation",
+                "translation_then_original",
+            }
+            else "translation_only"
+        )
+        hotkey_changed = ui.quick_input_hotkey != quick_input_hotkey
+        ui.quick_input_hotkey = quick_input_hotkey
         self._window.apply_settings(ui)
         self._input_settings_timer.start()
+        if hotkey_changed:
+            self.hotkeys_changed.emit()
 
     def _save_input_settings(self) -> None:
         try:
@@ -125,6 +149,41 @@ class SelfMessageController(QObject):
         if not original:
             return
         self._set_typing(False)
+        self._enqueue_text(original, restore_on_failure=True)
+
+    def submit_voice_text(
+        self,
+        original: str,
+        detected_language: str = "",
+    ) -> bool:
+        """Queue one recognized microphone sentence without touching the input edit."""
+
+        if self._shutting_down:
+            return False
+        original = original.strip()
+        if not original:
+            return False
+        maximum = max(1, self._settings.current.self_voice.queue_limit)
+        queued = len(self._pending) + int(self._active is not None)
+        if queued >= maximum:
+            return False
+        self._set_typing(False)
+        self._enqueue_text(
+            original,
+            restore_on_failure=False,
+            detected_language=detected_language,
+            from_voice=True,
+        )
+        return True
+
+    def _enqueue_text(
+        self,
+        original: str,
+        *,
+        restore_on_failure: bool,
+        detected_language: str = "",
+        from_voice: bool = False,
+    ) -> None:
         translation = self._settings.current.translation
         translation.ensure_routes()
         route = deepcopy(translation.self_route)
@@ -135,11 +194,24 @@ class SelfMessageController(QObject):
         request = TranslationRequest(
             uuid4().hex,
             original,
-            route.source_language,
+            (
+                detected_language
+                if route.source_language == "auto" and detected_language
+                else route.source_language
+            ),
             route.target_language,
             "self",
         )
-        self._pending.append(_PendingMessage(request, original, profile, route))
+        self._pending.append(
+            _PendingMessage(
+                request,
+                original,
+                profile,
+                route,
+                restore_on_failure,
+                from_voice,
+            )
+        )
         self._set_status(self._tr("ctrl.self.pending", count=len(self._pending)), "busy")
         self._start_next()
 
@@ -155,6 +227,11 @@ class SelfMessageController(QObject):
         worker.signals.failed.connect(self._translation_failed)
         worker.signals.finished.connect(self._translation_finished)
         self._set_status(self._tr("ctrl.self.translating"), "busy")
+        if current.from_voice:
+            self.voice_translation_status.emit(
+                self._tr("self_voice.status_translating"),
+                "translating",
+            )
         self._thread_pool.start(worker)
 
     def _translation_succeeded(self, value: object) -> None:
@@ -181,13 +258,22 @@ class SelfMessageController(QObject):
             elif current.route.overflow_policy == "truncate":
                 messages = [self._prepare_message.truncate(prepared)]
             else:
-                self._window.restore_text(current.original)
-                self._set_status(self._tr("ctrl.self.overflow"), "error")
+                if current.restore_on_failure:
+                    self._window.restore_text(current.original)
+                message = self._tr("ctrl.self.overflow")
+                self._set_status(message, "error")
+                if current.from_voice:
+                    self.voice_translation_status.emit(message, "error")
                 return
         for message in messages:
             self._send_queue.enqueue(message)
         self._page.set_last_translation(current.original, value.translated)
         self._set_status(self._tr("ctrl.self.queued", count=len(messages)), "success")
+        if current.from_voice:
+            self.voice_translation_status.emit(
+                self._tr("self_voice.status_sent"),
+                "success",
+            )
         self.status_bar_message.emit(
             self._tr("ctrl.self.status_queue", count=self._send_queue.count), 3000
         )
@@ -197,13 +283,16 @@ class SelfMessageController(QObject):
             return
         category = getattr(error, "category", "unexpected")
         self._logger.warning("self_translation_failed category=%s", category)
-        self._window.restore_text(self._active.original)
+        if self._active.restore_on_failure:
+            self._window.restore_text(self._active.original)
         message = (
             error.user_message
             if isinstance(error, VrcTranslateError)
             else self._tr("ctrl.self.failed")
         )
         self._set_status(message, "error")
+        if self._active.from_voice:
+            self.voice_translation_status.emit(message, "error")
 
     def _translation_finished(self) -> None:
         self._active = None

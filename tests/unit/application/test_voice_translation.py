@@ -54,6 +54,74 @@ def test_voice_segmenter_does_not_submit_background_silence() -> None:
     assert segmenter.flush() is None
 
 
+def test_adaptive_microphone_vad_detects_quiet_speech_below_legacy_threshold() -> None:
+    segmenter = VoiceSegmenter(
+        VoiceSegmentSettings(
+            energy_threshold=350,
+            silence_ms=600,
+            minimum_speech_ms=300,
+            maximum_segment_seconds=12,
+        ),
+        adaptive_noise=True,
+        calibration_ms=500,
+    )
+
+    for _ in range(5):
+        assert segmenter.feed(AudioFrame(_pcm(20))) is None
+    for _ in range(4):
+        assert segmenter.feed(AudioFrame(_pcm(180))) is None
+    result = None
+    for _ in range(6):
+        result = segmenter.feed(AudioFrame(_pcm(20)))
+
+    assert result is not None
+
+
+def test_adaptive_microphone_vad_finalizes_one_short_voice_frame() -> None:
+    segmenter = VoiceSegmenter(
+        VoiceSegmentSettings(
+            energy_threshold=350,
+            silence_ms=600,
+            minimum_speech_ms=300,
+            maximum_segment_seconds=12,
+        ),
+        adaptive_noise=True,
+        calibration_ms=500,
+    )
+
+    for _ in range(5):
+        assert segmenter.feed(AudioFrame(_pcm(20))) is None
+    assert segmenter.feed(AudioFrame(_pcm(800))) is None
+    result = None
+    for _ in range(6):
+        result = segmenter.feed(AudioFrame(_pcm(20)))
+
+    assert result is not None
+
+
+def test_rejected_short_noise_does_not_join_the_next_sentence() -> None:
+    segmenter = VoiceSegmenter(
+        VoiceSegmentSettings(
+            energy_threshold=300,
+            silence_ms=600,
+            minimum_speech_ms=300,
+            maximum_segment_seconds=12,
+        )
+    )
+
+    assert segmenter.feed(AudioFrame(_pcm(1000))) is None
+    for _ in range(6):
+        assert segmenter.feed(AudioFrame(_pcm(0))) is None
+    for _ in range(3):
+        assert segmenter.feed(AudioFrame(_pcm(2000))) is None
+    result = None
+    for _ in range(6):
+        result = segmenter.feed(AudioFrame(_pcm(0)))
+
+    assert result is not None
+    assert result.count(int(1000).to_bytes(2, "little", signed=True)) == 0
+
+
 def test_voice_activity_gate_forwards_during_speech_without_waiting_for_sentence() -> None:
     gate = VoiceActivityGate(
         VoiceSegmentSettings(

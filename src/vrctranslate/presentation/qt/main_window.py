@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from ctypes import wintypes
 
 from PySide6.QtCore import QSize, QThreadPool, QTimer, Qt
 from PySide6.QtGui import QAction, QCloseEvent, QShowEvent
@@ -22,9 +23,11 @@ from PySide6.QtWidgets import (
 
 from vrctranslate import __version__
 from vrctranslate.application.dto import AppSettings
+from vrctranslate.application.ports.global_hotkeys import GlobalHotkeys
 from vrctranslate.application.use_cases.manage_settings import ManageSettings
 from vrctranslate.presentation.qt.controllers.ocr_controller import OcrController
 from vrctranslate.presentation.qt.controllers.self_message_controller import SelfMessageController
+from vrctranslate.presentation.qt.controllers.self_voice_controller import SelfVoiceController
 from vrctranslate.presentation.qt.controllers.settings_controller import SettingsController
 from vrctranslate.presentation.qt.controllers.voice_translation_controller import (
     VoiceTranslationController,
@@ -41,6 +44,10 @@ from vrctranslate.presentation.qt.windows.voice_overlay_window import VoiceOverl
 
 
 class MainWindow(QMainWindow):
+    _WM_HOTKEY = 0x0312
+    _HOTKEY_QUICK_INPUT = 0x5601
+    _HOTKEY_SELF_VOICE = 0x5602
+
     def __init__(
         self,
         self_page: SelfMessagePage,
@@ -53,6 +60,7 @@ class MainWindow(QMainWindow):
         i18n: I18nManager,
         voice_page: VoicePage | None = None,
         voice_overlay: VoiceOverlayWindow | None = None,
+        global_hotkeys: GlobalHotkeys | None = None,
     ) -> None:
         super().__init__()
         self._logger = logger
@@ -64,6 +72,7 @@ class MainWindow(QMainWindow):
         self._ocr_controller: OcrController | None = None
         self._settings_controller: SettingsController | None = None
         self._voice_controller: VoiceTranslationController | None = None
+        self._self_voice_controller: SelfVoiceController | None = None
         self._first_show = True
         self._closing = False
         self._changing_navigation = False
@@ -71,6 +80,11 @@ class MainWindow(QMainWindow):
         self._ocr_page = ocr_page
         self._voice_page = voice_page
         self._voice_overlay = voice_overlay
+        self._global_hotkeys = global_hotkeys
+        self._hotkeys_suspended = False
+        self_page.hotkey_editing_changed.connect(
+            self._set_global_hotkeys_suspended
+        )
         self.setWindowTitle("VRCTranslate")
         self.setWindowIcon(load_icon("app.ico"))
         self.setMinimumSize(900, 560)
@@ -202,15 +216,24 @@ class MainWindow(QMainWindow):
         ocr_controller: OcrController,
         settings_controller: SettingsController,
         voice_controller: VoiceTranslationController | None = None,
+        self_voice_controller: SelfVoiceController | None = None,
     ) -> None:
         self._self_controller = self_controller
         self._ocr_controller = ocr_controller
         self._settings_controller = settings_controller
         self._voice_controller = voice_controller
+        self._self_voice_controller = self_voice_controller
         self_controller.status_bar_message.connect(self.statusBar().showMessage)
         ocr_controller.tray_state_changed.connect(self.set_tray_state)
         if voice_controller is not None:
             voice_controller.status_bar_message.connect(self.show_status)
+        if self_voice_controller is not None:
+            self_voice_controller.status_bar_message.connect(self.show_status)
+            self_voice_controller.hotkeys_changed.connect(
+                self._configure_global_hotkeys
+            )
+        self_controller.hotkeys_changed.connect(self._configure_global_hotkeys)
+        self._configure_global_hotkeys()
 
     def apply_settings(self, settings: object) -> None:
         if not isinstance(settings, AppSettings):
@@ -232,14 +255,14 @@ class MainWindow(QMainWindow):
             "error": load_icon("tray_error.png"),
         }
         self.tray = QSystemTrayIcon(self._tray_icons["normal"], self)
-        input_action = QAction("显示快捷输入", self)
-        input_action.triggered.connect(self._quick_window.show_and_focus)
+        self._tray_input_action = QAction("显示快捷输入", self)
+        self._tray_input_action.triggered.connect(self._quick_window.show_and_focus)
         show_action = QAction("显示主窗口", self)
         show_action.triggered.connect(self._show_main)
         quit_action = QAction("退出", self)
         quit_action.triggered.connect(self.close)
         menu = QMenu()
-        menu.addAction(input_action)
+        menu.addAction(self._tray_input_action)
         menu.addAction(show_action)
         menu.addSeparator()
         menu.addAction(quit_action)
@@ -260,6 +283,77 @@ class MainWindow(QMainWindow):
         if self.tray is None:
             return
         self.tray.setIcon(self._tray_icons.get(state, self._tray_icons["normal"]))
+
+    def _configure_global_hotkeys(self) -> None:
+        manager = self._global_hotkeys
+        if manager is None or self._hotkeys_suspended:
+            return
+        settings = self._settings.current
+        shortcuts = (
+            (
+                self._HOTKEY_QUICK_INPUT,
+                settings.ui.quick_input_hotkey,
+            ),
+            (
+                self._HOTKEY_SELF_VOICE,
+                settings.self_voice.toggle_hotkey,
+            ),
+        )
+        failures = [
+            shortcut
+            for hotkey_id, shortcut in shortcuts
+            if not manager.register(int(self.winId()), hotkey_id, shortcut)
+        ]
+        if failures:
+            self.show_status(
+                self._i18n.tr(
+                    "hotkey.register_failed",
+                    shortcut=", ".join(failures),
+                ),
+                7000,
+            )
+        tray = getattr(self, "_tray_input_action", None)
+        if tray is not None:
+            suffix = (
+                f"\t{settings.ui.quick_input_hotkey}"
+                if settings.ui.quick_input_hotkey
+                else ""
+            )
+            tray.setText(f"显示快捷输入{suffix}")
+
+    def _set_global_hotkeys_suspended(self, suspended: bool) -> None:
+        self._hotkeys_suspended = suspended
+        manager = self._global_hotkeys
+        if manager is None:
+            return
+        if suspended:
+            manager.shutdown()
+        else:
+            self._configure_global_hotkeys()
+
+    def nativeEvent(self, event_type, message):  # type: ignore[no-untyped-def]
+        try:
+            native_message = wintypes.MSG.from_address(int(message))
+        except (TypeError, ValueError):
+            return super().nativeEvent(event_type, message)
+        if native_message.message == self._WM_HOTKEY:
+            if self._handle_global_hotkey(int(native_message.wParam)):
+                return True, 0
+        return super().nativeEvent(event_type, message)
+
+    def _handle_global_hotkey(self, hotkey_id: int) -> bool:
+        """Dispatch one registered shortcut without coupling tests to native MSG."""
+
+        if hotkey_id == self._HOTKEY_QUICK_INPUT:
+            self._quick_window.show_and_focus()
+            return True
+        if (
+            hotkey_id == self._HOTKEY_SELF_VOICE
+            and self._self_voice_controller is not None
+        ):
+            self._self_voice_controller.toggle_enabled()
+            return True
+        return False
 
     def showEvent(self, event: QShowEvent) -> None:
         super().showEvent(event)
@@ -349,6 +443,8 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "正在停止", "OCR 仍在释放资源，请稍后再次退出。")
             event.ignore()
             return
+        if self._self_voice_controller:
+            self._self_voice_controller.shutdown()
         if self._self_controller:
             self._self_controller.shutdown()
         if self._voice_controller:
@@ -360,5 +456,7 @@ class MainWindow(QMainWindow):
         QThreadPool.globalInstance().waitForDone(10_000)
         if self.tray is not None:
             self.tray.hide()
+        if self._global_hotkeys is not None:
+            self._global_hotkeys.shutdown()
         self._logger.info("application_stopped")
         event.accept()

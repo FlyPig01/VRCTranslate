@@ -32,6 +32,11 @@ def test_release_defaults_are_portable_and_contain_no_private_service() -> None:
     assert settings.voice.asr_profile_id == ""
     assert settings.voice.asr_profiles == []
     assert settings.voice.overlay.display_mode == "both"
+    assert settings.self_voice.enabled is False
+    assert settings.self_voice.microphone_id == ""
+    assert settings.self_voice.source_language == "zh-CN"
+    assert settings.self_voice.activation_scope == "vrchat_foreground"
+    assert settings.self_voice.toggle_hotkey == "Ctrl+Alt+M"
     assert settings.glossary.enabled is True
     assert settings.glossary.builtin_enabled is True
 
@@ -40,6 +45,7 @@ def test_release_defaults_are_portable_and_contain_no_private_service() -> None:
     assert settings.ocr.region_width == 0
     assert settings.ocr.region_height == 0
     assert settings.ui.ocr_display_mode == "overlay"
+    assert settings.ui.quick_input_hotkey == "Ctrl+Alt+I"
 
 
 def test_multimodal_profile_cannot_become_the_self_message_route() -> None:

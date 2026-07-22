@@ -92,6 +92,67 @@ QLabel#statusPill {
     font-size: 13px;
 }
 
+QFrame#selfVoiceStatusPanel {
+    background: #f3f8fc;
+    border: 1px solid #cbdde9;
+    border-radius: 12px;
+}
+QFrame#selfVoiceStatusPanel[state="calibrating"],
+QFrame#selfVoiceStatusPanel[state="testing"] {
+    background: #fff8e9;
+    border-color: #e5c681;
+}
+QFrame#selfVoiceStatusPanel[state="listening"] {
+    background: #eef9fa;
+    border-color: #9ccfd6;
+}
+QFrame#selfVoiceStatusPanel[state="recognizing"],
+QFrame#selfVoiceStatusPanel[state="translating"] {
+    background: #f4f1fc;
+    border-color: #c4b5e7;
+}
+QFrame#selfVoiceStatusPanel[state="success"] {
+    background: #edf8f2;
+    border-color: #a8d8c0;
+}
+QFrame#selfVoiceStatusPanel[state="error"] {
+    background: #fff1f2;
+    border-color: #e5afb5;
+}
+QLabel#selfVoiceStatus {
+    color: #1a2a40;
+    font-size: 14px;
+    font-weight: 700;
+}
+QLabel#selfVoiceRecent {
+    color: #64738a;
+    font-size: 12px;
+}
+QPushButton#voiceToggleButton {
+    min-width: 44px;
+    max-width: 44px;
+    min-height: 44px;
+    max-height: 44px;
+    padding: 0;
+    border: 1px solid #1c6880;
+    border-radius: 22px;
+    background: #1e708b;
+}
+QPushButton#voiceToggleButton:hover {
+    background: #185f78;
+    border-color: #185f78;
+}
+QPushButton#voiceToggleButton:pressed {
+    background: #124b61;
+}
+QPushButton#voiceToggleButton[active="true"] {
+    background: #7656b5;
+    border-color: #6849a5;
+}
+QPushButton#voiceToggleButton[active="true"]:hover {
+    background: #6849a5;
+}
+
 QStatusBar {
     background: #f7f9fc;
     color: #56657c;

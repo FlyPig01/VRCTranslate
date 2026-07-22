@@ -58,6 +58,9 @@ def settings_v3_from_dict(raw: dict[str, Any]) -> AppSettings:
             input_x=int_in_range(ui.get("input_x"), -1, -100000, 100000),
             input_y=int_in_range(ui.get("input_y"), -1, -100000, 100000),
             input_width=int_in_range(ui.get("input_width"), 480, 320, 1200),
+            quick_input_hotkey=str(
+                ui.get("quick_input_hotkey", "Ctrl+Alt+I")
+            ),
             ocr_overlay_x=int_in_range(ui.get("ocr_overlay_x"), -1, -100000, 100000),
             ocr_overlay_y=int_in_range(ui.get("ocr_overlay_y"), -1, -100000, 100000),
             ocr_overlay_width=int_in_range(ui.get("ocr_overlay_width"), 420, 260, 1600),

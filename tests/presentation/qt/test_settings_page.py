@@ -708,16 +708,26 @@ def test_quick_input_overlay_settings_live_on_quick_input_page(qtbot) -> None:
     qtbot.addWidget(page)
     settings = AppSettings()
     settings.ui.input_width = 510
+    settings.translation.self_route.message_format = "original_then_translation"
     page.load_ui_settings(settings.ui)
+    page.load_route_settings(settings.translation.self_route)
 
     assert page.input_width_edit.value() == 510
+    assert page.message_format_combo.currentData() == "original_then_translation"
     assert not page.has_unsaved_changes
-    changes: list[tuple[bool, int]] = []
+    changes: list[tuple[bool, int, str, str]] = []
     page.input_settings_changed.connect(
-        lambda topmost, width: changes.append((topmost, width))
+        lambda topmost, width, message_format, hotkey: changes.append(
+            (topmost, width, message_format, hotkey)
+        )
     )
     page.input_width_edit.setValue(620)
-    assert changes[-1] == (settings.ui.input_topmost, 620)
+    assert changes[-1] == (
+        settings.ui.input_topmost,
+        620,
+        "original_then_translation",
+        "Ctrl+Alt+I",
+    )
     assert not page.has_unsaved_changes
     assert not hasattr(page, "save_bar")
     assert not hasattr(page, "_show_button")
@@ -726,6 +736,25 @@ def test_quick_input_overlay_settings_live_on_quick_input_page(qtbot) -> None:
     qtbot.addWidget(settings_page)
     assert not hasattr(settings_page.osc_page, "input_width_spin")
     assert not hasattr(settings_page.ocr_page, "overlay_opacity_spin")
+    assert not hasattr(
+        settings_page.translation_page.routes_tab,
+        "format_combo",
+    )
+
+
+def test_settings_save_preserves_message_format_edited_on_quick_input(qtbot) -> None:
+    page = SettingsPage(_FAKE_I18N)
+    qtbot.addWidget(page)
+    settings = AppSettings()
+    page.load_settings(settings, "memory://config")
+
+    settings.translation.self_route.message_format = "translation_then_original"
+    page.collect_settings(settings)
+
+    assert (
+        settings.translation.self_route.message_format
+        == "translation_then_original"
+    )
 
 
 def test_multimodal_profile_is_available_only_to_ocr_route(qtbot, tmp_path) -> None:

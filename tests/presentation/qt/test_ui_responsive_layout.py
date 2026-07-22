@@ -241,8 +241,14 @@ def test_feature_pages_reflow_without_horizontal_clipping(qtbot) -> None:
         page.resize(724, 560)
         page.show()
         qtbot.waitExposed(page)
-        assert page._narrow_layout is True
         assert page._scroll.horizontalScrollBar().maximum() == 0
+    assert ocr_page._narrow_layout is True
+    assert self_page._narrow_layout is False
+
+    voice_position = self_page._content_layout.getItemPosition(
+        self_page._content_layout.indexOf(self_page._voice_card)
+    )
+    assert voice_position == (0, 1, 3, 1)
 
     button_left = ocr_page.refresh_targets_button.mapTo(
         ocr_page._scroll.viewport(), QPoint(0, 0)
@@ -323,8 +329,25 @@ def test_ocr_page_has_read_only_summary_and_no_legacy_controls(qtbot, size) -> N
     assert "page.ocr.screen_capture_note" in page._screen_capture_note.text()
 
 
-def test_main_sidebar_is_always_complete(qtbot) -> None:
+def test_main_sidebar_is_always_complete_and_hotkeys_dispatch(qtbot, monkeypatch) -> None:
     settings = _Settings()
+
+    class _Hotkeys:
+        def __init__(self) -> None:
+            self.registered: list[tuple[int, str]] = []
+            self.shutdown_count = 0
+
+        def register(self, _hwnd: int, hotkey_id: int, shortcut: str) -> bool:
+            self.registered.append((hotkey_id, shortcut))
+            return True
+
+        def unregister(self, _hotkey_id: int) -> None:
+            pass
+
+        def shutdown(self) -> None:
+            self.shutdown_count += 1
+
+    hotkeys = _Hotkeys()
     self_page = SelfMessagePage(I18N)
     ocr_page = OcrPage(I18N)
     settings_page = SettingsPage(I18N)
@@ -341,6 +364,7 @@ def test_main_sidebar_is_always_complete(qtbot) -> None:
         settings,  # type: ignore[arg-type]
         logging.getLogger("test-ui-layout"),
         I18N,  # type: ignore[arg-type]
+        global_hotkeys=hotkeys,  # type: ignore[arg-type]
     )
     qtbot.addWidget(window)
 
@@ -349,6 +373,29 @@ def test_main_sidebar_is_always_complete(qtbot) -> None:
     assert window._sidebar.width() == 176
     assert not window._brand_name.isHidden()
     assert all(window.navigation.item(i).text() for i in range(3))
+
+    actions: list[str] = []
+    monkeypatch.setattr(quick, "show_and_focus", lambda: actions.append("input"))
+
+    class _SelfVoice:
+        def toggle_enabled(self) -> None:
+            actions.append("voice")
+
+        def shutdown(self) -> None:
+            pass
+
+    window._self_voice_controller = _SelfVoice()  # type: ignore[assignment]
+    assert window._handle_global_hotkey(window._HOTKEY_QUICK_INPUT)
+    assert window._handle_global_hotkey(window._HOTKEY_SELF_VOICE)
+    assert not window._handle_global_hotkey(999)
+    assert actions == ["input", "voice"]
+
+    window._configure_global_hotkeys()
+    self_page.quick_input_hotkey_control.begin_edit()
+    assert hotkeys.shutdown_count == 1
+    registered_before = len(hotkeys.registered)
+    self_page.quick_input_hotkey_control.cancel_edit()
+    assert len(hotkeys.registered) == registered_before + 2
 
     window.resize(1000, 660)
     window._update_sidebar_mode()

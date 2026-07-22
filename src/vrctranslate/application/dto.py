@@ -4,8 +4,12 @@ from dataclasses import dataclass, field
 from typing import Any
 
 
-CONFIG_VERSION = 12
+CONFIG_VERSION = 13
 ROMAJI_MODES = frozenset({"off", "auto", "force"})
+SELF_VOICE_ACTIVATION_SCOPES = frozenset(
+    {"vrchat_foreground", "vrchat_running", "always"}
+)
+SELF_VOICE_SOURCE_LANGUAGES = frozenset({"zh-CN", "en", "ja", "ko"})
 MIN_PROFILE_TIMEOUT_SECONDS = 8.0
 SUPPORTED_TRANSLATION_PROVIDERS = frozenset(
     {
@@ -167,6 +171,22 @@ class VoiceSegmentSettings:
 
 
 @dataclass(slots=True)
+class SelfVoiceSettings:
+    enabled: bool = False
+    microphone_id: str = ""
+    source_language: str = "zh-CN"
+    activation_scope: str = "vrchat_foreground"
+    toggle_hotkey: str = "Ctrl+Alt+M"
+    queue_limit: int = 2
+    segment: VoiceSegmentSettings = field(
+        default_factory=lambda: VoiceSegmentSettings(
+            energy_threshold=120,
+            minimum_speech_ms=100,
+        )
+    )
+
+
+@dataclass(slots=True)
 class VoiceOverlaySettings:
     topmost: bool = True
     show_original: bool = True
@@ -253,6 +273,7 @@ class UiSettings:
     input_x: int = -1
     input_y: int = -1
     input_width: int = 480
+    quick_input_hotkey: str = "Ctrl+Alt+I"
     ocr_overlay_x: int = -1
     ocr_overlay_y: int = -1
     ocr_overlay_width: int = 420
@@ -283,3 +304,4 @@ class AppSettings:
     ocr: OcrSettings = field(default_factory=OcrSettings)
     ui: UiSettings = field(default_factory=UiSettings)
     voice: VoiceTranslationSettings = field(default_factory=VoiceTranslationSettings)
+    self_voice: SelfVoiceSettings = field(default_factory=SelfVoiceSettings)

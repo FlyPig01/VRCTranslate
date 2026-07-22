@@ -17,6 +17,14 @@ class AudioFrame:
 
 
 @dataclass(frozen=True, slots=True)
+class MicrophoneDevice:
+    id: str
+    name: str
+    is_default: bool = False
+    host_api: str = ""
+
+
+@dataclass(frozen=True, slots=True)
 class SpeechRecognitionRequest:
     request_id: str
     pcm16: bytes
@@ -89,6 +97,10 @@ class VoiceCaption:
 
 class ProcessAudioCaptureError(RuntimeError):
     """A process-output capture failure safe to report at the UI boundary."""
+
+
+class MicrophoneCaptureError(RuntimeError):
+    """A microphone capture failure safe to report at the UI boundary."""
 
 
 class SpeechRecognitionError(RuntimeError):

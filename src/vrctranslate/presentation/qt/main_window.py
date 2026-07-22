@@ -22,7 +22,11 @@ from PySide6.QtWidgets import (
 )
 
 from vrctranslate import __version__
-from vrctranslate.application.dto import AppSettings
+from vrctranslate.application.dto import (
+    DEFAULT_SELF_VOICE_HOTKEY,
+    LEGACY_SELF_VOICE_HOTKEY,
+    AppSettings,
+)
 from vrctranslate.application.ports.global_hotkeys import GlobalHotkeys
 from vrctranslate.application.use_cases.manage_settings import ManageSettings
 from vrctranslate.presentation.qt.controllers.ocr_controller import OcrController
@@ -289,22 +293,73 @@ class MainWindow(QMainWindow):
         if manager is None or self._hotkeys_suspended:
             return
         settings = self._settings.current
-        shortcuts = (
-            (
-                self._HOTKEY_QUICK_INPUT,
-                settings.ui.quick_input_hotkey,
-            ),
-            (
-                self._HOTKEY_SELF_VOICE,
-                settings.self_voice.toggle_hotkey,
-            ),
+        hwnd = int(self.winId())
+        failures: list[str] = []
+        self._self_page.set_hotkey_registration_status("quick_input")
+        self._self_page.set_hotkey_registration_status("self_voice")
+        quick_shortcut = settings.ui.quick_input_hotkey
+        quick_registered = manager.register(
+            hwnd,
+            self._HOTKEY_QUICK_INPUT,
+            quick_shortcut,
         )
-        failures = [
-            shortcut
-            for hotkey_id, shortcut in shortcuts
-            if not manager.register(int(self.winId()), hotkey_id, shortcut)
-        ]
+        if not quick_registered:
+            failures.append(quick_shortcut)
+            self._self_page.set_hotkey_registration_status(
+                "quick_input",
+                "error",
+                self._i18n.tr(
+                    "hotkey.conflict_inline",
+                    shortcut=quick_shortcut,
+                ),
+            )
+
+        voice_shortcut = settings.self_voice.toggle_hotkey
+        voice_registered = manager.register(
+            hwnd,
+            self._HOTKEY_SELF_VOICE,
+            voice_shortcut,
+        )
+        if (
+            not voice_registered
+            and voice_shortcut.casefold()
+            == LEGACY_SELF_VOICE_HOTKEY.casefold()
+        ):
+            voice_registered = manager.register(
+                hwnd,
+                self._HOTKEY_SELF_VOICE,
+                DEFAULT_SELF_VOICE_HOTKEY,
+            )
+            if voice_registered:
+                settings.self_voice.toggle_hotkey = DEFAULT_SELF_VOICE_HOTKEY
+                self._self_page.load_self_voice_settings(settings.self_voice)
+                try:
+                    self._settings.save(settings)
+                except OSError as exc:
+                    self._logger.warning(
+                        "global_hotkey_fallback_save_failed error=%s",
+                        type(exc).__name__,
+                    )
+                self._logger.info(
+                    "global_hotkey_fallback_applied shortcut=%s",
+                    DEFAULT_SELF_VOICE_HOTKEY,
+                )
+        if not voice_registered:
+            failures.append(voice_shortcut)
+        if not voice_registered:
+            self._self_page.set_hotkey_registration_status(
+                "self_voice",
+                "error",
+                self._i18n.tr(
+                    "hotkey.conflict_inline",
+                    shortcut=voice_shortcut,
+                ),
+            )
         if failures:
+            self._logger.warning(
+                "global_hotkey_registration_failed shortcuts=%s",
+                ",".join(failures),
+            )
             self.show_status(
                 self._i18n.tr(
                     "hotkey.register_failed",
@@ -345,12 +400,14 @@ class MainWindow(QMainWindow):
         """Dispatch one registered shortcut without coupling tests to native MSG."""
 
         if hotkey_id == self._HOTKEY_QUICK_INPUT:
+            self._logger.info("global_hotkey_triggered action=quick_input")
             self._quick_window.show_and_focus()
             return True
         if (
             hotkey_id == self._HOTKEY_SELF_VOICE
             and self._self_voice_controller is not None
         ):
+            self._logger.info("global_hotkey_triggered action=self_voice")
             self._self_voice_controller.toggle_enabled()
             return True
         return False

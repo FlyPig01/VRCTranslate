@@ -5,6 +5,7 @@ from typing import Any
 
 from vrctranslate.application.dto import (
     CONFIG_VERSION,
+    DEFAULT_SELF_VOICE_HOTKEY,
     SELF_VOICE_ACTIVATION_SCOPES,
     SELF_VOICE_SOURCE_LANGUAGES,
     AppSettings,
@@ -50,7 +51,9 @@ def settings_v13_from_dict(raw: dict[str, Any]) -> AppSettings:
             if activation_scope in SELF_VOICE_ACTIVATION_SCOPES
             else "vrchat_foreground"
         ),
-        toggle_hotkey=str(self_voice.get("toggle_hotkey", "Ctrl+Alt+M")),
+        toggle_hotkey=str(
+            self_voice.get("toggle_hotkey", DEFAULT_SELF_VOICE_HOTKEY)
+        ),
         queue_limit=int_in_range(self_voice.get("queue_limit"), 2, 1, 4),
         segment=VoiceSegmentSettings(
             energy_threshold=int_in_range(

@@ -276,13 +276,22 @@ class OcrOrbWindow(QWidget):
 
     def apply_settings(self, settings: UiSettings) -> None:
         visible = self.isVisible()
-        self.setWindowFlag(Qt.WindowType.WindowStaysOnTopHint, settings.ocr_orb_topmost)
+        topmost_changed = self._set_window_flag(
+            Qt.WindowType.WindowStaysOnTopHint,
+            settings.ocr_orb_topmost,
+        )
         if settings.ocr_orb_x >= 0 and settings.ocr_orb_y >= 0:
             self.move(settings.ocr_orb_x, settings.ocr_orb_y)
             self._has_saved_position = True
-        if visible:
+        if visible and topmost_changed:
             self.show()
         self._exclude_from_capture()
+
+    def _set_window_flag(self, flag: Qt.WindowType, enabled: bool) -> bool:
+        if bool(self.windowFlags() & flag) == enabled:
+            return False
+        self.setWindowFlag(flag, enabled)
+        return True
 
     def show_and_raise(self) -> None:
         self.show()

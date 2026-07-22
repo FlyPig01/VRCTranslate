@@ -20,6 +20,7 @@
   "hotkey.cancel": "取消修改",
   "hotkey.confirm": "确认",
   "hotkey.register_failed": "全局快捷键注册失败：{shortcut}。快捷键可能已被其他软件占用。",
+  "hotkey.conflict_inline": "{shortcut} 已被其他软件占用。请点击铅笔修改，或恢复默认快捷键。",
   "self_voice.title": "自身语音自动翻译",
   "self_voice.note": "仅在启用后采集所选麦克风；句末识别、翻译并通过 OSC 发送文字，不保存录音。",
   "self_voice.enabled": "启用自身语音自动翻译",

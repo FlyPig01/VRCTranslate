@@ -20,6 +20,7 @@
   "hotkey.cancel": "변경 취소",
   "hotkey.confirm": "확인",
   "hotkey.register_failed": "전역 단축키를 등록할 수 없습니다: {shortcut}. 다른 프로그램에서 사용 중일 수 있습니다.",
+  "hotkey.conflict_inline": "{shortcut} 키는 다른 프로그램에서 이미 사용 중입니다. 연필을 눌러 변경하거나 기본 단축키로 복원하세요.",
   "self_voice.title": "내 음성 자동 번역",
   "self_voice.note": "활성화된 경우에만 선택한 마이크를 사용하며, 문장이 끝나면 인식·번역하여 OSC로 텍스트를 전송합니다. 녹음은 저장하지 않습니다.",
   "self_voice.enabled": "내 음성 자동 번역 사용",

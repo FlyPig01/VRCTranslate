@@ -20,6 +20,7 @@
   "hotkey.cancel": "Cancel changes",
   "hotkey.confirm": "Confirm",
   "hotkey.register_failed": "Could not register global shortcut: {shortcut}. Another application may already be using it.",
+  "hotkey.conflict_inline": "{shortcut} is already used by another app. Click the pencil to change it, or restore the default shortcut.",
   "self_voice.title": "Automatic self-voice translation",
   "self_voice.note": "Captures the selected microphone only when enabled; recognizes at sentence end, translates and sends text through OSC. Audio is never saved.",
   "self_voice.enabled": "Enable automatic self-voice translation",

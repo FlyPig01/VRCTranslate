@@ -20,6 +20,8 @@ from PySide6.QtWidgets import (
 )
 
 from vrctranslate.application.dto import (
+    DEFAULT_QUICK_INPUT_HOTKEY,
+    DEFAULT_SELF_VOICE_HOTKEY,
     SelfVoiceSettings,
     TranslationRouteSettings,
     UiSettings,
@@ -139,11 +141,14 @@ class SelfMessagePage(QWidget):
         self.input_topmost_check = QCheckBox()
         self.input_width_edit = NumericLineEdit(320, 1200)
         self.message_format_combo = NoWheelComboBox()
-        self.quick_input_hotkey_control = ConfirmableHotkeyEdit("Ctrl+Alt+I")
+        self.quick_input_hotkey_control = ConfirmableHotkeyEdit(
+            DEFAULT_QUICK_INPUT_HOTKEY
+        )
         self.quick_input_hotkey_edit = self.quick_input_hotkey_control.editor
         self._message_format_label = QLabel()
         self._width_label = QLabel()
         self._quick_input_hotkey_label = QLabel()
+        self._quick_input_hotkey_status = self._hotkey_status_label()
         form.addRow(self._message_format_label, self.message_format_combo)
         form.addRow(self.input_topmost_check)
         form.addRow(self._width_label, self.input_width_edit)
@@ -151,6 +156,7 @@ class SelfMessagePage(QWidget):
             self._quick_input_hotkey_label,
             self.quick_input_hotkey_control,
         )
+        form.addRow(self._quick_input_hotkey_status)
         settings_layout.addLayout(form)
         layout.addWidget(self._settings_card, 1, 0, 1, 2)
 
@@ -204,7 +210,9 @@ class SelfMessagePage(QWidget):
         self.microphone_test_button.setFixedSize(40, 38)
         self.self_voice_language_combo = NoWheelComboBox()
         self.self_voice_scope_combo = NoWheelComboBox()
-        self.self_voice_hotkey_control = ConfirmableHotkeyEdit("Ctrl+Alt+M")
+        self.self_voice_hotkey_control = ConfirmableHotkeyEdit(
+            DEFAULT_SELF_VOICE_HOTKEY
+        )
         self.self_voice_hotkey_edit = self.self_voice_hotkey_control.editor
         self.microphone_level = QProgressBar()
         self.microphone_level.setObjectName("selfVoiceLevel")
@@ -224,6 +232,7 @@ class SelfMessagePage(QWidget):
         self._self_voice_scope_label = QLabel()
         self._microphone_level_label = QLabel()
         self._self_voice_hotkey_label = QLabel()
+        self._self_voice_hotkey_status = self._hotkey_status_label()
         microphone_row = QHBoxLayout()
         microphone_row.setContentsMargins(0, 0, 0, 0)
         microphone_row.setSpacing(8)
@@ -239,6 +248,7 @@ class SelfMessagePage(QWidget):
             self._self_voice_hotkey_label,
             self.self_voice_hotkey_control,
         )
+        voice_form.addRow(self._self_voice_hotkey_status)
         voice_form.addRow(self._microphone_level_label, self.microphone_level)
         voice_layout.addLayout(voice_form)
         layout.addWidget(self._voice_card, 2, 0, 1, 2)
@@ -294,6 +304,31 @@ class SelfMessagePage(QWidget):
         title.setObjectName("cardTitle")
         layout.addWidget(title)
         return title
+
+    @staticmethod
+    def _hotkey_status_label() -> QLabel:
+        label = QLabel()
+        label.setObjectName("hotkeyRegistrationStatus")
+        label.setWordWrap(True)
+        label.hide()
+        return label
+
+    def set_hotkey_registration_status(
+        self,
+        kind: str,
+        state: str = "",
+        message: str = "",
+    ) -> None:
+        label = (
+            self._quick_input_hotkey_status
+            if kind == "quick_input"
+            else self._self_voice_hotkey_status
+        )
+        label.setProperty("state", state)
+        label.setText(message)
+        label.setVisible(bool(message))
+        label.style().unpolish(label)
+        label.style().polish(label)
 
     def _retranslate(self) -> None:
         t = self._i18n.tr

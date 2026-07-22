@@ -20,6 +20,7 @@
   "hotkey.cancel": "取消修改",
   "hotkey.confirm": "確認",
   "hotkey.register_failed": "全域快速鍵註冊失敗：{shortcut}。快速鍵可能已被其他軟體占用。",
+  "hotkey.conflict_inline": "{shortcut} 已被其他軟體占用。請點擊鉛筆修改，或還原預設快速鍵。",
   "self_voice.title": "自身語音自動翻譯",
   "self_voice.note": "僅在啟用後擷取所選麥克風；句末辨識、翻譯並透過 OSC 傳送文字，不儲存錄音。",
   "self_voice.enabled": "啟用自身語音自動翻譯",

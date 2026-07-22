@@ -104,14 +104,23 @@ class QuickInputWindow(QWidget):
 
     def apply_settings(self, settings: UiSettings) -> None:
         visible = self.isVisible()
-        self.setWindowFlag(Qt.WindowType.WindowStaysOnTopHint, settings.input_topmost)
+        topmost_changed = self._set_window_flag(
+            Qt.WindowType.WindowStaysOnTopHint,
+            settings.input_topmost,
+        )
         self.resize(settings.input_width, self.height())
         if settings.input_x >= 0 and settings.input_y >= 0:
             self._has_saved_position = True
             self.move(settings.input_x, settings.input_y)
-        if visible:
+        if visible and topmost_changed:
             self.show()
         self._exclude_from_capture()
+
+    def _set_window_flag(self, flag: Qt.WindowType, enabled: bool) -> bool:
+        if bool(self.windowFlags() & flag) == enabled:
+            return False
+        self.setWindowFlag(flag, enabled)
+        return True
 
     def show_and_focus(self) -> None:
         self.show()

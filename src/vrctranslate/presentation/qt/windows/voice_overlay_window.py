@@ -233,7 +233,10 @@ class VoiceOverlayWindow(QWidget):
             max(140, settings.height),
         )
         visible = self.isVisible()
-        self.setWindowFlag(Qt.WindowType.WindowStaysOnTopHint, settings.topmost)
+        topmost_changed = self._set_window_flag(
+            Qt.WindowType.WindowStaysOnTopHint,
+            settings.topmost,
+        )
         self.setWindowOpacity(1.0 if self._collapsed else settings.opacity)
         if not self._collapsed:
             self.resize(self._expanded_size)
@@ -245,9 +248,15 @@ class VoiceOverlayWindow(QWidget):
         while len(self._captions) > settings.max_items:
             self._captions.popleft()
         self._rebuild_items()
-        if visible:
+        if visible and topmost_changed:
             self.show()
         self._exclude_from_capture()
+
+    def _set_window_flag(self, flag: Qt.WindowType, enabled: bool) -> bool:
+        if bool(self.windowFlags() & flag) == enabled:
+            return False
+        self.setWindowFlag(flag, enabled)
+        return True
 
     def add_caption(self, caption: VoiceCaption) -> None:
         self._live_caption = None

@@ -15,7 +15,11 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from vrctranslate.application.dto import AppSettings
+from vrctranslate.application.dto import (
+    DEFAULT_SELF_VOICE_HOTKEY,
+    LEGACY_SELF_VOICE_HOTKEY,
+    AppSettings,
+)
 from vrctranslate.domain.ocr import WindowInfo
 from vrctranslate.presentation.qt.app_style import VrcTranslateStyle
 from vrctranslate.presentation.qt.i18n import I18nManager
@@ -336,10 +340,11 @@ def test_main_sidebar_is_always_complete_and_hotkeys_dispatch(qtbot, monkeypatch
         def __init__(self) -> None:
             self.registered: list[tuple[int, str]] = []
             self.shutdown_count = 0
+            self.fail_shortcuts: set[str] = set()
 
         def register(self, _hwnd: int, hotkey_id: int, shortcut: str) -> bool:
             self.registered.append((hotkey_id, shortcut))
-            return True
+            return shortcut not in self.fail_shortcuts
 
         def unregister(self, _hotkey_id: int) -> None:
             pass
@@ -391,11 +396,35 @@ def test_main_sidebar_is_always_complete_and_hotkeys_dispatch(qtbot, monkeypatch
     assert actions == ["input", "voice"]
 
     window._configure_global_hotkeys()
+    assert self_page._quick_input_hotkey_status.isHidden()
+    assert self_page._self_voice_hotkey_status.isHidden()
+
+    hotkeys.fail_shortcuts.add(settings.current.ui.quick_input_hotkey)
+    window._configure_global_hotkeys()
+    assert not self_page._quick_input_hotkey_status.isHidden()
+    assert settings.current.ui.quick_input_hotkey in (
+        self_page._quick_input_hotkey_status.text()
+    )
+    assert self_page._quick_input_hotkey_status.property("state") == "error"
+    hotkeys.fail_shortcuts.remove(settings.current.ui.quick_input_hotkey)
+    window._configure_global_hotkeys()
+    assert self_page._quick_input_hotkey_status.isHidden()
+
     self_page.quick_input_hotkey_control.begin_edit()
     assert hotkeys.shutdown_count == 1
     registered_before = len(hotkeys.registered)
     self_page.quick_input_hotkey_control.cancel_edit()
     assert len(hotkeys.registered) == registered_before + 2
+
+    settings.current.self_voice.toggle_hotkey = LEGACY_SELF_VOICE_HOTKEY
+    hotkeys.fail_shortcuts.add(LEGACY_SELF_VOICE_HOTKEY)
+    window._configure_global_hotkeys()
+    assert settings.current.self_voice.toggle_hotkey == DEFAULT_SELF_VOICE_HOTKEY
+    assert (
+        window._HOTKEY_SELF_VOICE,
+        DEFAULT_SELF_VOICE_HOTKEY,
+    ) in hotkeys.registered
+    assert self_page._self_voice_hotkey_status.isHidden()
 
     window.resize(1000, 660)
     window._update_sidebar_mode()

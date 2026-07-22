@@ -65,6 +65,19 @@ QLabel#fieldHint {
     padding: 2px 2px 4px 2px;
     font-size: 12px;
 }
+QLabel#hotkeyRegistrationStatus {
+    color: #276277;
+    background: #edf8fc;
+    border: 1px solid #b8dce8;
+    border-radius: 6px;
+    padding: 6px 9px;
+    font-size: 12px;
+}
+QLabel#hotkeyRegistrationStatus[state="error"] {
+    color: #873943;
+    background: #fff0f1;
+    border-color: #e3a8ae;
+}
 QLabel#warningNotice {
     background: #fef3dc;
     color: #6a3f08;

@@ -5,6 +5,9 @@ from typing import Any
 
 
 CONFIG_VERSION = 13
+DEFAULT_QUICK_INPUT_HOTKEY = "Ctrl+Alt+I"
+DEFAULT_SELF_VOICE_HOTKEY = "Ctrl+F8"
+LEGACY_SELF_VOICE_HOTKEY = "Ctrl+Alt+M"
 ROMAJI_MODES = frozenset({"off", "auto", "force"})
 SELF_VOICE_ACTIVATION_SCOPES = frozenset(
     {"vrchat_foreground", "vrchat_running", "always"}
@@ -176,7 +179,7 @@ class SelfVoiceSettings:
     microphone_id: str = ""
     source_language: str = "zh-CN"
     activation_scope: str = "vrchat_foreground"
-    toggle_hotkey: str = "Ctrl+Alt+M"
+    toggle_hotkey: str = DEFAULT_SELF_VOICE_HOTKEY
     queue_limit: int = 2
     segment: VoiceSegmentSettings = field(
         default_factory=lambda: VoiceSegmentSettings(
@@ -273,7 +276,7 @@ class UiSettings:
     input_x: int = -1
     input_y: int = -1
     input_width: int = 480
-    quick_input_hotkey: str = "Ctrl+Alt+I"
+    quick_input_hotkey: str = DEFAULT_QUICK_INPUT_HOTKEY
     ocr_overlay_x: int = -1
     ocr_overlay_y: int = -1
     ocr_overlay_width: int = 420

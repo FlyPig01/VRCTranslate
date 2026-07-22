@@ -2,16 +2,18 @@ from __future__ import annotations
 
 import logging
 
-from PySide6.QtCore import QAbstractAnimation, QPoint, QSize, Qt
+from PySide6.QtCore import QAbstractAnimation, QEvent, QObject, QPoint, QSize, Qt
 from PySide6.QtGui import QGuiApplication
 
 from vrctranslate.application.dto import AppSettings, UiSettings
 from vrctranslate.domain.ocr import CaptureRegion, WindowInfo
 from vrctranslate.presentation.qt.controllers.ocr_controller import OcrController
+from vrctranslate.presentation.qt.i18n import I18nManager
 from vrctranslate.presentation.qt.pages.ocr_page import OcrPage
 from vrctranslate.presentation.qt.windows.ocr_orb import OcrOrbWindow
 from vrctranslate.presentation.qt.windows.ocr_overlay_window import OcrOverlayWindow
 from vrctranslate.presentation.qt.windows.ocr_region import OcrRegionWindow
+from vrctranslate.presentation.qt.windows.quick_input_window import QuickInputWindow
 from vrctranslate.presentation.qt.windows.voice_overlay_window import VoiceOverlayWindow
 
 
@@ -34,6 +36,49 @@ class _Excluder:
     def exclude_from_capture(self, hwnd: int) -> bool:
         self.handles.append(hwnd)
         return True
+
+
+class _VisibilityRecorder(QObject):
+    def __init__(self) -> None:
+        super().__init__()
+        self.shows = 0
+        self.hides = 0
+
+    def eventFilter(self, watched, event):  # noqa: ANN001
+        del watched
+        if event.type() == QEvent.Type.Show:
+            self.shows += 1
+        elif event.type() == QEvent.Type.Hide:
+            self.hides += 1
+        return False
+
+
+def test_language_change_does_not_recreate_visible_floating_windows(qtbot) -> None:
+    i18n = I18nManager("zh_CN")
+    settings = AppSettings()
+    windows = (
+        QuickInputWindow(i18n=i18n),
+        OcrOrbWindow(i18n=i18n),
+        OcrOverlayWindow(i18n=i18n),
+        VoiceOverlayWindow(i18n=i18n),
+    )
+    recorders: list[_VisibilityRecorder] = []
+    for window in windows:
+        qtbot.addWidget(window)
+        window.show()
+        qtbot.waitExposed(window)
+        recorder = _VisibilityRecorder()
+        window.installEventFilter(recorder)
+        recorders.append(recorder)
+
+    i18n.set_language("en_US")
+    windows[0].apply_settings(settings.ui)
+    windows[1].apply_settings(settings.ui)
+    windows[2].apply_settings(settings.ui)
+    windows[3].apply_settings(settings.voice.overlay)
+    qtbot.wait(50)
+
+    assert [(item.shows, item.hides) for item in recorders] == [(0, 0)] * 4
 
 
 def test_orb_uses_state_assets_and_left_click_menu(qtbot) -> None:

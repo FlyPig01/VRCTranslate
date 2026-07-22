@@ -20,6 +20,7 @@
   "hotkey.cancel": "Cancelar cambios",
   "hotkey.confirm": "Confirmar",
   "hotkey.register_failed": "No se pudo registrar el atajo global: {shortcut}. Es posible que otra aplicación ya lo esté usando.",
+  "hotkey.conflict_inline": "Otra aplicación ya utiliza {shortcut}. Haz clic en el lápiz para cambiarlo o restaura el atajo predeterminado.",
   "self_voice.title": "Traducción automática de la propia voz",
   "self_voice.note": "Usa el micrófono seleccionado solo al activarse; reconoce al final de la frase, traduce y envía texto por OSC. No guarda audio.",
   "self_voice.enabled": "Activar la traducción automática de la propia voz",

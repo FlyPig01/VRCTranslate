@@ -20,6 +20,7 @@
   "hotkey.cancel": "Änderungen verwerfen",
   "hotkey.confirm": "Bestätigen",
   "hotkey.register_failed": "Globaler Kurzbefehl konnte nicht registriert werden: {shortcut}. Möglicherweise wird er bereits von einer anderen Anwendung verwendet.",
+  "hotkey.conflict_inline": "{shortcut} wird bereits von einer anderen Anwendung verwendet. Klicken Sie zum Ändern auf den Stift oder stellen Sie den Standardkurzbefehl wieder her.",
   "self_voice.title": "Automatische Übersetzung der eigenen Stimme",
   "self_voice.note": "Verwendet das ausgewählte Mikrofon nur nach Aktivierung; erkennt am Satzende, übersetzt und sendet Text über OSC. Audio wird nicht gespeichert.",
   "self_voice.enabled": "Automatische Übersetzung der eigenen Stimme aktivieren",

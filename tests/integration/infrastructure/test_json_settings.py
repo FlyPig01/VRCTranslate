@@ -39,7 +39,7 @@ def test_config_round_trip_keeps_plain_text_api_key(tmp_path) -> None:
     assert raw["voice"]["asr_profiles"] == []
     assert raw["voice"]["overlay"]["display_mode"] == "both"
     assert raw["ui"]["quick_input_hotkey"] == "Ctrl+Alt+I"
-    assert raw["self_voice"]["toggle_hotkey"] == "Ctrl+Alt+M"
+    assert raw["self_voice"]["toggle_hotkey"] == "Ctrl+F8"
     assert raw["ocr"]["multimodal_interval_ms"] == 3000
     assert "ocr_overlay_display_seconds" not in raw["ui"]
 

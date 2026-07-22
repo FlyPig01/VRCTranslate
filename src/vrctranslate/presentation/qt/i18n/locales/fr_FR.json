@@ -20,6 +20,7 @@
   "hotkey.cancel": "Annuler les modifications",
   "hotkey.confirm": "Confirmer",
   "hotkey.register_failed": "Impossible d’enregistrer le raccourci global : {shortcut}. Il est peut-être déjà utilisé par une autre application.",
+  "hotkey.conflict_inline": "{shortcut} est déjà utilisé par une autre application. Cliquez sur le crayon pour le modifier ou restaurez le raccourci par défaut.",
   "self_voice.title": "Traduction automatique de votre voix",
   "self_voice.note": "Utilise le microphone sélectionné uniquement après activation ; reconnaît en fin de phrase, traduit et envoie le texte par OSC. Aucun audio n'est enregistré.",
   "self_voice.enabled": "Activer la traduction automatique de votre voix",

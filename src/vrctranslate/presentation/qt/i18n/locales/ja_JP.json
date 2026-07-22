@@ -20,6 +20,7 @@
   "hotkey.cancel": "変更をキャンセル",
   "hotkey.confirm": "確定",
   "hotkey.register_failed": "グローバルショートカットを登録できません：{shortcut}。ほかのアプリで使用されている可能性があります。",
+  "hotkey.conflict_inline": "{shortcut} はほかのアプリで使用されています。鉛筆をクリックして変更するか、既定のショートカットに戻してください。",
   "self_voice.title": "自分の音声を自動翻訳",
   "self_voice.note": "有効時のみ選択したマイクを使用し、文末で認識・翻訳してOSC経由で文字を送信します。録音は保存しません。",
   "self_voice.enabled": "自分の音声の自動翻訳を有効にする",

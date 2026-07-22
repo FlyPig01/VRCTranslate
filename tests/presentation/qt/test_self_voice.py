@@ -223,14 +223,14 @@ def test_self_voice_hotkey_requires_confirmation_and_can_restore_default(qtbot) 
     page.self_voice_hotkey_control.begin_edit()
     page.self_voice_hotkey_edit.setKeySequence(QKeySequence("Ctrl+Shift+M"))
     page.self_voice_hotkey_control.cancel_edit()
-    assert repository.value.self_voice.toggle_hotkey == "Ctrl+Alt+M"
+    assert repository.value.self_voice.toggle_hotkey == "Ctrl+F8"
 
     page.self_voice_hotkey_control.begin_edit()
     page.self_voice_hotkey_edit.setKeySequence(QKeySequence("Ctrl+Shift+M"))
     page.self_voice_hotkey_control.restore_default()
     page.self_voice_hotkey_control.confirm_edit()
 
-    assert repository.value.self_voice.toggle_hotkey == "Ctrl+Alt+M"
+    assert repository.value.self_voice.toggle_hotkey == "Ctrl+F8"
     assert changes == [True, False, True, False]
     controller.shutdown()
 

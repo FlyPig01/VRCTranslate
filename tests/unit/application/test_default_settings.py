@@ -36,7 +36,7 @@ def test_release_defaults_are_portable_and_contain_no_private_service() -> None:
     assert settings.self_voice.microphone_id == ""
     assert settings.self_voice.source_language == "zh-CN"
     assert settings.self_voice.activation_scope == "vrchat_foreground"
-    assert settings.self_voice.toggle_hotkey == "Ctrl+Alt+M"
+    assert settings.self_voice.toggle_hotkey == "Ctrl+F8"
     assert settings.glossary.enabled is True
     assert settings.glossary.builtin_enabled is True
 

@@ -32,3 +32,6 @@ benchmarks/tools/
 # 程序 UI 图标是正式资源，需要纳入版本控制。
 !src/vrctranslate/presentation/qt/resources/icons/*.png
 !src/vrctranslate/presentation/qt/resources/icons/*.ico
+
+# Trae IDE 生成的本地文档与 agent 数据，不提交。
+.trae/

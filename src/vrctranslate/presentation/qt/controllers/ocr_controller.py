@@ -601,10 +601,10 @@ class OcrController(QObject):
         window = self._target.selected_window()
         if window is None:
             return
-        if self._scheduler.pending_count:
+        if self._scheduler.pending_count >= self._scheduler.capacity:
             self._latest_texts = list(items)
             self._logger.info(
-                "ocr_frame_deferred reason=previous_translation_pending policy=latest blocks=%s",
+                "ocr_frame_deferred reason=translation_pipeline_saturated policy=latest blocks=%s",
                 len(items),
             )
             return

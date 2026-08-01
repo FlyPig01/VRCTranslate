@@ -84,9 +84,9 @@ class TranslationSettings:
     ocr_route: TranslationRouteSettings = field(
         default_factory=lambda: TranslationRouteSettings(
             source_language="ja",
-            timeout_seconds=4.0,
+            timeout_seconds=8.0,
             queue_limit=8,
-            task_ttl_seconds=4.0,
+            task_ttl_seconds=12.0,
             romaji_mode="off",
         )
     )

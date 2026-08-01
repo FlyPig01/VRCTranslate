@@ -22,15 +22,16 @@ class OcrExecutionPolicy:
         profile: TranslationProfile,
         route: TranslationRouteSettings,
     ) -> OcrExecutionPolicy:
-        serialized_provider = profile.provider == "openai_compatible"
-        capacity = (
-            min(route.queue_limit, 2)
-            if profile.provider == "openai_compatible"
-            else route.queue_limit
-        )
+        # All providers run with the same concurrency policy. Slow LLM-backed
+        # endpoints (e.g. DeepSeek via openai_compatible) previously forced
+        # max_workers=1 with a capacity of 2, which serialised every request
+        # and stalled the OCR pipeline whenever a single translation was slow.
+        # Two workers let concurrent requests overlap, and the bounded queue
+        # keeps a small buffer so bursts of OCR frames are not dropped while
+        # the workers are busy.
         return cls(
-            max_workers=1 if serialized_provider else 2,
-            queue_capacity=capacity,
+            max_workers=2,
+            queue_capacity=min(route.queue_limit, 4),
             # Treat one OCR frame as one scheduling unit. Adapters without a
             # native batch endpoint fall back to ordered calls in one worker
             # instead of silently dropping blocks beyond the queue capacity.

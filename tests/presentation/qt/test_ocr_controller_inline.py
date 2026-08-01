@@ -257,7 +257,7 @@ def test_continuous_ocr_keeps_only_the_latest_frame_while_translation_runs(
     controller, _overlay, _inline = _controller("overlay")
     controller._set_visual_state = lambda _state: None
     controller._latest_texts = None
-    controller._scheduler = SimpleNamespace(pending_count=1)
+    controller._scheduler = SimpleNamespace(pending_count=1, capacity=1)
     first = _source()
     second = OcrText(
         "newest",

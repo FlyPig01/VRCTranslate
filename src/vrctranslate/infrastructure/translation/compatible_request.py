@@ -8,7 +8,7 @@ import httpx
 from vrctranslate.application.dto import TranslationProfile
 
 
-_REASONING_KEYS = ("enable_thinking", "reasoning_effort")
+_REASONING_KEYS = ("enable_thinking", "reasoning_effort", "thinking")
 
 
 def generation_parameters(
@@ -38,7 +38,16 @@ def generation_parameters(
     if reasoning_mode != "off":
         return parameters
     model = profile.model.casefold()
+    vendor = str(options.get("model_vendor", "")).casefold()
     reasoning_api = str(options.get("reasoning_api", "auto"))
+    # DeepSeek V4 models default to thinking enabled (reasoning_effort=high),
+    # which emits a chain-of-thought before every answer. That is pure latency
+    # and token cost for translation, so disable it explicitly. The "thinking"
+    # key is registered in _REASONING_KEYS so endpoints that reject it fall back
+    # to a plain request instead of failing.
+    if vendor == "deepseek" or "deepseek" in model:
+        parameters["thinking"] = {"type": "disabled"}
+        return parameters
     if reasoning_api == "qwen" or (
         reasoning_api == "auto" and "qwen" in model
     ):

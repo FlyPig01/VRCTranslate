@@ -6,7 +6,7 @@ VRCTranslate 是面向 Windows 10/11 PC 桌面的 VRChat 翻译工具。自己�
 
 ## 当前版本
 
-当前版本为 `v0.12.1`。本版修复切换界面语言时浮窗短暂闪烁的问题，并完善 Windows 全局快捷键：自身语音默认组合改为更易操作的 `Ctrl+F8`，旧配置发生占用时会静默迁移，无法注册的组合会直接在对应设置项下提示。软件继续限定为 PC 桌面模式，不提供 TTS 或音频注入。
+当前版本为 `v0.12.2`。本版修复 DeepSeek 等在线翻译在 OCR 持续识别时堵塞的问题：翻译管线改为双并发并放宽帧暂存阈值，慢但成功的请求不再被静默丢弃；同时为 DeepSeek V4 模型默认关闭思考模式，避免翻译前输出思维链造成的延迟。软件继续限定为 PC 桌面模式，不提供 TTS 或音频注入。
 
 首次启动生成的是可公开分发的安全默认配置：
 
@@ -216,13 +216,13 @@ $env:QT_QPA_PLATFORM = "offscreen"
 python -m pytest
 ```
 
-新增语言的短句人工检查见 [多语言翻译质量测试报告](https://github.com/FlyPig01/VRCTranslate/blob/v0.12.1/%E5%A4%9A%E8%AF%AD%E8%A8%80%E7%BF%BB%E8%AF%91%E8%B4%A8%E9%87%8F%E6%B5%8B%E8%AF%95%E6%8A%A5%E5%91%8A.md)；九语言 OCR、本地 ASR、真实翻译接口和端到端性能结果见 [多语言全链路质量与性能测试报告](https://github.com/FlyPig01/VRCTranslate/blob/v0.12.1/%E5%A4%9A%E8%AF%AD%E8%A8%80%E5%85%A8%E9%93%BE%E8%B7%AF%E8%B4%A8%E9%87%8F%E4%B8%8E%E6%80%A7%E8%83%BD%E6%B5%8B%E8%AF%95%E6%8A%A5%E5%91%8A.md)。两份开发报告不进入便携发布包；设置页显示的方向建议仅来自这次本机通用基准，不会自动切换用户档案。
+新增语言的短句人工检查见 [多语言翻译质量测试报告](https://github.com/FlyPig01/VRCTranslate/blob/v0.12.2/%E5%A4%9A%E8%AF%AD%E8%A8%80%E7%BF%BB%E8%AF%91%E8%B4%A8%E9%87%8F%E6%B5%8B%E8%AF%95%E6%8A%A5%E5%91%8A.md)；九语言 OCR、本地 ASR、真实翻译接口和端到端性能结果见 [多语言全链路质量与性能测试报告](https://github.com/FlyPig01/VRCTranslate/blob/v0.12.2/%E5%A4%9A%E8%AF%AD%E8%A8%80%E5%85%A8%E9%93%BE%E8%B7%AF%E8%B4%A8%E9%87%8F%E4%B8%8E%E6%80%A7%E8%83%BD%E6%B5%8B%E8%AF%95%E6%8A%A5%E5%91%8A.md)。两份开发报告不进入便携发布包；设置页显示的方向建议仅来自这次本机通用基准，不会自动切换用户档案。
 
 ## 打包
 
 正式发布采用 one-folder，避免 one-file 向系统 `%TEMP%` 解压。构建命令见 [packaging/README.md](packaging/README.md)。
 
-`v0.12.1` 构建输出到 `dist\VRCTranslate\`，实际大小会随依赖版本略有变化。构建脚本不会预置 OCR/语音模型、完整基准测试报告、用户配置、日志或 API 密钥；启动构建后的 exe 才会在 `data` 中生成默认配置和日志。
+`v0.12.2` 构建输出到 `dist\VRCTranslate\`，实际大小会随依赖版本略有变化。构建脚本不会预置 OCR/语音模型、完整基准测试报告、用户配置、日志或 API 密钥；启动构建后的 exe 才会在 `data` 中生成默认配置和日志。
 
 向外分发前应再次检查发布目录，确保测试启动产生的 `data\config.json`、日志、缓存和模型没有被放进压缩包。
 

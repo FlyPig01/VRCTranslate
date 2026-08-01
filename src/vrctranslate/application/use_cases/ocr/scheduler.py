@@ -59,6 +59,11 @@ class OcrTranslationScheduler:
         with self._lock:
             return len(self._futures)
 
+    @property
+    def capacity(self) -> int:
+        with self._lock:
+            return self._policy.queue_capacity if self._policy else 1
+
     def start(self, settings: TranslationSettings) -> int:
         self.stop()
         settings.ensure_routes()
@@ -73,7 +78,12 @@ class OcrTranslationScheduler:
             self._sequence = 0
             self._profile = profile
             self._policy = policy
-            self._ttl = route.task_ttl_seconds
+            # Guarantee TTL stays clear of the actual HTTP timeout so that a
+            # slow-but-successful response (common with DeepSeek Flash near the
+            # timeout boundary) is not silently discarded by the freshness
+            # check in _single_done. profile.timeout_seconds is already the
+            # effective timeout after the min() clamp above.
+            self._ttl = max(route.task_ttl_seconds, profile.timeout_seconds + 4.0)
             self._queue = BoundedTaskQueue(policy.queue_capacity)
             self._executor = ThreadPoolExecutor(
                 max_workers=policy.max_workers,

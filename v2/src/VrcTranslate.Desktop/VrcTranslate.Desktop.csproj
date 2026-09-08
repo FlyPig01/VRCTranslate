@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+    <TargetPlatformMinVersion>10.0.19041.0</TargetPlatformMinVersion>
+    <RootNamespace>VrcTranslate.Desktop</RootNamespace>
+    <AssemblyName>VrcTranslate</AssemblyName>
+    <Platforms>x64</Platforms>
+    <Platform>x64</Platform>
+    <PlatformTarget>x64</PlatformTarget>
+    <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
+    <WindowsPackageType>None</WindowsPackageType>
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+    <EnableMsixTooling>false</EnableMsixTooling>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>app.ico</ApplicationIcon>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="app.ico" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="logo-mark.png" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="Resources\default-glossary.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <ProjectReference Include="..\VrcTranslate.Core\VrcTranslate.Core.csproj" />
+    <ProjectReference Include="..\VrcTranslate.Application\VrcTranslate.Application.csproj" />
+    <ProjectReference Include="..\VrcTranslate.Infrastructure\VrcTranslate.Infrastructure.csproj" />
+    <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.8.260710003" />
+  </ItemGroup>
+
+  <Target Name="CopyGeneratedPageXbfToPublishDirectory" AfterTargets="Publish">
+    <ItemGroup>
+      <GeneratedPageXbf Include="$(TargetDir)Pages\*.xbf" />
+      <GeneratedDesktopResource Include="$(TargetDir)App.xbf;$(TargetDir)MainWindow.xbf;$(TargetDir)VrcTranslate.pri;$(TargetDir)brand-icon.png" />
+    </ItemGroup>
+    <MakeDir Directories="$(PublishDir)Pages" />
+    <Copy SourceFiles="@(GeneratedPageXbf)" DestinationFiles="@(GeneratedPageXbf->'$(PublishDir)Pages\%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(GeneratedDesktopResource)" DestinationFolder="$(PublishDir)" SkipUnchangedFiles="true" />
+  </Target>
+</Project>

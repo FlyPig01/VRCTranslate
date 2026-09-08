@@ -1,0 +1,213 @@
+{
+  "Enabled": true,
+  "Entries": [
+    {
+      "Source": "Quick Menu",
+      "Target": "快捷菜单"
+    },
+    {
+      "Source": "Action Menu",
+      "Target": "动作菜单"
+    },
+    {
+      "Source": "Expression Menu",
+      "Target": "表情菜单"
+    },
+    {
+      "Source": "Safe Mode",
+      "Target": "安全模式"
+    },
+    {
+      "Source": "Performance Rank",
+      "Target": "性能等级"
+    },
+    {
+      "Source": "Fallback Avatar",
+      "Target": "备用模型"
+    },
+    {
+      "Source": "Impostor",
+      "Target": "模型替身"
+    },
+    {
+      "Source": "VRChat Plus",
+      "Target": "VRC+ 会员"
+    },
+    {
+      "Source": "VRC+",
+      "Target": "VRC+ 会员"
+    },
+    {
+      "Source": "Visitor",
+      "Target": "游客"
+    },
+    {
+      "Source": "New User",
+      "Target": "新玩家"
+    },
+    {
+      "Source": "User",
+      "Target": "玩家"
+    },
+    {
+      "Source": "Known User",
+      "Target": "长期玩家"
+    },
+    {
+      "Source": "Trusted User",
+      "Target": "资深玩家"
+    },
+    {
+      "Source": "Nuisance",
+      "Target": "劣迹玩家"
+    },
+    {
+      "Source": "Avatar Dynamics",
+      "Target": "形象动态系统"
+    },
+    {
+      "Source": "PhysBone",
+      "Target": "物理骨骼"
+    },
+    {
+      "Source": "Contact",
+      "Target": "接触检测"
+    },
+    {
+      "Source": "Expression Parameters",
+      "Target": "表情参数"
+    },
+    {
+      "Source": "Playable Layer",
+      "Target": "可播放层"
+    },
+    {
+      "Source": "Viseme",
+      "Target": "口型"
+    },
+    {
+      "Source": "Udon",
+      "Target": "Udon"
+    },
+    {
+      "Source": "UdonSharp",
+      "Target": "UdonSharp"
+    },
+    {
+      "Source": "Udon Graph",
+      "Target": "Udon 蓝图"
+    },
+    {
+      "Source": "Community Labs",
+      "Target": "社区实验室"
+    },
+    {
+      "Source": "ClientSim",
+      "Target": "客户端模拟器"
+    },
+    {
+      "Source": "Ownership",
+      "Target": "所有权"
+    },
+    {
+      "Source": "Friends+",
+      "Target": "好友+"
+    },
+    {
+      "Source": "Invite+",
+      "Target": "邀请+"
+    },
+    {
+      "Source": "Invite Request",
+      "Target": "邀请请求"
+    },
+    {
+      "Source": "Master",
+      "Target": "房主"
+    },
+    {
+      "Source": "Portal Drop",
+      "Target": "扔传送门"
+    },
+    {
+      "Source": "Mirror Dweller",
+      "Target": "镜子党"
+    },
+    {
+      "Source": "Ripper",
+      "Target": "盗模者"
+    },
+    {
+      "Source": "Questie",
+      "Target": "Quest端玩家"
+    },
+    {
+      "Source": "Brain Dead",
+      "Target": "深度挂机"
+    },
+    {
+      "Source": "Sleepover",
+      "Target": "VR睡觉"
+    },
+    {
+      "Source": "Otsukare VR",
+      "Target": "辛苦了VR"
+    },
+    {
+      "Source": "World",
+      "Target": "世界"
+    },
+    {
+      "Source": "Avatar",
+      "Target": "虚拟形象"
+    },
+    {
+      "Source": "Instance",
+      "Target": "房间"
+    },
+    {
+      "Source": "Portal",
+      "Target": "传送门"
+    },
+    {
+      "Source": "Respawn",
+      "Target": "回出生点"
+    },
+    {
+      "Source": "Group",
+      "Target": "群组"
+    },
+    {
+      "Source": "Favorite",
+      "Target": "收藏"
+    },
+    {
+      "Source": "AFK",
+      "Target": "暂离"
+    },
+    {
+      "Source": "Mute",
+      "Target": "闭麦"
+    },
+    {
+      "Source": "Block",
+      "Target": "屏蔽"
+    },
+    {
+      "Source": "Kick",
+      "Target": "踢出"
+    },
+    {
+      "Source": "Full-Body Tracking",
+      "Target": "全身追踪"
+    },
+    {
+      "Source": "FBT",
+      "Target": "全身追踪"
+    },
+    {
+      "Source": "OSC",
+      "Target": "OSC协议"
+    }
+  ]
+}

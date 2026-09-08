@@ -1,0 +1,14 @@
+**/bin/
+**/obj/
+.vs/
+*.user
+*.suo
+
+# Generated local validation/publish outputs are reproducible and far too
+# large for the source repository.
+artifacts/
+self-build.log
+
+# The repository-level ignore covers incidental screenshots. This is a
+# shipped product asset and must remain versioned.
+!src/VrcTranslate.Desktop/logo-mark.png

@@ -1,0 +1,42 @@
+<Window
+    x:Class="VrcTranslate.Desktop.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Grid Background="#EEF3F8">
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="220" />
+      <ColumnDefinition Width="*" />
+    </Grid.ColumnDefinitions>
+    <Border Grid.Column="0" Background="#111827">
+      <Grid>
+        <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+        <StackPanel Grid.Row="0" Margin="16,18,14,20" Spacing="3">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Image Source="ms-appx:///logo-mark.png" Width="34" Height="34" Stretch="Uniform" VerticalAlignment="Center" ToolTipService.ToolTip="VRCTranslate" AutomationProperties.Name="VRCTranslate 图标" />
+            <StackPanel VerticalAlignment="Center" Spacing="1">
+              <TextBlock Text="VRCTranslate" Foreground="#FFFFFF" FontSize="17" FontWeight="SemiBold" FontFamily="Microsoft YaHei UI" />
+              <TextBlock Text="翻译工具" Foreground="#91A5C1" FontSize="11" FontFamily="Microsoft YaHei UI" />
+            </StackPanel>
+          </StackPanel>
+        </StackPanel>
+        <StackPanel Grid.Row="1" Spacing="3">
+          <Button x:Name="RunNavButton" Tag="run" AutomationProperties.AutomationId="nav-run" AutomationProperties.Name="运行" Click="OnNavigationButtonClicked" PointerEntered="OnNavPointerEntered" PointerExited="OnNavPointerExited" Style="{StaticResource NavButtonStyle}"><StackPanel Orientation="Horizontal" Spacing="14"><FontIcon Glyph="&#xE768;" Style="{StaticResource NavIconStyle}" /><TextBlock Text="运行" Style="{StaticResource NavLabelStyle}" /></StackPanel></Button>
+          <Button x:Name="InputNavButton" Tag="input" AutomationProperties.AutomationId="nav-input" AutomationProperties.Name="输入" Click="OnNavigationButtonClicked" PointerEntered="OnNavPointerEntered" PointerExited="OnNavPointerExited" Style="{StaticResource NavButtonStyle}"><StackPanel Orientation="Horizontal" Spacing="14"><FontIcon Glyph="&#xE8BD;" Style="{StaticResource NavIconStyle}" /><TextBlock Text="输入" Style="{StaticResource NavLabelStyle}" /></StackPanel></Button>
+          <Button x:Name="VoiceNavButton" Tag="voice" AutomationProperties.AutomationId="nav-voice" AutomationProperties.Name="字幕" Click="OnNavigationButtonClicked" PointerEntered="OnNavPointerEntered" PointerExited="OnNavPointerExited" Style="{StaticResource NavButtonStyle}"><StackPanel Orientation="Horizontal" Spacing="10"><FontIcon Glyph="&#xE720;" Style="{StaticResource NavIconStyle}" /><TextBlock Text="字幕" Style="{StaticResource NavLabelStyle}" /></StackPanel></Button>
+          <Button x:Name="TranslationNavButton" Tag="translation" AutomationProperties.AutomationId="nav-translation" AutomationProperties.Name="翻译" Click="OnNavigationButtonClicked" PointerEntered="OnNavPointerEntered" PointerExited="OnNavPointerExited" Style="{StaticResource NavButtonStyle}"><StackPanel Orientation="Horizontal" Spacing="14"><FontIcon Glyph="&#xE774;" Style="{StaticResource NavIconStyle}" /><TextBlock Text="翻译" Style="{StaticResource NavLabelStyle}" /></StackPanel></Button>
+          <Button x:Name="SettingsNavButton" Tag="settings" AutomationProperties.AutomationId="nav-settings" AutomationProperties.Name="设置" Click="OnNavigationButtonClicked" PointerEntered="OnNavPointerEntered" PointerExited="OnNavPointerExited" Style="{StaticResource NavButtonStyle}"><StackPanel Orientation="Horizontal" Spacing="14"><FontIcon Glyph="&#xE713;" Style="{StaticResource NavIconStyle}" /><TextBlock Text="设置" Style="{StaticResource NavLabelStyle}" /></StackPanel></Button>
+          <Button x:Name="GuideNavButton" Tag="guide" AutomationProperties.AutomationId="nav-guide" AutomationProperties.Name="指南" Click="OnNavigationButtonClicked" PointerEntered="OnNavPointerEntered" PointerExited="OnNavPointerExited" Style="{StaticResource NavButtonStyle}"><StackPanel Orientation="Horizontal" Spacing="14"><FontIcon Glyph="&#xE897;" Style="{StaticResource NavIconStyle}" /><TextBlock Text="指南" Style="{StaticResource NavLabelStyle}" /></StackPanel></Button>
+        </StackPanel>
+      </Grid>
+    </Border>
+    <Grid Grid.Column="1">
+      <Grid.RowDefinitions><RowDefinition Height="68" /><RowDefinition Height="*" /></Grid.RowDefinitions>
+      <Border Grid.Row="0" Background="#F8FAFC" BorderBrush="#D9E3EE" BorderThickness="0,0,0,1" Padding="28,0">
+        <StackPanel Orientation="Horizontal" Spacing="14" VerticalAlignment="Center">
+          <StackPanel Spacing="1"><TextBlock Text="VRCTranslate" Style="{StaticResource EyebrowTextStyle}" /><TextBlock x:Name="PageHeader" Text="运行" Style="{StaticResource PageTitleTextStyle}" /></StackPanel>
+        </StackPanel>
+      </Border>
+      <Frame Grid.Row="1" x:Name="ContentFrame" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
+    </Grid>
+  </Grid>
+</Window>

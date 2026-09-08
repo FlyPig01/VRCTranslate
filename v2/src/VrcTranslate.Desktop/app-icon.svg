@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" fill="none">
+  <title>VRCTranslate application icon</title>
+  <desc>Interlocking cyan and violet translation bubbles with a bidirectional language mark.</desc>
+  <rect x="8" y="8" width="240" height="240" rx="54" fill="#19233C"/>
+  <path d="M48 52h112c17.673 0 32 14.327 32 32v73c0 17.673-14.327 32-32 32h-20l-27 27v-27H48c-17.673 0-32-14.327-32-32V84c0-17.673 14.327-32 32-32Z" fill="#35BDF2" stroke="#0E1528" stroke-width="8" stroke-linejoin="round"/>
+  <path d="M96 68h112c17.673 0 32 14.327 32 32v73c0 17.673-14.327 32-32 32h-20l-27 27v-27H96c-17.673 0-32-14.327-32-32v-73c0-17.673 14.327-32 32-32Z" fill="#7357E8" stroke="#0E1528" stroke-width="8" stroke-linejoin="round"/>
+  <path d="M125 104h77M139 121c9 28 25 46 50 59M190 121c-10 29-28 48-54 61" stroke="#fff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M53 142h45M53 142l15-13M53 142l15 13" stroke="#fff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M190 174h-45M190 174l-15-13M190 174l-15 13" stroke="#A9E8FF" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

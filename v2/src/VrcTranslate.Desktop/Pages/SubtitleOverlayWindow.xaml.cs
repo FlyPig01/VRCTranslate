@@ -14,6 +14,8 @@ public sealed partial class SubtitleOverlayWindow : Window
     private string _lastTranslated = string.Empty;
     private readonly Microsoft.UI.Dispatching.DispatcherQueueTimer? _visualTimer;
     private readonly ScaleTransform _pulseTransform;
+    private readonly double _initialOpacity;
+    private OverlayWindowController? _windowController;
     private double _visualPhase;
     private bool _hasCaption;
 
@@ -21,13 +23,12 @@ public sealed partial class SubtitleOverlayWindow : Window
     public event EventHandler<SubtitleLanguageChangedEventArgs>? LanguageChanged;
 #pragma warning restore CS0067
 
-    public SubtitleOverlayWindow()
+    public SubtitleOverlayWindow(double initialOpacity = 0.90)
     {
         InitializeComponent();
-        // Set this before the first activation so the native caption area is
-        // part of the client surface from the first frame.
-        ExtendsContentIntoTitleBar = true;
-        Title = string.Empty;
+        _initialOpacity = Math.Clamp(initialOpacity, 0.60, 1.00);
+        ExtendsContentIntoTitleBar = false;
+        Title = "字幕";
         SubtitleText.Text = string.Empty;
         PulseRing.Opacity = 0.34;
         _pulseTransform = PulseRing.RenderTransform as ScaleTransform ?? new ScaleTransform();
@@ -44,35 +45,63 @@ public sealed partial class SubtitleOverlayWindow : Window
             _visualTimer.Start();
         }
 
-        Activated += OnActivated;
+        EnsureWindowController();
         Closed += OnClosed;
     }
 
-    private void OnActivated(object sender, WindowActivatedEventArgs args)
+    private void EnsureWindowController()
     {
-        Activated -= OnActivated;
+        if (_windowController is not null) return;
         try
         {
-            OverlayWindowChrome.Configure(
+            _windowController = new OverlayWindowController(
                 this,
-                DragSurface,
+                "字幕",
                 1400,
-                150,
-                alwaysOnTop: true,
-                fullCaption: true,
-                initialLayout: OverlayWindowHost.GetSavedLayout(OverlayWindowHost.SubtitleLayoutKey),
-                layoutChanged: layout => OverlayWindowHost.SaveLayout(OverlayWindowHost.SubtitleLayoutKey, layout));
-            var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
-            var id = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(hwnd);
-            var appWindow = Microsoft.UI.Windowing.AppWindow.GetFromWindowId(id);
-            var iconPath = Path.Combine(AppContext.BaseDirectory, "app.ico");
-            if (File.Exists(iconPath)) appWindow.SetIcon(iconPath);
+                180,
+                OverlayWindowHost.GetSavedLayout(OverlayWindowHost.SubtitleLayoutKey),
+                layout => OverlayWindowHost.SaveLayout(OverlayWindowHost.SubtitleLayoutKey, layout),
+                _initialOpacity);
         }
         catch
         {
             // The caption surface remains usable if a platform window API is
             // unavailable (for example, under a UI test host).
         }
+    }
+
+    internal bool IsOverlayVisible =>
+        _windowController?.IsVisible ?? OverlayWindowController.IsFallbackVisible(this);
+
+    internal bool IsOverlayMinimized =>
+        _windowController?.IsMinimized ?? OverlayWindowController.IsFallbackMinimized(this);
+
+    internal void ShowOverlay(bool activate)
+    {
+        EnsureWindowController();
+        if (_windowController is not null) _windowController.Show(activate);
+        else OverlayWindowController.ShowFallback(this, activate);
+    }
+
+    internal void HideOverlay()
+    {
+        if (_windowController is not null) _windowController.Hide();
+        else OverlayWindowController.HideFallback(this);
+    }
+
+    internal void ApplyOpacity(double opacity) => _windowController?.ApplyOpacity(opacity);
+
+    internal bool TryGetLayout(out VrcTranslate.Core.Settings.OverlayWindowLayout layout)
+    {
+        if (_windowController is not null) return _windowController.TryGetLayout(out layout);
+        layout = default;
+        return false;
+    }
+
+    internal void ClosePermanently()
+    {
+        if (_windowController is not null) _windowController.ClosePermanently();
+        else Close();
     }
 
     // The local recognizer automatically handles the supported voice set

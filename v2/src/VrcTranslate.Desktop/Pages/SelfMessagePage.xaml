@@ -174,7 +174,7 @@
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
               </Grid.ColumnDefinitions>
-              <TextBlock Text="翻译语言" Style="{StaticResource SectionTitleTextStyle}" />
+              <TextBlock Text="输入框" Style="{StaticResource SectionTitleTextStyle}" />
               <Button Grid.Column="1"
                       Content="打开输入框"
                       Click="OnOpenInputWindowClicked"
@@ -214,6 +214,29 @@
                 <ComboBoxItem Tag="ko-KR" Content="한국어" />
                 <ComboBoxItem Tag="zh-CN" Content="简体中文" />
               </ComboBox>
+            </Grid>
+            <Grid ColumnSpacing="12">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="44" />
+              </Grid.ColumnDefinitions>
+              <TextBlock Text="透明度"
+                         VerticalAlignment="Center" />
+              <Slider Grid.Column="1"
+                      x:Name="InputOverlayOpacitySlider"
+                      AutomationProperties.AutomationId="input-overlay-opacity"
+                      Minimum="60"
+                      Maximum="100"
+                      StepFrequency="5"
+                      SmallChange="5"
+                      ValueChanged="OnInputOverlayOpacityChanged"
+                      VerticalAlignment="Center" />
+              <TextBlock Grid.Column="2"
+                         x:Name="InputOverlayOpacityValue"
+                         Text="90%"
+                         TextAlignment="Right"
+                         VerticalAlignment="Center" />
             </Grid>
           </StackPanel>
         </Border>

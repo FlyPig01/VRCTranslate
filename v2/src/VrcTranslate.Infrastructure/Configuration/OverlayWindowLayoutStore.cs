@@ -22,15 +22,25 @@ public sealed class OverlayWindowLayoutStore : IDisposable
 
     private readonly string _path;
     private readonly object _sync = new();
+    private readonly object _writeSync = new();
+    private readonly Action<IReadOnlyDictionary<string, OverlayWindowLayout>> _write;
     private Dictionary<string, OverlayWindowLayout> _layouts = new(StringComparer.OrdinalIgnoreCase);
     private System.Threading.Timer? _saveTimer;
     private bool _dirty;
     private bool _disposed;
 
     public OverlayWindowLayoutStore(string path)
+        : this(path, writer: null)
+    {
+    }
+
+    internal OverlayWindowLayoutStore(
+        string path,
+        Action<IReadOnlyDictionary<string, OverlayWindowLayout>>? writer)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
         _path = Path.GetFullPath(path);
+        _write = writer ?? Write;
         Load();
     }
 
@@ -72,24 +82,40 @@ public sealed class OverlayWindowLayoutStore : IDisposable
     /// <summary>Flushes a pending write synchronously during application exit.</summary>
     public void Flush()
     {
-        Dictionary<string, OverlayWindowLayout> snapshot;
-        lock (_sync)
+        // Serialize all timer and explicit flushes. A drag can schedule a new
+        // layout while an older snapshot is still being written; draining the
+        // queue under one writer gate guarantees the newest rectangle wins.
+        lock (_writeSync)
         {
-            if (!_dirty) return;
-            snapshot = new Dictionary<string, OverlayWindowLayout>(_layouts, StringComparer.OrdinalIgnoreCase);
-            _dirty = false;
-            _saveTimer?.Dispose();
-            _saveTimer = null;
-        }
+            while (true)
+            {
+                Dictionary<string, OverlayWindowLayout> snapshot;
+                lock (_sync)
+                {
+                    if (!_dirty) return;
+                    snapshot = new Dictionary<string, OverlayWindowLayout>(
+                        _layouts,
+                        StringComparer.OrdinalIgnoreCase);
+                    _dirty = false;
+                    _saveTimer?.Dispose();
+                    _saveTimer = null;
+                }
 
-        try
-        {
-            Write(snapshot);
-        }
-        catch
-        {
-            // Keep the in-memory layout usable and retry on the next update.
-            lock (_sync) _dirty = true;
+                try
+                {
+                    _write(snapshot);
+                }
+                catch
+                {
+                    // Keep the newest in-memory layout usable and retry on a
+                    // later update or explicit flush.
+                    lock (_sync)
+                    {
+                        if (!_disposed) _dirty = true;
+                    }
+                    return;
+                }
+            }
         }
     }
 

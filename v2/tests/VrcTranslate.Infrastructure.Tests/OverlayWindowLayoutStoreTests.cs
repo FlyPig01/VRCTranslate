@@ -58,6 +58,50 @@ public sealed class OverlayWindowLayoutStoreTests : IDisposable
         Assert.Empty(Directory.GetFiles(_directory, "*.tmp"));
     }
 
+    [Fact]
+    public async Task Concurrent_flushes_cannot_overwrite_a_newer_rectangle_with_an_older_one()
+    {
+        using var firstWriteStarted = new ManualResetEventSlim();
+        using var releaseFirstWrite = new ManualResetEventSlim();
+        var written = new List<IReadOnlyDictionary<string, OverlayWindowLayout>>();
+        var writeCount = 0;
+        var path = Path.Combine(_directory, "overlay-layout.json");
+        using var store = new OverlayWindowLayoutStore(
+            path,
+            layouts =>
+            {
+                if (Interlocked.Increment(ref writeCount) == 1)
+                {
+                    firstWriteStarted.Set();
+                    Assert.True(releaseFirstWrite.Wait(TimeSpan.FromSeconds(5)));
+                }
+
+                lock (written)
+                {
+                    written.Add(new Dictionary<string, OverlayWindowLayout>(layouts));
+                }
+            });
+
+        var older = new OverlayWindowLayout(100, 200, 800, 160);
+        var newer = new OverlayWindowLayout(300, 400, 1200, 220);
+        store.Set("quick-input", older);
+        var olderFlush = Task.Run(store.Flush);
+        Assert.True(firstWriteStarted.Wait(TimeSpan.FromSeconds(5)));
+
+        store.Set("quick-input", newer);
+        var newerFlush = Task.Run(store.Flush);
+        releaseFirstWrite.Set();
+
+        await Task.WhenAll(olderFlush, newerFlush).WaitAsync(TimeSpan.FromSeconds(5));
+
+        lock (written)
+        {
+            Assert.Equal(2, written.Count);
+            Assert.Equal(older, written[0]["quick-input"]);
+            Assert.Equal(newer, written[^1]["quick-input"]);
+        }
+    }
+
     public void Dispose()
     {
         if (Directory.Exists(_directory))

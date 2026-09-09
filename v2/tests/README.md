@@ -12,7 +12,7 @@
 dotnet test VrcTranslate.sln -c Debug -p:Platform=x64
 ```
 
-当前分层测试共 99 项（Core 38、Application 17、Infrastructure 44）。
+当前分层测试共 119 项（Core 46、Application 21、Infrastructure 52）。
 
 只运行某一层时，直接把解决方案替换为对应的 `.csproj` 路径即可。
 
@@ -23,17 +23,21 @@ Set-ExecutionPolicy -Scope Process Bypass
 .\tests\Invoke-V2Validation.ps1
 ```
 
-发布手测包更新后，再执行发布包冒烟（包含资源、档案对话框、两个浮窗、主窗口关闭联动、原生圆角区域和外框条带检查）：
+发布手测包更新后，再执行发布包冒烟（包含资源、档案对话框、输入与字幕窗口、主窗口退出联动，以及系统原生普通 Windows 窗口行为检查）：
 
 ```powershell
 Set-ExecutionPolicy -Scope Process Bypass
 .\tests\Invoke-V2ReleaseSmoke.ps1
 ```
 
-Release 手测包发布后，额外执行浮窗视觉检查。脚本会确认发布资源齐全，启动手测包，截取输入浮窗和字幕浮窗，检测白色非客户区条带、圆角和麦克风活动动画，并实际切换两个浮窗的快捷键：
+可单独执行浮窗运行时测试。输入和字幕使用系统原生普通 Windows 窗口，具备系统标题栏、拖动和八方向缩放。脚本使用独立的临时数据目录，验证两窗默认 90% 透明度、两个页面滑杆实时且分别生效、系统关闭仅隐藏窗口、快捷键复用同一 HWND、输入区跟随窗口缩放、主程序退出后销毁窗口，以及位置、尺寸和透明度跨进程重启恢复：
+
+```powershell
+.\tests\Invoke-V2OverlayWindowSmoke.ps1
+```
+
+Release 手测包发布后，以下入口会先检查发布资源，再对发布 EXE 执行同一套原生窗口验收：
 
 ```powershell
 .\tests\Invoke-ReleaseOverlayVisualSmoke.ps1
 ```
-
-截图默认保存在 `%TEMP%\VRCTranslate-release-overlay-smoke\`。

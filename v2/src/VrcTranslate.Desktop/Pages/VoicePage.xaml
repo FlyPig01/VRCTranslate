@@ -64,12 +64,6 @@
                           Orientation="Horizontal"
                           Spacing="8"
                           VerticalAlignment="Center">
-                <Button x:Name="OverlayButton"
-                        Content="字幕"
-                        Width="78"
-                        MinWidth="70"
-                        Click="OnOpenOverlayClicked"
-                        AutomationProperties.Name="打开字幕" />
                 <Button x:Name="VoiceStartButton"
                         Content="开始"
                         Width="82"
@@ -117,6 +111,48 @@
                 </Border>
               </StackPanel>
             </Grid>
+          </Border>
+
+          <Border Style="{StaticResource SurfaceBorderStyle}" Padding="18,16">
+            <StackPanel Spacing="12">
+              <Grid ColumnSpacing="12">
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="*" />
+                  <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="字幕窗口"
+                           Style="{StaticResource SectionTitleTextStyle}"
+                           VerticalAlignment="Center" />
+                <Button Grid.Column="1"
+                        Content="打开"
+                        MinWidth="78"
+                        Click="OnOpenOverlayClicked"
+                        AutomationProperties.Name="打开字幕" />
+              </Grid>
+              <Grid ColumnSpacing="12">
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="Auto" />
+                  <ColumnDefinition Width="*" />
+                  <ColumnDefinition Width="44" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="透明度"
+                           VerticalAlignment="Center" />
+                <Slider Grid.Column="1"
+                        x:Name="SubtitleOverlayOpacitySlider"
+                        AutomationProperties.AutomationId="subtitle-overlay-opacity"
+                        Minimum="60"
+                        Maximum="100"
+                        StepFrequency="5"
+                        SmallChange="5"
+                        ValueChanged="OnSubtitleOverlayOpacityChanged"
+                        VerticalAlignment="Center" />
+                <TextBlock Grid.Column="2"
+                           x:Name="SubtitleOverlayOpacityValue"
+                           Text="90%"
+                           TextAlignment="Right"
+                           VerticalAlignment="Center" />
+              </Grid>
+            </StackPanel>
           </Border>
 
           <Border Style="{StaticResource SurfaceBorderStyle}" Padding="18,16">

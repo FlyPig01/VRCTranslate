@@ -2,6 +2,7 @@ using System.Text.Json;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Media;
 using VrcTranslate.Application.Abstractions;
 using VrcTranslate.Application.Speech;
@@ -21,6 +22,8 @@ public sealed partial class SelfMessagePage : Page
     private bool _recognizing;
     private bool _processingResult;
     private bool _loadingTargets;
+    private bool _overlayAppearanceReady;
+    private bool _updatingOverlayAppearance;
     private LocalSpeechCaptureSession? _captureSession;
     private readonly SemaphoreSlim _captureLifecycleGate = new(1, 1);
     private readonly SemaphoreSlim _translationGate = new(1, 1);
@@ -209,15 +212,61 @@ public sealed partial class SelfMessagePage : Page
     {
         State.TranslationPreviewChanged += OnTranslationPreviewChanged;
         State.SelfTranslationTargetsChanged += OnSelfTranslationTargetsChanged;
+        if (!_overlayAppearanceReady)
+            State.OverlayAppearance.Changed += OnOverlayAppearanceChanged;
+        _overlayAppearanceReady = true;
         UpdateTranslationPreview();
         SelectTargetControls(State.SelfTranslationTargets);
+        UpdateInputOverlayOpacity();
     }
 
     private void OnPreviewUnloaded(object sender, RoutedEventArgs e)
     {
+        _overlayAppearanceReady = false;
         State.TranslationPreviewChanged -= OnTranslationPreviewChanged;
         State.SelfTranslationTargetsChanged -= OnSelfTranslationTargetsChanged;
+        State.OverlayAppearance.Changed -= OnOverlayAppearanceChanged;
         _ = StopSelfVoiceAsync();
+    }
+
+    private void OnOverlayAppearanceChanged(object? sender, EventArgs e)
+    {
+        if (!_overlayAppearanceReady || _updatingOverlayAppearance) return;
+        if (DispatcherQueue.HasThreadAccess) UpdateInputOverlayOpacity();
+        else DispatcherQueue.TryEnqueue(UpdateInputOverlayOpacity);
+    }
+
+    private void UpdateInputOverlayOpacity()
+    {
+        if (!_overlayAppearanceReady) return;
+        _updatingOverlayAppearance = true;
+        try
+        {
+            var percent = Math.Clamp(State.OverlayAppearance.Current.InputOverlayOpacity * 100d, 60d, 100d);
+            InputOverlayOpacitySlider.Value = percent;
+            InputOverlayOpacityValue.Text = $"{Math.Round(percent):0}%";
+        }
+        finally
+        {
+            _updatingOverlayAppearance = false;
+        }
+    }
+
+    private void OnInputOverlayOpacityChanged(object sender, RangeBaseValueChangedEventArgs e)
+    {
+        if (!_overlayAppearanceReady || _updatingOverlayAppearance) return;
+        _updatingOverlayAppearance = true;
+        try
+        {
+            State.OverlayAppearance.SetInputOpacity(e.NewValue / 100d);
+            var percent = Math.Clamp(State.OverlayAppearance.Current.InputOverlayOpacity * 100d, 60d, 100d);
+            InputOverlayOpacitySlider.Value = percent;
+            InputOverlayOpacityValue.Text = $"{Math.Round(percent):0}%";
+        }
+        finally
+        {
+            _updatingOverlayAppearance = false;
+        }
     }
 
     private void OnSelfTranslationTargetsChanged(object? sender, EventArgs e)
@@ -322,7 +371,7 @@ public sealed partial class SelfMessagePage : Page
             State.LastOriginalText,
             State.LastTranslatedText,
             State.LastSecondaryTranslatedText);
-        OverlayWindowChrome.Show(quickInputWindow, activate: true);
+        quickInputWindow.ShowOverlay(activate: true);
     }
 
     public void ToggleSelfVoiceFromHotkey()

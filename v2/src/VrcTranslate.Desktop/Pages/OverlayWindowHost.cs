@@ -1,4 +1,3 @@
-using Microsoft.UI.Xaml;
 using VrcTranslate.Core.Settings;
 using VrcTranslate.Infrastructure.Configuration;
 
@@ -15,6 +14,7 @@ internal static class OverlayWindowHost
     private static SubtitleOverlayWindow? _subtitle;
     private static AppState? _state;
     private static OverlayWindowLayoutStore? _layoutStore;
+    private static Microsoft.UI.Dispatching.DispatcherQueue? _dispatcherQueue;
     private static bool _shutdownRequested;
 
     public const string QuickInputLayoutKey = "quick-input";
@@ -31,7 +31,13 @@ internal static class OverlayWindowHost
         {
             return;
         }
-        _state = state;
+        if (!ReferenceEquals(_state, state))
+        {
+            if (_state is not null) _state.OverlayAppearance.Changed -= OnAppearanceChanged;
+            _state = state;
+            _state.OverlayAppearance.Changed += OnAppearanceChanged;
+        }
+        _dispatcherQueue ??= Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread();
         EnsureLayoutStore();
         _ = EnsureQuickInput(state);
         _ = EnsureSubtitle();
@@ -74,7 +80,8 @@ internal static class OverlayWindowHost
         if (_subtitle is not null) return _subtitle;
 
         EnsureLayoutStore();
-        var window = new SubtitleOverlayWindow();
+        var resolvedState = _state ?? throw new InvalidOperationException("Overlay host is not initialized.");
+        var window = new SubtitleOverlayWindow(resolvedState.OverlayAppearance.Current.SubtitleOverlayOpacity);
         window.Closed += (_, _) =>
         {
             SaveCurrentLayout(window, SubtitleLayoutKey);
@@ -87,9 +94,9 @@ internal static class OverlayWindowHost
     public static void ToggleQuickInput(AppState state)
     {
         var window = EnsureQuickInput(state);
-        if (OverlayWindowChrome.IsVisible(window))
+        if (window.IsOverlayVisible && !window.IsOverlayMinimized)
         {
-            OverlayWindowChrome.Hide(window);
+            window.HideOverlay();
             return;
         }
 
@@ -109,9 +116,9 @@ internal static class OverlayWindowHost
     public static void ToggleSubtitle()
     {
         var window = EnsureSubtitle();
-        if (OverlayWindowChrome.IsVisible(window))
+        if (window.IsOverlayVisible && !window.IsOverlayMinimized)
         {
-            OverlayWindowChrome.Hide(window);
+            window.HideOverlay();
             return;
         }
 
@@ -120,8 +127,8 @@ internal static class OverlayWindowHost
 
     public static void HideAll()
     {
-        if (_quickInput is not null) OverlayWindowChrome.Hide(_quickInput);
-        if (_subtitle is not null) OverlayWindowChrome.Hide(_subtitle);
+        _quickInput?.HideOverlay();
+        _subtitle?.HideOverlay();
     }
 
     /// <summary>
@@ -136,6 +143,7 @@ internal static class OverlayWindowHost
         var subtitle = _subtitle;
         _quickInput = null;
         _subtitle = null;
+        if (_state is not null) _state.OverlayAppearance.Changed -= OnAppearanceChanged;
 
         // Capture the final screen rectangles before requesting destruction.
         // Window.Close normally raises Closed synchronously, but the native
@@ -148,6 +156,7 @@ internal static class OverlayWindowHost
         CloseWindow(quickInput);
         CloseWindow(subtitle);
         _layoutStore?.Flush();
+        _state?.OverlayAppearance.Flush();
     }
 
     /// <summary>Returns a previously saved rectangle for an overlay kind.</summary>
@@ -157,7 +166,7 @@ internal static class OverlayWindowHost
         return _layoutStore?.Get(key);
     }
 
-    /// <summary>Queues a layout update from the native chrome controller.</summary>
+    /// <summary>Queues a layout update from the ordinary window controller.</summary>
     public static void SaveLayout(string key, OverlayWindowLayout layout)
     {
         EnsureLayoutStore();
@@ -167,27 +176,32 @@ internal static class OverlayWindowHost
     private static void EnsureLayoutStore()
     {
         if (_layoutStore is not null) return;
-        var path = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "VRCTranslate",
-            "v2-overlay-layout.json");
+        var path = Path.Combine(AppState.ResolveDataDirectory(), "v2-overlay-layout.json");
         _layoutStore = new OverlayWindowLayoutStore(path);
     }
 
-    private static void SaveCurrentLayout(Window window, string key)
+    private static void SaveCurrentLayout(QuickInputWindow window, string key)
     {
-        if (OverlayWindowChrome.TryGetLayout(window, out var layout))
+        if (window.TryGetLayout(out var layout))
         {
             SaveLayout(key, layout);
         }
     }
 
-    private static void CloseWindow(Window? window)
+    private static void SaveCurrentLayout(SubtitleOverlayWindow window, string key)
+    {
+        if (window.TryGetLayout(out var layout))
+        {
+            SaveLayout(key, layout);
+        }
+    }
+
+    private static void CloseWindow(QuickInputWindow? window)
     {
         if (window is null) return;
         try
         {
-            window.Close();
+            window.ClosePermanently();
         }
         catch
         {
@@ -196,24 +210,55 @@ internal static class OverlayWindowHost
         }
     }
 
-    private static void ShowWindow(Window window, bool activate)
+    private static void CloseWindow(SubtitleOverlayWindow? window)
+    {
+        if (window is null) return;
+        try
+        {
+            window.ClosePermanently();
+        }
+        catch
+        {
+            // The native HWND may already have been destroyed.
+        }
+    }
+
+    private static void ShowWindow(QuickInputWindow window, bool activate)
     {
         try
         {
-            if (!OverlayWindowChrome.IsVisible(window))
-            {
-                // Activate once to create the native HWND and run the window's
-                // one-time chrome setup. Show(false) immediately restores the
-                // shell/game focus for startup overlays.
-                window.Activate();
-            }
-
-            OverlayWindowChrome.Show(window, activate);
+            window.ShowOverlay(activate);
         }
         catch
         {
             // An overlay is optional UI. A failed native show must not prevent
             // the main application from remaining usable.
         }
+    }
+
+    private static void ShowWindow(SubtitleOverlayWindow window, bool activate)
+    {
+        try
+        {
+            window.ShowOverlay(activate);
+        }
+        catch
+        {
+            // An overlay is optional UI. Keep the main application usable.
+        }
+    }
+
+    private static void OnAppearanceChanged(object? sender, EventArgs e)
+    {
+        void Apply()
+        {
+            if (_state is null) return;
+            var appearance = _state.OverlayAppearance.Current;
+            _quickInput?.ApplyOpacity(appearance.InputOverlayOpacity);
+            _subtitle?.ApplyOpacity(appearance.SubtitleOverlayOpacity);
+        }
+
+        if (_dispatcherQueue is null || _dispatcherQueue.HasThreadAccess) Apply();
+        else _dispatcherQueue.TryEnqueue(Apply);
     }
 }

@@ -69,7 +69,8 @@ $settingsValidationSource = Get-Content -Raw $settingsValidation
 $quickInputSource = Get-Content -Raw (Join-Path $desktopSource 'Pages\QuickInputWindow.cs')
 $outputFormatterSource = Get-Content -Raw (Join-Path $coreSource 'Translation\TranslationOutputFormatter.cs')
 $selfMessageSource = Get-Content -Raw (Join-Path $desktopSource 'Pages\SelfMessagePage.xaml.cs')
-$overlayChromeSource = Get-Content -Raw (Join-Path $desktopSource 'Pages\OverlayWindowChrome.cs')
+$overlayControllerPath = Join-Path $desktopSource 'Pages\OverlayWindowController.cs'
+$overlayControllerSource = Get-Content -Raw $overlayControllerPath
 $runMarkup = Get-Content -Raw $runPage
 $runSource = Get-Content -Raw $runPageCode
 $inputMarkup = Get-Content -Raw $inputPage
@@ -90,9 +91,9 @@ function Get-ConfiguredOverlaySize {
 
     $match = [regex]::Match(
         $Source,
-        '(?s)OverlayWindowChrome\.Configure\(.*?,\s*(?<width>\d+)\s*,\s*(?<height>\d+)\s*,')
+        '(?s)new\s+OverlayWindowController\s*\(\s*this\s*,\s*"[^"]+"\s*,\s*(?<width>\d+)\s*,\s*(?<height>\d+)\s*,')
     if (-not $match.Success) {
-        throw "$Label overlay does not pass a concrete default size to the shared chrome."
+        throw "$Label overlay does not pass a concrete default size to the shared native-window controller."
     }
 
     $width = [int]$match.Groups['width'].Value
@@ -202,22 +203,22 @@ if ($inputMarkup -match '激活范围|SelfVoiceScopeBox' -or $inputCodeForLayout
 if ($inputMarkup -notmatch 'ProgressRing|EntranceThemeTransition' -or $inputMarkup -notmatch 'SelfVoiceStartButton' -or $inputMarkup -match 'SelfVoiceEnabledSwitch|OnContent="开"|OffContent="关"' -or $inputCodeForLayout -notmatch 'SelfVoicePulse\.IsActive|OnSelfVoiceStartClicked' -or $inputCodeForLayout -notmatch 'AnimateMicrophoneLevel|_microphoneLevelTimer|LevelChanged') { throw 'Self voice must provide one direct start/stop action, a visible animated state, and measured volume activity feedback.' }
 if ($inputMarkup -notmatch 'MaxWidth="280"' -or $inputMarkup -notmatch 'HorizontalAlignment="Stretch"' -or $inputCodeForLayout -notmatch 'Grid\.SetColumnSpan\(SelfVoiceTextHost, 2\)') { throw 'Self voice status must keep a short activity bar and allow the status label to span the free compact column.' }
 if ($quickInputSource -notmatch 'TextBox' -or $quickInputSource -match 'ComboBox|目标语言|第二语言|quick-target-language|quick-secondary-language' -or $quickInputSource -notmatch 'Translate(Self)?Async' -or $quickInputSource -notmatch 'SendChatboxAsync' -or $quickInputSource -notmatch 'SetTranslationPreview') { throw 'The global quick-input overlay must accept Chinese text, read its saved language pair from the input page, translate it, send it through OSC, and update the preview without duplicate language controls.' }
-if ($quickInputSource -match 'AcceptsReturn\s*=\s*true' -or $quickInputSource -notmatch 'e\.Key\s*==\s*Windows\.System\.VirtualKey\.Enter' -or $quickInputSource -match '翻译并发送|_send\b' -or $quickInputSource -notmatch 'TrimForChatbox' -or $quickInputSource -notmatch 'OverlayWindowChrome\.Configure') { throw 'The quick-input overlay must submit on Enter without a send button, respect the VRChat message length limit, and use shared draggable/resizable chrome.' }
-if ($overlayChromeSource -notmatch 'OverlayInteractionController' -or
-    $overlayChromeSource -notmatch 'ResolveResizeEdges' -or
-    $overlayChromeSource -notmatch 'GetCursorPos' -or
-    $overlayChromeSource -notmatch 'SetWindowPos' -or
-    $overlayChromeSource -notmatch 'WmNcLButtonDown' -or
-    $overlayChromeSource -notmatch 'WmNcCalcSize' -or
-    $overlayChromeSource -notmatch 'WmNcHitTest' -or
-    $overlayChromeSource -notmatch 'WmSetCursor' -or
-    $overlayChromeSource -notmatch 'SetWindowLongPtr' -or
-    $overlayChromeSource -notmatch 'CallWindowProc') {
-    throw 'Game overlays must use a native borderless client area with standard Windows move/resize hit testing and cursors.'
+if ($quickInputSource -match 'AcceptsReturn\s*=\s*true' -or $quickInputSource -notmatch 'e\.Key\s*==\s*Windows\.System\.VirtualKey\.Enter' -or $quickInputSource -match '翻译并发送|_send\b' -or $quickInputSource -notmatch 'TrimForChatbox' -or $quickInputSource -notmatch 'new\s+OverlayWindowController') { throw 'The quick-input overlay must submit on Enter without a send button, respect the VRChat message length limit, and use the shared native-window controller.' }
+$legacyOverlayChrome = Join-Path $desktopSource 'Pages\OverlayWindowChrome.cs'
+if (Test-Path -LiteralPath $legacyOverlayChrome) {
+    throw 'The legacy custom OverlayWindowChrome implementation must remain deleted.'
+}
+if ($overlayControllerSource -notmatch 'OverlappedPresenter' -or
+    $overlayControllerSource -notmatch 'SetBorderAndTitleBar\(hasBorder:\s*true,\s*hasTitleBar:\s*true\)' -or
+    $overlayControllerSource -notmatch 'IsResizable\s*=\s*true' -or
+    $overlayControllerSource -notmatch 'SetLayeredWindowAttributes' -or
+    $overlayControllerSource -notmatch 'WsExLayered' -or
+    $overlayControllerSource -match 'WM_NCHITTEST|WmNcHitTest|InputNonClientPointerSource|SetWindowRgn|CreateRoundRectRgn|CallWindowProc|SetWindowSubclass|GetCursorPos|mouse_event') {
+    throw 'Game overlays must use standard captioned Windows windows with native movement/resizing and layered opacity, without custom hit testing or window regions.'
 }
 if ($mainWindowSource -notmatch 'StartGlobalHotkeys|PollGlobalHotkeys|GetAsyncKeyState' -or $mainWindowSource -notmatch 'OverlayWindowHost|ToggleQuickInput') { throw 'The shell must expose a working global shortcut route to the quick-input overlay.' }
 if ($mainWindowSource -notmatch 'Closed\s*\+=\s*OnWindowClosed' -or $mainWindowSource -notmatch 'OnWindowClosed' -or $mainWindowSource -notmatch 'OverlayWindowHost\.CloseAll') { throw 'Closing the main shell must stop global polling and close both overlays.' }
-if ($overlayHostSource -notmatch 'public\s+static\s+void\s+CloseAll' -or $overlayHostSource -notmatch 'window\.Close\(\)') { throw 'OverlayWindowHost must close native overlay windows instead of only hiding them.' }
+if ($overlayHostSource -notmatch 'public\s+static\s+void\s+CloseAll' -or $overlayHostSource -notmatch 'ClosePermanently') { throw 'OverlayWindowHost must permanently destroy native overlay windows during shell shutdown.' }
 if ((Get-Content -Raw (Join-Path $desktopSource 'Pages\SelfMessagePage.xaml.cs')) -notmatch 'LocalSpeech|RecognizeSelfVoiceSamplesAsync|ToggleSelfVoiceFromHotkey|SendChatboxAsync') { throw 'Self-voice must use the local speech service and retain the OSC send path.' }
 if ((Get-Content -Raw (Join-Path $desktopSource 'Pages\SelfMessagePage.xaml.cs')) -match 'SpeechRecognizer|Windows\.Media\.SpeechRecognition') { throw 'Self-voice must not fall back to Windows SpeechRecognizer.' }
 if ($inputMarkup -match '发送格式|仅发送译文|原文 \+ 译文|仅发送原文') { throw 'Quick input must not expose an unused send-format selector.' }
@@ -227,52 +228,59 @@ if ($inputSource -notmatch 'LocalSpeechCaptureSession' -or $inputSource -notmatc
 if ($inputSource -match 'VrcTranslate\.Infrastructure') { throw 'Self voice page must use the application audio factory instead of a platform implementation.' }
 if ($inputSource -notmatch 'TranslationPreviewChanged' -or $inputSource -notmatch 'RecentOriginal' -or $inputSource -notmatch 'RecentTranslation') { throw 'The main quick-input page must update its original/translated preview after a send.' }
 if ($inputMarkup -match 'SelfVoiceLanguageBox|Header="识别语言"' -or $inputSource -match 'SelfVoiceLanguageBox') { throw 'Own voice input must remain Simplified Chinese and must not expose a recognition-language selector.' }
-if ($inputMarkup -notmatch 'Text="翻译语言"' -or $inputMarkup -notmatch 'PrimaryTargetBox' -or $inputMarkup -notmatch 'SecondaryTargetBox' -or $inputMarkup -match 'TargetLanguageExpander' -or $inputSource -notmatch 'TranslateSelfAsync|LastSecondaryTranslatedText') { throw 'The input page must expose visible primary and optional second output-language settings with a dual preview.' }
+if ($inputMarkup -notmatch 'Text="第一语言"' -or $inputMarkup -notmatch 'Text="第二语言"' -or $inputMarkup -notmatch 'PrimaryTargetBox' -or $inputMarkup -notmatch 'SecondaryTargetBox' -or $inputMarkup -match 'TargetLanguageExpander' -or $inputSource -notmatch 'TranslateSelfAsync|LastSecondaryTranslatedText') { throw 'The input page must expose visible primary and optional second output-language settings with a dual preview.' }
 if ($appStateSource -notmatch 'TranslationTargetSet|SelfTranslationTargets|TranslateSelfAsync|LastSecondaryTranslatedText') { throw 'AppState must persist and route the own-message target language pair.' }
 if ($voiceMarkup -match '目标进程|刷新进程|显示字幕覆盖层|VRChat\.exe' -or $voiceMarkup -match '<ComboBox[^>]*(识别语言|目标语言)|Header="(识别语言|目标语言)"' -or $voiceMarkup -match 'ComboBoxItem Content="当前系统输出"') { throw 'VoicePage must keep process and subtitle-language controls out of the main page.' }
 if ($voiceMarkup -match '当前翻译方案|默认翻译方案|识别后的文字会使用默认翻译服务') { throw 'VoicePage must not present translation-route details in the speech-recognition workflow.' }
-if ($voiceMarkup -notmatch '本地语音模型' -or $voiceMarkup -notmatch 'Whisper Base' -or $voiceMarkup -notmatch '管理模型' -or $voiceMarkup -notmatch 'Content="字幕"') { throw 'VoicePage must expose local model management and one concise subtitle entry.' }
+if ($voiceMarkup -notmatch '本地语音模型' -or $voiceMarkup -notmatch 'Whisper Base' -or $voiceMarkup -notmatch '管理模型' -or $voiceMarkup -notmatch 'Text="字幕窗口"' -or $voiceMarkup -notmatch 'AutomationProperties.Name="打开字幕"') { throw 'VoicePage must expose local model management and one concise subtitle-window entry.' }
 if ($voiceSource -notmatch 'State\.LocalSpeech|GetModelStatus|InstallModelAsync|RecognizeLocalSamplesAsync') { throw 'VoicePage must expose the local Whisper model state and use the application speech boundary.' }
 if ($voiceSource -match 'SpeechRecognizer|Windows\.Media\.SpeechRecognition') { throw 'VoicePage must not use Windows SpeechRecognizer.' }
 if ($voiceSource -notmatch 'LocalSpeechCaptureSession' -or $voiceSource -notmatch 'AudioCaptureMode\.SystemLoopback' -or $voiceSource -notmatch 'session\.StartAsync' -or $voiceSource -notmatch 'session\.DisposeAsync') { throw 'VoicePage must connect the system-loopback capture session and release it on stop/unload.' }
 if ($voiceSource -match 'VrcTranslate\.Infrastructure') { throw 'Voice page must use the application audio factory instead of a platform implementation.' }
 if ($voiceMarkup -match 'Windows 系统识别 · 无需密钥') { throw 'VoicePage must keep the recognition status label concise.' }
-if ([regex]::Matches($voiceMarkup, 'Content="字幕"').Count -ne 1) { throw 'VoicePage must expose one concise subtitle entry instead of duplicate buttons.' }
+if ([regex]::Matches($voiceMarkup, 'AutomationProperties.Name="打开字幕"').Count -ne 1) { throw 'VoicePage must expose one concise subtitle entry instead of duplicate buttons.' }
 if ($voiceMarkup -notmatch 'ProgressRing|EntranceThemeTransition' -or $voiceMarkup -notmatch 'VoiceAudioLevel' -or $voiceSource -notmatch 'VoicePulse\.IsActive' -or $voiceSource -notmatch 'LevelChanged|OnAudioLevelChanged') { throw 'VoicePage must provide a compact animated recognition state and measured audio activity.' }
 if ($voiceSource -notmatch 'ContentDialog' -or $voiceSource -notmatch 'OverlayWindowHost|ShowSubtitle' -or $voiceSource -notmatch 'InstallModelAsync' -or $voiceSource -notmatch 'RemoveModelAsync') { throw 'VoicePage must provide a local model management dialog and expose a real subtitle preview window.' }
 if ($voiceMarkup -match '1\s+音频来源|2\s+识别服务|3\s+字幕窗口') { throw 'VoicePage must not use numbered explanatory cards.' }
 if ($overlayMarkup -match '识别语言|目标语言|显示(?:内容)?|他人语音字幕|等待') { throw 'Subtitle overlay must stay minimal: automatic recognition and fixed Simplified Chinese output have no visible labels or selectors.' }
 if ($overlayMarkup -match 'SourceLanguageBox|TargetLanguageBox|DisplayModeBox|OverlayStatusText|OverlayStatusDot|Content="他人语音字幕"') { throw 'Subtitle overlay must not render redundant names, language selectors, display selectors, or status widgets.' }
 if ($overlayMarkup -notmatch 'AutomationProperties.AutomationId="subtitle-text"' -or
-     $overlayMarkup -notmatch 'x:Name="DragSurface"' -or
     $overlayCodeSource -notmatch 'SelectedTargetLanguage\s*=>\s*"zh-CN"' -or
     $overlayCodeSource -notmatch 'SelectedSourceLanguage\s*=>\s*"auto"' -or
-    $overlayCodeSource -notmatch 'OverlayWindowChrome\.Configure') {
-     throw 'Subtitle overlay must expose one compact surface, keep automatic recognition and Simplified Chinese output, and use shared draggable/resizable chrome.'
+    $overlayCodeSource -notmatch 'new\s+OverlayWindowController') {
+     throw 'Subtitle overlay must expose one compact surface, keep automatic recognition and Simplified Chinese output, and use the shared native-window controller.'
  }
  if ($overlayMarkup -match '(?i)waveform|wave-bar|wavebar|right-decoration|audio-bars' -or
      ([regex]::Matches($overlayMarkup, 'subtitle-activity-mark').Count -ne 1)) {
      throw 'Subtitle overlay must keep only the left activity mark; the removed irregular right-side decoration must not return.'
  }
-if ($quickInputSource -notmatch 'OverlayWindowChrome\.Configure' -or
-    $quickInputSource -notmatch 'initialLayout:\s*OverlayWindowHost\.GetSavedLayout' -or
-    $quickInputSource -notmatch 'layoutChanged:\s*layout\s*=>\s*OverlayWindowHost\.SaveLayout' -or
-    $overlayCodeSource -notmatch 'OverlayWindowChrome\.Configure' -or
-    $overlayCodeSource -notmatch 'initialLayout:\s*OverlayWindowHost\.GetSavedLayout' -or
-    $overlayCodeSource -notmatch 'layoutChanged:\s*layout\s*=>\s*OverlayWindowHost\.SaveLayout') {
-    throw 'Both overlays must pass a concrete default size and their saved layout through the shared chrome.'
+if ($quickInputSource -notmatch 'new\s+OverlayWindowController' -or
+    $quickInputSource -notmatch 'OverlayWindowHost\.GetSavedLayout' -or
+    $quickInputSource -notmatch 'OverlayWindowHost\.SaveLayout' -or
+    $overlayCodeSource -notmatch 'new\s+OverlayWindowController' -or
+    $overlayCodeSource -notmatch 'OverlayWindowHost\.GetSavedLayout' -or
+    $overlayCodeSource -notmatch 'OverlayWindowHost\.SaveLayout') {
+    throw 'Both overlays must pass a concrete default size and their saved layout through the shared native-window controller.'
+}
+if ($overlayControllerSource -notmatch 'BestEffort\(\(\)\s*=>\s*ConfigurePresenter' -or
+    $overlayControllerSource -notmatch 'BestEffort\(\(\)\s*=>\s*RestoreLayout' -or
+    $overlayControllerSource -notmatch 'hwnd\s*==\s*IntPtr\.Zero\s*\|\|\s*!ShowWindow' -or
+    $quickInputSource -notmatch 'OverlayWindowController\.ShowFallback\(this, activate\)' -or
+    $overlayCodeSource -notmatch 'OverlayWindowController\.ShowFallback\(this, activate\)') {
+    throw 'Optional native presentation failures must retain an openable compatibility path for both overlays.'
 }
 if ($overlayHostSource -notmatch 'v2-overlay-layout\.json' -or
     $overlayHostSource -notmatch 'GetSavedLayout' -or
     $overlayHostSource -notmatch 'SaveLayout' -or
     $overlayHostSource -notmatch '\.Flush\(\)' -or
-    $overlayChromeSource -notmatch 'ResolveInitialLayout' -or
-    $overlayChromeSource -notmatch 'PublishLayout' -or
-    $overlayChromeSource -notmatch 'TryGetLayout' -or
+    $overlayControllerSource -notmatch 'RestoreLayout' -or
+    $overlayControllerSource -notmatch 'PublishLayout' -or
+    $overlayControllerSource -notmatch 'TryGetLayout' -or
+    $overlayControllerSource -notmatch 'AppWindow\.Changed' -or
     $overlayLayoutContract -notmatch 'record struct OverlayWindowLayout' -or
     $overlayLayoutStore -notmatch 'ScheduleSaveLocked' -or
     $overlayLayoutStore -notmatch 'File\.Move\(temporaryPath') {
-     throw 'Overlay position and size persistence must use a layered layout contract, coalesced atomic storage, and native move/resize callbacks.'
+     throw 'Overlay position and size persistence must use a layered layout contract, coalesced atomic storage, and AppWindow change callbacks.'
  }
  # Shutdown can defer Window.Closed while the dispatcher is unwinding. Keep a
  # direct pre-close snapshot so the final user move/resize is not lost before
@@ -290,19 +298,16 @@ if ($overlayHostSource -notmatch 'v2-overlay-layout\.json' -or
      throw 'Overlay shutdown must snapshot both native rectangles before closing windows.'
  }
 if ($quickInputSource -match 'quick-secondary-language|quick-target-language|第二语言|目标语言|展开第二语言|收起第二语言|ComboBox' -or
-    $quickInputSource -match 'Opacity\s*=\s*1\b' -or
-    $quickInputSource -notmatch 'ColorHelper\.FromArgb\(a,' -or
     $quickInputSource -notmatch 'Content\s*=\s*_surface' -or
     $quickInputSource -match 'windowSurface' -or
     $quickInputSource -match 'private readonly Border _surface' -or
-    $quickInputSource -match 'BorderBrush\s*=\s*Brush\("#B34FC9C2"\)' -or
     $quickInputSource -match 'CornerRadius\s*=\s*new CornerRadius' -or
-    $quickInputSource -match 'Padding\s*=\s*new Thickness\(8, 7, 8, 7\)' -or
     $quickInputSource -notmatch 'private readonly Grid _surface' -or
-    $quickInputSource -notmatch 'new Grid\s*\{' -or
-    $quickInputSource -notmatch 'Background\s*=\s*Brush\("#00000000"\)' -or
-     $quickInputSource -notmatch 'BorderThickness\s*=\s*new Thickness\(0\)') {
-     throw 'Quick-input overlay must use one borderless translucent Grid clipped by the native rounded window region without an inner rounded frame.'
+    $quickInputSource -notmatch 'RequestedTheme\s*=\s*ElementTheme\.Dark' -or
+    $quickInputSource -notmatch 'Background\s*=\s*Brush\("#[0-9A-Fa-f]{6}"\)' -or
+    $quickInputSource -notmatch 'Opacity\s*=\s*1\b' -or
+    $quickInputSource -notmatch 'BorderThickness\s*=\s*new Thickness\(0\)') {
+     throw 'Quick-input overlay must fill the opaque native client area with one dark Grid and leave adjustable transparency to the HWND.'
  }
  # The stock WinUI TextBox template paints a new BorderElement background in
  # its focused and pointer-over states.  Keep those theme resources transparent
@@ -344,25 +349,24 @@ if ($voiceSource -notmatch 'TranslationOutputFormatter\.TrimForOsc' -or
     $voiceSource -match 'CombinedText|FormattedText') {
     throw 'Subtitle OSC output must use the shared length guard while keeping its single Simplified Chinese translation.'
 }
-if ($overlayMarkup -notmatch '<Grid x:Name="DragSurface"' -or
-     $overlayMarkup -match 'x:Name="DragSurface"[\s\S]{0,500}(BorderBrush|BorderThickness|CornerRadius|Padding)=' -or
-     $overlayMarkup -notmatch 'Background="#[0-9A-Fa-f]{8}"' -or
+if ($overlayMarkup -notmatch '<Grid x:Name="OverlaySurface"' -or
+     $overlayMarkup -match 'x:Name="OverlaySurface"[\s\S]{0,400}(BorderBrush|BorderThickness|CornerRadius)=' -or
+     $overlayMarkup -notmatch 'Background="#[0-9A-Fa-f]{6}"' -or
      $overlayMarkup -notmatch 'subtitle-activity-mark' -or
      $overlayMarkup -notmatch 'x:Name="PulseRing"' -or
-     $overlayCodeSource -notmatch 'ExtendsContentIntoTitleBar\s*=\s*true' -or
+     $overlayCodeSource -notmatch 'ExtendsContentIntoTitleBar\s*=\s*false' -or
      $overlayCodeSource -notmatch 'OnVisualTimerTick' -or
      $overlayCodeSource -notmatch 'PulseRing\.Opacity') {
-     throw 'Subtitle overlay must use one alpha-backed borderless Grid with a compact activity mark and a visible animation.'
+     throw 'Subtitle overlay must fill the native client area with one dark Grid, a compact activity mark, and a visible animation.'
  }
-if ($overlayChromeSource -notmatch 'SetBorderAndTitleBar\(hasBorder: false, hasTitleBar: false\)' -or
-    $overlayChromeSource -notmatch 'TryDisableNativeFrame' -or
-    $overlayChromeSource -notmatch 'DwmNcRenderingPolicyDisabled\s*=\s*1' -or
-    $overlayChromeSource -notmatch 'DwmaBorderColor\s*=\s*34' -or
-    $overlayChromeSource -notmatch 'DwmColorNone' -or
-    $overlayChromeSource -notmatch 'CreateRoundRectRgn' -or
-    $overlayChromeSource -notmatch 'SetWindowRgn' -or
-    $overlayChromeSource -notmatch 'ApplyRoundedWindowRegion') {
-    throw 'Overlay chrome must remove the native caption and use one native rounded window region without a rectangular DWM frame.'
+if ($overlayControllerSource -notmatch '_window\.ExtendsContentIntoTitleBar\s*=\s*false' -or
+    $overlayControllerSource -notmatch 'SetBorderAndTitleBar\(hasBorder:\s*true,\s*hasTitleBar:\s*true\)' -or
+    $overlayControllerSource -notmatch 'IsAlwaysOnTop\s*=\s*true' -or
+    $overlayControllerSource -notmatch 'ApplyOpacity' -or
+    $overlayControllerSource -notmatch 'SetLayeredWindowAttributes' -or
+    $overlayControllerSource -notmatch 'args\.Cancel\s*=\s*true' -or
+    $overlayControllerSource -notmatch 'Hide\(\)') {
+    throw 'Overlay controller must retain the standard title bar, native border, always-on-top behavior, layered opacity, and close-to-hide lifecycle.'
 }
 if ($overlayMarkup -match 'Shadow' -or $quickInputSource -match 'Shadow') { throw 'Game overlays must not add shadows over the game view.' }
 if ($voiceSource -notmatch 'SpeechRecognitionRequest|State\.LocalSpeech' -or $voiceSource -notmatch '"zh-CN"') { throw 'VoicePage must use the local recognition boundary and keep translation output fixed to Simplified Chinese.' }
@@ -371,8 +375,17 @@ if ($mainWindowSource -notmatch 'ToggleSubtitle') { throw 'The global subtitle s
 if ($hotkeyContractsSource -notmatch 'NormalizeModifier' -or $hotkeyContractsSource -notmatch 'IsSupportedPrimary' -or $hotkeyContractsSource -notmatch 'functionKey\s+is\s+>=\s+1\s+and\s+<=\s+12') { throw 'Core hotkey normalization must define the same supported modifier and primary-key set as the desktop poller.' }
 if ($settingsValidationSource -notmatch 'HotkeyBinding\.Normalize\(gesture\)' -or $settingsValidationSource -notmatch 'gestures\[normalized\]') { throw 'Workspace settings validation must use canonical hotkey normalization for conflicts and unsupported keys.' }
 if ($mainWindowSource -notmatch 'HotkeyBinding\.Normalize' -or $mainWindowSource -notmatch 'return HotkeyBinding\.Normalize\(fallback\)') { throw 'Desktop global hotkeys must use the core canonical normalization and safely fall back for invalid persisted values.' }
-if ($mainWindowSource -notmatch 'OnTranslationPreviewChanged[\s\S]*DispatcherQueue\.HasThreadAccess' -or
-    $mainWindowSource -notmatch 'OnTranslationPreviewChanged[\s\S]*DispatcherQueue\.TryEnqueue') {
+$previewHandlerMatch = [regex]::Match(
+    $mainWindowSource,
+    '(?s)private\s+void\s+OnTranslationPreviewChanged\s*\([^)]*\)\s*\{(?<body>.*?)(?=\r?\n\s*private\s+)')
+if (-not $previewHandlerMatch.Success) {
+    throw 'MainWindow must retain the translation-preview event handler.'
+}
+$previewHandlerBody = $previewHandlerMatch.Groups['body'].Value
+# Keep the WinUI access inside a local action, then invoke that action either
+# directly on the UI thread or through the dispatcher. Merely mentioning a
+# dispatcher elsewhere in MainWindow must not satisfy this regression guard.
+if ($previewHandlerBody -notmatch '(?s)void\s+UpdatePreview\s*\(\s*\)\s*\{.*?OverlayWindowHost\.QuickInput.*?SetPreview\s*\(.*?\}\s*if\s*\(\s*DispatcherQueue\.HasThreadAccess\s*\)\s*\{\s*UpdatePreview\s*\(\s*\)\s*;\s*\}\s*else\s*\{\s*DispatcherQueue\.TryEnqueue\s*\(\s*UpdatePreview\s*\)\s*;') {
     throw 'MainWindow preview updates must marshal background translation events onto the UI dispatcher.'
 }
 if ((Get-Content -Raw $PSCommandPath) -notmatch 'Get-ConfiguredGlobalHotkey' -or (Get-Content -Raw $PSCommandPath) -notmatch 'Invoke-TestHotkey') { throw 'Subtitle shortcut smoke must read and exercise the persisted VoiceHotkey instead of hard-coding F7.' }
@@ -714,8 +727,16 @@ function Invoke-VoiceUiSmoke {
         if ($null -eq $startButton) { throw 'Voice page does not expose the recognition action.' }
         $overlayButtonRect = $overlayButton.Current.BoundingRectangle
         $startButtonRect = $startButton.Current.BoundingRectangle
-        if ([Math]::Abs($overlayButtonRect.Top - $startButtonRect.Top) -gt 24) {
-            throw 'Voice page actions are vertically stacked at the normal window width.'
+        $mainRect = $window.Current.BoundingRectangle
+        foreach ($entry in @(
+            @{ Name = 'subtitle-window'; Rect = $overlayButtonRect },
+            @{ Name = 'recognition'; Rect = $startButtonRect })) {
+            $rect = $entry.Rect
+            if ($rect.Width -lt 60 -or $rect.Height -lt 24 -or
+                $rect.Left -lt ($mainRect.Left - 2) -or $rect.Right -gt ($mainRect.Right + 2) -or
+                $rect.Top -lt ($mainRect.Top - 2) -or $rect.Bottom -gt ($mainRect.Bottom + 2)) {
+                throw "Voice page $($entry.Name) action is clipped or unusable."
+            }
         }
         $hotkeySummaryCondition = New-Object System.Windows.Automation.PropertyCondition(
             [System.Windows.Automation.AutomationElement]::AutomationIdProperty, 'voice-hotkey-summary')
@@ -764,8 +785,8 @@ function Invoke-VoiceUiSmoke {
         Assert-OverlayBounds -Bounds $overlayRect -ConfiguredSize $subtitleOverlayDefaultSize -Label 'Subtitle'
         $overlayStyle = [VrcTranslateValidationNative]::GetWindowLongPtr(
             [IntPtr]$overlay.Current.NativeWindowHandle, -16).ToInt64()
-        if (($overlayStyle -band 0x00C00000) -ne 0) {
-            throw 'The subtitle overlay still exposes a native caption.'
+        if (($overlayStyle -band 0x00C00000) -ne 0x00C00000) {
+            throw 'The subtitle overlay lost its standard Windows caption.'
         }
         if (($overlayStyle -band 0x00040000) -eq 0) {
             throw 'The subtitle overlay lost the standard Windows resize frame.'
@@ -786,9 +807,6 @@ function Invoke-VoiceUiSmoke {
         Start-Sleep -Milliseconds 300
         if (-not [VrcTranslateValidationNative]::IsWindowVisible($overlayHandle)) {
             throw 'The subtitle shortcut did not show the overlay again.'
-        }
-        if ($overlayControls | Where-Object { $_.Current.Name -eq '关闭字幕窗口' -or $_.Current.Name -eq '关闭' }) {
-            throw 'The subtitle overlay must not expose a close button.'
         }
         try { $overlay.GetCurrentPattern([System.Windows.Automation.WindowPattern]::Pattern).Close() } catch { }
         Write-Host '  Voice subtitle-window interaction smoke passed.'
@@ -861,7 +879,7 @@ function Invoke-QuickInputUiSmoke {
             [System.Windows.Automation.Condition]::TrueCondition))
         $textBox = $controls | Where-Object { $_.Current.Name -eq '待翻译文字' -or $_.Current.AutomationId -eq 'quick-input-text' } | Select-Object -First 1
         if ($null -eq $textBox) { throw 'Quick-input window does not expose a named text box.' }
-        $forbiddenInputControls = @('目标语言', '第二语言', '展开第二语言', '收起第二语言', '翻译并发送', '关闭')
+        $forbiddenInputControls = @('目标语言', '第二语言', '展开第二语言', '收起第二语言', '翻译并发送')
         $unexpectedInputControl = $controls | Where-Object { $_.Current.Name -in $forbiddenInputControls } | Select-Object -First 1
         if ($null -ne $unexpectedInputControl) {
             throw "Quick-input window exposes a duplicate or forbidden control: $($unexpectedInputControl.Current.Name)."
@@ -874,11 +892,10 @@ function Invoke-QuickInputUiSmoke {
         }
         $inputStyle = [VrcTranslateValidationNative]::GetWindowLongPtr(
             [IntPtr]$inputWindow.Current.NativeWindowHandle, -16).ToInt64()
-        # A standard resize loop needs WS_THICKFRAME. The caption and system
-        # menu bits must stay removed because the XAML surface is the only
-        # visible layer.
-        if (($inputStyle -band 0x00C00000) -ne 0) {
-            throw 'The quick-input overlay still exposes a native caption.'
+        # Native captions and resize frames are intentional: Windows owns the
+        # drag, cursor, snap, DPI and eight-direction resize behavior.
+        if (($inputStyle -band 0x00C00000) -ne 0x00C00000) {
+            throw 'The quick-input overlay lost its standard Windows caption.'
         }
         if (($inputStyle -band 0x00040000) -eq 0) {
             throw 'The quick-input overlay lost the standard Windows resize frame.'
@@ -895,68 +912,6 @@ function Invoke-QuickInputUiSmoke {
     if (Test-Path $startupLog) {
         throw "Quick-input UI smoke wrote a startup failure log:`n$(Get-Content $startupLog -Raw)"
     }
-}
-
-function Assert-OverlayCapture([string] $page, [string] $target) {
-    $capturePath = Join-Path $env:TEMP ("v2-validation-{0}.png" -f $target)
-    Remove-Item $capturePath -ErrorAction SilentlyContinue
-    $captureScript = Join-Path $PSScriptRoot 'Capture-ActualWindow.ps1'
-    & powershell -NoProfile -ExecutionPolicy Bypass -File $captureScript `
-        -Page $page -Target $target -OutputPath $capturePath | Out-Host
-    if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $capturePath)) {
-        throw "Could not capture the $target overlay for the visual smoke test."
-    }
-
-    Add-Type -AssemblyName System.Drawing
-    $bitmap = $null
-    try {
-        $bitmap = [System.Drawing.Bitmap]::new($capturePath)
-        $topRows = [Math]::Min(8, $bitmap.Height)
-        $whitePixels = 0
-        $sampleCount = 0
-        for ($y = 0; $y -lt $topRows; $y++) {
-            if ($y -eq 0) { continue }
-            for ($x = 0; $x -lt $bitmap.Width; $x++) {
-                # PrintWindow leaves the compositor's intentionally
-                # transparent rounded corners as white bitmap pixels. Ignore
-                # only that small corner envelope; a white strip across the
-                # middle of an edge still fails the check below.
-                if (($x -lt 14 -or $x -ge ($bitmap.Width - 14)) -and $y -lt 14) { continue }
-                $pixel = $bitmap.GetPixel($x, $y)
-                $sampleCount++
-                if ($pixel.R -gt 200 -and $pixel.G -gt 200 -and $pixel.B -gt 200) {
-                    $whitePixels++
-                }
-            }
-        }
-        $edgeBand = [Math]::Min(6, [Math]::Max(1, [Math]::Min($bitmap.Width, $bitmap.Height) / 4))
-        $edgeWhitePixels = 0
-        $edgeSampleCount = 0
-        for ($y = 0; $y -lt $bitmap.Height; $y++) {
-            for ($x = 0; $x -lt $bitmap.Width; $x++) {
-                if ($y -eq 0) { continue }
-                if ($x -lt $edgeBand -or $x -ge ($bitmap.Width - $edgeBand) -or
-                    $y -lt $edgeBand -or $y -ge ($bitmap.Height - $edgeBand)) {
-                    if (($x -lt 14 -or $x -ge ($bitmap.Width - 14)) -and
-                        ($y -lt 14 -or $y -ge ($bitmap.Height - 14))) { continue }
-                    $pixel = $bitmap.GetPixel($x, $y)
-                    $edgeSampleCount++
-                    if ($pixel.R -gt 200 -and $pixel.G -gt 200 -and $pixel.B -gt 200) {
-                        $edgeWhitePixels++
-                    }
-                }
-            }
-        }
-        if (($sampleCount -gt 0 -and ($whitePixels / [double]$sampleCount) -gt 0.05) -or
-            ($edgeSampleCount -gt 0 -and ($edgeWhitePixels / [double]$edgeSampleCount) -gt 0.005)) {
-            throw "$target overlay has white frame pixels: top $whitePixels/$sampleCount, edge $edgeWhitePixels/$edgeSampleCount."
-        }
-    }
-    finally {
-        if ($null -ne $bitmap) { $bitmap.Dispose() }
-        Remove-Item $capturePath -ErrorAction SilentlyContinue
-    }
-    Write-Host "  '$target' overlay has no white top strip." -ForegroundColor Green
 }
 
 function Invoke-SubtitleVisualSmoke {
@@ -1086,10 +1041,7 @@ public static class VrcTranslateSubtitleVisualNative {
 
         $handle = [IntPtr]$subtitleWindow.Current.NativeWindowHandle
         [VrcTranslateSubtitleVisualNative]::Capture($handle, $firstCapture)
-        Start-Sleep -Milliseconds 240
-        [VrcTranslateSubtitleVisualNative]::Capture($handle, $secondCapture)
         $firstBitmap = [System.Drawing.Bitmap]::new($firstCapture)
-        $secondBitmap = [System.Drawing.Bitmap]::new($secondCapture)
         $activityCondition = New-Object System.Windows.Automation.PropertyCondition(
             [System.Windows.Automation.AutomationElement]::AutomationIdProperty, 'subtitle-activity-mark')
         $activityElement = $subtitleWindow.FindFirst(
@@ -1110,24 +1062,44 @@ public static class VrcTranslateSubtitleVisualNative {
             $localBottom = [Math]::Min($firstBitmap.Height, $localTop + 64)
         }
         $activityPixels = 0
-        $animatedPixels = 0
         for ($y = $localTop; $y -lt $localBottom; $y++) {
             for ($x = $localLeft; $x -lt $localRight; $x++) {
                 $before = $firstBitmap.GetPixel($x, $y)
-                $after = $secondBitmap.GetPixel($x, $y)
                 if ($before.G -gt 58 -and ($before.G - $before.R) -gt 14 -and ($before.B - $before.R) -gt 10) {
                     $activityPixels++
-                }
-                if ([Math]::Abs($before.R - $after.R) + [Math]::Abs($before.G - $after.G) + [Math]::Abs($before.B - $after.B) -gt 8) {
-                    $animatedPixels++
                 }
             }
         }
         if ($activityPixels -lt 6) {
             throw "Subtitle activity mark is not visibly rendered (accent pixels: $activityPixels)."
         }
+
+        # A two-frame comparison can land on equal rounded sine values and
+        # falsely report a stopped animation. Sample several non-harmonic
+        # offsets and accept the strongest visual delta from the baseline.
+        $animatedPixels = 0
+        for ($sample = 0; $sample -lt 5 -and $animatedPixels -lt 2; $sample++) {
+            Start-Sleep -Milliseconds 173
+            [VrcTranslateSubtitleVisualNative]::Capture($handle, $secondCapture)
+            $secondBitmap = [System.Drawing.Bitmap]::new($secondCapture)
+            $sampleChangedPixels = 0
+            for ($y = $localTop; $y -lt $localBottom; $y++) {
+                for ($x = $localLeft; $x -lt $localRight; $x++) {
+                    $before = $firstBitmap.GetPixel($x, $y)
+                    $after = $secondBitmap.GetPixel($x, $y)
+                    if ([Math]::Abs($before.R - $after.R) +
+                        [Math]::Abs($before.G - $after.G) +
+                        [Math]::Abs($before.B - $after.B) -gt 8) {
+                        $sampleChangedPixels++
+                    }
+                }
+            }
+            $animatedPixels = [Math]::Max($animatedPixels, $sampleChangedPixels)
+            $secondBitmap.Dispose()
+            $secondBitmap = $null
+        }
         if ($animatedPixels -lt 2) {
-            throw "Subtitle activity mark did not animate between captures (changed pixels: $animatedPixels)."
+            throw "Subtitle activity mark did not animate across six captures (changed pixels: $animatedPixels)."
         }
         Write-Host "  Subtitle activity mark render and animation smoke passed ($activityPixels accent, $animatedPixels changed pixels)." -ForegroundColor Green
     }
@@ -1141,189 +1113,6 @@ public static class VrcTranslateSubtitleVisualNative {
     }
     if (Test-Path $startupLog) {
         throw "Subtitle visual smoke wrote a startup failure log:`n$(Get-Content $startupLog -Raw)"
-    }
-}
-
-function Invoke-OverlayResizeSmoke {
-    Remove-Item $startupLog -ErrorAction SilentlyContinue
-    $env:VRC_TRANSLATE_SMOKE_PAGE = 'input'
-    $process = $null
-    try {
-        $process = Start-Process -FilePath $executable -WorkingDirectory $desktopOutput -PassThru
-        $root = [System.Windows.Automation.AutomationElement]::RootElement
-        $window = $null
-        for ($attempt = 0; $attempt -lt 30 -and $null -eq $window; $attempt++) {
-            Start-Sleep -Milliseconds 200
-            $window = @($root.FindAll(
-                [System.Windows.Automation.TreeScope]::Children,
-                [System.Windows.Automation.Condition]::TrueCondition)) |
-                Where-Object { $_.Current.Name -eq 'VRCTranslate' -and $_.Current.ProcessId -eq $process.Id } |
-                Select-Object -First 1
-        }
-        if ($null -eq $window) { throw 'Overlay resize smoke could not find the shell window.' }
-
-        $children = @($root.FindAll(
-            [System.Windows.Automation.TreeScope]::Children,
-            (New-Object System.Windows.Automation.PropertyCondition(
-                [System.Windows.Automation.AutomationElement]::ControlTypeProperty,
-                [System.Windows.Automation.ControlType]::Window))))
-        $children = @($children | Where-Object { $_.Current.ProcessId -eq $process.Id })
-        $inputWindow = $children | Where-Object {
-            $null -ne $_.FindFirst(
-                [System.Windows.Automation.TreeScope]::Descendants,
-                (New-Object System.Windows.Automation.PropertyCondition(
-                    [System.Windows.Automation.AutomationElement]::AutomationIdProperty,
-                    'quick-input-text')))
-        } | Select-Object -First 1
-        if ($null -eq $inputWindow) { throw 'Overlay resize smoke could not find the input overlay.' }
-
-        $subtitleWindow = $children | Where-Object {
-            $null -ne $_.FindFirst(
-                [System.Windows.Automation.TreeScope]::Descendants,
-                (New-Object System.Windows.Automation.PropertyCondition(
-                    [System.Windows.Automation.AutomationElement]::AutomationIdProperty,
-                     'subtitle-text')))
-        } | Select-Object -First 1
-        if ($null -eq $subtitleWindow) { throw 'Overlay resize smoke could not find the subtitle overlay.' }
-
-        $handle = [IntPtr]$inputWindow.Current.NativeWindowHandle
-        if (-not [VrcTranslateValidationNative]::HasRoundedWindowRegion($handle)) {
-            throw 'Input overlay is not clipped to a rounded native window region; a rectangular host frame could leak through.'
-        }
-        $inputBoundsForHitTest = [VrcTranslateValidationNative]::GetWindowRectValue($handle)
-        $inputCornerHit = [VrcTranslateValidationNative]::HitTestAt(
-            $handle,
-            $inputBoundsForHitTest.Right - 3,
-            $inputBoundsForHitTest.Bottom - 3)
-        if ($inputCornerHit -ne 17) {
-            throw "Input overlay bottom-right hit test returned $inputCornerHit instead of HTBOTTOMRIGHT (17)."
-        }
-        $inputTopHit = [VrcTranslateValidationNative]::HitTestAt(
-            $handle,
-            $inputBoundsForHitTest.Left + 3,
-            $inputBoundsForHitTest.Top + 3)
-        if ($inputTopHit -ne 13) {
-            throw "Input overlay top-left hit test returned $inputTopHit instead of HTTOPLEFT (13)."
-        }
-        $inputCenterHit = [VrcTranslateValidationNative]::HitTestAt(
-            $handle,
-            [int](($inputBoundsForHitTest.Left + $inputBoundsForHitTest.Right) / 2),
-            [int](($inputBoundsForHitTest.Top + $inputBoundsForHitTest.Bottom) / 2))
-        if ($inputCenterHit -notin @(1, 2)) {
-            throw "Input overlay center hit test returned unexpected code $inputCenterHit."
-        }
-
-        [VrcTranslateValidationNative]::ShowWindow($handle, 5) | Out-Null
-        [VrcTranslateValidationNative]::SetForegroundWindow($handle) | Out-Null
-        Start-Sleep -Milliseconds 200
-        $before = [VrcTranslateValidationNative]::GetWindowRectValue($handle)
-        $inputTextCondition = New-Object System.Windows.Automation.PropertyCondition(
-            [System.Windows.Automation.AutomationElement]::AutomationIdProperty,
-            'quick-input-text')
-        $inputTextElement = $inputWindow.FindFirst(
-            [System.Windows.Automation.TreeScope]::Descendants,
-            $inputTextCondition)
-        if ($null -eq $inputTextElement) { throw 'Overlay resize smoke could not find the input text area.' }
-        $textBefore = $inputTextElement.Current.BoundingRectangle
-        # Stay inside the rounded card while remaining within the ten-pixel
-        # resize grip; its extreme corner is intentionally transparent.
-        [VrcTranslateValidationNative]::SetCursorPos($before.Right - 8, $before.Bottom - 8) | Out-Null
-        Start-Sleep -Milliseconds 100
-        [VrcTranslateValidationNative]::MouseEvent(
-            [VrcTranslateValidationNative]::MouseLeftDown, 0, 0, 0, [UIntPtr]::Zero)
-        Start-Sleep -Milliseconds 100
-        [VrcTranslateValidationNative]::SetCursorPos($before.Right + 48, $before.Bottom + 28) | Out-Null
-        Start-Sleep -Milliseconds 250
-        [VrcTranslateValidationNative]::MouseEvent(
-            [VrcTranslateValidationNative]::MouseLeftUp, 0, 0, 0, [UIntPtr]::Zero)
-        Start-Sleep -Milliseconds 250
-        $after = [VrcTranslateValidationNative]::GetWindowRectValue($handle)
-        if (($after.Right - $after.Left) -le (($before.Right - $before.Left) + 20) -or
-            ($after.Bottom - $after.Top) -le (($before.Bottom - $before.Top) + 10)) {
-            throw "Dragging the input overlay corner did not resize it: before $($before.Right - $before.Left)x$($before.Bottom - $before.Top), after $($after.Right - $after.Left)x$($after.Bottom - $after.Top)."
-        }
-        Start-Sleep -Milliseconds 350
-        $textAfter = $inputTextElement.Current.BoundingRectangle
-        if ($textAfter.Width -le ($textBefore.Width + 20) -or
-            $textAfter.Height -le ($textBefore.Height + 8)) {
-            throw "Input text area did not follow the native resize: before $([math]::Round($textBefore.Width))x$([math]::Round($textBefore.Height)), after $([math]::Round($textAfter.Width))x$([math]::Round($textAfter.Height))."
-        }
-
-        [VrcTranslateValidationNative]::SetWindowPos(
-            $handle, [IntPtr]::Zero, $before.Left, $before.Top,
-            $before.Right - $before.Left, $before.Bottom - $before.Top, 0x0040) | Out-Null
-
-        # Exercise the same native edge/corner path on the subtitle overlay.
-        # The two windows share the chrome implementation, but this catches
-        # regressions where only the input overlay receives the resize hook.
-        $subtitleHandle = [IntPtr]$subtitleWindow.Current.NativeWindowHandle
-        if (-not [VrcTranslateValidationNative]::HasRoundedWindowRegion($subtitleHandle)) {
-            throw 'Subtitle overlay is not clipped to a rounded native window region; a rectangular host frame could leak through.'
-        }
-        [VrcTranslateValidationNative]::ShowWindow($subtitleHandle, 5) | Out-Null
-        [VrcTranslateValidationNative]::SetForegroundWindow($subtitleHandle) | Out-Null
-        Start-Sleep -Milliseconds 200
-        $subtitleBefore = [VrcTranslateValidationNative]::GetWindowRectValue($subtitleHandle)
-        $subtitleCornerHit = [VrcTranslateValidationNative]::HitTestAt(
-            $subtitleHandle,
-            $subtitleBefore.Right - 3,
-            $subtitleBefore.Bottom - 3)
-        if ($subtitleCornerHit -ne 17) {
-            throw "Subtitle overlay bottom-right hit test returned $subtitleCornerHit instead of HTBOTTOMRIGHT (17)."
-        }
-        [VrcTranslateValidationNative]::SetCursorPos($subtitleBefore.Right - 8, $subtitleBefore.Bottom - 8) | Out-Null
-        Start-Sleep -Milliseconds 100
-        [VrcTranslateValidationNative]::MouseEvent(
-            [VrcTranslateValidationNative]::MouseLeftDown, 0, 0, 0, [UIntPtr]::Zero)
-        Start-Sleep -Milliseconds 100
-        [VrcTranslateValidationNative]::SetCursorPos($subtitleBefore.Right + 48, $subtitleBefore.Bottom + 28) | Out-Null
-        Start-Sleep -Milliseconds 250
-        [VrcTranslateValidationNative]::MouseEvent(
-            [VrcTranslateValidationNative]::MouseLeftUp, 0, 0, 0, [UIntPtr]::Zero)
-        Start-Sleep -Milliseconds 250
-        $subtitleAfter = [VrcTranslateValidationNative]::GetWindowRectValue($subtitleHandle)
-        if (($subtitleAfter.Right - $subtitleAfter.Left) -le (($subtitleBefore.Right - $subtitleBefore.Left) + 20) -or
-            ($subtitleAfter.Bottom - $subtitleAfter.Top) -le (($subtitleBefore.Bottom - $subtitleBefore.Top) + 10)) {
-            throw "Dragging the subtitle overlay corner did not resize it: before $($subtitleBefore.Right - $subtitleBefore.Left)x$($subtitleBefore.Bottom - $subtitleBefore.Top), after $($subtitleAfter.Right - $subtitleAfter.Left)x$($subtitleAfter.Bottom - $subtitleAfter.Top)."
-        }
-
-        [VrcTranslateValidationNative]::SetWindowPos(
-            $subtitleHandle, [IntPtr]::Zero, $subtitleBefore.Left, $subtitleBefore.Top,
-            $subtitleBefore.Right - $subtitleBefore.Left, $subtitleBefore.Bottom - $subtitleBefore.Top, 0x0040) | Out-Null
-
-        # Exercise the same center-caption path used to move a normal Windows
-        # window. Use the middle of the subtitle surface so no icon or edge
-        # control can intercept the gesture, then restore the saved position.
-        Start-Sleep -Milliseconds 150
-        $dragBefore = [VrcTranslateValidationNative]::GetWindowRectValue($subtitleHandle)
-        $dragX = [int](($dragBefore.Left + $dragBefore.Right) / 2)
-        $dragY = [int](($dragBefore.Top + $dragBefore.Bottom) / 2)
-        [VrcTranslateValidationNative]::SetCursorPos($dragX, $dragY) | Out-Null
-        [VrcTranslateValidationNative]::MouseEvent(
-            [VrcTranslateValidationNative]::MouseLeftDown, 0, 0, 0, [UIntPtr]::Zero)
-        Start-Sleep -Milliseconds 120
-        [VrcTranslateValidationNative]::SetCursorPos($dragX + 42, $dragY + 22) | Out-Null
-        Start-Sleep -Milliseconds 220
-        [VrcTranslateValidationNative]::MouseEvent(
-            [VrcTranslateValidationNative]::MouseLeftUp, 0, 0, 0, [UIntPtr]::Zero)
-        Start-Sleep -Milliseconds 250
-        $dragAfter = [VrcTranslateValidationNative]::GetWindowRectValue($subtitleHandle)
-        if ([math]::Abs(($dragAfter.Left - $dragBefore.Left)) -lt 20 -or
-            [math]::Abs(($dragAfter.Top - $dragBefore.Top)) -lt 10) {
-            throw "Dragging the subtitle surface did not move it: before ($($dragBefore.Left),$($dragBefore.Top)), after ($($dragAfter.Left),$($dragAfter.Top))."
-        }
-        [VrcTranslateValidationNative]::SetWindowPos(
-            $subtitleHandle, [IntPtr]::Zero, $dragBefore.Left, $dragBefore.Top,
-            $dragBefore.Right - $dragBefore.Left, $dragBefore.Bottom - $dragBefore.Top, 0x0040) | Out-Null
-        Write-Host '  Input and subtitle overlay corner resize interactions passed.' -ForegroundColor Green
-    }
-    finally {
-        if ($null -ne $process -and -not $process.HasExited) { Stop-Process -Id $process.Id -Force }
-        Remove-Item Env:VRC_TRANSLATE_SMOKE_PAGE -ErrorAction SilentlyContinue
-        Start-Sleep -Seconds 2
-    }
-    if (Test-Path $startupLog) {
-        throw "Overlay resize smoke wrote a startup failure log:`n$(Get-Content $startupLog -Raw)"
     }
 }
 
@@ -1341,73 +1130,8 @@ public static class VrcTranslateValidationNative {
     public static extern IntPtr GetWindowLongPtr(IntPtr hWnd, int index);
     [DllImport("user32.dll")]
     public static extern bool IsWindowVisible(IntPtr hWnd);
-    [DllImport("user32.dll")]
-    public static extern bool ShowWindow(IntPtr hWnd, int command);
-    [DllImport("user32.dll")]
-    public static extern bool GetWindowRect(IntPtr hWnd, out RECT rect);
-    [DllImport("user32.dll")]
-    public static extern int GetWindowRgn(IntPtr hWnd, IntPtr hRgn);
-    [DllImport("gdi32.dll")]
-    public static extern IntPtr CreateRectRgn(int left, int top, int right, int bottom);
-    [DllImport("gdi32.dll")]
-    public static extern bool PtInRegion(IntPtr hRgn, int x, int y);
-    [DllImport("gdi32.dll")]
-    public static extern bool DeleteObject(IntPtr hObject);
-    [DllImport("user32.dll")]
-    public static extern bool SetCursorPos(int x, int y);
-    [DllImport("user32.dll")]
-    public static extern bool SetForegroundWindow(IntPtr hWnd);
-    [DllImport("user32.dll", EntryPoint = "SendMessageW")]
-    public static extern IntPtr SendMessage(IntPtr hWnd, uint message, IntPtr wParam, IntPtr lParam);
-    [DllImport("user32.dll", EntryPoint = "mouse_event")]
-    public static extern void MouseEvent(uint flags, uint dx, uint dy, uint data, UIntPtr extraInfo);
-    public const uint MouseLeftDown = 0x0002;
-    public const uint MouseLeftUp = 0x0004;
-    [StructLayout(LayoutKind.Sequential)]
-    public struct RECT { public int Left; public int Top; public int Right; public int Bottom; }
-    public static RECT GetWindowRectValue(IntPtr hWnd) { RECT rect; GetWindowRect(hWnd, out rect); return rect; }
-    public static bool HasWindowRegion(IntPtr hWnd) {
-        IntPtr region = CreateRectRgn(0, 0, 1, 1);
-        if (region == IntPtr.Zero) return false;
-        try { return GetWindowRgn(hWnd, region) != 0; }
-        finally { DeleteObject(region); }
-    }
-    public static bool HasRoundedWindowRegion(IntPtr hWnd) {
-        IntPtr region = CreateRectRgn(0, 0, 1, 1);
-        if (region == IntPtr.Zero) return false;
-        try {
-            if (GetWindowRgn(hWnd, region) == 0) return false;
-            RECT rect;
-            if (!GetWindowRect(hWnd, out rect)) return false;
-            var width = rect.Right - rect.Left;
-            var height = rect.Bottom - rect.Top;
-            if (width < 24 || height < 24) return false;
-            var cornersOutside =
-                !PtInRegion(region, 1, 1) &&
-                !PtInRegion(region, width - 2, 1) &&
-                !PtInRegion(region, 1, height - 2) &&
-                !PtInRegion(region, width - 2, height - 2);
-            var centerInside = PtInRegion(region, width / 2, height / 2);
-            var edgeCentersInside =
-                PtInRegion(region, width / 2, 1) &&
-                PtInRegion(region, 1, height / 2) &&
-                PtInRegion(region, width - 2, height / 2) &&
-                PtInRegion(region, width / 2, height - 2);
-            return cornersOutside && centerInside && edgeCentersInside;
-        }
-        finally { DeleteObject(region); }
-    }
     [DllImport("user32.dll", EntryPoint = "keybd_event")]
     public static extern void KeybdEvent(byte virtualKey, byte scanCode, uint flags, UIntPtr extraInfo);
-    public static int HitTestAt(IntPtr hWnd, int x, int y) {
-        // WM_NCHITTEST carries the screen point in lParam.  Encoding the
-        // coordinates directly avoids depending on SetCursorPos being
-        // reflected before a synchronous SendMessage (which can otherwise
-        // reuse the previous probe point and make the test flaky).
-        SetCursorPos(x, y);
-        var packed = (long)(short)x | ((long)(short)y << 16);
-        return SendMessage(hWnd, 0x0084, IntPtr.Zero, (IntPtr)packed).ToInt32();
-    }
 }
 '@
     }
@@ -1598,14 +1322,11 @@ Invoke-TranslationUiSmoke
 
 Write-Host '[4/5] Smoke testing all desktop pages'
 Invoke-CompactLayoutSmoke
-Invoke-OverlayResizeSmoke
-$layoutPersistenceSmoke = Join-Path $PSScriptRoot 'Invoke-V2OverlayLayoutPersistence.ps1'
-& powershell -NoProfile -ExecutionPolicy Bypass -File $layoutPersistenceSmoke -Executable $executable
-if ($LASTEXITCODE -ne 0) { throw "Overlay layout persistence smoke failed with exit code $LASTEXITCODE." }
+$overlayWindowSmoke = Join-Path $PSScriptRoot 'Invoke-V2OverlayWindowSmoke.ps1'
+& powershell -NoProfile -ExecutionPolicy Bypass -File $overlayWindowSmoke -Executable $executable
+if ($LASTEXITCODE -ne 0) { throw "Native overlay-window smoke failed with exit code $LASTEXITCODE." }
 Invoke-QuickInputUiSmoke
 Invoke-VoiceUiSmoke
-Assert-OverlayCapture 'input' 'quick-input'
-Assert-OverlayCapture 'voice' 'subtitle'
 Invoke-SubtitleVisualSmoke
 foreach ($page in @('run', 'input', 'voice', 'translation', 'settings', 'guide')) {
     Invoke-DesktopSmoke $page

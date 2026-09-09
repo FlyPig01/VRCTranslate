@@ -5,6 +5,7 @@ using VrcTranslate.Infrastructure.Translation;
 using VrcTranslate.Infrastructure.Configuration;
 using VrcTranslate.Infrastructure.Osc;
 using VrcTranslate.Application.Speech;
+using VrcTranslate.Application.Settings;
 using VrcTranslate.Infrastructure.Speech;
 using ApplicationTranslationService = VrcTranslate.Application.Translation.TranslationService;
 using System.Text.Json;
@@ -44,6 +45,9 @@ public sealed class AppState
         TranslationProviderIds = catalog.Ids;
         _profiles = CreateDefaultProfiles();
         Translator = new ApplicationTranslationService(new RoutedTranslationProvider(catalog), new PassThroughInvariantGuard());
+        OverlayAppearance = new OverlayAppearanceService(new JsonOverlayAppearanceStore(Path.Combine(
+            ResolveDataDirectory(),
+            "v2-overlay-appearance.json")));
         var settingsPath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "VRCTranslate",
@@ -66,6 +70,9 @@ public sealed class AppState
 
     public ApplicationTranslationService Translator { get; }
 
+    /// <summary>Shared appearance state used by both game overlay windows.</summary>
+    public OverlayAppearanceService OverlayAppearance { get; }
+
     /// <summary>Application boundary for the bundled local speech model.</summary>
     public LocalSpeechService LocalSpeech { get; }
 
@@ -87,6 +94,20 @@ public sealed class AppState
     public OscChatboxClient Osc => _osc;
 
     public void ReloadOscSettings() => _osc = CreateOscClientFromUserSettings();
+
+    /// <summary>
+    /// Resolves the writable settings directory. Tests and portable launches
+    /// may provide an exact directory through VRC_TRANSLATE_DATA_DIR.
+    /// </summary>
+    public static string ResolveDataDirectory()
+    {
+        var configured = Environment.GetEnvironmentVariable("VRC_TRANSLATE_DATA_DIR");
+        return !string.IsNullOrWhiteSpace(configured)
+            ? Path.GetFullPath(configured.Trim())
+            : Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "VRCTranslate");
+    }
 
     private static OscChatboxClient CreateOscClientFromUserSettings()
     {

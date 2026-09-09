@@ -8,9 +8,9 @@ using VrcTranslate.Core.Translation;
 namespace VrcTranslate.Desktop.Pages;
 
 /// <summary>
-/// Low-profile game input overlay. It deliberately has no title, explanatory
-/// labels, or send button: type Chinese text and press Enter. The lower strip
-/// is only an output preview and collapses when there is no recent result.
+/// Low-profile game input overlay. Apart from the native “输入” caption it has
+/// no explanatory labels or send button: type Chinese text and press Enter.
+/// The lower strip is only an output preview and collapses when empty.
 /// </summary>
 public sealed class QuickInputWindow : Window
 {
@@ -23,6 +23,7 @@ public sealed class QuickInputWindow : Window
     private readonly Grid _surface;
     private readonly EventHandler _previewHandler;
     private readonly Microsoft.UI.Dispatching.DispatcherQueue? _dispatcherQueue;
+    private OverlayWindowController? _windowController;
     private bool _sending;
 
     public QuickInputWindow(AppState state)
@@ -37,10 +38,9 @@ public sealed class QuickInputWindow : Window
             TextWrapping = TextWrapping.NoWrap,
             MaxLength = 1000,
             MinHeight = 40,
-            MaxHeight = 68,
             FontSize = 16,
             VerticalContentAlignment = VerticalAlignment.Center,
-            VerticalAlignment = VerticalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Stretch,
             HorizontalAlignment = HorizontalAlignment.Stretch,
             // Keep the editor transparent so the single overlay surface owns
             // the visual treatment.
@@ -72,8 +72,8 @@ public sealed class QuickInputWindow : Window
         _previewSurface = new Grid
         {
             // The preview is part of the same client surface. Keep it
-            // transparent so a second card never appears inside the native
-            // rounded window.
+            // transparent so a second card never appears inside the ordinary
+            // window client area.
             Background = Brush("#18000000"),
             Margin = new Thickness(0, 2, 0, 0),
             Visibility = Visibility.Collapsed,
@@ -108,7 +108,6 @@ public sealed class QuickInputWindow : Window
         // compact and predictable.
         var body = new Grid
         {
-            RowSpacing = 6,
             HorizontalAlignment = HorizontalAlignment.Stretch,
             VerticalAlignment = VerticalAlignment.Stretch
         };
@@ -128,29 +127,23 @@ public sealed class QuickInputWindow : Window
         _surface = new Grid
         {
             RequestedTheme = ElementTheme.Dark,
-            Background = Brush("#EE081321"),
+            // The HWND supplies the adjustable transparency. Keeping XAML
+            // opaque avoids pale seams and double-alpha text rendering.
+            Background = Brush("#081321"),
             MinWidth = 300,
             MinHeight = 60,
-            // Keep the card slightly translucent so the game remains visible
-            // beneath the overlay while text stays fully legible.
-            Opacity = 0.94,
+            Opacity = 1,
             HorizontalAlignment = HorizontalAlignment.Stretch,
             VerticalAlignment = VerticalAlignment.Stretch
         };
-        // The HWND region supplies the only rounded shape. The content gets
-        // its inset here instead of using a second bordered/rounded surface.
+        // Keep a compact inset within the standard Windows client area.
         body.Margin = new Thickness(8, 7, 8, 7);
         _surface.Children.Add(body);
         AutomationProperties.SetAutomationId(_surface, "quick-input-surface");
 
-        // Keep one surface for the whole client area. The shared chrome clips
-        // the HWND itself to a rounded region, so no inner rounded rectangle
-        // is needed to hide a rectangular host frame.
         Content = _surface;
-        // Request the client area before the first native activation. The
-        // shared chrome repeats this after the HWND exists, but setting it here
-        // prevents WinUI from painting a transient light caption strip.
-        ExtendsContentIntoTitleBar = true;
+        Title = "输入";
+        ExtendsContentIntoTitleBar = false;
 
         SetPreview(
             _state.LastOriginalText,
@@ -175,7 +168,7 @@ public sealed class QuickInputWindow : Window
         {
             _state.TranslationPreviewChanged -= _previewHandler;
         };
-        Activated += OnActivated;
+        EnsureWindowController();
     }
 
     private static TextBlock CreateOutputText(double fontSize, bool bold)
@@ -193,12 +186,12 @@ public sealed class QuickInputWindow : Window
     }
 
     /// <summary>
-    /// Keeps the single-line editor visually centred while its containing
-    /// region grows and shrinks with the native window. Width is supplied by
-    /// Stretch; the bounded responsive height avoids both a tiny input strip
-    /// in a tall overlay and a full-height TextBox whose text hugs the top.
-    /// When the recent-output region appears, the grid gives this method only
-    /// the remaining input height, so both sections stay balanced.
+    /// Keeps the single-line editor and its contents centred while its grid
+    /// region grows and shrinks with the native window. The stock WinUI
+    /// TextBox template does not bind VerticalContentAlignment to its internal
+    /// ScrollViewer or placeholder TextBlock, so responsive symmetric padding
+    /// is required for both the caret text and the placeholder. When a preview
+    /// appears, the star row supplies only the remaining editor height.
     /// </summary>
     private void ResizeInputEditor(double availableHeight)
     {
@@ -207,16 +200,21 @@ public sealed class QuickInputWindow : Window
             return;
         }
 
-        var editorHeight = Math.Clamp(availableHeight * 0.48, 40, 68);
-        _input.Height = Math.Min(editorHeight, availableHeight);
-        _input.FontSize = Math.Clamp(editorHeight * 0.26, 15, 18);
+        var editorHeight = Math.Max(40, availableHeight);
+        var fontSize = Math.Clamp(editorHeight * 0.12, 16, 24);
+        var lineHeight = fontSize * 1.5;
+        var verticalPadding = Math.Max(0, (editorHeight - lineHeight) / 2);
+
+        _input.Height = editorHeight;
+        _input.FontSize = fontSize;
+        _input.Padding = new Thickness(2, verticalPadding, 2, verticalPadding);
     }
 
     /// <summary>
     /// WinUI's stock TextBox template replaces Background and BorderBrush in
     /// its PointerOver/Focused visual states.  Override those theme resources
     /// locally so focusing the editor never creates a second rectangle inside
-    /// the single native rounded overlay surface.
+    /// the ordinary window client area.
     /// </summary>
     private static void ConfigureInputVisuals(TextBox input)
     {
@@ -242,54 +240,25 @@ public sealed class QuickInputWindow : Window
         input.Padding = new Thickness(0);
     }
 
-    private void OnActivated(object sender, WindowActivatedEventArgs args)
+    private void EnsureWindowController()
     {
-        Activated -= OnActivated;
+        if (_windowController is not null) return;
         try
         {
-            // With language selection moved to the input settings page, the
-            // in-game surface only needs one compact input row and an optional
-            // preview line.
-            OverlayWindowChrome.Configure(
+            _windowController = new OverlayWindowController(
                 this,
-                _surface,
+                "输入",
                 1240,
-                150,
-                alwaysOnTop: true,
-                fullCaption: false,
-                passthroughElements: [_input],
-                initialLayout: OverlayWindowHost.GetSavedLayout(OverlayWindowHost.QuickInputLayoutKey),
-                layoutChanged: layout => OverlayWindowHost.SaveLayout(OverlayWindowHost.QuickInputLayoutKey, layout));
-            var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
-            var id = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(hwnd);
-            var appWindow = Microsoft.UI.Windowing.AppWindow.GetFromWindowId(id);
-            var iconPath = Path.Combine(AppContext.BaseDirectory, "app.ico");
-            if (File.Exists(iconPath)) appWindow.SetIcon(iconPath);
+                180,
+                OverlayWindowHost.GetSavedLayout(OverlayWindowHost.QuickInputLayoutKey),
+                layout => OverlayWindowHost.SaveLayout(OverlayWindowHost.QuickInputLayoutKey, layout),
+                _state.OverlayAppearance.Current.InputOverlayOpacity);
         }
         catch
         {
-            // Window chrome is best effort; the input surface remains usable.
+            // Native presentation is best effort; the editor remains usable.
         }
 
-        _input.Focus(FocusState.Programmatic);
-        try
-        {
-            var animation = new Microsoft.UI.Xaml.Media.Animation.DoubleAnimation
-            {
-                From = 0.72,
-                To = 0.94,
-                Duration = new Duration(TimeSpan.FromMilliseconds(140))
-            };
-            var storyboard = new Microsoft.UI.Xaml.Media.Animation.Storyboard();
-            Microsoft.UI.Xaml.Media.Animation.Storyboard.SetTarget(animation, _surface);
-            Microsoft.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(animation, "Opacity");
-            storyboard.Children.Add(animation);
-            storyboard.Begin();
-        }
-        catch
-        {
-            _surface.Opacity = 0.94;
-        }
     }
 
     private async void OnInputKeyDown(object sender, KeyRoutedEventArgs e)
@@ -302,8 +271,43 @@ public sealed class QuickInputWindow : Window
         else if (e.Key == Windows.System.VirtualKey.Escape)
         {
             e.Handled = true;
-            OverlayWindowChrome.Hide(this);
+            HideOverlay();
         }
+    }
+
+    internal bool IsOverlayVisible =>
+        _windowController?.IsVisible ?? OverlayWindowController.IsFallbackVisible(this);
+
+    internal bool IsOverlayMinimized =>
+        _windowController?.IsMinimized ?? OverlayWindowController.IsFallbackMinimized(this);
+
+    internal void ShowOverlay(bool activate)
+    {
+        EnsureWindowController();
+        if (_windowController is not null) _windowController.Show(activate);
+        else OverlayWindowController.ShowFallback(this, activate);
+        if (activate) _input.Focus(FocusState.Programmatic);
+    }
+
+    internal void HideOverlay()
+    {
+        if (_windowController is not null) _windowController.Hide();
+        else OverlayWindowController.HideFallback(this);
+    }
+
+    internal void ApplyOpacity(double opacity) => _windowController?.ApplyOpacity(opacity);
+
+    internal bool TryGetLayout(out VrcTranslate.Core.Settings.OverlayWindowLayout layout)
+    {
+        if (_windowController is not null) return _windowController.TryGetLayout(out layout);
+        layout = default;
+        return false;
+    }
+
+    internal void ClosePermanently()
+    {
+        if (_windowController is not null) _windowController.ClosePermanently();
+        else Close();
     }
 
     private async Task SendAsync()

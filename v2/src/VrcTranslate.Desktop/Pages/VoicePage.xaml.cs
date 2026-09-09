@@ -2,6 +2,7 @@ using System.Text.Json;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Media;
 using VrcTranslate.Application.Abstractions;
 using VrcTranslate.Application.Speech;
@@ -21,6 +22,8 @@ public sealed partial class VoicePage : Page
     private bool _running;
     private bool _processingResult;
     private bool _loaded;
+    private bool _overlayAppearanceReady;
+    private bool _updatingOverlayAppearance;
     private LocalSpeechCaptureSession? _captureSession;
     private readonly SemaphoreSlim _captureLifecycleGate = new(1, 1);
     private readonly SemaphoreSlim _translationGate = new(1, 1);
@@ -45,9 +48,13 @@ public sealed partial class VoicePage : Page
 
     private void OnLoaded(object sender, RoutedEventArgs e)
     {
+        if (!_overlayAppearanceReady)
+            State.OverlayAppearance.Changed += OnOverlayAppearanceChanged;
+        _overlayAppearanceReady = true;
         LoadSettings();
         UpdateLocalModelStatus();
         UpdateRunningVisuals();
+        UpdateSubtitleOverlayOpacity();
         _loaded = true;
         LayoutStatusControls(PageScrollViewer?.ActualWidth ?? ContentColumn?.ActualWidth ?? 0);
         DispatcherQueue.TryEnqueue(() => LayoutStatusControls(VoiceStatusGrid.ActualWidth > 0 ? VoiceStatusGrid.ActualWidth : ContentColumn?.ActualWidth ?? 0));
@@ -56,7 +63,49 @@ public sealed partial class VoicePage : Page
 
     private void OnUnloaded(object sender, RoutedEventArgs e)
     {
+        _overlayAppearanceReady = false;
+        State.OverlayAppearance.Changed -= OnOverlayAppearanceChanged;
         _ = StopRecognitionAsync();
+    }
+
+    private void OnOverlayAppearanceChanged(object? sender, EventArgs e)
+    {
+        if (!_overlayAppearanceReady || _updatingOverlayAppearance) return;
+        if (DispatcherQueue.HasThreadAccess) UpdateSubtitleOverlayOpacity();
+        else DispatcherQueue.TryEnqueue(UpdateSubtitleOverlayOpacity);
+    }
+
+    private void UpdateSubtitleOverlayOpacity()
+    {
+        if (!_overlayAppearanceReady) return;
+        _updatingOverlayAppearance = true;
+        try
+        {
+            var percent = Math.Clamp(State.OverlayAppearance.Current.SubtitleOverlayOpacity * 100d, 60d, 100d);
+            SubtitleOverlayOpacitySlider.Value = percent;
+            SubtitleOverlayOpacityValue.Text = $"{Math.Round(percent):0}%";
+        }
+        finally
+        {
+            _updatingOverlayAppearance = false;
+        }
+    }
+
+    private void OnSubtitleOverlayOpacityChanged(object sender, RangeBaseValueChangedEventArgs e)
+    {
+        if (!_overlayAppearanceReady || _updatingOverlayAppearance) return;
+        _updatingOverlayAppearance = true;
+        try
+        {
+            State.OverlayAppearance.SetSubtitleOpacity(e.NewValue / 100d);
+            var percent = Math.Clamp(State.OverlayAppearance.Current.SubtitleOverlayOpacity * 100d, 60d, 100d);
+            SubtitleOverlayOpacitySlider.Value = percent;
+            SubtitleOverlayOpacityValue.Text = $"{Math.Round(percent):0}%";
+        }
+        finally
+        {
+            _updatingOverlayAppearance = false;
+        }
     }
 
     private void OnViewportSizeChanged(object sender, SizeChangedEventArgs e)

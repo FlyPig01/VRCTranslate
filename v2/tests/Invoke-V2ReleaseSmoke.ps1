@@ -144,8 +144,9 @@ if (Test-Path -LiteralPath $StartupLog) {
 }
 
 # The functional smoke above validates navigation and the profile dialog. Run
-# the separate visual pass as part of the same release gate so a stale native
-# caption strip cannot reach manual testing unnoticed.
+# the native overlay pass as part of the same release gate so the published
+# EXE must retain standard title bars, movement/resizing, layered opacity,
+# shortcut reuse, persistence and shell-linked shutdown.
 $visualSmoke = Join-Path $PSScriptRoot 'Invoke-ReleaseOverlayVisualSmoke.ps1'
 & powershell -NoProfile -ExecutionPolicy Bypass -File $visualSmoke -ExecutablePath $Executable
 if ($LASTEXITCODE -ne 0) {

@@ -90,19 +90,14 @@
                     ToolTipService.ToolTip="开始或停止自身语音识别"
                     AutomationProperties.Name="开始自身语音" />
 
-            <ProgressBar Grid.Row="1"
-                         Grid.Column="1"
-                         x:Name="MicrophoneLevel"
-                         Minimum="0"
-                         Maximum="100"
-                         Value="0"
-                         Height="4"
-                         MaxWidth="280"
-                         HorizontalAlignment="Stretch"
-                         Margin="0,6,0,0"
-                         Background="#C8D8E8"
-                         Foreground="#2774C7"
-                         IsHitTestVisible="False" />
+            <StackPanel Grid.Row="1"
+                        Grid.Column="1"
+                        x:Name="MicrophoneLevel"
+                        Height="22"
+                        MaxWidth="280"
+                        HorizontalAlignment="Left"
+                        Margin="0,6,0,0"
+                        IsHitTestVisible="False" />
           </Grid>
         </Border>
 

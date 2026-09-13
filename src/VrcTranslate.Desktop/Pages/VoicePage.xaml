@@ -73,18 +73,14 @@
                         Background="#2D73D5"
                         Foreground="#FFFFFF" />
               </StackPanel>
-              <ProgressBar Grid.Row="1"
-                           Grid.Column="1"
-                           x:Name="VoiceAudioLevel"
-                           Minimum="0"
-                           Maximum="100"
-                           Value="0"
-                           Height="4"
-                           MaxWidth="320"
-                           HorizontalAlignment="Stretch"
-                           Background="#C8D8E8"
-                           Foreground="#2AA876"
-                           IsHitTestVisible="False" />
+              <StackPanel Grid.Row="1"
+                          Grid.Column="1"
+                          x:Name="VoiceAudioLevel"
+                          Height="22"
+                          MaxWidth="320"
+                          HorizontalAlignment="Left"
+                          VerticalAlignment="Center"
+                          IsHitTestVisible="False" />
               <StackPanel x:Name="VoiceHotkeySummary"
                           Grid.Row="1"
                           Grid.Column="2"

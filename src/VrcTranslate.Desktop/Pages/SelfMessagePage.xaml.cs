@@ -9,6 +9,7 @@ using VrcTranslate.Application.Abstractions;
 using VrcTranslate.Application.Speech;
 using VrcTranslate.Core.Speech;
 using VrcTranslate.Core.Translation;
+using VrcTranslate.Desktop.Controls;
 
 namespace VrcTranslate.Desktop.Pages;
 
@@ -23,8 +24,8 @@ public sealed partial class SelfMessagePage : Page
     private bool _updatingOverlayAppearance;
     private bool _speechEventsAttached;
     private readonly Microsoft.UI.Dispatching.DispatcherQueueTimer _microphoneLevelTimer;
-    private double _measuredMicrophoneLevel;
-    private DateTimeOffset _lastAudioFrameAt;
+    private readonly AudioLevelMeter _microphoneMeter = new();
+    private LevelBarRenderer? _microphoneBars;
     private AppState State => ((App)global::Microsoft.UI.Xaml.Application.Current).State;
 
     /// <summary>Recognition outlives this page; the session host owns the running state.</summary>
@@ -34,8 +35,9 @@ public sealed partial class SelfMessagePage : Page
     {
         InitializeComponent();
         _microphoneLevelTimer = DispatcherQueue.CreateTimer();
-        _microphoneLevelTimer.Interval = TimeSpan.FromMilliseconds(90);
+        _microphoneLevelTimer.Interval = TimeSpan.FromMilliseconds(60);
         _microphoneLevelTimer.Tick += (_, _) => AnimateMicrophoneLevel();
+        _microphoneBars = new LevelBarRenderer(MicrophoneLevel, barCount: 16, height: 22, barWidth: 6);
         Loaded += (_, _) => LoadSettings();
         Loaded += OnPreviewLoaded;
         Unloaded += OnPreviewUnloaded;
@@ -492,8 +494,7 @@ public sealed partial class SelfMessagePage : Page
         finally
         {
             _microphoneLevelTimer.Stop();
-            MicrophoneLevel.Value = 0;
-            _measuredMicrophoneLevel = 0;
+            ResetMicrophoneLevel();
             _settings.Enabled = false;
             SaveSettings();
             UpdateSelfVoiceVisuals();
@@ -530,13 +531,13 @@ public sealed partial class SelfMessagePage : Page
             else
             {
                 ShowInfo("没有收到声音", "麦克风已打开，请检查是否静音或选择了正确设备。", InfoBarSeverity.Warning);
-                MicrophoneLevel.Value = 0;
+                ResetMicrophoneLevel();
             }
         }
         catch
         {
             ShowInfo("无法打开麦克风", "请检查系统权限和设备连接。", InfoBarSeverity.Warning);
-            MicrophoneLevel.Value = 0;
+            ResetMicrophoneLevel();
         }
         finally
         {
@@ -552,14 +553,14 @@ public sealed partial class SelfMessagePage : Page
 
     private void OnSelfAudioLevelChanged(object? sender, AudioLevelEventArgs args)
     {
-        _lastAudioFrameAt = DateTimeOffset.UtcNow;
-        var normalized = Math.Clamp((args.Rms * 280f) + (args.Peak * 20f), 0f, 100f);
-        _measuredMicrophoneLevel = Math.Max(_measuredMicrophoneLevel * 0.35, normalized);
-        if (DispatcherQueue.HasThreadAccess)
-            MicrophoneLevel.Value = _measuredMicrophoneLevel;
-        else
-            DispatcherQueue.TryEnqueue(() => MicrophoneLevel.Value = _measuredMicrophoneLevel);
+        _microphoneMeter.Observe(args.Rms);
         if (!_microphoneLevelTimer.IsRunning) _microphoneLevelTimer.Start();
+    }
+
+    private void ResetMicrophoneLevel()
+    {
+        _microphoneMeter.Reset();
+        _microphoneBars?.Reset();
     }
 
     private void UpdateSelfVoiceVisuals()
@@ -584,18 +585,12 @@ public sealed partial class SelfMessagePage : Page
         if (!IsRunning)
         {
             _microphoneLevelTimer.Stop();
-            MicrophoneLevel.Value = 0;
+            ResetMicrophoneLevel();
             return;
         }
 
-        var elapsed = DateTimeOffset.UtcNow - _lastAudioFrameAt;
-        if (elapsed > TimeSpan.FromMilliseconds(220))
-        {
-            _measuredMicrophoneLevel *= 0.72;
-            MicrophoneLevel.Value = _measuredMicrophoneLevel;
-        }
-        if (_measuredMicrophoneLevel < 0.5 && elapsed > TimeSpan.FromSeconds(1))
-            _microphoneLevelTimer.Stop();
+        _microphoneMeter.Advance();
+        _microphoneBars?.Render(_microphoneMeter.History);
     }
 
     private static float MeasureRms(ReadOnlySpan<float> samples)

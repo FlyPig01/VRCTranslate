@@ -9,6 +9,7 @@ using VrcTranslate.Application.Abstractions;
 using VrcTranslate.Application.Speech;
 using VrcTranslate.Core.Speech;
 using VrcTranslate.Core.Translation;
+using VrcTranslate.Desktop.Controls;
 
 namespace VrcTranslate.Desktop.Pages;
 
@@ -23,8 +24,8 @@ public sealed partial class VoicePage : Page
     private bool _updatingOverlayAppearance;
     private bool _speechEventsAttached;
     private readonly Microsoft.UI.Dispatching.DispatcherQueueTimer _audioLevelTimer;
-    private double _audioLevel;
-    private DateTimeOffset _lastAudioFrameAt;
+    private readonly AudioLevelMeter _audioMeter = new();
+    private LevelBarRenderer? _levelBars;
     private IReadOnlyList<SpeakerIdentity> _speakers = [];
     private bool _updatingSpeakerToggle;
 
@@ -38,8 +39,8 @@ public sealed partial class VoicePage : Page
         InitializeComponent();
         _state = ((App)global::Microsoft.UI.Xaml.Application.Current).State;
         _audioLevelTimer = DispatcherQueue.CreateTimer();
-        _audioLevelTimer.Interval = TimeSpan.FromMilliseconds(90);
-        _audioLevelTimer.Tick += (_, _) => DecayAudioLevel();
+        _audioLevelTimer.Interval = TimeSpan.FromMilliseconds(60);
+        _audioLevelTimer.Tick += (_, _) => AdvanceAudioLevel();
         Loaded += OnLoaded;
         Unloaded += OnUnloaded;
         VoiceStatusGrid.SizeChanged += (_, _) => LayoutStatusControls(VoiceStatusGrid.ActualWidth);
@@ -52,6 +53,7 @@ public sealed partial class VoicePage : Page
             State.OverlayAppearance.Changed += OnOverlayAppearanceChanged;
         _overlayAppearanceReady = true;
         AttachSpeechEvents();
+        _levelBars ??= new LevelBarRenderer(VoiceAudioLevel);
         LoadSettings();
         UpdateLocalModelStatus();
         UpdateRunningVisuals();
@@ -390,40 +392,36 @@ public sealed partial class VoicePage : Page
         finally
         {
             _audioLevelTimer.Stop();
-            _audioLevel = 0;
-            VoiceAudioLevel.Value = 0;
+            ResetAudioLevel();
             UpdateRunningVisuals();
         }
     }
 
     private void OnAudioLevelChanged(object? sender, AudioLevelEventArgs args)
     {
-        _lastAudioFrameAt = DateTimeOffset.UtcNow;
-        var normalized = Math.Clamp((args.Rms * 280f) + (args.Peak * 20f), 0f, 100f);
-        _audioLevel = Math.Max(_audioLevel * 0.35, normalized);
-        if (DispatcherQueue.HasThreadAccess)
-            VoiceAudioLevel.Value = _audioLevel;
-        else
-            DispatcherQueue.TryEnqueue(() => VoiceAudioLevel.Value = _audioLevel);
+        // Capture callbacks arrive at whatever rate the device produces; the meter
+        // samples them on its own display tick so the bars scroll evenly.
+        _audioMeter.Observe(args.Rms);
         if (!_audioLevelTimer.IsRunning) _audioLevelTimer.Start();
     }
 
-    private void DecayAudioLevel()
+    private void AdvanceAudioLevel()
     {
         if (!IsRunning)
         {
             _audioLevelTimer.Stop();
-            VoiceAudioLevel.Value = 0;
+            ResetAudioLevel();
             return;
         }
 
-        if (DateTimeOffset.UtcNow - _lastAudioFrameAt > TimeSpan.FromMilliseconds(220))
-        {
-            _audioLevel *= 0.72;
-            VoiceAudioLevel.Value = _audioLevel;
-        }
-        if (_audioLevel < 0.5 && DateTimeOffset.UtcNow - _lastAudioFrameAt > TimeSpan.FromSeconds(1))
-            _audioLevelTimer.Stop();
+        _audioMeter.Advance();
+        _levelBars?.Render(_audioMeter.History);
+    }
+
+    private void ResetAudioLevel()
+    {
+        _audioMeter.Reset();
+        _levelBars?.Reset();
     }
 
     /// <summary>Recognition hook kept for the validation scripts; runs through the session host.</summary>

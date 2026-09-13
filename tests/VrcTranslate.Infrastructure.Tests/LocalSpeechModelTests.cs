@@ -18,6 +18,63 @@ public sealed class LocalSpeechModelTests : IDisposable
         Path.GetTempPath(), "vrctranslate-local-speech-bundle-" + Guid.NewGuid().ToString("N"));
 
     [Fact]
+    public void Speaker_payload_is_ready_when_both_models_are_bundled()
+    {
+        var bundled = Path.Combine(_bundledDirectory, "speaker");
+        Directory.CreateDirectory(bundled);
+        WriteSizedFile(Path.Combine(bundled, LocalSpeechModelCatalog.SegmentationFileName), 1_540_506);
+        WriteSizedFile(Path.Combine(bundled, LocalSpeechModelCatalog.EmbeddingFileName), 28_281_164);
+        var manager = new LocalSpeechModelManager(LocalSpeechModelCatalog.Speaker, _directory, bundled);
+
+        var status = manager.GetStatus();
+
+        Assert.Equal(LocalSpeechModelState.Ready, status.State);
+        Assert.True(status.IsBundled);
+        Assert.Equal(LocalSpeechModelCatalog.SpeakerModelId, status.ModelId);
+        Assert.Equal(1_540_506 + 28_281_164, status.InstalledBytes);
+    }
+
+    [Fact]
+    public void Speaker_payload_with_one_missing_model_is_not_ready()
+    {
+        var bundled = Path.Combine(_bundledDirectory, "speaker");
+        Directory.CreateDirectory(bundled);
+        WriteSizedFile(Path.Combine(bundled, LocalSpeechModelCatalog.EmbeddingFileName), 28_281_164);
+        var manager = new LocalSpeechModelManager(LocalSpeechModelCatalog.Speaker, _directory, bundled);
+
+        Assert.Equal(LocalSpeechModelState.NotInstalled, manager.GetStatus().State);
+    }
+
+    [Fact]
+    public void Payloads_carry_their_own_files_and_sources()
+    {
+        Assert.Equal(
+            [LocalSpeechModelCatalog.ModelFileName, LocalSpeechModelCatalog.TokensFileName],
+            LocalSpeechModelCatalog.Recognition.Files.Select(file => file.Name));
+
+        // The speaker files come from two different repositories and are renamed
+        // on the way in, so each one carries an explicit source and the payload
+        // has no shared repository to fall back on.
+        var segmentation = LocalSpeechModelCatalog.Speaker.SourcesFor(LocalSpeechModelCatalog.SegmentationFileName);
+        var embedding = LocalSpeechModelCatalog.Speaker.SourcesFor(LocalSpeechModelCatalog.EmbeddingFileName);
+        Assert.Single(segmentation);
+        Assert.Single(embedding);
+        Assert.EndsWith("/model.int8.onnx", segmentation[0].AbsoluteUri, StringComparison.Ordinal);
+        Assert.Contains("3dspeaker_speech_campplus", embedding[0].AbsoluteUri, StringComparison.Ordinal);
+        Assert.Empty(LocalSpeechModelCatalog.Speaker.Repositories);
+    }
+
+    [Fact]
+    public void Recognition_payload_keeps_its_mirror_fallback()
+    {
+        var sources = LocalSpeechModelCatalog.Recognition.SourcesFor(LocalSpeechModelCatalog.ModelFileName);
+
+        Assert.Equal(2, sources.Count);
+        Assert.Contains("hf-mirror.com", sources[0].AbsoluteUri, StringComparison.Ordinal);
+        Assert.Contains("huggingface.co", sources[1].AbsoluteUri, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Missing_model_is_reported_without_loading_native_runtime()
     {
         var manager = new LocalSpeechModelManager(_directory);

@@ -82,7 +82,13 @@ public sealed record SpeechRecognitionResult(
     string RequestId,
     string Text,
     string SourceLanguage,
-    TimeSpan Elapsed);
+    TimeSpan Elapsed,
+    string? SpeakerId = null,
+    string? SpeakerLabel = null)
+{
+    /// <summary>True when the caption knows who spoke.</summary>
+    public bool HasSpeaker => !string.IsNullOrWhiteSpace(SpeakerLabel);
+}
 
 public enum LocalSpeechModelState
 {

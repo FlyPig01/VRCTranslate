@@ -11,14 +11,26 @@ public sealed class LocalSpeechService : IAsyncDisposable
 {
     private readonly ILocalSpeechModelManager _modelManager;
     private readonly ILocalSpeechRecognizer _recognizer;
+    private readonly ISpeakerIdentifier? _speakers;
 
     public LocalSpeechService(
         ILocalSpeechModelManager modelManager,
-        ILocalSpeechRecognizer recognizer)
+        ILocalSpeechRecognizer recognizer,
+        ISpeakerIdentifier? speakers = null)
     {
         _modelManager = modelManager ?? throw new ArgumentNullException(nameof(modelManager));
         _recognizer = recognizer ?? throw new ArgumentNullException(nameof(recognizer));
+        _speakers = speakers;
     }
+
+    /// <summary>Speaker separation, or null when this build has none wired up.</summary>
+    public ISpeakerIdentifier? Speakers => _speakers;
+
+    /// <summary>
+    /// Whether captions carry speaker labels. Off by default: the feature costs an
+    /// extra embedding per sentence and only pays off once the user wants names.
+    /// </summary>
+    public bool SpeakerLabelsEnabled { get; set; }
 
     public string ModelId => _recognizer.ModelId;
 
@@ -53,5 +65,10 @@ public sealed class LocalSpeechService : IAsyncDisposable
         return _recognizer.PrepareAsync(language, cancellationToken);
     }
 
-    public ValueTask DisposeAsync() => _recognizer.DisposeAsync();
+    public async ValueTask DisposeAsync()
+    {
+        if (_speakers is IAsyncDisposable asyncSpeakers) await asyncSpeakers.DisposeAsync().ConfigureAwait(false);
+        else if (_speakers is IDisposable disposableSpeakers) disposableSpeakers.Dispose();
+        await _recognizer.DisposeAsync().ConfigureAwait(false);
+    }
 }

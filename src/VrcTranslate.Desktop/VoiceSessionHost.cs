@@ -62,7 +62,11 @@ public abstract class VoiceSessionHost
 
     protected abstract AudioCaptureMode CaptureMode { get; }
 
-    protected abstract Task ProcessRecognizedAsync(string text, string? recognizedLanguage);
+    /// <summary>
+    /// Runs the recognized sentence through translation and output. The whole
+    /// result is passed so a session can also use the speaker label.
+    /// </summary>
+    protected abstract Task ProcessRecognizedAsync(SpeechRecognitionResult result);
 
     protected abstract string CaptureFaultMessage { get; }
 
@@ -144,7 +148,7 @@ public abstract class VoiceSessionHost
                 cancellationToken).ConfigureAwait(false);
             if (!string.IsNullOrWhiteSpace(result.Text))
             {
-                await ProcessRecognizedAsync(result.Text, result.SourceLanguage).ConfigureAwait(false);
+                await ProcessRecognizedAsync(result).ConfigureAwait(false);
             }
         }
         finally
@@ -165,7 +169,7 @@ public abstract class VoiceSessionHost
         _processingResult = true;
         try
         {
-            await ProcessRecognizedAsync(result.Text, result.SourceLanguage).ConfigureAwait(false);
+            await ProcessRecognizedAsync(result).ConfigureAwait(false);
             if (SuccessNotification is { } success)
             {
                 Notified?.Invoke(this, success);
@@ -213,8 +217,10 @@ public sealed class SubtitleSpeechSession : VoiceSessionHost
     protected override SpeechNotificationEventArgs DescribeFailure(Exception exception) =>
         new(SpeechNotificationKind.Error, "翻译失败", exception.Message);
 
-    protected override async Task ProcessRecognizedAsync(string text, string? recognizedLanguage)
+    protected override async Task ProcessRecognizedAsync(SpeechRecognitionResult result)
     {
+        var text = result.Text;
+        var recognizedLanguage = result.SourceLanguage;
         var current = _state.CurrentRoute;
         var sourceMode = string.IsNullOrWhiteSpace(recognizedLanguage) || recognizedLanguage.Equals("auto", StringComparison.OrdinalIgnoreCase)
             ? SourceLanguageMode.AutoDetect
@@ -237,7 +243,10 @@ public sealed class SubtitleSpeechSession : VoiceSessionHost
         // or the original text to this stream.
         await _state.Osc.SendChatboxAsync(TranslationOutputFormatter.TrimForOsc(translated.TranslatedText))
             .ConfigureAwait(false);
-        OverlayWindowHost.SetSubtitleFromAnyThread(text, translated.TranslatedText);
+        // Captions carry the speaker label; the OSC chat line stays
+        // translation-only so the in-game stream keeps its existing shape.
+        var caption = result.HasSpeaker ? $"{result.SpeakerLabel}：{text}" : text;
+        OverlayWindowHost.SetSubtitleFromAnyThread(caption, translated.TranslatedText);
     }
 }
 
@@ -262,8 +271,9 @@ public sealed class SelfVoiceSpeechSession : VoiceSessionHost
     protected override SpeechNotificationEventArgs? SuccessNotification =>
         new(SpeechNotificationKind.Success, "已发送", "自身语音译文已发送到 VRChat。");
 
-    protected override async Task ProcessRecognizedAsync(string text, string? recognizedLanguage)
+    protected override async Task ProcessRecognizedAsync(SpeechRecognitionResult recognized)
     {
+        var text = recognized.Text;
         var result = await _state.TranslateSelfAsync(text, TextTranslationSource.SpeechRecognition)
             .ConfigureAwait(false);
         _state.SetTranslationPreview(

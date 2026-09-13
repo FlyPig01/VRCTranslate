@@ -76,9 +76,130 @@ public sealed class LocalSpeechCaptureSessionTests
         Assert.Equal("ja", prepared);
     }
 
+    [Fact]
+    public async Task Speaker_labels_are_attached_when_the_feature_is_on()
+    {
+        var capture = new FakeCapture();
+        var speakers = new FakeSpeakerIdentifier { Available = true };
+        var service = new LocalSpeechService(new FakeModelManager(), new FakeRecognizer(), speakers)
+        {
+            SpeakerLabelsEnabled = true,
+        };
+        await using var session = new LocalSpeechCaptureSession(
+            capture, service, "en", new SpeechSegmenter(16_000, 0.01f, 100, 2_000));
+        var result = new TaskCompletionSource<SpeechRecognitionResult>(TaskCreationOptions.RunContinuationsAsynchronously);
+        session.ResultReady += (_, value) => result.TrySetResult(value);
+
+        await session.StartAsync();
+        capture.Emit(Enumerable.Repeat(0.2f, 1_600).ToArray());
+        capture.Emit(new float[2_000]);
+
+        var recognized = await result.Task.WaitAsync(TimeSpan.FromSeconds(2));
+
+        Assert.Equal("spk-test", recognized.SpeakerId);
+        Assert.Equal("小明", recognized.SpeakerLabel);
+        Assert.True(recognized.HasSpeaker);
+    }
+
+    [Fact]
+    public async Task Speaker_labels_cost_nothing_while_the_feature_is_off()
+    {
+        var capture = new FakeCapture();
+        var speakers = new FakeSpeakerIdentifier { Available = true };
+        var service = new LocalSpeechService(new FakeModelManager(), new FakeRecognizer(), speakers);
+        await using var session = new LocalSpeechCaptureSession(
+            capture, service, "en", new SpeechSegmenter(16_000, 0.01f, 100, 2_000));
+        var result = new TaskCompletionSource<SpeechRecognitionResult>(TaskCreationOptions.RunContinuationsAsynchronously);
+        session.ResultReady += (_, value) => result.TrySetResult(value);
+
+        await session.StartAsync();
+        capture.Emit(Enumerable.Repeat(0.2f, 1_600).ToArray());
+        capture.Emit(new float[2_000]);
+
+        var recognized = await result.Task.WaitAsync(TimeSpan.FromSeconds(2));
+
+        Assert.Null(recognized.SpeakerLabel);
+        Assert.False(recognized.HasSpeaker);
+        Assert.Equal(0, speakers.IdentifyCalls);
+        Assert.Equal(0, speakers.ChangeChecks);
+    }
+
+    [Fact]
+    public async Task A_suspected_speaker_change_produces_one_caption_per_voice()
+    {
+        var capture = new FakeCapture();
+        var speakers = new FakeSpeakerIdentifier
+        {
+            Available = true,
+            SuspectChange = true,
+            Spans = [new SpeechSpan(0, 1_000), new SpeechSpan(1_000, 2_000)],
+        };
+        var service = new LocalSpeechService(new FakeModelManager(), new FakeRecognizer(), speakers)
+        {
+            SpeakerLabelsEnabled = true,
+        };
+        await using var session = new LocalSpeechCaptureSession(
+            capture, service, "en", new SpeechSegmenter(16_000, 0.01f, 100, 2_000));
+        var results = new List<SpeechRecognitionResult>();
+        var both = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        session.ResultReady += (_, value) =>
+        {
+            lock (results)
+            {
+                results.Add(value);
+                if (results.Count == 2) both.TrySetResult();
+            }
+        };
+
+        await session.StartAsync();
+        capture.Emit(Enumerable.Repeat(0.2f, 1_600).ToArray());
+        capture.Emit(new float[2_000]);
+
+        await both.Task.WaitAsync(TimeSpan.FromSeconds(2));
+        Assert.Equal(2, results.Count);
+        Assert.All(results, item => Assert.Equal("小明", item.SpeakerLabel));
+    }
+
     private static LocalSpeechService CreateSpeechService() => new(
         new FakeModelManager(),
         new FakeRecognizer());
+
+    /// <summary>Speaker separation whose answers the test chooses.</summary>
+    private sealed class FakeSpeakerIdentifier : ISpeakerIdentifier
+    {
+        public bool Available { get; init; }
+        public bool SuspectChange { get; init; }
+        public IReadOnlyList<SpeechSpan> Spans { get; init; } = [];
+        public int IdentifyCalls { get; private set; }
+        public int ChangeChecks { get; private set; }
+
+        public bool IsAvailable => Available;
+
+        public IReadOnlyList<SpeakerIdentity> Speakers => [];
+
+        public SpeakerMatch? Identify(ReadOnlyMemory<float> samples, int sampleRate)
+        {
+            IdentifyCalls++;
+            return new SpeakerMatch(
+                new SpeakerIdentity("spk-test", "A", "小明"), 0.9f, SpeakerMatchKind.Session);
+        }
+
+        public bool IsSpeakerChangeSuspected(ReadOnlyMemory<float> samples, int sampleRate)
+        {
+            ChangeChecks++;
+            return SuspectChange;
+        }
+
+        public IReadOnlyList<SpeechSpan> SplitAtSpeakerChanges(ReadOnlyMemory<float> samples, int sampleRate) => Spans;
+
+        public void Rename(string speakerId, string? name) { }
+
+        public bool Merge(string sourceId, string targetId) => false;
+
+        public bool Forget(string speakerId) => false;
+
+        public void Clear() { }
+    }
 
     private sealed class RecordingRecognizer : ILocalSpeechRecognizer
     {

@@ -159,10 +159,16 @@ public sealed class LocalSpeechCaptureSession : IAsyncDisposable
             await _recognitionGate.WaitAsync(cancellationToken).ConfigureAwait(false);
             try
             {
-                var result = await _speech.RecognizeAsync(
-                    new SpeechRecognitionRequest(samples, _segmenter.SampleRate, _sourceLanguage),
-                    cancellationToken).ConfigureAwait(false);
-                if (!string.IsNullOrWhiteSpace(result.Text)) RaiseResultReady(result);
+                // One span normally; two or three when one sentence holds two voices.
+                foreach (var span in PlanSpeakerSpans(samples))
+                {
+                    var part = samples.Slice(span.StartSample, span.Length);
+                    var result = await _speech.RecognizeAsync(
+                        new SpeechRecognitionRequest(part, _segmenter.SampleRate, _sourceLanguage),
+                        cancellationToken).ConfigureAwait(false);
+                    if (string.IsNullOrWhiteSpace(result.Text)) continue;
+                    RaiseResultReady(AttachSpeaker(result, part));
+                }
             }
             finally
             {
@@ -176,6 +182,62 @@ public sealed class LocalSpeechCaptureSession : IAsyncDisposable
         catch (Exception exception)
         {
             RaiseFaulted(exception);
+        }
+    }
+
+    /// <summary>
+    /// The ranges to recognize separately. Splitting costs two extra embeddings and
+    /// a segmentation pass, so it is only attempted when speaker labels are on and
+    /// the cheap head/tail comparison already suspects two voices.
+    /// </summary>
+    private IReadOnlyList<SpeechSpan> PlanSpeakerSpans(ReadOnlyMemory<float> samples)
+    {
+        var whole = new SpeechSpan(0, samples.Length);
+        if (!_speech.SpeakerLabelsEnabled || !TryGetSpeakers(out var speakers)) return [whole];
+
+        try
+        {
+            if (!speakers.IsSpeakerChangeSuspected(samples, _segmenter.SampleRate)) return [whole];
+            var spans = speakers.SplitAtSpeakerChanges(samples, _segmenter.SampleRate);
+            return spans.Count > 1 ? spans : [whole];
+        }
+        catch (Exception exception)
+        {
+            // Speaker separation is an enhancement: a failure must not cost the caption.
+            _ = exception;
+            return [whole];
+        }
+    }
+
+    private SpeechRecognitionResult AttachSpeaker(SpeechRecognitionResult result, ReadOnlyMemory<float> samples)
+    {
+        if (!_speech.SpeakerLabelsEnabled || !TryGetSpeakers(out var speakers)) return result;
+
+        try
+        {
+            var match = speakers.Identify(samples, _segmenter.SampleRate);
+            return match is null
+                ? result
+                : result with { SpeakerId = match.Speaker.Id, SpeakerLabel = match.Speaker.DisplayName };
+        }
+        catch (Exception exception)
+        {
+            _ = exception;
+            return result;
+        }
+    }
+
+    private bool TryGetSpeakers(out ISpeakerIdentifier speakers)
+    {
+        speakers = _speech.Speakers!;
+        try
+        {
+            return speakers is { IsAvailable: true };
+        }
+        catch (Exception exception)
+        {
+            _ = exception;
+            return false;
         }
     }
 

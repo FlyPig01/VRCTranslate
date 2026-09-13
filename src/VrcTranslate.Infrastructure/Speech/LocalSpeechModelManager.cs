@@ -3,73 +3,76 @@ using VrcTranslate.Core.Speech;
 namespace VrcTranslate.Infrastructure.Speech;
 
 /// <summary>
-/// Resolves the SenseVoice model from the copy bundled inside the publish
-/// output first and falls back to the optional copy under the user profile
-/// that older installs downloaded on demand. The recovery download pulls the
-/// multi-file ONNX payload from the upstream Hugging Face repository (or its
-/// mirror) into a staging folder and promotes it only after every file
-/// completed, so an interrupted download cannot look usable.
+/// Resolves one model payload (SenseVoice recognition, or the speaker
+/// separation models) from the copy bundled inside the publish output first and
+/// then from the portable data folder. The recovery download pulls every file
+/// into a staging folder and promotes it only after the whole payload is
+/// complete, so an interrupted download can never look usable.
 /// </summary>
 public sealed class LocalSpeechModelManager : ILocalSpeechModelManager
 {
-    // A real SenseVoice int8 model is ~228 MB; the token table ~0.3 MB. The
-    // floors catch interrupted/placeholder files without hard-coding exact
-    // upstream sizes.
-    private const long MinimumModelBytes = 100_000_000;
-    private const long MinimumTokensBytes = 10_000;
-
-    private static readonly Uri ModelRepository = new("https://hf-mirror.com/csukuangfj/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17/resolve/main/");
-    private static readonly Uri FallbackRepository = new("https://huggingface.co/csukuangfj/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17/resolve/main/");
-
+    private readonly LocalSpeechModelPayload _payload;
     private readonly string _modelDirectory;
     private readonly string _bundledDirectory;
     private readonly SemaphoreSlim _installLock = new(1, 1);
     private volatile bool _installing;
 
+    /// <summary>Manages the SenseVoice recognition payload.</summary>
     public LocalSpeechModelManager(string? modelDirectory = null, string? bundledModelDirectory = null)
+        : this(LocalSpeechModelCatalog.Recognition, modelDirectory, bundledModelDirectory)
     {
+    }
+
+    public LocalSpeechModelManager(
+        LocalSpeechModelPayload payload,
+        string? modelDirectory = null,
+        string? bundledModelDirectory = null)
+    {
+        _payload = payload ?? throw new ArgumentNullException(nameof(payload));
         _modelDirectory = string.IsNullOrWhiteSpace(modelDirectory)
-            ? LocalSpeechModelCatalog.DefaultDirectory
+            ? payload.GetDefaultDirectory()
             : Path.GetFullPath(modelDirectory);
         _bundledDirectory = string.IsNullOrWhiteSpace(bundledModelDirectory)
-            ? LocalSpeechModelCatalog.GetBundledModelDirectory()
+            ? payload.GetBundledDirectory()
             : Path.GetFullPath(bundledModelDirectory);
     }
 
-    /// <summary>Directory the recognizer should load from; falls back to the user copy when neither is usable.</summary>
+    public LocalSpeechModelPayload Payload => _payload;
+
+    /// <summary>Directory the recognizer should load from; falls back to the downloaded copy when neither is usable.</summary>
     public string ModelDirectory => ResolveUsableDirectory() ?? _modelDirectory;
 
     public LocalSpeechModelStatus GetStatus()
     {
         if (_installing)
         {
-            return new(LocalSpeechModelState.Installing, LocalSpeechModelCatalog.ModelId,
-                LocalSpeechModelCatalog.DisplayName, _modelDirectory, TotalSize(_bundledDirectory), "正在安装");
+            return new(LocalSpeechModelState.Installing, _payload.Id,
+                _payload.DisplayName, _modelDirectory, TotalSize(_bundledDirectory), "正在安装");
         }
 
         if (MeasurePayload(_bundledDirectory) is { } bundledSize)
         {
-            return new(LocalSpeechModelState.Ready, LocalSpeechModelCatalog.ModelId,
-                LocalSpeechModelCatalog.DisplayName, _bundledDirectory, bundledSize, "内置模型已就绪", IsBundled: true);
+            return new(LocalSpeechModelState.Ready, _payload.Id,
+                _payload.DisplayName, _bundledDirectory, bundledSize, "内置模型已就绪", IsBundled: true);
         }
 
         if (MeasurePayload(_modelDirectory) is { } installedSize)
         {
-            return new(LocalSpeechModelState.Ready, LocalSpeechModelCatalog.ModelId,
-                LocalSpeechModelCatalog.DisplayName, _modelDirectory, installedSize, "本地模型已就绪");
+            return new(LocalSpeechModelState.Ready, _payload.Id,
+                _payload.DisplayName, _modelDirectory, installedSize, "本地模型已就绪");
         }
 
         // Only the payload files decide the state: a staging folder or any other
         // stray file left in the directory must not make an absent model look
         // like a broken one.
-        if (LocalSpeechModelCatalog.PayloadFiles.Any(file => File.Exists(Path.Combine(_modelDirectory, file))))
+        if (PayloadFileNames.Any(file => File.Exists(Path.Combine(_modelDirectory, file))))
         {
-            return new(LocalSpeechModelState.Invalid, LocalSpeechModelCatalog.ModelId,
-                LocalSpeechModelCatalog.DisplayName, _modelDirectory, TotalSize(_modelDirectory), "模型文件不完整，请重新安装");
+            return new(LocalSpeechModelState.Invalid, _payload.Id,
+                _payload.DisplayName, _modelDirectory, TotalSize(_modelDirectory), "模型文件不完整，请重新安装");
         }
 
-        return new(LocalSpeechModelState.NotInstalled, LocalSpeechModelCatalog.ModelId,
-            LocalSpeechModelCatalog.DisplayName, _modelDirectory, 0, "本地模型未安装");
+        return new(LocalSpeechModelState.NotInstalled, _payload.Id,
+            _payload.DisplayName, _modelDirectory, 0, "本地模型未安装");
     }
 
     public async Task<LocalSpeechModelStatus> InstallAsync(
@@ -102,7 +105,7 @@ public sealed class LocalSpeechModelManager : ILocalSpeechModelManager
                 long received = 0;
                 using var httpClient = new HttpClient();
                 httpClient.Timeout = TimeSpan.FromMinutes(30);
-                foreach (var file in LocalSpeechModelCatalog.PayloadFiles)
+                foreach (var file in PayloadFileNames)
                 {
                     await DownloadFileAsync(
                         httpClient,
@@ -111,12 +114,12 @@ public sealed class LocalSpeechModelManager : ILocalSpeechModelManager
                         bytes =>
                         {
                             received += bytes;
-                            progress?.Report(new LocalSpeechModelProgress(received, null, LocalSpeechModelCatalog.ModelId));
+                            progress?.Report(new LocalSpeechModelProgress(received, null, _payload.Id));
                         },
                         cancellationToken).ConfigureAwait(false);
                 }
 
-                foreach (var file in LocalSpeechModelCatalog.PayloadFiles)
+                foreach (var file in PayloadFileNames)
                 {
                     var source = Path.Combine(stagingDirectory, file);
                     var destination = Path.Combine(_modelDirectory, file);
@@ -148,10 +151,13 @@ public sealed class LocalSpeechModelManager : ILocalSpeechModelManager
     {
         cancellationToken.ThrowIfCancellationRequested();
         // The bundled copy is part of the application package and must survive;
-        // only the on-demand copy under the user profile is removable.
+        // only the downloaded copy in the portable data folder is removable.
         TryDeleteDirectory(_modelDirectory);
         return Task.CompletedTask;
     }
+
+    private IReadOnlyList<string> PayloadFileNames =>
+        _payload.Files.Select(file => file.Name).ToArray();
 
     private async Task DownloadFileAsync(
         HttpClient httpClient,
@@ -162,27 +168,27 @@ public sealed class LocalSpeechModelManager : ILocalSpeechModelManager
     {
         var temporaryPath = Path.Combine(targetDirectory, fileName + ".part");
         var finalPath = Path.Combine(targetDirectory, fileName);
-        var sources = new[] { ModelRepository, FallbackRepository };
         Exception? lastError = null;
         var downloaded = false;
-        foreach (var repository in sources)
+        foreach (var uri in _payload.SourcesFor(fileName))
         {
             try
             {
-                await using var source = await httpClient.GetStreamAsync(
-                    new Uri(repository, fileName), cancellationToken).ConfigureAwait(false);
-                await using var destination = new FileStream(
+                await using (var source = await httpClient.GetStreamAsync(uri, cancellationToken).ConfigureAwait(false))
+                await using (var destination = new FileStream(
                     temporaryPath, FileMode.Create, FileAccess.Write, FileShare.None,
-                    bufferSize: 1024 * 128, options: FileOptions.Asynchronous | FileOptions.SequentialScan);
-                var buffer = new byte[1024 * 128];
-                int read;
-                while ((read = await source.ReadAsync(buffer.AsMemory(), cancellationToken).ConfigureAwait(false)) > 0)
+                    bufferSize: 1024 * 128, options: FileOptions.Asynchronous | FileOptions.SequentialScan))
                 {
-                    await destination.WriteAsync(buffer.AsMemory(0, read), cancellationToken).ConfigureAwait(false);
-                    onBytes(read);
-                }
+                    var buffer = new byte[1024 * 128];
+                    int read;
+                    while ((read = await source.ReadAsync(buffer.AsMemory(), cancellationToken).ConfigureAwait(false)) > 0)
+                    {
+                        await destination.WriteAsync(buffer.AsMemory(0, read), cancellationToken).ConfigureAwait(false);
+                        onBytes(read);
+                    }
 
-                await destination.FlushAsync(cancellationToken).ConfigureAwait(false);
+                    await destination.FlushAsync(cancellationToken).ConfigureAwait(false);
+                }
             }
             catch (Exception exception) when (exception is not OperationCanceledException)
             {
@@ -219,18 +225,18 @@ public sealed class LocalSpeechModelManager : ILocalSpeechModelManager
         : null;
 
     /// <summary>Total size when every payload file is present and large enough; otherwise null.</summary>
-    private static long? MeasurePayload(string directory)
+    private long? MeasurePayload(string directory)
     {
         if (!Directory.Exists(directory)) return null;
         long total = 0;
-        foreach (var file in LocalSpeechModelCatalog.PayloadFiles)
+        foreach (var file in PayloadFileNames)
         {
             var path = Path.Combine(directory, file);
             try
             {
                 if (!File.Exists(path)) return null;
                 var length = new FileInfo(path).Length;
-                if (length < MinimumSizeFor(file)) return null;
+                if (length < _payload.MinimumBytesFor(file)) return null;
                 total += length;
             }
             catch (IOException) { return null; }
@@ -257,14 +263,11 @@ public sealed class LocalSpeechModelManager : ILocalSpeechModelManager
         }
     }
 
-    private static long MinimumSizeFor(string fileName) =>
-        fileName == LocalSpeechModelCatalog.ModelFileName ? MinimumModelBytes : MinimumTokensBytes;
-
-    private static bool IsPayloadFileValid(string path, string fileName)
+    private bool IsPayloadFileValid(string path, string fileName)
     {
         try
         {
-            return new FileInfo(path).Length >= MinimumSizeFor(fileName);
+            return new FileInfo(path).Length >= _payload.MinimumBytesFor(fileName);
         }
         catch
         {

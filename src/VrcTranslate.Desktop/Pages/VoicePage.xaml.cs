@@ -25,6 +25,8 @@ public sealed partial class VoicePage : Page
     private readonly Microsoft.UI.Dispatching.DispatcherQueueTimer _audioLevelTimer;
     private double _audioLevel;
     private DateTimeOffset _lastAudioFrameAt;
+    private IReadOnlyList<SpeakerIdentity> _speakers = [];
+    private bool _updatingSpeakerToggle;
 
     private AppState State => _state;
 
@@ -462,9 +464,11 @@ public sealed partial class VoicePage : Page
         }
 
         _settings.Provider = "local";
+        State.LocalSpeech.SpeakerLabelsEnabled = _settings.SpeakerLabels;
         SpeechModelBox.SelectedIndex = 0;
         VoiceHotkeyValue.Text = ReadGlobalVoiceHotkey();
         AutomationProperties.SetName(VoiceHotkeyValue, VoiceHotkeyValue.Text);
+        UpdateSpeakerPanel();
     }
 
     private void SaveSettings()
@@ -509,9 +513,147 @@ public sealed partial class VoicePage : Page
         return "F7";
     }
 
+    private void OnSpeakerToggleToggled(object sender, RoutedEventArgs e)
+    {
+        if (!_loaded || _updatingSpeakerToggle) return;
+        State.LocalSpeech.SpeakerLabelsEnabled = SpeakerToggle.IsOn;
+        _settings.SpeakerLabels = SpeakerToggle.IsOn;
+        SaveSettings();
+        UpdateSpeakerPanel();
+    }
+
+    private void OnSpeakerSelectionChanged(object sender, SelectionChangedEventArgs e) =>
+        UpdateSpeakerButtons();
+
+    private async void OnRenameSpeakerClicked(object sender, RoutedEventArgs e)
+    {
+        if (SpeakerList.SelectedItem is not SpeakerIdentity speaker) return;
+        var input = new TextBox
+        {
+            Text = speaker.Name ?? string.Empty,
+            PlaceholderText = "玩家名，例如 小明",
+            MaxLength = 24,
+        };
+        var dialog = new ContentDialog
+        {
+            Title = $"命名 {speaker.Label}",
+            Content = input,
+            PrimaryButtonText = "保存",
+            SecondaryButtonText = "取消",
+            DefaultButton = ContentDialogButton.Primary,
+            XamlRoot = XamlRoot,
+        };
+        if (await dialog.ShowAsync() != ContentDialogResult.Primary) return;
+
+        State.LocalSpeech.Speakers?.Rename(speaker.Id, input.Text);
+        UpdateSpeakerPanel();
+        ShowInfo($"已命名为「{input.Text.Trim()}」，下次会话会自动沿用", InfoBarSeverity.Success);
+    }
+
+    private async void OnMergeSpeakerClicked(object sender, RoutedEventArgs e)
+    {
+        if (SpeakerList.SelectedItem is not SpeakerIdentity speaker) return;
+        var targets = _speakers.Where(item => item.Id != speaker.Id).ToArray();
+        if (targets.Length == 0)
+        {
+            ShowInfo("还没有第二个人可以合并", InfoBarSeverity.Warning);
+            return;
+        }
+
+        var picker = new ComboBox
+        {
+            ItemsSource = targets,
+            DisplayMemberPath = nameof(SpeakerIdentity.DisplayName),
+            SelectedIndex = 0,
+            MinWidth = 220,
+        };
+        var dialog = new ContentDialog
+        {
+            Title = $"把 {speaker.DisplayName} 合并到",
+            Content = picker,
+            PrimaryButtonText = "合并",
+            SecondaryButtonText = "取消",
+            DefaultButton = ContentDialogButton.Primary,
+            XamlRoot = XamlRoot,
+        };
+        if (await dialog.ShowAsync() != ContentDialogResult.Primary) return;
+        if (picker.SelectedItem is not SpeakerIdentity target) return;
+
+        State.LocalSpeech.Speakers?.Merge(speaker.Id, target.Id);
+        UpdateSpeakerPanel();
+    }
+
+    private void OnForgetSpeakerClicked(object sender, RoutedEventArgs e)
+    {
+        if (SpeakerList.SelectedItem is not SpeakerIdentity speaker) return;
+        State.LocalSpeech.Speakers?.Forget(speaker.Id);
+        UpdateSpeakerPanel();
+    }
+
+    private async void OnClearSpeakersClicked(object sender, RoutedEventArgs e)
+    {
+        var dialog = new ContentDialog
+        {
+            Title = "清空声纹库",
+            Content = new TextBlock
+            {
+                Text = "所有已命名的声纹都会从本机删除，无法恢复。",
+                TextWrapping = TextWrapping.Wrap,
+            },
+            PrimaryButtonText = "清空",
+            SecondaryButtonText = "取消",
+            DefaultButton = ContentDialogButton.Secondary,
+            XamlRoot = XamlRoot,
+        };
+        if (await dialog.ShowAsync() != ContentDialogResult.Primary) return;
+
+        State.LocalSpeech.Speakers?.Clear();
+        UpdateSpeakerPanel();
+    }
+
+    private void UpdateSpeakerButtons()
+    {
+        var selected = SpeakerList.SelectedItem is SpeakerIdentity;
+        SpeakerRenameButton.IsEnabled = selected;
+        SpeakerMergeButton.IsEnabled = selected;
+        SpeakerForgetButton.IsEnabled = selected;
+    }
+
+    /// <summary>Mirrors the speaker library into the card; the feature is off by default.</summary>
+    private void UpdateSpeakerPanel()
+    {
+        if (SpeakerList is null || SpeakerToggle is null || SpeakerStatus is null) return;
+        var identifier = State.LocalSpeech.Speakers;
+        var available = State.LocalSpeech.Speakers is { IsAvailable: true };
+        _speakers = available ? identifier!.Speakers : [];
+
+        SpeakerList.ItemsSource = _speakers;
+        SpeakerToggle.IsEnabled = available;
+        _updatingSpeakerToggle = true;
+        try
+        {
+            SpeakerToggle.IsOn = available && State.LocalSpeech.SpeakerLabelsEnabled;
+        }
+        finally
+        {
+            _updatingSpeakerToggle = false;
+        }
+
+        SpeakerStatus.Text = !available
+            ? "说话人模型不可用，重新导入本地组件后可恢复"
+            : State.LocalSpeech.SpeakerLabelsEnabled
+                ? _speakers.Count == 0
+                    ? "已开启 · 等待第一位说话人"
+                    : $"已开启 · 本会话识别到 {_speakers.Count} 位说话人，命名后会跨会话沿用"
+                : "字幕暂不区分说话人";
+        UpdateSpeakerButtons();
+    }
+
     private sealed class VoiceSettings
     {
         public string Provider { get; set; } = "local";
+
+        public bool SpeakerLabels { get; set; }
     }
 
     private sealed class GlobalHotkeySettings

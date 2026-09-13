@@ -12,7 +12,7 @@
 dotnet test VrcTranslate.sln -c Debug -p:Platform=x64
 ```
 
-当前分层测试共 135 项（Core 46、Application 23、Infrastructure 66）。内置 ONNX 模型存在时，Infrastructure 层会真实加载 SenseVoice 并跑一次识别；模型缺失时该用例自动跳过。
+当前分层测试共 159 项（Core 63、Application 26、Infrastructure 70）。内置 ONNX 模型存在时，Infrastructure 层会真实加载 SenseVoice 并跑一次识别；模型缺失时该用例自动跳过。
 
 只运行某一层时，直接把解决方案替换为对应的 `.csproj` 路径即可。
 

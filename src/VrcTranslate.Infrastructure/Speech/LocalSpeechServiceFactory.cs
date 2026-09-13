@@ -9,6 +9,10 @@ public static class LocalSpeechServiceFactory
     {
         var manager = new LocalSpeechModelManager(modelDirectory);
         var recognizer = new SenseVoiceSpeechRecognizer(manager);
-        return new LocalSpeechService(manager, recognizer);
+        // The speaker models ship in the same package; captions stay label-free
+        // until the user turns the feature on.
+        var speakers = new LocalSpeakerIdentifier(
+            new LocalSpeechModelManager(LocalSpeechModelCatalog.Speaker));
+        return new LocalSpeechService(manager, recognizer, speakers);
     }
 }

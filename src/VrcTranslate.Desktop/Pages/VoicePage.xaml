@@ -195,6 +195,58 @@
             </Grid>
           </Border>
 
+          <Border Style="{StaticResource SurfaceBorderStyle}" Padding="18,16">
+            <StackPanel Spacing="10">
+              <Grid ColumnSpacing="14">
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="*" />
+                  <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel Spacing="3">
+                  <TextBlock Text="说话人"
+                             FontSize="17"
+                             FontWeight="SemiBold"
+                             Foreground="#16202E" />
+                  <TextBlock x:Name="SpeakerStatus"
+                             Text="字幕暂不区分说话人"
+                             FontSize="12"
+                             Foreground="#607083"
+                             TextWrapping="Wrap" />
+                </StackPanel>
+                <ToggleSwitch Grid.Column="1"
+                              x:Name="SpeakerToggle"
+                              AutomationProperties.Name="区分说话人"
+                              OnContent="区分"
+                              OffContent="不区分"
+                              Toggled="OnSpeakerToggleToggled" />
+              </Grid>
+              <ListView x:Name="SpeakerList"
+                        MaxHeight="170"
+                        SelectionMode="Single"
+                        SelectionChanged="OnSpeakerSelectionChanged"
+                        AutomationProperties.AutomationId="speaker-list"
+                        BorderThickness="1"
+                        CornerRadius="8" />
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <Button x:Name="SpeakerRenameButton"
+                        Content="命名"
+                        Click="OnRenameSpeakerClicked"
+                        IsEnabled="False" />
+                <Button x:Name="SpeakerMergeButton"
+                        Content="合并到…"
+                        Click="OnMergeSpeakerClicked"
+                        IsEnabled="False" />
+                <Button x:Name="SpeakerForgetButton"
+                        Content="忘记"
+                        Click="OnForgetSpeakerClicked"
+                        IsEnabled="False" />
+                <Button x:Name="SpeakerClearButton"
+                        Content="清空声纹库"
+                        Click="OnClearSpeakersClicked" />
+              </StackPanel>
+            </StackPanel>
+          </Border>
+
           <InfoBar x:Name="VoiceInfo" IsOpen="False" IsClosable="True" />
         </StackPanel>
       </Grid>

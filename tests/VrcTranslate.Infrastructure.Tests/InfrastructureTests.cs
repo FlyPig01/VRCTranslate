@@ -219,8 +219,9 @@ public sealed class RoutedProviderTests
     [Fact]
     public void DeepSeek_request_body_disables_thinking_by_default()
     {
+        Assert.Equal("deepseek-flash", DeepSeekTranslationProvider.DefaultModel);
         var request = new TranslationProviderRequest(
-            "hello", "zh-CN", "en", "deepseek-chat", new Uri("https://api.deepseek.com"), "secret", "test", "deepseek");
+            "hello", "zh-CN", "en", DeepSeekTranslationProvider.DefaultModel, new Uri("https://api.deepseek.com"), "secret", "test", "deepseek");
 
         var serialized = JsonSerializer.Serialize(DeepSeekTranslationProvider.BuildRequestBody(request));
 

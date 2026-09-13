@@ -6,15 +6,16 @@ namespace VrcTranslate.Infrastructure.Translation;
 
 /// <summary>
 /// DeepSeek chat-completions translation provider. The official endpoint and
-/// model names are preset; only the API key is required. DeepSeek's hybrid
-/// models enable thinking mode by default, which adds seconds of latency and
-/// no quality for translation, so thinking is explicitly disabled unless the
+/// model names are preset; only the API key is required. The default
+/// deepseek-flash model (DeepSeek-V4.1-Flash) is natively multimodal and
+/// enables thinking mode by default, which adds seconds of latency and no
+/// quality for translation, so thinking is explicitly disabled unless the
 /// user picks a reasoner model.
 /// </summary>
 public sealed class DeepSeekTranslationProvider : ITranslationProvider
 {
     public const string DefaultEndpoint = "https://api.deepseek.com";
-    public const string DefaultModel = "deepseek-chat";
+    public const string DefaultModel = "deepseek-flash";
 
     private readonly HttpClient _httpClient;
 

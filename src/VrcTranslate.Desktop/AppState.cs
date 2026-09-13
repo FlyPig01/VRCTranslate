@@ -445,7 +445,7 @@ public sealed class AppState
 
     private static List<TranslationProfileRecord> CreateProviderPlaceholders() =>
     [
-        new("deepseek", "DeepSeek", "deepseek", "deepseek-chat", "https://api.deepseek.com", "本地配置", "auto", "zh-CN", "", new Dictionary<string, string>()),
+        new("deepseek", "DeepSeek", "deepseek", "deepseek-flash", "https://api.deepseek.com", "本地配置", "auto", "zh-CN", "", new Dictionary<string, string>()),
         new("deepl", "DeepL", "deepl", "deepl", "https://api-free.deepl.com/v2/translate", "本地配置", "auto", "zh-CN", "", new Dictionary<string, string>()),
         new("google-free", "Google 翻译（免费接口）", "google-free", "default", "https://translate.googleapis.com", "本地配置", "auto", "zh-CN", "", new Dictionary<string, string>()),
         new("google-cloud", "Google Cloud 翻译", "google-cloud", "v3", "https://translation.googleapis.com", "本地配置", "auto", "zh-CN", "", new Dictionary<string, string>()),
@@ -554,13 +554,13 @@ public sealed class AppState
     private static string DefaultModelForProvider(string? provider) => provider?.Trim().ToLowerInvariant() switch
     {
         "echo" => "本地回显",
-        "deepseek" => "deepseek-chat",
+        "deepseek" => "deepseek-flash",
         "deepl" => "v2",
         "google-free" => "translate",
         "google-cloud" => "v3",
         "tencent" => "TextTranslate",
         "aliyun" => "general",
-        _ => "deepseek-chat"
+        _ => "deepseek-flash"
     };
 
     private static bool IsHttpEndpoint(Uri endpoint) =>

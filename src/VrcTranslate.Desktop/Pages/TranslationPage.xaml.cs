@@ -232,13 +232,13 @@ public sealed partial class TranslationPage : Page
             var defaults = id switch
             {
                 "echo" => ("本地回显", "https://localhost/echo", "无需密钥"),
-                "deepseek" => ("deepseek-chat", "https://api.deepseek.com", "DeepSeek API Key"),
+                "deepseek" => ("deepseek-flash", "https://api.deepseek.com", "DeepSeek API Key"),
                 "deepl" => ("v2", "https://api-free.deepl.com/v2/translate", "DeepL Auth Key"),
                 "google-free" => ("translate", "https://translate.googleapis.com", "无需密钥"),
                 "google-cloud" => ("v3", "https://translation.googleapis.com", "Google Cloud API Key"),
                 "tencent" => ("TextTranslate", "https://tmt.tencentcloudapi.com", "腾讯云 SecretId"),
                 "aliyun" => ("general", "https://mt.cn-hangzhou.aliyuncs.com", "阿里云 AccessKey ID"),
-                _ => ("deepseek-chat", "https://api.deepseek.com", "DeepSeek API Key")
+                _ => ("deepseek-flash", "https://api.deepseek.com", "DeepSeek API Key")
             };
             modelBox.Header = id is "echo" or "deepl" or "google-free" or "google-cloud" or "tencent" or "aliyun" ? "接口版本" : "模型名称";
             modelBox.PlaceholderText = defaults.Item1;
@@ -261,7 +261,7 @@ public sealed partial class TranslationPage : Page
             var selectedProvider = (providerBox.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? string.Empty;
             if (!string.Equals(selectedProvider, lastProvider, StringComparison.OrdinalIgnoreCase))
             {
-                if (string.IsNullOrWhiteSpace(modelBox.Text) || modelBox.Text is "gpt-4.1-mini" or "deepseek-chat" or "本地回显" or "v2" or "translate" or "v3" or "TextTranslate" or "general") modelBox.Text = string.Empty;
+                if (string.IsNullOrWhiteSpace(modelBox.Text) || modelBox.Text is "gpt-4.1-mini" or "deepseek-chat" or "deepseek-flash" or "本地回显" or "v2" or "translate" or "v3" or "TextTranslate" or "general") modelBox.Text = string.Empty;
                 if (endpointBox.Text is "https://api.deepseek.com" or "https://api.openai.com/v1" or "https://localhost/echo" or "https://api-free.deepl.com/v2/translate" or "https://translate.googleapis.com" or "https://translation.googleapis.com" or "https://tmt.tencentcloudapi.com" or "https://mt.cn-hangzhou.aliyuncs.com") endpointBox.Text = string.Empty;
                 lastProvider = selectedProvider;
             }

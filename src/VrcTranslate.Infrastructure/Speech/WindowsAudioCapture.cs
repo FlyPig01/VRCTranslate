@@ -7,7 +7,7 @@ namespace VrcTranslate.Infrastructure.Speech;
 /// <summary>
 /// Captures microphone input for own voice or Windows output for VRChat voice
 /// captions. The capture device is converted to mono 16 kHz float samples before
-/// it crosses the application boundary, which is the format used by Whisper.
+/// it crosses the application boundary, which is the format SenseVoice needs.
 /// </summary>
 public sealed class WindowsAudioCapture : IAudioCapture
 {

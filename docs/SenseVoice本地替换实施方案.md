@@ -2,6 +2,8 @@
 
 日期：2026-09-13。前置档案：《语音识别方案选型》《多语言全链路质量与性能测试报告》。
 
+> **状态更新（阶段 1 已实施）**：路线 A 落地——新增 `SenseVoiceSpeechRecognizer`（sherpa-onnx 1.13.8 + win-x64 原生运行库，CPU）；模型契约由单 ggml 文件改为多文件目录，内置路径 `Models\sensevoice\`（`model.int8.onnx` + `tokens.txt`），按需下载回退到 `%LOCALAPPDATA%\VRCTranslate\v2\models\sensevoice`；`Import-BundledSpeechModel.ps1` 改为从 hf-mirror 下载并按固定 SHA-256 校验；Whisper.net 依赖、ggml 模型与多平台 runtimes 剔除规则已删除；语音页文案、分层测试与验证脚本同步更新。会话启动即预热模型，首次加载约 1.5 s，其后单句约 90~200 ms（脚本自带短句样本，与 V1 实测一致）。发布包实测 422.5 MB。说话人区分（阶段 2）与 DirectML（阶段 3）尚未开始。
+
 ## 0. 决策记录
 
 - **全面替换**：V2 语音识别从 Whisper Base Q5_1 整体切换为 SenseVoiceSmall INT8（本地）。

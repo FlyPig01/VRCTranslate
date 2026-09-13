@@ -11,14 +11,14 @@ Windows 原生 VRChat 翻译工具，采用 C#、.NET 10 和 WinUI 3。不包含
 - 输入浮窗与 OSC Chatbox 契约。输入内容固定按简体中文处理；第一语言和可选第二语言在“输入”页面配置，并同时预览、发送；
 - 使用系统标题栏、原生拖动和八方向缩放的输入/字幕窗口；两者默认宽度分别为 1240px 和 1400px，位置与大小会在退出后恢复；
 - 输入与字幕透明度可分别在对应页面调节为 60%～100%，默认 90%，整窗（包括标题栏）实时生效并自动记忆；
-- 内置的 Whisper Base Q5_1 本地识别模型，覆盖中文、英语、日语、韩语，随发布包自带、无需下载；识别会话在应用层托管，切换页面不会中断；
+- 内置的 SenseVoiceSmall INT8 本地识别模型（sherpa-onnx），覆盖中文、英语、日语、韩语并兼容粤语口音，随发布包自带、无需下载；识别会话在应用层托管，切换页面不会中断；
 - WinUI 3 页面骨架。
 
 页面职责保持单一：运行页负责查看状态和进入功能，翻译页负责服务档案、模型、地址、密钥和路由，语音页不提供进程选择，正式音频目标固定为 VRChat。翻译页保存的当前方案会同时供手动文字和语音识别文本使用。
 
 代码按 `Core -> Application -> Infrastructure -> Desktop` 分层，测试按相同边界放在 `tests/` 下。
 
-语音识别使用内置的 Whisper Base Q5_1 本地模型，随发布包放在程序目录 `Models\` 下，运行时优先加载该副本，不会回退到系统识别；模型缺失时仍可回退为从语音页按需下载到 `%LOCALAPPDATA%\VRCTranslate\v2\models\speech`。模型文件本身不进入源码库，构建前用 `tests\Import-BundledSpeechModel.ps1` 一次性导入到 `assets\models\speech\`。回环目前读取系统输出混音，VRChat 进程级过滤仍待后续完善。
+语音识别使用内置的 SenseVoiceSmall INT8 本地模型（sherpa-onnx + ONNX Runtime），随发布包放在程序目录 `Models\sensevoice\` 下（`model.int8.onnx` 与 `tokens.txt`），运行时优先加载该副本，不会回退到系统识别；模型缺失时仍可回退为从语音页按需下载到 `%LOCALAPPDATA%\VRCTranslate\v2\models\sensevoice`。模型文件本身不进入源码库，构建前用 `tests\Import-BundledSpeechModel.ps1` 一次性下载校验并导入到 `assets\models\speech\sensevoice\`。回环目前读取系统输出混音，VRChat 进程级过滤仍待后续完善。
 
 ## 构建
 
@@ -36,10 +36,10 @@ dotnet test VrcTranslate.sln -c Debug -p:Platform=x64
 
 手动测试前执行 `tests\Invoke-V2Validation.ps1`。该脚本会验证构建、分层测试、翻译页 UI 交互、两个普通 Windows 浮窗的原生拖动/缩放、透明度、关闭/重开、布局恢复，以及六个桌面页面启动；内置模型在运行时直接探测，无需联网下载。
 
-重新发布 `artifacts\manual-test` 后执行 `tests\Invoke-V2ReleaseSmoke.ps1`；它会检查发布资源、翻译档案对话框、两个浮窗的系统窗框、透明度与主窗口退出联动，再把通过的包交给人工测试。发布前若 `assets\models\speech\ggml-base-q5_1.bin` 不存在，构建会告警且该包将回退为运行时下载。发布产物会自动剔除未使用的 Windows AI 组件、PDB 与异架构原生库（约 95 MB）。
+重新发布 `artifacts\manual-test` 后执行 `tests\Invoke-V2ReleaseSmoke.ps1`；它会检查发布资源、翻译档案对话框、两个浮窗的系统窗框、透明度与主窗口退出联动，再把通过的包交给人工测试。发布前若 `assets\models\speech\sensevoice\model.int8.onnx` 不存在，构建会告警且该包将回退为运行时下载。发布产物会自动剔除未使用的 Windows AI 组件、PDB 与异架构原生库；自包含发布包约 422 MB，其中 SenseVoice 模型占 228 MB。
 
 Release 手测包目录：`artifacts\manual-test\`。可直接双击：
 
 `artifacts\manual-test\VrcTranslate.exe`
 
-WinUI 3 项目需要 Windows App SDK NuGet 包。API 密钥和语音模型文件都不会写入源码：密钥只存在于用户配置，模型由 `tests\Import-BundledSpeechModel.ps1` 放入 `assets\`（已被 git 忽略）后在构建时打入包内。
+WinUI 3 项目需要 Windows App SDK NuGet 包。API 密钥和语音模型文件都不会写入源码：密钥只存在于用户配置，模型由 `tests\Import-BundledSpeechModel.ps1` 下载校验后放入 `assets\`（已被 git 忽略），构建时打入包内。

@@ -61,9 +61,46 @@ public sealed class LocalSpeechCaptureSessionTests
         Assert.InRange(measured.Peak, 0.49f, 0.51f);
     }
 
+    [Fact]
+    public async Task Starting_a_session_warms_the_recognizer_up_for_its_language()
+    {
+        var recognizer = new RecordingRecognizer();
+        await using var session = new LocalSpeechCaptureSession(
+            new FakeCapture(),
+            new LocalSpeechService(new FakeModelManager(), recognizer),
+            "ja");
+
+        await session.StartAsync();
+
+        var prepared = await recognizer.Prepared.Task.WaitAsync(TimeSpan.FromSeconds(2));
+        Assert.Equal("ja", prepared);
+    }
+
     private static LocalSpeechService CreateSpeechService() => new(
         new FakeModelManager(),
         new FakeRecognizer());
+
+    private sealed class RecordingRecognizer : ILocalSpeechRecognizer
+    {
+        public TaskCompletionSource<string> Prepared { get; } =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public string ModelId => "fake";
+        public IReadOnlyList<SpeechLanguageOption> SupportedLanguages => LocalSpeechLanguages.Supported;
+
+        public Task PrepareAsync(string sourceLanguage, CancellationToken cancellationToken = default)
+        {
+            Prepared.TrySetResult(sourceLanguage);
+            return Task.CompletedTask;
+        }
+
+        public Task<SpeechRecognitionResult> RecognizeAsync(
+            SpeechRecognitionRequest request,
+            CancellationToken cancellationToken = default) => Task.FromResult(
+            new SpeechRecognitionResult(request.RequestId, "test", request.SourceLanguage, TimeSpan.Zero));
+
+        public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+    }
 
     private sealed class FakeCapture : IAudioCapture
     {

@@ -19,7 +19,14 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <BundledSpeechModelFile>ggml-base-q5_1.bin</BundledSpeechModelFile>
+    <!-- Folder under assets\models\speech that holds the SenseVoiceSmall
+         ONNX payload (model.int8.onnx + tokens.txt). -->
+    <BundledSpeechModelDirectory>sensevoice</BundledSpeechModelDirectory>
+    <BundledSpeechModelFile>model.int8.onnx</BundledSpeechModelFile>
+    <BundledSpeechModelPath>..\..\assets\models\speech\$(BundledSpeechModelDirectory)</BundledSpeechModelPath>
+    <!-- Pinned to the version referenced by VrcTranslate.Infrastructure; the
+         native engine is re-copied into the publish output after stripping. -->
+    <SherpaOnnxRuntimeVersion>1.13.8</SherpaOnnxRuntimeVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -27,11 +34,11 @@
     <Content Include="logo-mark.png" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Content Include="Resources\default-glossary.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <!-- The speech model ships inside the package once tests\Import-BundledSpeechModel.ps1
-         has placed it in v2\assets\models\speech; the file itself is re-downloadable
-         and therefore kept out of source control. -->
-    <Content Condition="Exists('..\..\assets\models\speech\$(BundledSpeechModelFile)')"
-             Include="..\..\assets\models\speech\$(BundledSpeechModelFile)"
-             Link="Models\$(BundledSpeechModelFile)"
+         has placed the ONNX payload in assets\models\speech\sensevoice; the
+         files are re-downloadable and therefore kept out of source control. -->
+    <Content Condition="Exists('$(BundledSpeechModelPath)\$(BundledSpeechModelFile)')"
+             Include="$(BundledSpeechModelPath)\**\*"
+             Link="Models\$(BundledSpeechModelDirectory)\%(RecursiveDir)%(Filename)%(Extension)"
              CopyToOutputDirectory="PreserveNewest"
              CopyToPublishDirectory="PreserveNewest" />
     <ProjectReference Include="..\VrcTranslate.Core\VrcTranslate.Core.csproj" />
@@ -41,19 +48,20 @@
   </ItemGroup>
 
   <Target Name="WarnWhenBundledSpeechModelMissing" BeforeTargets="Publish">
-    <Warning Condition="!Exists('..\..\assets\models\speech\$(BundledSpeechModelFile)')"
-             Text="未找到内置语音模型 $(BundledSpeechModelFile)，本次发布将回退为运行时下载；请先运行 tests\Import-BundledSpeechModel.ps1。" />
+    <Warning Condition="!Exists('$(BundledSpeechModelPath)\$(BundledSpeechModelFile)')"
+             Text="未找到内置语音模型 $(BundledSpeechModelDirectory)\$(BundledSpeechModelFile)，本次发布将回退为运行时下载；请先运行 tests\Import-BundledSpeechModel.ps1。" />
   </Target>
 
   <!-- The self-contained Windows App SDK deployment unconditionally copies its
-       Windows AI stack (onnxruntime, DirectML, projections) and Whisper.net's
-       runtime pack copies native libraries for every RID. This app never calls
-       the Windows AI APIs and ships win-x64 only, so strip both after publish.
-       Verified by launching and starting recognition from the stripped output. -->
+       Windows AI stack (onnxruntime, DirectML, projections) and the old
+       Whisper.net runtime pack copied native libraries for every RID. This app
+       never calls the Windows AI APIs and ships win-x64 only, so strip that
+       payload after publish. DirectML stays out until the optional GPU stage
+       needs it. Verified by launching and starting recognition from the
+       stripped output. -->
   <Target Name="StripUnusedRuntimePayload" AfterTargets="Publish">
     <ItemGroup>
       <PayloadToStrip Include="$(PublishDir)**\*.pdb" />
-      <PayloadToStrip Include="$(PublishDir)onnxruntime.dll" />
       <PayloadToStrip Include="$(PublishDir)onnxruntime_providers_shared.dll" />
       <PayloadToStrip Include="$(PublishDir)DirectML.dll" />
       <PayloadToStrip Include="$(PublishDir)Microsoft.ML.OnnxRuntime.dll" />
@@ -70,9 +78,25 @@
       <ForeignRuntimeFolder Include="$(PublishDir)runtimes\win-x86" />
     </ItemGroup>
     <Delete Files="@(PayloadToStrip)" TreatErrorsAsWarnings="true" />
-    <!-- MSBuild "*" globs do not enumerate directories reliably; the foreign
-         RID set comes from Whisper.net.Runtime 1.9, so enumerate it. -->
+    <!-- MSBuild "*" globs do not enumerate directories reliably, so the foreign
+         RID set is enumerated explicitly. -->
     <RemoveDir Directories="@(ForeignRuntimeFolder)" />
+  </Target>
+
+  <!-- The App SDK deployment and sherpa-onnx both contribute an
+       onnxruntime.dll, and which copy survives the publish is an accident of
+       copy order. Windows AI (the App SDK consumer) is stripped above, so the
+       engine sherpa-onnx was actually built against is put back explicitly. -->
+  <Target Name="RestoreSherpaNativeRuntime" AfterTargets="StripUnusedRuntimePayload">
+    <PropertyGroup>
+      <SherpaNativeSource>$(NuGetPackageRoot)org.k2fsa.sherpa.onnx.runtime.win-x64\$(SherpaOnnxRuntimeVersion)\runtimes\win-x64\native</SherpaNativeSource>
+    </PropertyGroup>
+    <Error Condition="!Exists('$(SherpaNativeSource)\sherpa-onnx-c-api.dll')"
+           Text="未找到 sherpa-onnx 原生运行库 $(SherpaNativeSource)，发布包的语音识别将无法启动。" />
+    <ItemGroup>
+      <SherpaNativeRuntime Include="$(SherpaNativeSource)\*.dll" />
+    </ItemGroup>
+    <Copy SourceFiles="@(SherpaNativeRuntime)" DestinationFolder="$(PublishDir)" />
   </Target>
 
   <Target Name="CopyGeneratedPageXbfToPublishDirectory" AfterTargets="Publish">

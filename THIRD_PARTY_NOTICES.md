@@ -2,16 +2,27 @@
 
 VRCTranslate (V2 native desktop app) uses the following third-party components.
 
-## OpenAI Whisper model (bundled)
+## SenseVoiceSmall model (bundled)
 
-- Model: `ggml-base-q5_1.bin` (Whisper base, Q5_1 quantization, whisper.cpp GGML conversion)
-- Purpose: offline Chinese, English, Japanese, and Korean speech recognition
-- Original model and license: OpenAI Whisper, MIT License — <https://github.com/openai/whisper/blob/main/LICENSE>
-- GGML conversion source: <https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base-q5_1.bin>
-- whisper.cpp project: <https://github.com/ggml-org/whisper.cpp> (MIT License)
-- License text: <https://github.com/ggml-org/whisper.cpp/blob/master/LICENSE>
+- Model: `model.int8.onnx` (SenseVoiceSmall, INT8 quantization) with its `tokens.txt` table
+- Purpose: offline Chinese (including Cantonese-accented speech), English, Japanese, and Korean speech recognition
+- Upstream model: FunAudioLLM/SenseVoiceSmall — <https://huggingface.co/FunAudioLLM/SenseVoiceSmall>
+- ONNX export used here: <https://huggingface.co/csukuangfj/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17>
+- Project and license (MIT License, Copyright (c) 2025 FunASR): <https://github.com/FunAudioLLM/SenseVoice/blob/main/LICENSE>
 
-The desktop release ships this model file inside the application package under `Models/`. Whisper and whisper.cpp are MIT-licensed, which permits redistribution; this notice provides the required attribution. The runtime adapter is Whisper.net (also MIT): <https://github.com/sandrohanea/whisper.net>.
+The desktop release ships this payload inside the application package under `Models/sensevoice/`. SenseVoice is MIT-licensed, which permits redistribution; this notice provides the required attribution.
+
+## sherpa-onnx (bundled)
+
+- Packages: `org.k2fsa.sherpa.onnx` 1.13.8 (managed API) and `org.k2fsa.sherpa.onnx.runtime.win-x64` 1.13.8 (native `sherpa-onnx-c-api.dll` and the ONNX Runtime build it links)
+- Purpose: local SenseVoice inference — fbank features, CTC decoding, inverse text normalization
+- Project and license (Apache License 2.0): <https://github.com/k2-fsa/sherpa-onnx/blob/master/LICENSE>
+
+## ONNX Runtime (bundled)
+
+- Component: `onnxruntime.dll`, redistributed through the sherpa-onnx win-x64 runtime package
+- Purpose: CPU inference engine for the local SenseVoice model
+- Project and license (MIT License): <https://github.com/microsoft/onnxruntime/blob/main/LICENSE>
 
 ## NAudio (bundled)
 
@@ -31,4 +42,4 @@ The granular packages are used instead of the NAudio metapackage so the WinForms
 - .NET runtime license: <https://github.com/dotnet/runtime/blob/main/LICENSE.TXT>
 - .NET third-party notices: <https://github.com/dotnet/runtime/blob/main/THIRD-PARTY-NOTICES.TXT>
 
-The release publishes self-contained copies of the Windows App SDK and the .NET runtime beside the application executable. The Windows AI components that ship with the App SDK deployment (onnxruntime, DirectML, Windows AI projections) are removed from the published output because the application never calls those APIs.
+The release publishes self-contained copies of the Windows App SDK and the .NET runtime beside the application executable. The Windows AI components that ship with the App SDK deployment (DirectML and the Windows AI projections, plus the App SDK copy of `onnxruntime.dll`) are removed from the published output because the application never calls those APIs; the ONNX Runtime build shipped for SenseVoice comes from the sherpa-onnx runtime package instead.

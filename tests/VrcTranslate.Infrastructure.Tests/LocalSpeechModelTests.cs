@@ -9,6 +9,14 @@ public sealed class LocalSpeechModelTests : IDisposable
     private readonly string _directory = Path.Combine(
         Path.GetTempPath(), "vrctranslate-local-speech-" + Guid.NewGuid().ToString("N"));
 
+    /// <summary>
+    /// Sibling of the user model directory, mirroring the production layout
+    /// where the bundled payload lives beside the executable and is never
+    /// nested inside the removable per-user copy.
+    /// </summary>
+    private readonly string _bundledDirectory = Path.Combine(
+        Path.GetTempPath(), "vrctranslate-local-speech-bundle-" + Guid.NewGuid().ToString("N"));
+
     [Fact]
     public void Missing_model_is_reported_without_loading_native_runtime()
     {
@@ -18,15 +26,15 @@ public sealed class LocalSpeechModelTests : IDisposable
 
         Assert.Equal(LocalSpeechModelState.NotInstalled, status.State);
         Assert.Equal(LocalSpeechModelCatalog.ModelId, status.ModelId);
-        Assert.False(File.Exists(status.FilePath));
+        // The SenseVoice payload is a folder, not a single file.
+        Assert.Equal(_directory, status.FilePath);
+        Assert.False(Directory.Exists(status.FilePath));
     }
 
     [Fact]
     public void Partial_model_is_not_reported_as_ready()
     {
-        Directory.CreateDirectory(_directory);
-        var path = Path.Combine(_directory, LocalSpeechModelCatalog.FileName);
-        File.WriteAllBytes(path, new byte[128]);
+        WritePayload(_directory, includeTokens: false);
         var manager = new LocalSpeechModelManager(_directory);
 
         var status = manager.GetStatus();
@@ -36,17 +44,24 @@ public sealed class LocalSpeechModelTests : IDisposable
     }
 
     [Fact]
+    public void Undersized_model_file_is_not_reported_as_ready()
+    {
+        WritePayload(_directory, modelBytes: 128);
+        var manager = new LocalSpeechModelManager(_directory);
+
+        Assert.Equal(LocalSpeechModelState.Invalid, manager.GetStatus().State);
+    }
+
+    [Fact]
     public async Task Remove_is_idempotent_and_honors_cancellation()
     {
-        Directory.CreateDirectory(_directory);
-        var path = Path.Combine(_directory, LocalSpeechModelCatalog.FileName);
-        File.WriteAllBytes(path, new byte[128]);
+        WritePayload(_directory);
         var manager = new LocalSpeechModelManager(_directory);
 
         await manager.RemoveAsync();
         await manager.RemoveAsync();
 
-        Assert.False(File.Exists(path));
+        Assert.False(Directory.Exists(_directory));
         using var cancelled = new CancellationTokenSource();
         cancelled.Cancel();
         await Assert.ThrowsAsync<OperationCanceledException>(() => manager.RemoveAsync(cancelled.Token));
@@ -56,7 +71,7 @@ public sealed class LocalSpeechModelTests : IDisposable
     public async Task Recognizer_reports_missing_model_without_falling_back_to_system_api()
     {
         var manager = new LocalSpeechModelManager(_directory);
-        await using var recognizer = new WhisperLocalSpeechRecognizer(manager, threads: 1);
+        await using var recognizer = new SenseVoiceSpeechRecognizer(manager);
         var request = new SpeechRecognitionRequest(new float[16_000], 16_000, "en");
 
         var error = await Assert.ThrowsAsync<InvalidOperationException>(
@@ -68,87 +83,102 @@ public sealed class LocalSpeechModelTests : IDisposable
     [Fact]
     public void Bundled_model_is_ready_without_user_copy()
     {
-        var bundledPath = Path.Combine(_directory, "bundle", LocalSpeechModelCatalog.FileName);
-        Directory.CreateDirectory(Path.GetDirectoryName(bundledPath)!);
-        File.WriteAllBytes(bundledPath, new byte[1_048_576]);
-        var manager = new LocalSpeechModelManager(modelDirectory: null, bundledModelPath: bundledPath);
+        var bundledDirectory = _bundledDirectory;
+        WritePayload(bundledDirectory);
+        var manager = new LocalSpeechModelManager(_directory, bundledDirectory);
 
         var status = manager.GetStatus();
 
         Assert.Equal(LocalSpeechModelState.Ready, status.State);
         Assert.True(status.IsBundled);
-        Assert.Equal(bundledPath, status.FilePath);
-        Assert.Equal(bundledPath, manager.ModelPath);
-        Assert.Equal(1_048_576, status.InstalledBytes);
+        Assert.Equal(bundledDirectory, status.FilePath);
+        Assert.Equal(bundledDirectory, manager.ModelDirectory);
+        Assert.Equal(ExpectedPayloadBytes, status.InstalledBytes);
     }
 
     [Fact]
     public async Task Remove_never_deletes_the_bundled_model()
     {
-        var bundledPath = Path.Combine(_directory, "bundle", LocalSpeechModelCatalog.FileName);
-        Directory.CreateDirectory(Path.GetDirectoryName(bundledPath)!);
-        File.WriteAllBytes(bundledPath, new byte[1_048_576]);
-        Directory.CreateDirectory(_directory);
-        var userPath = Path.Combine(_directory, LocalSpeechModelCatalog.FileName);
-        File.WriteAllBytes(userPath, new byte[128]);
-        var manager = new LocalSpeechModelManager(_directory, bundledModelPath: bundledPath);
+        var bundledDirectory = _bundledDirectory;
+        WritePayload(bundledDirectory);
+        WritePayload(_directory, modelBytes: 128);
+        var manager = new LocalSpeechModelManager(_directory, bundledDirectory);
 
         await manager.RemoveAsync();
 
-        Assert.False(File.Exists(userPath));
-        Assert.True(File.Exists(bundledPath));
+        Assert.False(Directory.Exists(_directory));
+        Assert.True(File.Exists(Path.Combine(bundledDirectory, LocalSpeechModelCatalog.ModelFileName)));
         Assert.Equal(LocalSpeechModelState.Ready, manager.GetStatus().State);
     }
 
     [Fact]
     public async Task Install_is_a_no_op_when_the_bundled_model_is_present()
     {
-        var bundledPath = Path.Combine(_directory, "bundle", LocalSpeechModelCatalog.FileName);
-        Directory.CreateDirectory(Path.GetDirectoryName(bundledPath)!);
-        File.WriteAllBytes(bundledPath, new byte[1_048_576]);
-        var manager = new LocalSpeechModelManager(_directory, bundledModelPath: bundledPath);
+        var bundledDirectory = _bundledDirectory;
+        WritePayload(bundledDirectory);
+        var manager = new LocalSpeechModelManager(_directory, bundledDirectory);
 
         var status = await manager.InstallAsync();
 
         Assert.Equal(LocalSpeechModelState.Ready, status.State);
         Assert.True(status.IsBundled);
-        Assert.False(File.Exists(Path.Combine(_directory, LocalSpeechModelCatalog.FileName)));
+        Assert.False(Directory.Exists(_directory));
     }
 
     [Fact]
-    public void Invalid_bundled_file_without_user_copy_reports_not_installed()
+    public void Invalid_bundled_payload_without_user_copy_reports_not_installed()
     {
-        var bundledPath = Path.Combine(_directory, "bundle", LocalSpeechModelCatalog.FileName);
-        Directory.CreateDirectory(Path.GetDirectoryName(bundledPath)!);
-        File.WriteAllBytes(bundledPath, new byte[128]);
-        var manager = new LocalSpeechModelManager(_directory, bundledModelPath: bundledPath);
+        var bundledDirectory = _bundledDirectory;
+        WritePayload(bundledDirectory, modelBytes: 128);
+        var manager = new LocalSpeechModelManager(_directory, bundledDirectory);
 
         var status = manager.GetStatus();
 
-        // A placeholder bundled file must fall back to the on-demand download
-        // flow instead of being reported as unusable state.
+        // A placeholder bundled payload must fall back to the on-demand
+        // download flow instead of being reported as unusable state.
         Assert.Equal(LocalSpeechModelState.NotInstalled, status.State);
         Assert.False(status.IsBundled);
     }
 
     [Fact]
-    public async Task Real_bundled_asset_loads_through_whisper_when_present()
+    public async Task Real_bundled_asset_loads_through_sensevoice_when_present()
     {
-        var assetPath = FindRepositoryAsset();
-        if (assetPath is null)
+        var assetDirectory = FindRepositoryAsset();
+        if (assetDirectory is null)
         {
             // The asset is optional in source control; this test only guards
             // clones that imported it via Import-BundledSpeechModel.ps1.
             return;
         }
 
-        var manager = new LocalSpeechModelManager(_directory, bundledModelPath: assetPath);
-        await using var recognizer = new WhisperLocalSpeechRecognizer(manager, threads: 1);
+        var manager = new LocalSpeechModelManager(_directory, assetDirectory);
+        await using var recognizer = new SenseVoiceSpeechRecognizer(manager);
         var request = new SpeechRecognitionRequest(new float[8_000], 16_000, "en");
 
         var result = await recognizer.RecognizeAsync(request);
 
         Assert.Equal(request.RequestId, result.RequestId);
+    }
+
+    private const long ModelBytes = 100_000_000;
+    private const int TokensBytes = 12_000;
+    private const long ExpectedPayloadBytes = ModelBytes + TokensBytes;
+
+    /// <summary>Creates a payload whose sizes satisfy the manager's floors.</summary>
+    private static void WritePayload(string directory, bool includeTokens = true, long modelBytes = ModelBytes)
+    {
+        Directory.CreateDirectory(directory);
+        WriteSizedFile(Path.Combine(directory, LocalSpeechModelCatalog.ModelFileName), modelBytes);
+        if (includeTokens)
+        {
+            WriteSizedFile(Path.Combine(directory, LocalSpeechModelCatalog.TokensFileName), TokensBytes);
+        }
+    }
+
+    private static void WriteSizedFile(string path, long length)
+    {
+        using var stream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None);
+        stream.SetLength(length);
     }
 
     private static string? FindRepositoryAsset()
@@ -157,8 +187,9 @@ public sealed class LocalSpeechModelTests : IDisposable
         for (var depth = 0; depth < 10 && directory is not null; depth++)
         {
             var candidate = Path.Combine(
-                directory.FullName, "assets", "models", "speech", LocalSpeechModelCatalog.FileName);
-            if (File.Exists(candidate)) return candidate;
+                directory.FullName,
+                "assets", "models", "speech", LocalSpeechModelCatalog.ModelDirectory);
+            if (File.Exists(Path.Combine(candidate, LocalSpeechModelCatalog.ModelFileName))) return candidate;
             directory = directory.Parent;
         }
 
@@ -168,5 +199,6 @@ public sealed class LocalSpeechModelTests : IDisposable
     public void Dispose()
     {
         if (Directory.Exists(_directory)) Directory.Delete(_directory, recursive: true);
+        if (Directory.Exists(_bundledDirectory)) Directory.Delete(_bundledDirectory, recursive: true);
     }
 }

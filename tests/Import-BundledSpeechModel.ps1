@@ -1,76 +1,157 @@
-# Places the bundled local speech model into v2\assets\models\speech so the
-# next build/publish ships it inside the package. The file is re-downloadable
-# and therefore not stored in source control; run this once per clone.
+# Places the bundled local speech model (SenseVoiceSmall INT8 in the
+# sherpa-onnx layout: model.int8.onnx + tokens.txt) into
+# assets/models/speech/sensevoice so the next build/publish ships it inside the
+# package. The payload is re-downloadable and therefore not stored in source
+# control; run this once per clone.
 #
 # Usage:
-#   powershell -ExecutionPolicy Bypass -File tests\Import-BundledSpeechModel.ps1
-#   powershell -ExecutionPolicy Bypass -File tests\Import-BundledSpeechModel.ps1 -Force
+#   powershell -ExecutionPolicy Bypass -File tests/Import-BundledSpeechModel.ps1
+#   powershell -ExecutionPolicy Bypass -File tests/Import-BundledSpeechModel.ps1 -Force
+#   powershell -ExecutionPolicy Bypass -File tests/Import-BundledSpeechModel.ps1 -Source https://my-mirror.example/sensevoice/
 [CmdletBinding()]
 param(
-    # Overwrite an existing (possibly corrupt) local copy.
+    # Re-download even when the local copy already verifies.
     [switch] $Force,
 
-    # Override the destination file path.
-    [string] $Destination = (Join-Path $PSScriptRoot '..\assets\models/speech/ggml-base-q5_1.bin')
+    # Override the destination folder. Defaults to assets/models/speech/sensevoice
+    # next to this script.
+    [string] $Destination,
+
+    # Override the download base URL (must end with a slash). The built-in
+    # mirrors are hf-mirror.com first because it is reachable from mainland
+    # China, then huggingface.co.
+    [string] $Source
 )
 
 $ErrorActionPreference = 'Stop'
 
-$fileName = 'ggml-base-q5_1.bin'
-$minimumBytes = 50_000_000   # A real base q5_1 model is ~57 MB.
-$ggmlMagic = [byte[]] (0x6C, 0x6D, 0x67, 0x67)  # 'lmgg' = 0x67676d6c little-endian.
+if (-not $Destination) {
+    $scriptDirectory = Split-Path -Parent $MyInvocation.MyCommand.Path
+    $Destination = Join-Path $scriptDirectory '../assets/models/speech/sensevoice'
+}
 
-# hf-mirror.com is reachable from mainland China; huggingface.co is the fallback.
-$sources = @(
-    'https://hf-mirror.com/ggerganov/whisper.cpp/resolve/main/ggml-base-q5_1.bin',
-    'https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base-q5_1.bin'
+# Pinned upstream revision: csukuangfj/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17.
+# Both files are verified against the exact size and SHA-256 published by that
+# revision, so a truncated download or an HTML error page can never be mistaken
+# for a model.
+$payload = @(
+    [pscustomobject]@{
+        Name   = 'model.int8.onnx'
+        Bytes  = 239233841
+        Sha256 = 'C71F0CE00BEC95B07744E116345E33D8CBBE08CEF896382CF907BF4B51A2CD51'
+    },
+    [pscustomobject]@{
+        Name   = 'tokens.txt'
+        Bytes  = 315894
+        Sha256 = 'F449EB28DC567533D7FA59BE34E2ABCA8784F771850C78A47FB731A31429A1DC'
+    }
 )
 
-function Test-ModelFile([string] $Path) {
-    if (-not (Test-Path -LiteralPath $Path)) { return $false }
-    $file = Get-Item -LiteralPath $Path
-    if ($file.Length -lt $minimumBytes) { return $false }
-    try {
-        $head = [System.IO.File]::ReadAllBytes($Path)[0..3]
-        for ($i = 0; $i -lt 4; $i++) {
-            if ($head[$i] -ne $ggmlMagic[$i]) { return $false }
-        }
-        return $true
-    }
-    catch {
+$repositoryPath = 'csukuangfj/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17/resolve/main/'
+if ($Source) {
+    $sources = @($Source)
+}
+else {
+    $sources = @(
+        ('https://hf-mirror.com/' + $repositoryPath),
+        ('https://huggingface.co/' + $repositoryPath)
+    )
+}
+
+# PowerShell 5.1 still defaults to TLS 1.0 on some machines.
+try { [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 } catch { }
+
+function Test-PayloadFile([string] $Path, $Entry, [ref] $Reason) {
+    if (-not (Test-Path -LiteralPath $Path)) {
+        $Reason.Value = '文件不存在'
         return $false
     }
+
+    $file = Get-Item -LiteralPath $Path
+    if ($file.Length -ne $Entry.Bytes) {
+        $Reason.Value = "大小不符（期望 $($Entry.Bytes) 字节，实际 $($file.Length) 字节）"
+        return $false
+    }
+
+    $hash = (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash
+    if ($hash -ne $Entry.Sha256) {
+        $Reason.Value = "SHA-256 不符（期望 $($Entry.Sha256)，实际 $hash）"
+        return $false
+    }
+
+    return $true
+}
+
+function Get-PayloadFile([string] $Directory, $Entry, [string[]] $Mirrors) {
+    $finalPath = Join-Path $Directory $Entry.Name
+    $temporaryPath = $finalPath + '.download'
+    $lastError = $null
+
+    foreach ($mirror in $Mirrors) {
+        $uri = $mirror + $Entry.Name
+        try {
+            Write-Host "正在从 $uri 下载 $($Entry.Name)（$([math]::Round($Entry.Bytes / 1MB, 1)) MB）…"
+            $client = New-Object System.Net.WebClient
+            try {
+                $client.DownloadFile($uri, $temporaryPath)
+            }
+            finally {
+                $client.Dispose()
+            }
+
+            $reason = ''
+            if (Test-PayloadFile $temporaryPath $Entry ([ref] $reason)) {
+                Move-Item -Force -Path $temporaryPath -Destination $finalPath
+                Write-Host "完成：$finalPath"
+                return $true
+            }
+
+            $lastError = "$uri 返回的内容校验失败：$reason"
+            Write-Warning $lastError
+        }
+        catch {
+            $lastError = $_.Exception.Message
+            Write-Warning "从 $uri 下载失败：$lastError"
+        }
+        finally {
+            Remove-Item -Force -ErrorAction SilentlyContinue -Path $temporaryPath
+        }
+    }
+
+    throw "无法获取 $($Entry.Name)。最后一个错误：$lastError"
 }
 
 $destinationPath = [System.IO.Path]::GetFullPath($Destination)
-if (-not $Force -and (Test-ModelFile $destinationPath)) {
-    Write-Host "语音模型已存在且校验通过：$destinationPath"
+$missing = @()
+foreach ($entry in $payload) {
+    $reason = ''
+    $path = Join-Path $destinationPath $entry.Name
+    if (-not $Force -and (Test-PayloadFile $path $entry ([ref] $reason))) {
+        Write-Host "已存在且校验通过：$path"
+        continue
+    }
+
+    if (-not $Force -and $reason -ne '文件不存在') { Write-Warning "$($entry.Name)：$reason，将重新下载。" }
+    $missing += $entry
+}
+
+if ($missing.Count -eq 0) {
+    Write-Host "语音模型已就绪：$destinationPath"
     return
 }
 
-$downloadDirectory = Split-Path -Parent $destinationPath
-New-Item -ItemType Directory -Force -Path $downloadDirectory | Out-Null
-$temporaryPath = "$destinationPath.download"
+New-Item -ItemType Directory -Force -Path $destinationPath | Out-Null
+foreach ($entry in $missing) {
+    $null = Get-PayloadFile $destinationPath $entry $sources
+}
 
-$lastError = $null
-foreach ($source in $sources) {
-    try {
-        Write-Host "正在从 $source 下载 $fileName ..."
-        Invoke-WebRequest -Uri $source -OutFile $temporaryPath -UseBasicParsing
-        if (Test-ModelFile $temporaryPath) {
-            Move-Item -Force -Path $temporaryPath -Destination $destinationPath
-            Write-Host "完成：$destinationPath ($((Get-Item -LiteralPath $destinationPath).Length) 字节)"
-            return
-        }
-        $lastError = "$source 返回的内容不是有效的 Whisper GGML 模型。"
-        Write-Warning $lastError
-        Remove-Item -Force -ErrorAction SilentlyContinue -Path $temporaryPath
-    }
-    catch {
-        $lastError = $_.Exception.Message
-        Write-Warning "下载失败：$lastError"
-        Remove-Item -Force -ErrorAction SilentlyContinue -Path $temporaryPath
+# Re-verify the whole payload so a partial run cannot leave a half-usable
+# folder behind for the build to pick up.
+foreach ($entry in $payload) {
+    $reason = ''
+    if (-not (Test-PayloadFile (Join-Path $destinationPath $entry.Name) $entry ([ref] $reason))) {
+        throw "语音模型安装后校验失败：$($entry.Name) — $reason"
     }
 }
 
-throw "无法获取 $fileName。最后一个错误：$lastError"
+Write-Host "语音模型已就绪：$destinationPath"

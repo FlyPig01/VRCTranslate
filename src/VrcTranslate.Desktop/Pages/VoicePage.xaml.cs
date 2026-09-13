@@ -253,7 +253,7 @@ public sealed partial class VoicePage : Page
                 Title = "本地语音模型",
                 Content = new TextBlock
                 {
-                    Text = "语音模型已随程序内置（Whisper Base · 中 / 英 / 日 / 韩），无需下载或删除。",
+                    Text = "语音模型已随程序内置（SenseVoice Small · 中 / 英 / 日 / 韩，兼容粤语），无需下载或删除。",
                     TextWrapping = TextWrapping.Wrap
                 },
                 CloseButtonText = "关闭",
@@ -266,12 +266,12 @@ public sealed partial class VoicePage : Page
         var content = new StackPanel { Spacing = 10, Width = 430 };
         content.Children.Add(new TextBlock
         {
-            Text = "Whisper Base",
+            Text = "SenseVoice Small",
             Style = (Style)global::Microsoft.UI.Xaml.Application.Current.Resources["SectionTitleTextStyle"]
         });
         content.Children.Add(new TextBlock
         {
-            Text = "中 / 英 / 日 / 韩（自动检测）",
+            Text = "INT8 本地推理 · 中 / 英 / 日 / 韩（自动检测，兼容粤语）",
             Style = (Style)global::Microsoft.UI.Xaml.Application.Current.Resources["SecondaryTextStyle"]
         });
         var statusText = new TextBlock
@@ -305,11 +305,10 @@ public sealed partial class VoicePage : Page
                 ModelStatus.Text = "正在下载模型…";
                 var progress = new Progress<LocalSpeechModelProgress>(value =>
                 {
-                    if (value.Fraction is double fraction)
-                    {
-                        var percent = Math.Round(fraction * 100);
-                        DispatcherQueue.TryEnqueue(() => ModelStatus.Text = $"正在下载模型 {percent:0}%");
-                    }
+                    var text = value.Fraction is double fraction
+                        ? $"正在下载模型 {Math.Round(fraction * 100):0}%"
+                        : $"正在下载模型 {value.BytesReceived / 1048576d:0} MB";
+                    DispatcherQueue.TryEnqueue(() => ModelStatus.Text = text);
                 });
                 await State.LocalSpeech.InstallModelAsync(progress);
             }
@@ -368,8 +367,8 @@ public sealed partial class VoicePage : Page
             }
 
             // VRChat audio is received through the Windows loopback adapter;
-            // segmentation, Whisper inference, translation and OSC output stay
-            // in the application-scoped session host.
+            // segmentation, SenseVoice inference, translation and OSC output
+            // stay in the application-scoped session host.
             await State.SubtitleVoice.StartAsync();
             UpdateRunningVisuals();
         }

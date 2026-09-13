@@ -4,7 +4,7 @@ namespace VrcTranslate.Application.Speech;
 
 /// <summary>
 /// Application boundary for the optional local speech component. Pages use
-/// this service instead of knowing about Whisper.net, model paths, or download
+/// this service instead of knowing about sherpa-onnx, model paths, or download
 /// mechanics.
 /// </summary>
 public sealed class LocalSpeechService : IAsyncDisposable
@@ -38,6 +38,20 @@ public sealed class LocalSpeechService : IAsyncDisposable
         SpeechRecognitionRequest request,
         CancellationToken cancellationToken = default) =>
         _recognizer.RecognizeAsync(request, cancellationToken);
+
+    /// <summary>Loads the model for a session before its first sentence arrives.</summary>
+    public Task PrepareAsync(
+        string sourceLanguage,
+        CancellationToken cancellationToken = default)
+    {
+        if (!LocalSpeechLanguages.TryNormalize(sourceLanguage, out var language))
+        {
+            throw new ArgumentException(
+                "本地语音只接受自动检测、简体中文、英语、日语或韩语。", nameof(sourceLanguage));
+        }
+
+        return _recognizer.PrepareAsync(language, cancellationToken);
+    }
 
     public ValueTask DisposeAsync() => _recognizer.DisposeAsync();
 }

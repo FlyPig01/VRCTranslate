@@ -1,35 +1,38 @@
-using Whisper.net.Ggml;
 using VrcTranslate.Core.Speech;
 
 namespace VrcTranslate.Infrastructure.Speech;
 
-/// <summary>Models shipped through the optional local speech component.</summary>
+/// <summary>
+/// Models shipped through the local speech component. SenseVoiceSmall INT8
+/// replaces the earlier Whisper Base bundle: the V1 benchmark measured
+/// 174~207 ms/sentence on CPU with 4.9%~10% error rates across Chinese,
+/// English, Japanese, and Korean, versus 31.6% CER on Chinese with Whisper.
+/// </summary>
 public static class LocalSpeechModelCatalog
 {
-    // The multilingual base model recognizes Chinese, English, Japanese, and
-    // Korean for this product while staying small enough for a desktop bundle.
-    public const string ModelId = "whisper-base-q5_1";
-    public const string FileName = "ggml-base-q5_1.bin";
-    public const string DisplayName = "Whisper Base · 本地识别";
+    public const string ModelId = "sensevoice-small-int8";
+    public const string ModelDirectory = "sensevoice";
+    public const string ModelFileName = "model.int8.onnx";
+    public const string TokensFileName = "tokens.txt";
+    public const string DisplayName = "SenseVoice Small · 本地识别";
 
     public static readonly IReadOnlyList<SpeechLanguageOption> Languages =
         LocalSpeechLanguages.Supported;
 
-    public static GgmlType GgmlType => GgmlType.Base;
-
-    public static QuantizationType Quantization => QuantizationType.Q5_1;
-
     /// <summary>Model folder shipped inside the publish output, relative to the executable.</summary>
     public const string BundledRelativeFolder = "Models";
 
-    /// <summary>Full path of the model bundled with the application, whether or not it exists.</summary>
-    public static string GetBundledModelPath() => Path.Combine(
-        AppContext.BaseDirectory, BundledRelativeFolder, FileName);
+    /// <summary>Full path of the bundled model folder, whether or not it exists.</summary>
+    public static string GetBundledModelDirectory() => Path.Combine(
+        AppContext.BaseDirectory, BundledRelativeFolder, ModelDirectory);
 
     public static string DefaultDirectory => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "VRCTranslate",
         "v2",
         "models",
-        "speech");
+        ModelDirectory);
+
+    /// <summary>All model payload files that must exist for the recognizer to load.</summary>
+    public static IReadOnlyList<string> PayloadFiles { get; } = [ModelFileName, TokensFileName];
 }

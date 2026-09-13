@@ -42,11 +42,30 @@ public sealed class LocalSpeechServiceTests
         public Task RemoveAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
     }
 
+    [Fact]
+    public async Task Prepare_loads_the_model_for_a_validated_language()
+    {
+        var recognizer = new FakeRecognizer();
+        await using var service = new LocalSpeechService(new FakeModelManager(), recognizer);
+
+        await service.PrepareAsync("ja-JP");
+
+        Assert.Equal("ja", recognizer.PreparedLanguage);
+        await Assert.ThrowsAsync<ArgumentException>(() => service.PrepareAsync("fr"));
+    }
+
     private sealed class FakeRecognizer : ILocalSpeechRecognizer
     {
         public int RecognizeCalls { get; private set; }
+        public string? PreparedLanguage { get; private set; }
         public string ModelId => "fake";
         public IReadOnlyList<SpeechLanguageOption> SupportedLanguages => LocalSpeechLanguages.Supported;
+
+        public Task PrepareAsync(string sourceLanguage, CancellationToken cancellationToken = default)
+        {
+            PreparedLanguage = sourceLanguage;
+            return Task.CompletedTask;
+        }
 
         public Task<SpeechRecognitionResult> RecognizeAsync(
             SpeechRecognitionRequest request,

@@ -131,4 +131,13 @@ public interface ILocalSpeechRecognizer : IAsyncDisposable
     Task<SpeechRecognitionResult> RecognizeAsync(
         SpeechRecognitionRequest request,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Loads the model for <paramref name="sourceLanguage"/> ahead of the first
+    /// sentence. Loading a multi-hundred-megabyte local model takes noticeably
+    /// longer than one recognition, so a session warms the recognizer up on
+    /// start; implementations without a load step keep this no-op default.
+    /// </summary>
+    Task PrepareAsync(string sourceLanguage, CancellationToken cancellationToken = default) =>
+        Task.CompletedTask;
 }

@@ -66,6 +66,24 @@ public sealed class LocalSpeechCaptureSession : IAsyncDisposable
             lock (_sync) _started = false;
             throw;
         }
+
+        // Loading the local model costs an order of magnitude more than one
+        // recognition, so the session loads it up front instead of making the
+        // first sentence pay for it.
+        _ = WarmUpAsync();
+    }
+
+    private async Task WarmUpAsync()
+    {
+        try
+        {
+            await _speech.PrepareAsync(_sourceLanguage, CancellationToken.None).ConfigureAwait(false);
+        }
+        catch (Exception exception)
+        {
+            // The first real recognition owns the user-visible error path.
+            _ = exception;
+        }
     }
 
     public async Task StopAsync(CancellationToken cancellationToken = default)

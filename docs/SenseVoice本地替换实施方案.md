@@ -7,6 +7,7 @@
 - **全面替换**：V2 语音识别从 Whisper Base Q5_1 整体切换为 SenseVoiceSmall INT8（本地）。
 - **云 API 暂缓**：硅基流动等云识别在本地主线完成并验证前不实施。
 - **GPU 分阶段**：先 CPU（INT8 已实测 174~207 ms/句），DirectML 作为后续增强（VRChat 占 CPU，GPU 卸载最终要做）。
+- **实现路线已定：A（Sherpa.Onnx C# 绑定）**。两条路线最终产品功能效果相同（同模型、同引擎），A 另附说话人分离等现成组件且工程量与风险更低；原路线 B（onnxruntime 自研管线）**已否决**，不再作为备选——此前保留 B 的唯一理由是 NuGet 不可达，网络恢复即无存在价值。
 - Whisper 相关代码与依赖随替换移除（whisper.net 运行时、ggml 模型、多平台 runtimes 剔除规则）。
 
 ## 1. 目标与验收
@@ -30,15 +31,14 @@
 | Infrastructure | 新增 `SenseVoiceSpeechRecognizer : ILocalSpeechRecognizer`；`LocalSpeechModelManager` 改管 ONNX 模型目录（内置探测/在线下载回退逻辑复用）；删除 Whisper.net 依赖 |
 | Desktop | 语音页文案、管理模型对话框、内置状态展示更新；会话宿主（VoiceSessionHost）不动 |
 
-## 3. 实现路线与依赖条件
+## 3. 实现路线（已确定：A）
 
-**路线 A（推荐）：Sherpa.Onnx C# 绑定**
+**A：Sherpa.Onnx C# 绑定**
 - NuGet：`Sherpa.Onnx`（托管 API）+ 对应 win-x64 原生运行库；自带 fbank 特征提取、CTC 解码、ITN/标点开关、**离线说话人分离组件**（阶段 2 直接用）。
-- 前置条件：需要 NuGet 网络恢复（当前 api.nuget.org DNS 不通）；模型从 hf-mirror/ModelScope 下载 `sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17`（int8 约 230 MB + tokens）。
+- CPU/GPU 切换：识别器配置的 `Provider` 字段（`cpu` / `directml` / `cuda`），GPU 不可用自动回退 CPU；注意 NuGet 默认包为 CPU 原生构建，DirectML 增强需替换为官方 DirectML 构建产物（阶段 3 处理）。
+- 前置条件：NuGet 网络恢复（当前 api.nuget.org DNS 不通）；模型从 hf-mirror/ModelScope 下载 `sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17`（int8 约 230 MB + tokens）。
 
-**路线 B（网络持续不可用时的备选）：Microsoft.ML.OnnxRuntime 直推**
-- 缓存中已有 `Microsoft.ML.OnnxRuntime`（CPU）与 `.DirectML` 包；自行实现 fbank 特征与 SenseVoice CTC 解码（语言/任务标签 token、逆文本正则化）。
-- 代价：解码与音频前端工作量大、易错；仅在路线 A 被网络阻塞超过计划期时启用。
+（原路线 B——Microsoft.ML.OnnxRuntime 自研特征提取与解码——已否决，理由见决策记录。）
 
 **模型分发**：沿用内置模式——`assets/models/speech/`（gitignore）放 ONNX 模型，`Import-BundledSpeechModel.ps1` 扩展为下载+校验（hf-mirror 优先），csproj 打包进 `Models/`，发布剔除规则同步调整（移除 whisper 的 runtimes 剔除，保留其余瘦身）。
 
@@ -71,7 +71,7 @@
 
 | 风险 | 对策 |
 |---|---|
-| NuGet/模型下载网络不通（当前 DNS 故障） | 模型走 hf-mirror（已验证可达）；Sherpa.Onnx 需等 NuGet 恢复，超期则启用路线 B |
+| NuGet/模型下载网络不通（当前 DNS 故障） | 模型走 hf-mirror（已验证可达）；`Sherpa.Onnx` 包等 NuGet 恢复，期间先实施模型下载/打包/UI 等路线无关部分 |
 | 包体积增至约 430 MB | 发布仍走压缩分发（zip/安装器）减半下载体积；体积换质量为既定决策 |
 | 内存增量 ~330 MiB | 与 V1 实测一致，现代游戏机可接受；识别会话关闭即释放 |
 | SenseVoice 输出带/不带标点差异 | 使用 ITN 开关产出带标点文本，便于阅读与翻译断句 |

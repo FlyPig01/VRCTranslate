@@ -88,3 +88,24 @@ The Python and native runtime wheels are downloaded only when the user installs 
 - License text: <https://github.com/FunAudioLLM/SenseVoice/blob/main/LICENSE>
 
 The model and token table are optional downloads stored under `data/models/speech`. VRCTranslate verifies their fixed size and SHA-256 before use and does not redistribute them inside the base package.
+
+## OpenAI Whisper model (V2, bundled)
+
+- Model: `ggml-base-q5_1.bin` (Whisper base, Q5_1 quantization, whisper.cpp GGML conversion)
+- Purpose: offline English, Japanese, and Korean speech recognition in the V2 desktop app
+- Original model and license: OpenAI Whisper, MIT License — <https://github.com/openai/whisper/blob/main/LICENSE>
+- GGML conversion source: <https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base-q5_1.bin>
+- whisper.cpp project: <https://github.com/ggml-org/whisper.cpp> (MIT License)
+- License text: <https://github.com/ggml-org/whisper.cpp/blob/master/LICENSE>
+
+The V2 desktop release ships this model file inside the application package under `Models/`. Whisper and whisper.cpp are MIT-licensed, which permits redistribution; this notice provides the required attribution. The runtime adapter is Whisper.net (also MIT): <https://github.com/sandrohanea/whisper.net>.
+
+## NAudio (V2, bundled)
+
+- Packages: `NAudio.Core`, `NAudio.Wasapi`, `NAudio.WinMM` 2.2.1
+- Purpose: microphone and system-loopback audio capture for local speech recognition
+- Project: <https://github.com/naudio/NAudio>
+- License: MIT License
+- License text: <https://github.com/naudio/NAudio/blob/master/license.txt>
+
+The granular packages are used instead of the NAudio metapackage so the WinForms-oriented assemblies (and the Windows Desktop runtime they require) stay out of the published application.

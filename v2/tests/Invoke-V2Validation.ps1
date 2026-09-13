@@ -59,6 +59,7 @@ if ((Get-Content -Raw $guidePage) -notmatch '(?s)QQ.*Ctrl\+Alt\+F') { throw 'The
 $translationMarkup = Get-Content -Raw $translationPage
 $translationCode = Get-Content -Raw $translationPageCode
 $appStateSource = Get-Content -Raw (Join-Path $desktopSource 'AppState.cs')
+$sessionHostSource = Get-Content -Raw (Join-Path $desktopSource 'VoiceSessionHost.cs')
 $settingsMarkup = Get-Content -Raw $settingsPage
 $settingsSource = Get-Content -Raw $settingsPageCode
 $mainWindowMarkup = Get-Content -Raw $mainWindow
@@ -224,8 +225,10 @@ if ((Get-Content -Raw (Join-Path $desktopSource 'Pages\SelfMessagePage.xaml.cs')
 if ($inputMarkup -match '发送格式|仅发送译文|原文 \+ 译文|仅发送原文') { throw 'Quick input must not expose an unused send-format selector.' }
 $inputSource = Get-Content -Raw $inputPage.Replace('.xaml', '.xaml.cs')
 if ($inputSource -notmatch 'v2-self-voice-settings\.json' -or $inputSource -notmatch 'ToggleSelfVoiceFromHotkey' -or $inputSource -notmatch 'State\.AudioCapture\.Create\(AudioCaptureMode\.Microphone' -or $inputSource -notmatch 'SamplesReady' -or $inputSource -notmatch 'Task\.WhenAny' -or $inputSource -match 'MediaCapture') { throw 'Self voice must retain persisted controls, a hotkey entry point, and a real microphone frame test.' }
-if ($inputSource -notmatch 'LocalSpeechCaptureSession' -or $inputSource -notmatch 'AudioCaptureMode\.Microphone' -or $inputSource -notmatch 'session\.StartAsync' -or $inputSource -notmatch 'session\.DisposeAsync') { throw 'Self voice must connect the microphone capture session and release it on stop/unload.' }
 if ($inputSource -match 'VrcTranslate\.Infrastructure') { throw 'Self voice page must use the application audio factory instead of a platform implementation.' }
+# Recognition sessions moved to the application-scoped host so page navigation
+# no longer stops them; the wiring invariant now lives there.
+if ($sessionHostSource -notmatch 'LocalSpeechCaptureSession' -or $sessionHostSource -notmatch 'AudioCaptureMode\.Microphone' -or $sessionHostSource -notmatch 'session\.StartAsync' -or $sessionHostSource -notmatch 'session\.DisposeAsync' -or $appStateSource -notmatch 'ShutdownSpeechAsync') { throw 'Self voice must connect the microphone capture session and release it on stop/shutdown via the session host.' }
 if ($inputSource -notmatch 'TranslationPreviewChanged' -or $inputSource -notmatch 'RecentOriginal' -or $inputSource -notmatch 'RecentTranslation') { throw 'The main quick-input page must update its original/translated preview after a send.' }
 if ($inputMarkup -match 'SelfVoiceLanguageBox|Header="识别语言"' -or $inputSource -match 'SelfVoiceLanguageBox') { throw 'Own voice input must remain Simplified Chinese and must not expose a recognition-language selector.' }
 if ($inputMarkup -notmatch 'Text="第一语言"' -or $inputMarkup -notmatch 'Text="第二语言"' -or $inputMarkup -notmatch 'PrimaryTargetBox' -or $inputMarkup -notmatch 'SecondaryTargetBox' -or $inputMarkup -match 'TargetLanguageExpander' -or $inputSource -notmatch 'TranslateSelfAsync|LastSecondaryTranslatedText') { throw 'The input page must expose visible primary and optional second output-language settings with a dual preview.' }
@@ -235,7 +238,7 @@ if ($voiceMarkup -match '当前翻译方案|默认翻译方案|识别后的文�
 if ($voiceMarkup -notmatch '本地语音模型' -or $voiceMarkup -notmatch 'Whisper Base' -or $voiceMarkup -notmatch '管理模型' -or $voiceMarkup -notmatch 'Text="字幕窗口"' -or $voiceMarkup -notmatch 'AutomationProperties.Name="打开字幕"') { throw 'VoicePage must expose local model management and one concise subtitle-window entry.' }
 if ($voiceSource -notmatch 'State\.LocalSpeech|GetModelStatus|InstallModelAsync|RecognizeLocalSamplesAsync') { throw 'VoicePage must expose the local Whisper model state and use the application speech boundary.' }
 if ($voiceSource -match 'SpeechRecognizer|Windows\.Media\.SpeechRecognition') { throw 'VoicePage must not use Windows SpeechRecognizer.' }
-if ($voiceSource -notmatch 'LocalSpeechCaptureSession' -or $voiceSource -notmatch 'AudioCaptureMode\.SystemLoopback' -or $voiceSource -notmatch 'session\.StartAsync' -or $voiceSource -notmatch 'session\.DisposeAsync') { throw 'VoicePage must connect the system-loopback capture session and release it on stop/unload.' }
+if ($sessionHostSource -notmatch 'LocalSpeechCaptureSession' -or $sessionHostSource -notmatch 'AudioCaptureMode\.SystemLoopback' -or $sessionHostSource -notmatch 'session\.StartAsync' -or $sessionHostSource -notmatch 'session\.DisposeAsync') { throw 'The session host must connect the system-loopback capture session and release it on stop/shutdown.' }
 if ($voiceSource -match 'VrcTranslate\.Infrastructure') { throw 'Voice page must use the application audio factory instead of a platform implementation.' }
 if ($voiceMarkup -match 'Windows 系统识别 · 无需密钥') { throw 'VoicePage must keep the recognition status label concise.' }
 if ([regex]::Matches($voiceMarkup, 'AutomationProperties.Name="打开字幕"').Count -ne 1) { throw 'VoicePage must expose one concise subtitle entry instead of duplicate buttons.' }
@@ -341,10 +344,10 @@ if ($outputFormatterSource -notmatch 'Separator\s*=\s*" / "' -or
 }
 if ($quickInputSource -notmatch 'TranslationOutputFormatter\.Format' -or
     $quickInputSource -notmatch 'result\.FormattedText' -or
-    $selfMessageSource -notmatch 'TranslationOutputFormatter\.FormatForOsc') {
+    $sessionHostSource -notmatch 'TranslationOutputFormatter\.(FormatForOsc|TrimForOsc)') {
     throw 'Own-input preview and own-voice OSC output must share the Core translation formatter.'
 }
-if ($voiceSource -notmatch 'TranslationOutputFormatter\.TrimForOsc' -or
+if ($sessionHostSource -notmatch 'TranslationOutputFormatter\.TrimForOsc' -or
     $voiceSource -match 'TrimForChatbox\s*\(' -or
     $voiceSource -match 'CombinedText|FormattedText') {
     throw 'Subtitle OSC output must use the shared length guard while keeping its single Simplified Chinese translation.'
@@ -369,7 +372,7 @@ if ($overlayControllerSource -notmatch '_window\.ExtendsContentIntoTitleBar\s*=\
     throw 'Overlay controller must retain the standard title bar, native border, always-on-top behavior, layered opacity, and close-to-hide lifecycle.'
 }
 if ($overlayMarkup -match 'Shadow' -or $quickInputSource -match 'Shadow') { throw 'Game overlays must not add shadows over the game view.' }
-if ($voiceSource -notmatch 'SpeechRecognitionRequest|State\.LocalSpeech' -or $voiceSource -notmatch '"zh-CN"') { throw 'VoicePage must use the local recognition boundary and keep translation output fixed to Simplified Chinese.' }
+if ($voiceSource -notmatch 'SpeechRecognitionRequest|State\.LocalSpeech' -or ($voiceSource -notmatch '"zh-CN"' -and $sessionHostSource -notmatch '"zh-CN"')) { throw 'VoicePage must use the local recognition boundary and keep translation output fixed to Simplified Chinese.' }
 if ($voiceMarkup -notmatch 'voice-hotkey-summary|快捷键' -or $voiceSource -notmatch 'ReadGlobalVoiceHotkey') { throw 'VoicePage must display the configured subtitle shortcut.' }
 if ($mainWindowSource -notmatch 'ToggleSubtitle') { throw 'The global subtitle shortcut must toggle the subtitle overlay visibility.' }
 if ($hotkeyContractsSource -notmatch 'NormalizeModifier' -or $hotkeyContractsSource -notmatch 'IsSupportedPrimary' -or $hotkeyContractsSource -notmatch 'functionKey\s+is\s+>=\s+1\s+and\s+<=\s+12') { throw 'Core hotkey normalization must define the same supported modifier and primary-key set as the desktop poller.' }

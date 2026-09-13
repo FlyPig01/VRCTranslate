@@ -8,10 +8,16 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\VrcTranslate.Application\VrcTranslate.Application.csproj" />
-    <!-- Whisper.cpp CPU runtime. The model itself is downloaded on demand and
-         is never copied into the application package. -->
+    <!-- Whisper.cpp CPU runtime; the model ships in Models\ via the desktop
+         project when Import-BundledSpeechModel.ps1 has placed it in assets. -->
     <PackageReference Include="Whisper.net" Version="1.9.0" />
     <PackageReference Include="Whisper.net.Runtime" Version="1.9.0" />
-    <PackageReference Include="NAudio" Version="2.2.1" />
+    <!-- Granular NAudio packages instead of the NAudio metapackage: the meta
+         package forces NAudio.WinForms, which drags the whole Windows Desktop
+         (WinForms) runtime into the self-contained publish for code this app
+         never calls. WindowsAudioCapture only needs WASAPI and WinMM. -->
+    <PackageReference Include="NAudio.Core" Version="2.2.1" />
+    <PackageReference Include="NAudio.Wasapi" Version="2.2.1" />
+    <PackageReference Include="NAudio.WinMM" Version="2.2.1" />
   </ItemGroup>
 </Project>

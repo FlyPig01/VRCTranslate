@@ -24,6 +24,25 @@ internal static class OverlayWindowHost
 
     public static SubtitleOverlayWindow? Subtitle => _subtitle;
 
+    /// <summary>
+    /// Updates the caption from any thread. Recognition results are processed
+    /// by the application-scoped session host off the UI thread, so the
+    /// marshal happens here instead of at every call site.
+    /// </summary>
+    public static void SetSubtitleFromAnyThread(string original, string translated)
+    {
+        var window = _subtitle;
+        if (window is null) return;
+        if (_dispatcherQueue is { } queue)
+        {
+            queue.TryEnqueue(() => window.SetSubtitle(original, translated));
+        }
+        else
+        {
+            window.SetSubtitle(original, translated);
+        }
+    }
+
     public static void Initialize(AppState state)
     {
         ArgumentNullException.ThrowIfNull(state);

@@ -52,6 +52,10 @@ public sealed partial class MainWindow : Window
         _hotkeyTimer = null;
         _hotkeysDown.Clear();
 
+        // Recognition sessions outlive pages now, so shutdown must stop them
+        // explicitly instead of relying on a page Unloaded handler.
+        _ = ((App)Microsoft.UI.Xaml.Application.Current).State.ShutdownSpeechAsync();
+
         try
         {
             if (Microsoft.UI.Xaml.Application.Current is App app)

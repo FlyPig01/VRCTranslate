@@ -18,15 +18,62 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <BundledSpeechModelFile>ggml-base-q5_1.bin</BundledSpeechModelFile>
+  </PropertyGroup>
+
   <ItemGroup>
     <Content Include="app.ico" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Content Include="logo-mark.png" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Content Include="Resources\default-glossary.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <!-- The speech model ships inside the package once tests\Import-BundledSpeechModel.ps1
+         has placed it in v2\assets\models\speech; the file itself is re-downloadable
+         and therefore kept out of source control. -->
+    <Content Condition="Exists('..\..\assets\models\speech\$(BundledSpeechModelFile)')"
+             Include="..\..\assets\models\speech\$(BundledSpeechModelFile)"
+             Link="Models\$(BundledSpeechModelFile)"
+             CopyToOutputDirectory="PreserveNewest"
+             CopyToPublishDirectory="PreserveNewest" />
     <ProjectReference Include="..\VrcTranslate.Core\VrcTranslate.Core.csproj" />
     <ProjectReference Include="..\VrcTranslate.Application\VrcTranslate.Application.csproj" />
     <ProjectReference Include="..\VrcTranslate.Infrastructure\VrcTranslate.Infrastructure.csproj" />
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.8.260710003" />
   </ItemGroup>
+
+  <Target Name="WarnWhenBundledSpeechModelMissing" BeforeTargets="Publish">
+    <Warning Condition="!Exists('..\..\assets\models\speech\$(BundledSpeechModelFile)')"
+             Text="未找到内置语音模型 $(BundledSpeechModelFile)，本次发布将回退为运行时下载；请先运行 tests\Import-BundledSpeechModel.ps1。" />
+  </Target>
+
+  <!-- The self-contained Windows App SDK deployment unconditionally copies its
+       Windows AI stack (onnxruntime, DirectML, projections) and Whisper.net's
+       runtime pack copies native libraries for every RID. This app never calls
+       the Windows AI APIs and ships win-x64 only, so strip both after publish.
+       Verified by launching and starting recognition from the stripped output. -->
+  <Target Name="StripUnusedRuntimePayload" AfterTargets="Publish">
+    <ItemGroup>
+      <PayloadToStrip Include="$(PublishDir)**\*.pdb" />
+      <PayloadToStrip Include="$(PublishDir)onnxruntime.dll" />
+      <PayloadToStrip Include="$(PublishDir)onnxruntime_providers_shared.dll" />
+      <PayloadToStrip Include="$(PublishDir)DirectML.dll" />
+      <PayloadToStrip Include="$(PublishDir)Microsoft.ML.OnnxRuntime.dll" />
+      <PayloadToStrip Include="$(PublishDir)Microsoft.Windows.AI.*" />
+      <PayloadToStrip Include="$(PublishDir)Microsoft.Windows.AI.winmd" />
+      <PayloadToStrip Include="$(PublishDir)Microsoft.Graphics.Imaging*" />
+      <PayloadToStrip Include="$(PublishDir)Microsoft.Graphics.Internal.Imaging*" />
+      <ForeignRuntimeFolder Include="$(PublishDir)runtimes\linux-arm" />
+      <ForeignRuntimeFolder Include="$(PublishDir)runtimes\linux-arm64" />
+      <ForeignRuntimeFolder Include="$(PublishDir)runtimes\linux-x64" />
+      <ForeignRuntimeFolder Include="$(PublishDir)runtimes\macos-arm64" />
+      <ForeignRuntimeFolder Include="$(PublishDir)runtimes\macos-x64" />
+      <ForeignRuntimeFolder Include="$(PublishDir)runtimes\win-arm64" />
+      <ForeignRuntimeFolder Include="$(PublishDir)runtimes\win-x86" />
+    </ItemGroup>
+    <Delete Files="@(PayloadToStrip)" TreatErrorsAsWarnings="true" />
+    <!-- MSBuild "*" globs do not enumerate directories reliably; the foreign
+         RID set comes from Whisper.net.Runtime 1.9, so enumerate it. -->
+    <RemoveDir Directories="@(ForeignRuntimeFolder)" />
+  </Target>
 
   <Target Name="CopyGeneratedPageXbfToPublishDirectory" AfterTargets="Publish">
     <ItemGroup>

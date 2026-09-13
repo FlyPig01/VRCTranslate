@@ -190,7 +190,7 @@
                         SelectionChanged="OnSpeechModelChanged"
                         MinWidth="0"
                         HorizontalAlignment="Stretch">
-                <ComboBoxItem Tag="local" Content="Whisper Base · 英语 / 日语 / 韩语" />
+                <ComboBoxItem Tag="local" Content="Whisper Base · 中 / 英 / 日 / 韩" />
               </ComboBox>
             </Grid>
           </Border>

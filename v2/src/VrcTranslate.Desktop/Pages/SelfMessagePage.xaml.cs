@@ -19,18 +19,17 @@ public sealed partial class SelfMessagePage : Page
         "VRCTranslate", "v2-self-voice-settings.json");
     private SelfVoiceSettings _settings = new();
     private bool _loaded;
-    private bool _recognizing;
-    private bool _processingResult;
     private bool _loadingTargets;
     private bool _overlayAppearanceReady;
     private bool _updatingOverlayAppearance;
-    private LocalSpeechCaptureSession? _captureSession;
-    private readonly SemaphoreSlim _captureLifecycleGate = new(1, 1);
-    private readonly SemaphoreSlim _translationGate = new(1, 1);
+    private bool _speechEventsAttached;
     private readonly Microsoft.UI.Dispatching.DispatcherQueueTimer _microphoneLevelTimer;
     private double _measuredMicrophoneLevel;
     private DateTimeOffset _lastAudioFrameAt;
     private AppState State => ((App)global::Microsoft.UI.Xaml.Application.Current).State;
+
+    /// <summary>Recognition outlives this page; the session host owns the running state.</summary>
+    private bool IsRunning => State.SelfVoice.IsRunning;
 
     public SelfMessagePage()
     {
@@ -215,10 +214,44 @@ public sealed partial class SelfMessagePage : Page
         if (!_overlayAppearanceReady)
             State.OverlayAppearance.Changed += OnOverlayAppearanceChanged;
         _overlayAppearanceReady = true;
+        AttachSpeechEvents();
         UpdateTranslationPreview();
         SelectTargetControls(State.SelfTranslationTargets);
         UpdateInputOverlayOpacity();
     }
+
+    private void AttachSpeechEvents()
+    {
+        if (_speechEventsAttached) return;
+        _speechEventsAttached = true;
+        State.SelfVoice.RunningChanged += OnSessionRunningChanged;
+        State.SelfVoice.Notified += OnSessionNotified;
+        State.SelfVoice.LevelChanged += OnSelfAudioLevelChanged;
+    }
+
+    private void DetachSpeechEvents()
+    {
+        if (!_speechEventsAttached) return;
+        _speechEventsAttached = false;
+        State.SelfVoice.RunningChanged -= OnSessionRunningChanged;
+        State.SelfVoice.Notified -= OnSessionNotified;
+        State.SelfVoice.LevelChanged -= OnSelfAudioLevelChanged;
+    }
+
+    private void OnSessionRunningChanged(object? sender, EventArgs e) =>
+        DispatcherQueue.TryEnqueue(UpdateSelfVoiceVisuals);
+
+    private void OnSessionNotified(object? sender, SpeechNotificationEventArgs notification) =>
+        DispatcherQueue.TryEnqueue(() =>
+        {
+            if (!IsRunning) return;
+            ShowInfo(notification.Title, notification.Message, notification.Kind switch
+            {
+                SpeechNotificationKind.Success => InfoBarSeverity.Success,
+                SpeechNotificationKind.Error => InfoBarSeverity.Error,
+                _ => InfoBarSeverity.Warning
+            });
+        });
 
     private void OnPreviewUnloaded(object sender, RoutedEventArgs e)
     {
@@ -226,7 +259,9 @@ public sealed partial class SelfMessagePage : Page
         State.TranslationPreviewChanged -= OnTranslationPreviewChanged;
         State.SelfTranslationTargetsChanged -= OnSelfTranslationTargetsChanged;
         State.OverlayAppearance.Changed -= OnOverlayAppearanceChanged;
-        _ = StopSelfVoiceAsync();
+        // Recognition continues in the application-scoped session host; only
+        // the UI subscriptions are released with the page.
+        DetachSpeechEvents();
     }
 
     private void OnOverlayAppearanceChanged(object? sender, EventArgs e)
@@ -317,7 +352,7 @@ public sealed partial class SelfMessagePage : Page
     private void OnSelfVoiceStartClicked(object sender, RoutedEventArgs e)
     {
         if (!_loaded) return;
-        if (_recognizing) _ = StopSelfVoiceAsync();
+        if (IsRunning) _ = StopSelfVoiceAsync();
         else _ = StartSelfVoiceAsync();
     }
 
@@ -377,159 +412,64 @@ public sealed partial class SelfMessagePage : Page
     public void ToggleSelfVoiceFromHotkey()
     {
         if (!_loaded) return;
-        if (_recognizing) _ = StopSelfVoiceAsync();
+        if (IsRunning) _ = StopSelfVoiceAsync();
         else _ = StartSelfVoiceAsync();
     }
 
     private async Task StartSelfVoiceAsync()
     {
-        await _captureLifecycleGate.WaitAsync();
         try
         {
-            if (_recognizing && _captureSession?.IsStarted == true) return;
-
             var modelStatus = State.LocalSpeech.GetModelStatus();
             if (modelStatus.State != LocalSpeechModelState.Ready)
             {
-                _recognizing = false;
                 ShowInfo("本地语音模型未安装", "请先在字幕页安装本地语音模型。", InfoBarSeverity.Warning);
                 UpdateSelfVoiceVisuals();
                 return;
             }
 
-            // Capture and segmentation stay behind application interfaces. The
-            // page only owns the session lifetime and consumes recognized text.
-            var session = new LocalSpeechCaptureSession(
-                State.AudioCapture.Create(AudioCaptureMode.Microphone, _settings.MicrophoneId),
-                State.LocalSpeech,
-                sourceLanguage: "zh-CN");
-            session.ResultReady += OnSelfCaptureResult;
-            session.Faulted += OnSelfCaptureFaulted;
-            session.LevelChanged += OnSelfAudioLevelChanged;
-            try
-            {
-                await session.StartAsync();
-                _captureSession = session;
-                _recognizing = true;
-                _settings.Enabled = true;
-                SaveSettings();
-                _microphoneLevelTimer.Start();
-                UpdateSelfVoiceVisuals();
-            }
-            catch
-            {
-                session.ResultReady -= OnSelfCaptureResult;
-                session.Faulted -= OnSelfCaptureFaulted;
-                session.LevelChanged -= OnSelfAudioLevelChanged;
-                await session.DisposeAsync();
-                throw;
-            }
+            // Capture, segmentation, translation and OSC output stay in the
+            // application-scoped session host; the page configures the
+            // microphone before handing control over.
+            State.SelfVoice.MicrophoneId = _settings.MicrophoneId;
+            State.SelfVoice.SourceLanguage = _settings.SourceLanguage;
+            await State.SelfVoice.StartAsync();
+            _settings.Enabled = true;
+            SaveSettings();
+            _microphoneLevelTimer.Start();
+            UpdateSelfVoiceVisuals();
         }
         catch (Exception exception)
         {
-            _recognizing = false;
             _microphoneLevelTimer.Stop();
             UpdateSelfVoiceVisuals();
             ShowInfo("无法开始自身语音", "请检查麦克风权限和设备连接。", InfoBarSeverity.Warning);
             _ = exception;
         }
-        finally
-        {
-            _captureLifecycleGate.Release();
-        }
     }
 
     private async Task StopSelfVoiceAsync()
     {
-        await _captureLifecycleGate.WaitAsync();
         try
         {
-            _recognizing = false;
+            await State.SelfVoice.StopAsync();
+        }
+        finally
+        {
             _microphoneLevelTimer.Stop();
             MicrophoneLevel.Value = 0;
             _measuredMicrophoneLevel = 0;
-            var session = _captureSession;
-            _captureSession = null;
-            if (session is not null)
-            {
-                session.ResultReady -= OnSelfCaptureResult;
-                session.Faulted -= OnSelfCaptureFaulted;
-                session.LevelChanged -= OnSelfAudioLevelChanged;
-                await session.DisposeAsync();
-            }
             _settings.Enabled = false;
             SaveSettings();
             UpdateSelfVoiceVisuals();
         }
-        finally
-        {
-            _captureLifecycleGate.Release();
-        }
     }
 
-    private void OnSelfCaptureResult(object? sender, SpeechRecognitionResult result)
-    {
-        if (!_recognizing || string.IsNullOrWhiteSpace(result.Text)) return;
-        DispatcherQueue.TryEnqueue(() => _ = ProcessSelfVoiceResultAsync(result.Text));
-    }
-
-    private void OnSelfCaptureFaulted(object? sender, Exception exception)
-    {
-        DispatcherQueue.TryEnqueue(() =>
-        {
-            if (_recognizing)
-                ShowInfo("语音采集已停止", "麦克风暂时不可用，请检查设备后重试。", InfoBarSeverity.Warning);
-            _ = exception;
-        });
-    }
-
-    /// <summary>Feeds one captured 16 kHz sentence into the local model.</summary>
-    public async Task RecognizeSelfVoiceSamplesAsync(
+    /// <summary>Recognition hook kept for the validation scripts; runs through the session host.</summary>
+    public Task RecognizeSelfVoiceSamplesAsync(
         ReadOnlyMemory<float> samples,
-        CancellationToken cancellationToken = default)
-    {
-        if (!_recognizing || _processingResult) return;
-        _processingResult = true;
-        try
-        {
-            var result = await State.LocalSpeech.RecognizeAsync(
-                new SpeechRecognitionRequest(samples, 16_000, _settings.SourceLanguage),
-                cancellationToken);
-            if (!string.IsNullOrWhiteSpace(result.Text))
-            {
-                await ProcessSelfVoiceResultAsync(result.Text);
-            }
-        }
-        finally
-        {
-            _processingResult = false;
-        }
-    }
-
-    private async Task ProcessSelfVoiceResultAsync(string original)
-    {
-        await _translationGate.WaitAsync();
-        try
-        {
-            var result = await State.TranslateSelfAsync(original, TextTranslationSource.SpeechRecognition);
-            State.SetTranslationPreview(
-                original,
-                result.Primary.TranslatedText,
-                result.Secondary?.TranslatedText,
-                result.Targets);
-            await State.Osc.SendChatboxAsync(TranslationOutputFormatter.FormatForOsc(result));
-            DispatcherQueue.TryEnqueue(() => ShowInfo("已发送", "自身语音译文已发送到 VRChat。", InfoBarSeverity.Success));
-        }
-        catch (Exception exception)
-        {
-            DispatcherQueue.TryEnqueue(() => ShowInfo("发送失败", exception.Message, InfoBarSeverity.Error));
-        }
-        finally
-        {
-            _processingResult = false;
-            _translationGate.Release();
-        }
-    }
+        CancellationToken cancellationToken = default) =>
+        State.SelfVoice.RecognizeSamplesAsync(samples, _settings.SourceLanguage, cancellationToken);
 
     private async void OnMicrophoneTestClicked(object sender, RoutedEventArgs e)
     {
@@ -591,22 +531,22 @@ public sealed partial class SelfMessagePage : Page
     {
         var active = new SolidColorBrush(Microsoft.UI.ColorHelper.FromArgb(255, 33, 165, 116));
         var inactive = new SolidColorBrush(Microsoft.UI.ColorHelper.FromArgb(255, 154, 168, 184));
-        SelfVoiceStatusText.Text = _recognizing ? "自身语音识别中" : "自身语音已停止";
-        SelfVoiceStatusDot.Fill = _recognizing ? active : inactive;
-        SelfVoiceStatusPanel.Background = new SolidColorBrush(_recognizing
+        SelfVoiceStatusText.Text = IsRunning ? "自身语音识别中" : "自身语音已停止";
+        SelfVoiceStatusDot.Fill = IsRunning ? active : inactive;
+        SelfVoiceStatusPanel.Background = new SolidColorBrush(IsRunning
             ? Microsoft.UI.ColorHelper.FromArgb(255, 235, 248, 241)
             : Microsoft.UI.ColorHelper.FromArgb(255, 247, 249, 252));
-        SelfVoicePulse.IsActive = _recognizing;
-        SelfVoiceStartButton.Content = _recognizing ? "停止" : "开始";
-        AutomationProperties.SetName(SelfVoiceStartButton, _recognizing ? "停止自身语音" : "开始自身语音");
-        SelfVoiceStartButton.Background = new SolidColorBrush(_recognizing
+        SelfVoicePulse.IsActive = IsRunning;
+        SelfVoiceStartButton.Content = IsRunning ? "停止" : "开始";
+        AutomationProperties.SetName(SelfVoiceStartButton, IsRunning ? "停止自身语音" : "开始自身语音");
+        SelfVoiceStartButton.Background = new SolidColorBrush(IsRunning
             ? Microsoft.UI.ColorHelper.FromArgb(255, 118, 86, 181)
             : Microsoft.UI.ColorHelper.FromArgb(255, 36, 122, 152));
     }
 
     private void AnimateMicrophoneLevel()
     {
-        if (!_recognizing)
+        if (!IsRunning)
         {
             _microphoneLevelTimer.Stop();
             MicrophoneLevel.Value = 0;

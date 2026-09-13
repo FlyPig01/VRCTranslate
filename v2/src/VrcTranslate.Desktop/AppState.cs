@@ -30,6 +30,11 @@ public sealed class AppState
         // and does not load a model until the user installs and starts it.
         LocalSpeech = LocalSpeechServiceFactory.CreateDefault();
         AudioCapture = new WindowsAudioCaptureFactory();
+        // Recognition sessions live at application scope: switching pages must
+        // not stop an in-flight translation and the shutdown path needs one
+        // place to stop them.
+        SubtitleVoice = new SubtitleSpeechSession(this);
+        SelfVoice = new SelfVoiceSpeechSession(this);
         RouteStore = new InMemoryTranslationRouteStore();
         RouteStore.SetCurrent(CreateDefaultRoute());
         var catalog = new TranslationProviderCatalog([
@@ -78,6 +83,25 @@ public sealed class AppState
 
     /// <summary>Platform audio factory exposed through the application boundary.</summary>
     public IAudioCaptureFactory AudioCapture { get; }
+
+    /// <summary>Other-player caption recognition; owns the loopback session across page navigation.</summary>
+    public SubtitleSpeechSession SubtitleVoice { get; }
+
+    /// <summary>Own-voice recognition; owns the microphone session across page navigation.</summary>
+    public SelfVoiceSpeechSession SelfVoice { get; }
+
+    /// <summary>Stops every recognition session; called once when the main window closes.</summary>
+    public async Task ShutdownSpeechAsync()
+    {
+        try
+        {
+            await SubtitleVoice.StopAsync().ConfigureAwait(false);
+        }
+        finally
+        {
+            await SelfVoice.StopAsync().ConfigureAwait(false);
+        }
+    }
 
     public IReadOnlyCollection<string> TranslationProviderIds { get; }
 

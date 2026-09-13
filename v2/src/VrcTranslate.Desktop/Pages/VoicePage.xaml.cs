@@ -19,19 +19,18 @@ public sealed partial class VoicePage : Page
         "VRCTranslate", "v2-voice-settings.json");
     private readonly AppState _state;
     private VoiceSettings _settings = new();
-    private bool _running;
-    private bool _processingResult;
     private bool _loaded;
     private bool _overlayAppearanceReady;
     private bool _updatingOverlayAppearance;
-    private LocalSpeechCaptureSession? _captureSession;
-    private readonly SemaphoreSlim _captureLifecycleGate = new(1, 1);
-    private readonly SemaphoreSlim _translationGate = new(1, 1);
+    private bool _speechEventsAttached;
     private readonly Microsoft.UI.Dispatching.DispatcherQueueTimer _audioLevelTimer;
     private double _audioLevel;
     private DateTimeOffset _lastAudioFrameAt;
 
     private AppState State => _state;
+
+    /// <summary>Recognition outlives this page; the session host owns the running state.</summary>
+    private bool IsRunning => _state.SubtitleVoice.IsRunning;
 
     public VoicePage()
     {
@@ -51,6 +50,7 @@ public sealed partial class VoicePage : Page
         if (!_overlayAppearanceReady)
             State.OverlayAppearance.Changed += OnOverlayAppearanceChanged;
         _overlayAppearanceReady = true;
+        AttachSpeechEvents();
         LoadSettings();
         UpdateLocalModelStatus();
         UpdateRunningVisuals();
@@ -61,11 +61,47 @@ public sealed partial class VoicePage : Page
         DispatcherQueue.TryEnqueue(() => LayoutStatusControls(VoiceStatusGrid.ActualWidth));
     }
 
+    private void AttachSpeechEvents()
+    {
+        if (_speechEventsAttached) return;
+        _speechEventsAttached = true;
+        State.SubtitleVoice.RunningChanged += OnSessionRunningChanged;
+        State.SubtitleVoice.Notified += OnSessionNotified;
+        State.SubtitleVoice.LevelChanged += OnAudioLevelChanged;
+    }
+
+    private void DetachSpeechEvents()
+    {
+        if (!_speechEventsAttached) return;
+        _speechEventsAttached = false;
+        State.SubtitleVoice.RunningChanged -= OnSessionRunningChanged;
+        State.SubtitleVoice.Notified -= OnSessionNotified;
+        State.SubtitleVoice.LevelChanged -= OnAudioLevelChanged;
+    }
+
+    private void OnSessionRunningChanged(object? sender, EventArgs e) =>
+        DispatcherQueue.TryEnqueue(UpdateRunningVisuals);
+
+    private void OnSessionNotified(object? sender, SpeechNotificationEventArgs notification) =>
+        DispatcherQueue.TryEnqueue(() =>
+        {
+            if (!IsRunning) return;
+            ShowInfo(notification.Title.Length > 0 ? $"{notification.Title}：{notification.Message}" : notification.Message,
+                notification.Kind switch
+                {
+                    SpeechNotificationKind.Success => InfoBarSeverity.Success,
+                    SpeechNotificationKind.Error => InfoBarSeverity.Error,
+                    _ => InfoBarSeverity.Warning
+                });
+        });
+
     private void OnUnloaded(object sender, RoutedEventArgs e)
     {
         _overlayAppearanceReady = false;
         State.OverlayAppearance.Changed -= OnOverlayAppearanceChanged;
-        _ = StopRecognitionAsync();
+        // Recognition continues in the application-scoped session host; only
+        // the UI subscriptions are released with the page.
+        DetachSpeechEvents();
     }
 
     private void OnOverlayAppearanceChanged(object? sender, EventArgs e)
@@ -210,6 +246,23 @@ public sealed partial class VoicePage : Page
     private async void OnConfigureModelClicked(object sender, RoutedEventArgs e)
     {
         var status = State.LocalSpeech.GetModelStatus();
+        if (status.State == LocalSpeechModelState.Ready && status.IsBundled)
+        {
+            var bundledDialog = new ContentDialog
+            {
+                Title = "本地语音模型",
+                Content = new TextBlock
+                {
+                    Text = "语音模型已随程序内置（Whisper Base · 中 / 英 / 日 / 韩），无需下载或删除。",
+                    TextWrapping = TextWrapping.Wrap
+                },
+                CloseButtonText = "关闭",
+                XamlRoot = XamlRoot
+            };
+            await bundledDialog.ShowAsync();
+            return;
+        }
+
         var content = new StackPanel { Spacing = 10, Width = 430 };
         content.Children.Add(new TextBlock
         {
@@ -218,7 +271,7 @@ public sealed partial class VoicePage : Page
         });
         content.Children.Add(new TextBlock
         {
-            Text = "英语 · 日语 · 韩语",
+            Text = "中 / 英 / 日 / 韩（自动检测）",
             Style = (Style)global::Microsoft.UI.Xaml.Application.Current.Resources["SecondaryTextStyle"]
         });
         var statusText = new TextBlock
@@ -279,7 +332,9 @@ public sealed partial class VoicePage : Page
         var status = State.LocalSpeech.GetModelStatus();
         ModelStatus.Text = status.State switch
         {
-            LocalSpeechModelState.Ready => "已就绪 · 英语 / 日语 / 韩语",
+            LocalSpeechModelState.Ready => status.IsBundled
+                ? "已就绪（随程序内置）· 中 / 英 / 日 / 韩"
+                : "已就绪 · 中 / 英 / 日 / 韩",
             LocalSpeechModelState.Installing => "正在安装…",
             LocalSpeechModelState.Invalid => "文件不完整，请重新安装",
             _ => "尚未安装"
@@ -288,7 +343,7 @@ public sealed partial class VoicePage : Page
 
     private async void OnStartClicked(object sender, RoutedEventArgs e)
     {
-        if (_running) await StopRecognitionAsync();
+        if (IsRunning) await StopRecognitionAsync();
         else await StartRecognitionAsync();
     }
 
@@ -302,11 +357,8 @@ public sealed partial class VoicePage : Page
 
     private async Task StartRecognitionAsync()
     {
-        await _captureLifecycleGate.WaitAsync();
         try
         {
-            if (_running && _captureSession?.IsStarted == true) return;
-
             var status = State.LocalSpeech.GetModelStatus();
             if (status.State != LocalSpeechModelState.Ready)
             {
@@ -316,84 +368,32 @@ public sealed partial class VoicePage : Page
             }
 
             // VRChat audio is received through the Windows loopback adapter;
-            // segmentation and Whisper inference remain outside the page.
-            var session = new LocalSpeechCaptureSession(
-                State.AudioCapture.Create(AudioCaptureMode.SystemLoopback),
-                State.LocalSpeech,
-                sourceLanguage: "auto");
-            session.ResultReady += OnCaptureResult;
-            session.Faulted += OnCaptureFaulted;
-            session.LevelChanged += OnAudioLevelChanged;
-            try
-            {
-                await session.StartAsync();
-                _captureSession = session;
-                _running = true;
-                UpdateRunningVisuals();
-            }
-            catch
-            {
-                session.ResultReady -= OnCaptureResult;
-                session.Faulted -= OnCaptureFaulted;
-                session.LevelChanged -= OnAudioLevelChanged;
-                await session.DisposeAsync();
-                throw;
-            }
+            // segmentation, Whisper inference, translation and OSC output stay
+            // in the application-scoped session host.
+            await State.SubtitleVoice.StartAsync();
+            UpdateRunningVisuals();
         }
         catch (Exception exception)
         {
-            _running = false;
             UpdateRunningVisuals();
             ShowInfo("无法读取系统音频，请检查音频设备后重试。", InfoBarSeverity.Warning);
             _ = exception;
-        }
-        finally
-        {
-            _captureLifecycleGate.Release();
         }
     }
 
     private async Task StopRecognitionAsync()
     {
-        await _captureLifecycleGate.WaitAsync();
         try
         {
-            _running = false;
-            _processingResult = false;
-            _audioLevelTimer.Stop();
-            _audioLevel = 0;
-            VoiceAudioLevel.Value = 0;
-            var session = _captureSession;
-            _captureSession = null;
-            if (session is not null)
-            {
-                session.ResultReady -= OnCaptureResult;
-                session.Faulted -= OnCaptureFaulted;
-                session.LevelChanged -= OnAudioLevelChanged;
-                await session.DisposeAsync();
-            }
-            UpdateRunningVisuals();
+            await State.SubtitleVoice.StopAsync();
         }
         finally
         {
-            _captureLifecycleGate.Release();
+            _audioLevelTimer.Stop();
+            _audioLevel = 0;
+            VoiceAudioLevel.Value = 0;
+            UpdateRunningVisuals();
         }
-    }
-
-    private void OnCaptureResult(object? sender, SpeechRecognitionResult result)
-    {
-        if (!_running || string.IsNullOrWhiteSpace(result.Text)) return;
-        DispatcherQueue.TryEnqueue(() => _ = ProcessSpeechResultAsync(result.Text, result.SourceLanguage));
-    }
-
-    private void OnCaptureFaulted(object? sender, Exception exception)
-    {
-        DispatcherQueue.TryEnqueue(() =>
-        {
-            if (_running)
-                ShowInfo("无法读取系统音频，请检查音频设备后重试。", InfoBarSeverity.Warning);
-            _ = exception;
-        });
     }
 
     private void OnAudioLevelChanged(object? sender, AudioLevelEventArgs args)
@@ -410,7 +410,7 @@ public sealed partial class VoicePage : Page
 
     private void DecayAudioLevel()
     {
-        if (!_running)
+        if (!IsRunning)
         {
             _audioLevelTimer.Stop();
             VoiceAudioLevel.Value = 0;
@@ -426,79 +426,25 @@ public sealed partial class VoicePage : Page
             _audioLevelTimer.Stop();
     }
 
-    /// <summary>Feeds one captured 16 kHz sentence from the VRChat adapter.</summary>
-    public async Task RecognizeLocalSamplesAsync(
+    /// <summary>Recognition hook kept for the validation scripts; runs through the session host.</summary>
+    public Task RecognizeLocalSamplesAsync(
         ReadOnlyMemory<float> samples,
         string sourceLanguage,
-        CancellationToken cancellationToken = default)
-    {
-        if (!_running || _processingResult) return;
-        _processingResult = true;
-        try
-        {
-            var result = await State.LocalSpeech.RecognizeAsync(
-                new SpeechRecognitionRequest(samples, 16_000, NormalizeSourceTag(sourceLanguage)),
-                cancellationToken);
-            if (!string.IsNullOrWhiteSpace(result.Text))
-            {
-                await ProcessSpeechResultAsync(result.Text, result.SourceLanguage);
-            }
-        }
-        finally
-        {
-            _processingResult = false;
-        }
-    }
-
-    private async Task ProcessSpeechResultAsync(string source, string? recognizedLanguage = null)
-    {
-        await _translationGate.WaitAsync();
-        try
-        {
-            var current = State.CurrentRoute;
-            var sourceMode = string.IsNullOrWhiteSpace(recognizedLanguage) || recognizedLanguage.Equals("auto", StringComparison.OrdinalIgnoreCase)
-                ? SourceLanguageMode.AutoDetect
-                : SourceLanguageMode.Fixed;
-            var fixedSource = sourceMode == SourceLanguageMode.Fixed ? recognizedLanguage : null;
-            var voiceRoute = new TranslationRoute(
-                current.RouteId,
-                current.DisplayName,
-                current.Profile,
-                new LanguagePolicy(sourceMode, "zh-CN", fixedSource),
-                current.InvariantPolicy,
-                current.RetryPolicy);
-            var translated = await State.Translator.TranslateAsync(
-                new TextTranslationRequest(source, voiceRoute, TextTranslationSource.SpeechRecognition,
-                    sourceLanguageHint: sourceMode == SourceLanguageMode.Fixed ? recognizedLanguage : null));
-            State.SetTranslationPreview(source, translated.TranslatedText);
-            // Other-player captions are translated to Simplified Chinese only;
-            // use the shared OSC length guard without adding own-input targets
-            // or the original text to this stream.
-            await State.Osc.SendChatboxAsync(TranslationOutputFormatter.TrimForOsc(translated.TranslatedText));
-            DispatcherQueue.TryEnqueue(() => OverlayWindowHost.Subtitle?.SetSubtitle(source, translated.TranslatedText));
-        }
-        catch (Exception exception)
-        {
-            DispatcherQueue.TryEnqueue(() => ShowInfo("翻译失败", InfoBarSeverity.Error));
-            _ = exception;
-        }
-        finally
-        {
-            _translationGate.Release();
-        }
-    }
+        CancellationToken cancellationToken = default) =>
+        State.SubtitleVoice.RecognizeSamplesAsync(
+            samples, NormalizeSourceTag(sourceLanguage), cancellationToken);
 
     private void UpdateRunningVisuals()
     {
         var active = new SolidColorBrush(Microsoft.UI.ColorHelper.FromArgb(255, 33, 165, 116));
         var inactive = new SolidColorBrush(Microsoft.UI.ColorHelper.FromArgb(255, 154, 168, 184));
-        VoiceStatusText.Text = _running ? "字幕翻译中" : "字幕已停止";
-        VoiceStartButton.Content = _running ? "停止" : "开始";
-        AutomationProperties.SetName(VoiceStartButton, _running ? "停止识别" : "开始识别");
-        VoiceStatusDot.Fill = _running ? active : inactive;
-        VoicePulse.IsActive = _running;
-        VoicePulse.Visibility = _running ? Visibility.Visible : Visibility.Collapsed;
-        VoiceStatusPanel.Background = new SolidColorBrush(_running
+        VoiceStatusText.Text = IsRunning ? "字幕翻译中" : "字幕已停止";
+        VoiceStartButton.Content = IsRunning ? "停止" : "开始";
+        AutomationProperties.SetName(VoiceStartButton, IsRunning ? "停止识别" : "开始识别");
+        VoiceStatusDot.Fill = IsRunning ? active : inactive;
+        VoicePulse.IsActive = IsRunning;
+        VoicePulse.Visibility = IsRunning ? Visibility.Visible : Visibility.Collapsed;
+        VoiceStatusPanel.Background = new SolidColorBrush(IsRunning
             ? Microsoft.UI.ColorHelper.FromArgb(255, 235, 248, 241)
             : Microsoft.UI.ColorHelper.FromArgb(255, 234, 242, 255));
     }

@@ -63,7 +63,7 @@ public sealed record SpeechRecognitionRequest
 
         if (!LocalSpeechLanguages.TryNormalize(sourceLanguage, out var normalizedLanguage))
         {
-            throw new ArgumentException("The local model accepts automatic detection, English, Japanese, or Korean.", nameof(sourceLanguage));
+            throw new ArgumentException("The local model accepts automatic detection, Chinese, English, Japanese, or Korean.", nameof(sourceLanguage));
         }
 
         Samples = samples;
@@ -98,7 +98,8 @@ public sealed record LocalSpeechModelStatus(
     string DisplayName,
     string FilePath,
     long InstalledBytes,
-    string? Message = null);
+    string? Message = null,
+    bool IsBundled = false);
 
 public sealed record LocalSpeechModelProgress(
     long BytesReceived,

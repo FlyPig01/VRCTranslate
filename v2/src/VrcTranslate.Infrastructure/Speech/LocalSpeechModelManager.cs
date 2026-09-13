@@ -4,55 +4,77 @@ using VrcTranslate.Core.Speech;
 namespace VrcTranslate.Infrastructure.Speech;
 
 /// <summary>
-/// Installs the optional Whisper model outside the executable directory.
-/// Downloads are written to a temporary file and atomically promoted only
-/// after the stream completes, so an interrupted download cannot look usable.
+/// Resolves the Whisper model from the copy bundled inside the publish output
+/// first and falls back to the optional copy under the user profile that older
+/// installs downloaded on demand. Downloads still exist as a recovery path for
+/// packages produced without the bundled asset and are written to a temporary
+/// file that is atomically promoted only after the stream completes, so an
+/// interrupted download cannot look usable.
 /// </summary>
 public sealed class LocalSpeechModelManager : ILocalSpeechModelManager
 {
+    // A real Whisper base model is tens of MiB. A one MiB floor catches
+    // interrupted/placeholder files without hard-coding a remote size.
+    private const long MinimumModelBytes = 1_048_576;
+
     private readonly string _modelDirectory;
     private readonly string _modelPath;
+    private readonly string _bundledPath;
     private readonly SemaphoreSlim _installLock = new(1, 1);
     private volatile bool _installing;
 
-    public LocalSpeechModelManager(string? modelDirectory = null)
+    public LocalSpeechModelManager(string? modelDirectory = null, string? bundledModelPath = null)
     {
         _modelDirectory = string.IsNullOrWhiteSpace(modelDirectory)
             ? LocalSpeechModelCatalog.DefaultDirectory
             : Path.GetFullPath(modelDirectory);
         _modelPath = Path.Combine(_modelDirectory, LocalSpeechModelCatalog.FileName);
+        _bundledPath = string.IsNullOrWhiteSpace(bundledModelPath)
+            ? LocalSpeechModelCatalog.GetBundledModelPath()
+            : Path.GetFullPath(bundledModelPath);
     }
 
-    public string ModelPath => _modelPath;
+    /// <summary>Path of the model the recognizer should load; falls back to the user copy when neither file exists.</summary>
+    public string ModelPath => ResolveUsablePath() ?? _modelPath;
 
     public LocalSpeechModelStatus GetStatus()
     {
         if (_installing)
         {
             return new(LocalSpeechModelState.Installing, LocalSpeechModelCatalog.ModelId,
-                LocalSpeechModelCatalog.DisplayName, _modelPath, ExistingLength(), "正在安装");
+                LocalSpeechModelCatalog.DisplayName, _modelPath, ExistingLength(_modelPath), "正在安装");
         }
 
-        if (!File.Exists(_modelPath))
+        if (TryMeasure(_bundledPath, out var bundledBytes) && bundledBytes >= MinimumModelBytes)
         {
-            return new(LocalSpeechModelState.NotInstalled, LocalSpeechModelCatalog.ModelId,
-                LocalSpeechModelCatalog.DisplayName, _modelPath, 0, "本地模型未安装");
+            return new(LocalSpeechModelState.Ready, LocalSpeechModelCatalog.ModelId,
+                LocalSpeechModelCatalog.DisplayName, _bundledPath, bundledBytes, "内置模型已就绪", IsBundled: true);
         }
 
-        var length = ExistingLength();
-        // A real Whisper base model is tens of MiB. A one MiB floor catches
-        // interrupted/placeholder files without hard-coding a remote size.
-        return length >= 1_048_576
-            ? new(LocalSpeechModelState.Ready, LocalSpeechModelCatalog.ModelId,
-                LocalSpeechModelCatalog.DisplayName, _modelPath, length, "本地模型已就绪")
-            : new(LocalSpeechModelState.Invalid, LocalSpeechModelCatalog.ModelId,
-                LocalSpeechModelCatalog.DisplayName, _modelPath, length, "模型文件不完整，请重新安装");
+        if (TryMeasure(_modelPath, out var installedBytes))
+        {
+            return installedBytes >= MinimumModelBytes
+                ? new(LocalSpeechModelState.Ready, LocalSpeechModelCatalog.ModelId,
+                    LocalSpeechModelCatalog.DisplayName, _modelPath, installedBytes, "本地模型已就绪")
+                : new(LocalSpeechModelState.Invalid, LocalSpeechModelCatalog.ModelId,
+                    LocalSpeechModelCatalog.DisplayName, _modelPath, installedBytes, "模型文件不完整，请重新安装");
+        }
+
+        return new(LocalSpeechModelState.NotInstalled, LocalSpeechModelCatalog.ModelId,
+            LocalSpeechModelCatalog.DisplayName, _modelPath, 0, "本地模型未安装");
     }
 
     public async Task<LocalSpeechModelStatus> InstallAsync(
         IProgress<LocalSpeechModelProgress>? progress = null,
         CancellationToken cancellationToken = default)
     {
+        var current = GetStatus();
+        if (current.State == LocalSpeechModelState.Ready)
+        {
+            // The bundled or already-downloaded copy removes the need for network access.
+            return current;
+        }
+
         await _installLock.WaitAsync(cancellationToken).ConfigureAwait(false);
         _installing = true;
         var temporaryPath = _modelPath + ".download-" + Guid.NewGuid().ToString("N");
@@ -83,7 +105,7 @@ public sealed class LocalSpeechModelManager : ILocalSpeechModelManager
             }
 
             await destination.FlushAsync(cancellationToken).ConfigureAwait(false);
-            if (received < 1_048_576)
+            if (received < MinimumModelBytes)
             {
                 throw new InvalidDataException("本地语音模型下载内容不完整。");
             }
@@ -102,13 +124,28 @@ public sealed class LocalSpeechModelManager : ILocalSpeechModelManager
     public Task RemoveAsync(CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        // The bundled copy is part of the application package and must survive;
+        // only the on-demand copy under the user profile is removable.
         TryDelete(_modelPath);
         return Task.CompletedTask;
     }
 
-    private long ExistingLength()
+    private string? ResolveUsablePath()
     {
-        try { return File.Exists(_modelPath) ? new FileInfo(_modelPath).Length : 0; }
+        if (TryMeasure(_bundledPath, out var bundledBytes) && bundledBytes >= MinimumModelBytes) return _bundledPath;
+        if (TryMeasure(_modelPath, out var installedBytes) && installedBytes >= MinimumModelBytes) return _modelPath;
+        return null;
+    }
+
+    private bool TryMeasure(string path, out long length)
+    {
+        length = ExistingLength(path);
+        return File.Exists(path);
+    }
+
+    private long ExistingLength(string path)
+    {
+        try { return File.Exists(path) ? new FileInfo(path).Length : 0; }
         catch (IOException) { return 0; }
         catch (UnauthorizedAccessException) { return 0; }
     }

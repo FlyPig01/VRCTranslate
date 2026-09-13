@@ -17,10 +17,15 @@ namespace VrcTranslate.Desktop.Controls;
 /// </summary>
 public sealed class LevelBarRenderer
 {
-    private readonly Rectangle[] _bars;
-    private readonly RectangleGeometry[] _clips;
-    private readonly double _height;
-    private readonly double _barWidth;
+    private readonly StackPanel _host;
+    private Rectangle[] _bars = [];
+    private RectangleGeometry[] _clips = [];
+    private double _height;
+    private double _barWidth;
+    private double _gap;
+
+    /// <summary>Bars currently drawn; follows the meter width.</summary>
+    public int BarCount => _bars.Length;
 
     public LevelBarRenderer(
         StackPanel host,
@@ -30,24 +35,38 @@ public sealed class LevelBarRenderer
         double gap = 2)
     {
         ArgumentNullException.ThrowIfNull(host);
-        ArgumentOutOfRangeException.ThrowIfLessThan(barCount, 1);
+        _host = host;
         _height = height;
-        _barWidth = barWidth;
+        Rebuild(barCount, barWidth, gap);
+    }
 
-        host.Children.Clear();
-        host.Orientation = Orientation.Horizontal;
-        host.Spacing = gap;
+    /// <summary>Rebuilds the bars for a new width; a no-op when nothing changed.</summary>
+    public void Resize(int barCount, double barWidth, double gap)
+    {
+        if (barCount == _bars.Length && Math.Abs(barWidth - _barWidth) < 0.01 && Math.Abs(gap - _gap) < 0.01) return;
+        Rebuild(barCount, barWidth, gap);
+    }
+
+    private void Rebuild(int barCount, double barWidth, double gap)
+    {
+        ArgumentOutOfRangeException.ThrowIfLessThan(barCount, 1);
+        _barWidth = barWidth;
+        _gap = gap;
+
+        _host.Children.Clear();
+        _host.Orientation = Orientation.Horizontal;
+        _host.Spacing = gap;
 
         var fill = CreateMeterBrush();
         _bars = new Rectangle[barCount];
         _clips = new RectangleGeometry[barCount];
         for (var index = 0; index < barCount; index++)
         {
-            var clip = new RectangleGeometry { Rect = new Rect(0, height, barWidth, 0) };
+            var clip = new RectangleGeometry { Rect = new Rect(0, _height, barWidth, 0) };
             var bar = new Rectangle
             {
                 Width = barWidth,
-                Height = height,
+                Height = _height,
                 RadiusX = barWidth / 2,
                 RadiusY = barWidth / 2,
                 Fill = fill,
@@ -55,7 +74,7 @@ public sealed class LevelBarRenderer
             };
             _clips[index] = clip;
             _bars[index] = bar;
-            host.Children.Add(bar);
+            _host.Children.Add(bar);
         }
     }
 

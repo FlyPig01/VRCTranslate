@@ -28,7 +28,7 @@
                   Padding="16,14">
             <Grid x:Name="VoiceStatusGrid" ColumnSpacing="12" RowSpacing="6">
               <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="18" />
+                <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
               </Grid.ColumnDefinitions>
@@ -37,28 +37,55 @@
                 <RowDefinition Height="Auto" />
               </Grid.RowDefinitions>
               <Grid x:Name="VoiceStatusDotHost"
-                    Width="18"
-                    Height="18"
+                    Width="40"
+                    Height="40"
                     VerticalAlignment="Center">
-                <Ellipse x:Name="VoiceStatusDot"
-                         Width="10"
-                         Height="10"
-                         Fill="#9AA8B8"
-                         HorizontalAlignment="Center"
-                         VerticalAlignment="Center" />
+                <Border x:Name="VoiceStatusBadge"
+                        Width="40"
+                        Height="40"
+                        CornerRadius="20"
+                        Background="#D9E9FF" />
+                <FontIcon Glyph="&#xE720;"
+                          FontSize="20"
+                          Foreground="#2D73D5"
+                          HorizontalAlignment="Center"
+                          VerticalAlignment="Center" />
                 <ProgressRing x:Name="VoicePulse"
-                              Width="18"
-                              Height="18"
+                              Width="40"
+                              Height="40"
                               IsActive="False"
                               Visibility="Collapsed"
-                              Foreground="#2AA876" />
+                              Foreground="#2D73D5" />
               </Grid>
-              <TextBlock Grid.Column="1"
-                         x:Name="VoiceStatusText"
-                         Text="他人语音识别停止"
-                         FontSize="16"
-                         FontWeight="SemiBold"
-                         VerticalAlignment="Center" />
+              <Grid Grid.Column="1"
+                    x:Name="VoiceStatusLine"
+                    ColumnSpacing="16"
+                    VerticalAlignment="Center">
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="Auto" />
+                  <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <TextBlock x:Name="VoiceStatusText"
+                           Text="他人语音识别停止"
+                           FontSize="16"
+                           FontWeight="SemiBold"
+                           VerticalAlignment="Center" />
+                <!-- The meter fills whatever the title leaves; a baseline keeps its
+                     place visible while nothing is being said. -->
+                <Grid Grid.Column="1"
+                      x:Name="VoiceAudioLevelHost"
+                      MinWidth="90"
+                      VerticalAlignment="Center">
+                  <Border Height="2"
+                          Background="#C8D8E8"
+                          CornerRadius="1"
+                          VerticalAlignment="Center" />
+                  <StackPanel x:Name="VoiceAudioLevel"
+                              Height="24"
+                              VerticalAlignment="Center"
+                              IsHitTestVisible="False" />
+                </Grid>
+              </Grid>
               <StackPanel x:Name="VoiceStatusActions"
                           Grid.Column="2"
                           Orientation="Horizontal"
@@ -66,21 +93,14 @@
                           VerticalAlignment="Center">
                 <Button x:Name="VoiceStartButton"
                         Content="开始"
-                        Width="82"
-                        MinWidth="74"
+                        Width="92"
+                        Height="36"
+                        MinWidth="92"
                         Click="OnStartClicked"
                         AutomationProperties.Name="开始识别"
                         Background="#2D73D5"
                         Foreground="#FFFFFF" />
               </StackPanel>
-              <StackPanel Grid.Row="1"
-                          Grid.Column="1"
-                          x:Name="VoiceAudioLevel"
-                          Height="22"
-                          MaxWidth="320"
-                          HorizontalAlignment="Left"
-                          VerticalAlignment="Center"
-                          IsHitTestVisible="False" />
               <StackPanel x:Name="VoiceHotkeySummary"
                           Grid.Row="1"
                           Grid.Column="2"

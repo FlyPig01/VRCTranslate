@@ -68,8 +68,8 @@ public sealed record AudioLevelMeterOptions
 public sealed class AudioLevelMeter
 {
     private readonly AudioLevelMeterOptions _options;
-    private readonly double[] _history;
-    private readonly IReadOnlyList<double> _readOnlyHistory;
+    private double[] _history;
+    private IReadOnlyList<double> _readOnlyHistory;
     private double _level;
     private double _pending;
     private double _reference;
@@ -125,6 +125,18 @@ public sealed class AudioLevelMeter
 
         Array.Copy(_history, 1, _history, 0, _history.Length - 1);
         _history[^1] = _level;
+    }
+
+    /// <summary>
+    /// Rebuilds the history for a new meter width. The card resizes with the
+    /// window, so the number of bars has to follow it instead of leaving a gap.
+    /// </summary>
+    public void Resize(int barCount)
+    {
+        ArgumentOutOfRangeException.ThrowIfLessThan(barCount, 1);
+        if (barCount == _history.Length) return;
+        _history = new double[barCount];
+        _readOnlyHistory = Array.AsReadOnly(_history);
     }
 
     public void Reset()

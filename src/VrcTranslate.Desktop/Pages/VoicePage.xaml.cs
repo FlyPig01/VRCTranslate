@@ -24,7 +24,7 @@ public sealed partial class VoicePage : Page
     private bool _updatingOverlayAppearance;
     private bool _speechEventsAttached;
     private readonly Microsoft.UI.Dispatching.DispatcherQueueTimer _audioLevelTimer;
-    private readonly AudioLevelMeter _audioMeter = new();
+    private readonly AudioLevelMeter _audioMeter = new(new AudioLevelMeterOptions { BarCount = 24 });
     private LevelBarRenderer? _levelBars;
     private IReadOnlyList<SpeakerIdentity> _speakers = [];
     private bool _updatingSpeakerToggle;
@@ -53,7 +53,8 @@ public sealed partial class VoicePage : Page
             State.OverlayAppearance.Changed += OnOverlayAppearanceChanged;
         _overlayAppearanceReady = true;
         AttachSpeechEvents();
-        _levelBars ??= new LevelBarRenderer(VoiceAudioLevel);
+        _levelBars ??= new LevelBarRenderer(VoiceAudioLevel, barCount: 24, barWidth: 6, gap: 3);
+        VoiceAudioLevelHost.SizeChanged += (_, args) => ResizeAudioLevel(args.NewSize.Width);
         LoadSettings();
         UpdateLocalModelStatus();
         UpdateRunningVisuals();
@@ -181,14 +182,12 @@ public sealed partial class VoicePage : Page
             VoiceStatusGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             Grid.SetColumn(VoiceStatusDotHost, 0);
             Grid.SetRow(VoiceStatusDotHost, 0);
-            Grid.SetColumn(VoiceStatusText, 1);
-            Grid.SetRow(VoiceStatusText, 0);
             Grid.SetColumn(VoiceStatusActions, 0);
             Grid.SetRow(VoiceStatusActions, 1);
             Grid.SetColumnSpan(VoiceStatusActions, 2);
-            Grid.SetColumn(VoiceAudioLevel, 0);
-            Grid.SetRow(VoiceAudioLevel, 2);
-            Grid.SetColumnSpan(VoiceAudioLevel, 2);
+            Grid.SetColumn(VoiceStatusLine, 1);
+            Grid.SetRow(VoiceStatusLine, 0);
+            Grid.SetColumnSpan(VoiceStatusLine, 2);
             Grid.SetColumn(VoiceHotkeySummary, 0);
             Grid.SetRow(VoiceHotkeySummary, 3);
             Grid.SetColumnSpan(VoiceHotkeySummary, 2);
@@ -205,14 +204,12 @@ public sealed partial class VoicePage : Page
             VoiceStatusGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             Grid.SetColumn(VoiceStatusDotHost, 0);
             Grid.SetRow(VoiceStatusDotHost, 0);
-            Grid.SetColumn(VoiceStatusText, 1);
-            Grid.SetRow(VoiceStatusText, 0);
             Grid.SetColumn(VoiceStatusActions, 2);
             Grid.SetRow(VoiceStatusActions, 0);
             Grid.SetColumnSpan(VoiceStatusActions, 1);
-            Grid.SetColumn(VoiceAudioLevel, 1);
-            Grid.SetRow(VoiceAudioLevel, 1);
-            Grid.SetColumnSpan(VoiceAudioLevel, 1);
+            Grid.SetColumn(VoiceStatusLine, 1);
+            Grid.SetRow(VoiceStatusLine, 0);
+            Grid.SetColumnSpan(VoiceStatusLine, 1);
             Grid.SetColumn(VoiceHotkeySummary, 2);
             Grid.SetRow(VoiceHotkeySummary, 1);
             Grid.SetColumnSpan(VoiceHotkeySummary, 1);
@@ -418,6 +415,20 @@ public sealed partial class VoicePage : Page
         _levelBars?.Render(_audioMeter.History);
     }
 
+    /// <summary>
+    /// The meter spans whatever width the card has, so the bar count follows that
+    /// width instead of leaving a gap next to the title.
+    /// </summary>
+    private void ResizeAudioLevel(double width)
+    {
+        if (_levelBars is null || width <= 0) return;
+        const double pitch = 9;
+        var count = (int)Math.Clamp(Math.Floor((width + 3) / pitch), 8, 64);
+        if (count == _levelBars.BarCount) return;
+        _levelBars.Resize(count, 6, 3);
+        _audioMeter.Resize(count);
+    }
+
     private void ResetAudioLevel()
     {
         _audioMeter.Reset();
@@ -439,7 +450,9 @@ public sealed partial class VoicePage : Page
         VoiceStatusText.Text = IsRunning ? "他人语音识别中" : "他人语音识别停止";
         VoiceStartButton.Content = IsRunning ? "停止" : "开始";
         AutomationProperties.SetName(VoiceStartButton, IsRunning ? "停止识别" : "开始识别");
-        VoiceStatusDot.Fill = IsRunning ? active : inactive;
+        VoiceStatusBadge.Background = IsRunning
+            ? new SolidColorBrush(Microsoft.UI.ColorHelper.FromArgb(255, 214, 240, 227))
+            : new SolidColorBrush(Microsoft.UI.ColorHelper.FromArgb(255, 217, 233, 255));
         VoicePulse.IsActive = IsRunning;
         VoicePulse.Visibility = IsRunning ? Visibility.Visible : Visibility.Collapsed;
         VoiceStatusPanel.Background = new SolidColorBrush(IsRunning

@@ -1,2 +1,0 @@
-"""Application logging configuration."""
-

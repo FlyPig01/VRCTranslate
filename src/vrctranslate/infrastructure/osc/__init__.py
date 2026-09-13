@@ -1,2 +1,0 @@
-"""OSC transport adapters."""
-

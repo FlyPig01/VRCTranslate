@@ -1,1 +1,0 @@
-"""Text conversion infrastructure adapters."""

@@ -1,2 +1,0 @@
-"""Qt background execution adapters."""
-

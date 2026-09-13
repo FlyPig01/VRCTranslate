@@ -1,265 +1,45 @@
 # VRCTranslate
 
-VRCTranslate 是面向 Windows 10/11 PC 桌面的 VRChat 翻译工具。自己的键盘输入或麦克风语音可以翻译后通过 OSC Chatbox 发送；其他玩家画面中的文字可以使用本地 RapidOCR 或在线多模态模型；其他玩家语音可以通过所选桌面进程的输出音频进行本地或在线识别，再交给独立文字翻译路由。
+Windows 原生 VRChat 翻译工具，采用 C#、.NET 10 和 WinUI 3。不包含 OCR；OCR 只在指南中说明可使用 QQ `Ctrl+Alt+F`，不安装 OCR 模型、不捕获屏幕。
 
-项目不支持 PCVR，不注入或 Hook VRChat，不读取游戏进程内存，不使用数据库，不保存截图或聊天历史。
+> 2026-09 起仓库已整体切换为 V2 原生架构，旧 Python/Qt 实现已移除。
 
-## 当前版本
+功能包含：
 
-当前版本为 `v0.12.2`。本版修复 DeepSeek 等在线翻译在 OCR 持续识别时堵塞的问题：翻译管线改为双并发并放宽帧暂存阈值，慢但成功的请求不再被静默丢弃；同时为 DeepSeek V4 模型默认关闭思考模式，避免翻译前输出思维链造成的延迟。软件继续限定为 PC 桌面模式，不提供 TTS 或音频注入。
+- 统一翻译路由：文字输入和语音识别文本共用同一翻译服务；字幕输出固定为简体中文；
+- 翻译模型配置与连接测试（OpenAI 兼容、DeepL、Google、腾讯云、阿里云等）；
+- 输入浮窗与 OSC Chatbox 契约。输入内容固定按简体中文处理；第一语言和可选第二语言在“输入”页面配置，并同时预览、发送；
+- 使用系统标题栏、原生拖动和八方向缩放的输入/字幕窗口；两者默认宽度分别为 1240px 和 1400px，位置与大小会在退出后恢复；
+- 输入与字幕透明度可分别在对应页面调节为 60%～100%，默认 90%，整窗（包括标题栏）实时生效并自动记忆；
+- 内置的 Whisper Base Q5_1 本地识别模型，覆盖中文、英语、日语、韩语，随发布包自带、无需下载；识别会话在应用层托管，切换页面不会中断；
+- WinUI 3 页面骨架。
 
-首次启动生成的是可公开分发的安全默认配置：
+页面职责保持单一：运行页负责查看状态和进入功能，翻译页负责服务档案、模型、地址、密钥和路由，语音页不提供进程选择，正式音频目标固定为 VRChat。翻译页保存的当前方案会同时供手动文字和语音识别文本使用。
 
-| 项目            | 默认值                                                                                |
-| --------------- | ------------------------------------------------------------------------------------- |
-| 翻译服务档案    | 仅有“测试回显”，接口地址、API 密钥和模型名称均为空                                    |
-| 自身消息（OSC） | 测试回显，自动识别 → 中文，仅发送译文                                                 |
-| 自身语音        | 默认关闭；默认系统麦克风、中文识别、仅在 VRChat 位于前台时监听                       |
-| 他人消息（OCR） | 测试回显，日文 → 中文                                                                 |
-| OCR             | 持续识别、目标标题 `VRChat`、空选区、独立译文浮窗                                     |
-| 他人语音        | 默认不监听；优先匹配 `VRChat.exe`，语音服务档案默认为空，需要使用时再自行新增             |
+代码按 `Core -> Application -> Infrastructure -> Desktop` 分层，测试按相同边界放在 `tests/` 下。
 
-“测试回显”只用于验证界面和 OSC，不执行真实翻译。开发机已有的 `config.json` 或 `data\config.json` 不属于发布默认配置，也不会被 Git 跟踪或打进发布包。
+语音识别使用内置的 Whisper Base Q5_1 本地模型，随发布包放在程序目录 `Models\` 下，运行时优先加载该副本，不会回退到系统识别；模型缺失时仍可回退为从语音页按需下载到 `%LOCALAPPDATA%\VRCTranslate\v2\models\speech`。模型文件本身不进入源码库，构建前用 `tests\Import-BundledSpeechModel.ps1` 一次性导入到 `assets\models\speech\`。回环目前读取系统输出混音，VRChat 进程级过滤仍待后续完善。
 
-## 当前功能
-
-- 支持简体中文、繁體中文、English、日本語、한국어、Français、Deutsch、Español、Русский 九种界面语言；设置页使用下拉菜单切换并即时生效。
-- 可手动选择 VRChat、播放器、浏览器等任意桌面进程，捕获该进程及子进程的输出音频，经本地或在线语音识别和独立文字翻译路由显示字幕。
-- 本地语音识别采用可选的 SenseVoiceSmall INT8，仅在一句话结束后识别最终原文；明确选择中、英、日、韩时会把该语言实际传给识别器，自动模式才使用模型自动判断。翻译路由根据所选语音档案过滤源语言，不把法、德、西、俄误标为本地支持。模型和运行库按需安装到软件目录，不进入主 Python 环境。
-- 在线实时语音识别提供腾讯云实时语音识别和阿里云智能语音交互 NLS 两种专用档案；两者持续接收内存 PCM，中间结果更新当前字幕，最终原文只调用一次现有文字翻译路由。
-- 语音服务 API 只做识别，不直接翻译。普通 Audio Transcriptions、DashScope Paraformer 和 `input_audio` Chat Completions 已退出实时语音功能，旧协议档案会在配置升级时删除。
-- 所有语音档案必须验证后才能启动：在线档案验证凭据和实时连接，本地档案验证模型 SHA-256、运行库和实际加载；关键参数变化后自动回到“待验证”。
-- 他人语音字幕只支持 Windows PC，只捕获用户选择的桌面进程输出，不采集麦克风、不调用 OSC；不支持时不会降级监听整个系统声音。
-- 自身语音自动翻译默认关闭；明确启用后才采集所选麦克风，以带环境噪声校准的内存 VAD 等待句末，再使用已安装的 SenseVoiceSmall INT8 识别中、英、日、韩语音。麦克风列表优先使用 Windows WASAPI，并合并 MME、DirectSound 等接口暴露的同名重复设备；“测试麦克风”可在不保存音频的情况下用实时音量确认选择。识别文字复用“自身消息（OSC）”的翻译服务、目标语言、消息格式、术语和发送队列，不引入 TTS。
-- 麦克风 PCM、进程输出音频、识别原文和译文均不写入磁盘；页面仅显示本次运行中的最近结果。
-- 独立单行快捷输入浮窗，按 Enter 自动翻译并发送。
-- Windows 全局快捷键默认使用 `Ctrl+Alt+I` 显示快捷输入、`Ctrl+F8` 开启或暂停自身语音翻译；即使 VRChat 位于前台也可触发。快捷输入页采用“修改—确认/取消”，编辑期间临时释放系统热键，并可一键恢复默认或清空禁用。旧版 `Ctrl+Alt+M` 只有在被其他软件占用时才会自动迁移到新默认值。
-- 快捷输入页直接调整消息格式、输入浮窗置顶和宽度，并控制自身语音翻译；这些选项修改后自动保存。
-- OSC typing 状态始终同步，无需开关。
-- 快捷输入与 OCR 译文浮窗分别控制置顶；主窗口永不强制置顶。
-- OCR 捕获帧只在内存处理；译文浮窗可选择只显示译文，或同时显示识别原文。
-- 可配置 OpenAI Chat Completions 兼容的多模态模型，直接识别并翻译框选区域；图片只在内存编码，不保存到本地。
-- 多模态独立浮窗模式不需要本地 OCR 模型；多模态嵌字使用公共本地检测模型定位文字。
-- Windows 窗口捕获模式下，OCR 目标程序只在 OCR 主页面选择；MSS 屏幕坐标模式直接框选桌面，不要求选择进程。
-- OCR 页会按捕获模式显示目标程序选择或 MSS 桌面捕获提示，并显示最近一次 OCR 原文和译文。
-- 本地 OCR 提供中文、日文、英文、韩文、拉丁文字和西里尔文字六个懒加载模型包；“设置 → OCR → 捕获与识别”单独选择识别包，翻译路由中的自然语言不再隐式切换模型。繁中可选中文包，法/德/西语可选拉丁文字包，俄语可选西里尔文字包。
-- OCR 译文支持独立浮窗、识别区域嵌字和两者同时显示；OCR 页面、悬浮球菜单和识别框控制条保持同步。
-- 嵌字按原始文字行精准遮盖，并按译文实际行宽绘制底板，不再遮挡整个识别区域。
-- 标题、正文段落和项目符号按版面拆分为独立嵌字块；单次嵌字持续保留到下一次识别或选区发生变化。
-- OCR 提供单次和持续两种模式；持续模式合并周期取帧与变化检测，并按文字位置过滤静止区域。
-- 译文和拖动条使用独立高对比度深色卡片，在白色、深色和彩色画面上保持清晰。
-- 默认使用 Windows Graphics Capture 获取所选窗口内容；MSS 只作为用户显式选择的屏幕坐标兼容模式。
-- 阿里云机器翻译通过官方 Python SDK 接入，档案可选择资源 RegionId、通用或专业翻译接口，并允许覆盖自动解析的服务端点。
-- 设置页固定显示“翻译模型 / OSC / OCR / 语音 / 便携数据与诊断”五个入口，保存按钮不会随内容滚走。
-- 所有数值项只能直接输入，鼠标滚轮和方向键不会改变数值。
-- 设置表单在窄窗口下自动换行，复选框使用带明确勾选标记的系统样式。
-- 主窗口、设置弹窗和全部悬浮窗统一拦截 Tab 与 Shift+Tab，不会因为误触改变当前输入焦点；鼠标点击页面标签不受影响。
-- OCR 翻译按识别轮次整体调度，不会因单轮文字块超过队列容量而只翻译一部分；上一轮翻译较慢时只保留最新一帧，完成后立即处理，不会无限积压旧画面。
-- 自身消息、OCR 和语音使用三条独立翻译路由；语音的源语言、目标语言、文字翻译档案和术语库开关统一位于“翻译模型 → 翻译路由”。
-- 语音字幕浮窗的置顶、原文显示、透明度、字号和条数位于主界面“语音”页；浮窗右下角可以拖动缩放，新增原文或译文时自动跳转到最新条目，样式与尺寸修改后自动保存。
-- 日语罗马音提供“关闭 / 自动判断 / 强制转换”三种模式；自身消息默认自动判断，OCR 新配置默认关闭。
-- 罗马音转换使用轻量 WanaKana 规则并补充标准 Hepburn 兼容处理，支持无空格长句，同时保护英文、URL、用户名和品牌名。
-- 内置只读 VRChat 术语并支持便携用户术语；大模型使用结构化术语提示，其他在线服务使用本地占位符保护和失败回退。URL、邮箱、用户名、OSC 地址、路径、版本号和数字另有统一保护层，校验失败的损坏译文不会继续显示或发送。
-- 支持 DeepL、Google Cloud Translation、Google 免费接口、腾讯翻译、阿里云机器翻译、OpenAI 兼容文本接口、支持图片理解的多模态接口及测试回显。Google 免费接口属于无可用性保证的实验性端点，连续失败后会临时冷却，不能作为可靠的实时默认服务。
-- 翻译档案按“内置工具 / 机器翻译 / 大模型”分组；新增时将 DeepL、腾讯、阿里云、Google 等固定协议与大模型服务商、自定义 Chat Completions 兼容接口明确分开。
-- Argos Translate 及其离线语言包已经移除；本地可执行 OCR 和可选语音识别，但仍不提供离线机器翻译。
-- 配置、日志和缓存全部位于软件目录的 `data`，不回退到 C 盘用户目录。
-
-## 运行环境
-
-- Windows 10 2004（内部版本 19041）或更高版本的 64 位 Windows 10/11。
-- Python 3.11.4 64 位。
-- VRChat PC 桌面模式。
-
-不需要 Miniconda，使用 Python 自带的 `venv` 即可。
-
-## 运行发布包
-
-发布版采用 one-folder 目录形式。请完整解压整个 `VRCTranslate` 文件夹，再运行其中的 `VRCTranslate.exe`；不要单独复制 exe，也不要直接在压缩包内启动。
-
-建议把完整目录放到 D/E 盘的普通可写位置，例如：
-
-```text
-E:\Tools\VRCTranslate\
-├── VRCTranslate.exe
-├── _internal\
-├── data\
-└── 使用说明.md
-```
-
-不要安装到 `Program Files` 等普通用户不可写目录。程序不会把配置、日志、缓存或模型转存到 C 盘 AppData。
-
-## 从源码运行
-
-以下命令均在项目根目录执行。
-
-### 1. 创建虚拟环境
+## 构建
 
 ```powershell
-python -m venv .venv
+dotnet restore VrcTranslate.sln
+dotnet build VrcTranslate.sln -c Debug -p:Platform=x64
+dotnet test VrcTranslate.sln -c Debug -p:Platform=x64
 ```
 
-### 2. 激活虚拟环境
+构建后可直接双击下面的程序进行手动测试（必须保留同目录运行库和资源文件）：
 
-PowerShell：
+`src\VrcTranslate.Desktop\bin\x64\Debug\net10.0-windows10.0.19041.0\VrcTranslate.exe`
 
-```powershell
-& .\.venv\Scripts\Activate.ps1
-```
+也可以打开上述输出目录进行桌面端调试；WinUI 3 应用需要在 Windows 环境中启动。
 
-CMD：
+手动测试前执行 `tests\Invoke-V2Validation.ps1`。该脚本会验证构建、分层测试、翻译页 UI 交互、两个普通 Windows 浮窗的原生拖动/缩放、透明度、关闭/重开、布局恢复，以及六个桌面页面启动；内置模型在运行时直接探测，无需联网下载。
 
-```bat
-.venv\Scripts\activate.bat
-```
+重新发布 `artifacts\manual-test` 后执行 `tests\Invoke-V2ReleaseSmoke.ps1`；它会检查发布资源、翻译档案对话框、两个浮窗的系统窗框、透明度与主窗口退出联动，再把通过的包交给人工测试。发布前若 `assets\models\speech\ggml-base-q5_1.bin` 不存在，构建会告警且该包将回退为运行时下载。发布产物会自动剔除未使用的 Windows AI 组件、PDB 与异架构原生库（约 95 MB）。
 
-激活脚本通常不会输出提示。执行下列命令，路径指向项目 `.venv\Scripts\python.exe` 即表示成功：
+Release 手测包目录：`artifacts\manual-test\`。可直接双击：
 
-```powershell
-python -c "import sys; print(sys.executable)"
-```
+`artifacts\manual-test\VrcTranslate.exe`
 
-PowerShell 拒绝执行激活脚本时，无需修改系统策略，后续直接使用 `.\.venv\Scripts\python.exe`。
-
-### 3. 安装依赖
-
-普通运行：
-
-```powershell
-python -m pip install -e .
-```
-
-普通依赖会同时安装 `windows-capture`，用于 Windows 10/11 的窗口内容捕获。依赖安装在当前项目的 `.venv`；捕获帧只在内存中处理。
-
-开发和测试：
-
-```powershell
-python -m pip install -e ".[dev]"
-```
-
-### 4. 启动
-
-```powershell
-python -m vrctranslate
-```
-
-未激活环境时：
-
-```powershell
-.\.venv\Scripts\python.exe -m vrctranslate
-```
-
-日常启动无需重新创建环境或安装依赖。
-
-## 安装 OCR 模型
-
-使用本地 OCR 前，进入“设置 → OCR → 本地 OCR 模型”，在模型下拉框中选择所需文字包并点击“下载并安装”；安装后再在“捕获与识别”中选择当前本地识别包：
-
-- 中文高精度包约 90MB（十进制）。
-- 日文高精度包约 82MB（十进制）。
-- 英文识别模型约 7.9MB（十进制）；首次安装时还会下载约 5.4MB 的共用组件。
-- 韩文识别模型约 13.5MB（十进制）。
-- 法语、德语和西班牙语共享的拉丁文字模型约 7.9MB（十进制）。
-- 俄语使用的西里尔文字模型约 8.1MB（十进制）。
-
-模型不会静默下载，也不随源码或发布包附带。下载时显示真实字节进度；安装完成后进度条和下载按钮会隐藏，只保留版本、占用空间和删除操作。
-
-正式模型位于 `data\models\ocr`；`data\cache\ocr-models` 只保存下载中的 `.part` 临时文件，成功、失败或取消后都会清理。只使用 OSC 自身消息翻译或多模态独立浮窗时无需安装 OCR 模型；多模态嵌字至少需要任意一个 OCR 包提供公共检测模型。
-
-## 安装本地语音模型
-
-如需不消耗语音识别 API，进入“设置 → 语音 → 本地语音识别组件”，安装 `SenseVoiceSmall INT8`：
-
-- 下载量约 246.3 MiB；当前精简运行库与模型实际占用约 255～256 MiB。下载包与安装暂存会短暂共存，开始安装前需约 533 MiB 可用空间。
-- 正式模型位于 `data\models\speech\sensevoice-small-int8`，运行库位于 `data\components\local-asr\sherpa-onnx-1.13.4`。
-- `data\cache\speech-models` 只用于断点续传和安装暂存，安装成功后清理下载文件。
-- 软件会对 SenseVoice 候选下载源并行读取最多 1 MiB 小样本，以连接耗时和实际吞吐量自动选择更快来源；同一批文件复用测速结果，首选源失败时自动换源。测速数据只经过内存，不生成测速文件。
-- 已安装状态不会继续显示下载按钮或无意义进度条，只提供校验与删除。
-- Windows 已加载的原生 DLL 可能要等程序退出才能释放；此时卡片会显示“等待重启后删除”，下次启动自动完成清理。
-- 基础源码和发布包不预置模型；软件不会静默下载，也不会写入 C 盘用户目录。
-
-翻译“他人语音”时，安装后仍需新增一个“本地 · SenseVoiceSmall INT8”语音档案并验证；默认不会自动创建任何语音档案。“自身语音自动翻译”直接复用这套已安装组件，不要求额外创建语音档案，但仍保持默认关闭，并会在启用时校验组件完整性。
-
-## 便携数据目录
-
-开发运行以项目根目录为软件目录；打包运行以 exe 所在目录为软件目录：
-
-```text
-VRCTranslate\
-├── VRCTranslate.exe          # 打包后存在
-├── _internal\                # 打包后存在
-└── data\
-    ├── config.json
-    ├── logs\app.log
-    ├── glossaries\user_glossary.json # 用户术语，UTF-8 JSON
-    ├── models\ocr\             # 按需下载的六种 OCR 模型包
-    ├── models\speech\          # 按需下载的 SenseVoice 模型与词表
-    ├── components\local-asr\   # 独立于主环境的本地 ASR 运行库
-    ├── cache\ocr-models\       # OCR 下载临时文件，成功后清除
-    └── cache\speech-models\    # 语音组件下载/安装暂存，成功后清除
-```
-
-首次加载旧版根目录 `config.json` 时，会复制并迁移到 `data\config.json`，同时生成 `config.json.v1-backup`。API 密钥按需求以明文 JSON 保存，请勿分享、上传或提交配置文件。
-
-如果 `data` 不可写，程序会阻止启动并要求把完整软件目录移动到 D/E 盘普通可写位置，不会静默使用 AppData。
-
-## 运行测试
-
-```powershell
-python -m pytest
-```
-
-无界面测试环境可先设置：
-
-```powershell
-$env:QT_QPA_PLATFORM = "offscreen"
-python -m pytest
-```
-
-新增语言的短句人工检查见 [多语言翻译质量测试报告](https://github.com/FlyPig01/VRCTranslate/blob/v0.12.2/%E5%A4%9A%E8%AF%AD%E8%A8%80%E7%BF%BB%E8%AF%91%E8%B4%A8%E9%87%8F%E6%B5%8B%E8%AF%95%E6%8A%A5%E5%91%8A.md)；九语言 OCR、本地 ASR、真实翻译接口和端到端性能结果见 [多语言全链路质量与性能测试报告](https://github.com/FlyPig01/VRCTranslate/blob/v0.12.2/%E5%A4%9A%E8%AF%AD%E8%A8%80%E5%85%A8%E9%93%BE%E8%B7%AF%E8%B4%A8%E9%87%8F%E4%B8%8E%E6%80%A7%E8%83%BD%E6%B5%8B%E8%AF%95%E6%8A%A5%E5%91%8A.md)。两份开发报告不进入便携发布包；设置页显示的方向建议仅来自这次本机通用基准，不会自动切换用户档案。
-
-## 打包
-
-正式发布采用 one-folder，避免 one-file 向系统 `%TEMP%` 解压。构建命令见 [packaging/README.md](packaging/README.md)。
-
-`v0.12.2` 构建输出到 `dist\VRCTranslate\`，实际大小会随依赖版本略有变化。构建脚本不会预置 OCR/语音模型、完整基准测试报告、用户配置、日志或 API 密钥；启动构建后的 exe 才会在 `data` 中生成默认配置和日志。
-
-向外分发前应再次检查发布目录，确保测试启动产生的 `data\config.json`、日志、缓存和模型没有被放进压缩包。
-
-重新构建前仍应先运行自动化测试，并完成真实 VRChat 的窗口化、无边框、多屏、遮挡及连续运行测试。打包是发布流程的最后一步，不应使用旧的 `dist` 代替当前源码构建。
-
-## 项目结构
-
-```text
-src/vrctranslate/
-├── domain/                    # 纯业务规则
-├── application/               # 用例和端口
-│   └── use_cases/ocr/         # OCR 调度、空间文字跟踪、队列、缓存、顺序缓冲
-├── infrastructure/            # Windows 捕获、JSON 设置和在线服务适配器
-│   ├── audio/                 # 按 PID 捕获进程输出及按设备采集麦克风内存 PCM
-│   ├── speech/                # 腾讯/阿里实时协议、SenseVoice、本地组件管理与能力路由
-│   ├── translation/           # 机器翻译、文本大模型和多模态翻译适配器
-│   ├── ocr/                   # RapidOCR 引擎、内置模型清单和便携模型管理器
-│   ├── glossary/              # 默认/用户术语 JSON 和便携存储
-│   └── text/                  # WanaKana 日语罗马音转换适配器
-├── presentation/qt/
-│   ├── controllers/settings/  # 翻译服务测试
-│   ├── pages/voice_page.py    # 进程音频目标与语音字幕设置
-│   ├── pages/settings/translation/
-│   │   ├── profile_editor.py  # 翻译服务档案
-│   │   └── routes_tab.py      # OSC/OCR/语音三条独立翻译路由
-│   ├── windows/ocr_overlay/   # 浮窗表面、内容、条目和原生交互
-│   ├── windows/ocr_inline/    # 与识别区域对齐的鼠标穿透嵌字层
-│   ├── windows/ocr_region/    # 可拖动缩放的 OCR 识别区域框
-│   ├── windows/ocr_orb/       # OCR 悬浮球和操作菜单
-│   ├── windows/voice_overlay_window.py # 语音悬浮球与字幕浮窗
-│   └── resources/styles/      # 基础、主窗、表单、设置和悬浮工具样式
-└── bootstrap.py               # 具体依赖的唯一装配位置
-```
-
-架构测试保证 `domain` 和 `application` 不依赖 Qt、HTTP、OCR、OSC 或 Windows API，界面层也不直接选择具体翻译适配器。
-
-## 文档
-
-- 界面和功能操作：[使用说明.md](使用说明.md)
-- 第三方组件与许可证：[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)
+WinUI 3 项目需要 Windows App SDK NuGet 包。API 密钥和语音模型文件都不会写入源码：密钥只存在于用户配置，模型由 `tests\Import-BundledSpeechModel.ps1` 放入 `assets\`（已被 git 忽略）后在构建时打入包内。

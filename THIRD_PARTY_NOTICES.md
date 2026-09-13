@@ -1,106 +1,19 @@
 # Third-party notices
 
-VRCTranslate uses the following third-party component in addition to the dependencies declared in `pyproject.toml`.
+VRCTranslate (V2 native desktop app) uses the following third-party components.
 
-## RapidOCR and PaddleOCR models
-
-- Runtime package: RapidOCR 3.9.x
-- Optional models: PP-OCRv5/PP-OCRv6 detection, orientation, Chinese, Japanese, English, Korean, Latin-script, and Cyrillic recognition models
-- Purpose: local in-memory OCR for the user-selected screen region
-- RapidOCR project: <https://github.com/RapidAI/RapidOCR>
-- PaddleOCR project: <https://github.com/PaddlePaddle/PaddleOCR>
-- Model mirror: <https://www.modelscope.cn/models/RapidAI/RapidOCR>
-- License: Apache License 2.0
-- License text: <https://www.apache.org/licenses/LICENSE-2.0>
-
-OCR model files are optional verified downloads stored under `data/models/ocr` beside the application. They are not included in the base release archive. VRCTranslate shares detection and orientation files between language packs and does not save recognized frames to disk.
-
-## wanakana-python
-
-- Version: 1.2.2
-- Purpose: Japanese romaji-to-kana conversion rules
-- Project: <https://github.com/starwort/wanakana>
-- License: Mozilla Public License 2.0 (MPL-2.0)
-- License text: <https://www.mozilla.org/MPL/2.0/>
-
-The component remains under its own license. VRCTranslate adds compatibility handling in its own adapter and does not modify the installed `wanakana-python` package.
-
-## Pillow
-
-- Version range: 10.x to 12.x
-- Purpose: in-memory OCR frame resizing, annotation and JPEG/PNG encoding
-- Project: <https://github.com/python-pillow/Pillow>
-- License: MIT-CMU
-- License text: <https://github.com/python-pillow/Pillow/blob/main/LICENSE>
-
-VRCTranslate uses Pillow only for in-memory image processing. It does not add a screenshot-saving path.
-
-## websocket-client
-
-- Version range: 1.8.x to 1.x
-- Purpose: WebSocket transport for Tencent Cloud and Alibaba Cloud NLS realtime speech recognition
-- Project: <https://github.com/websocket-client/websocket-client>
-- License: Apache License 2.0
-- License text: <https://www.apache.org/licenses/LICENSE-2.0>
-
-VRCTranslate implements each provider's documented authentication and realtime ASR framing on top of `websocket-client`. No provider SDK or file-transcription helper is bundled, and captured PCM remains in memory.
-
-## python-sounddevice and PortAudio
-
-- Runtime package: python-sounddevice 0.5.x
-- Bundled native library: PortAudio for Windows
-- Purpose: capture the user-selected microphone for explicitly enabled self-voice translation
-- python-sounddevice project: <https://github.com/spatialaudio/python-sounddevice>
-- PortAudio project: <https://github.com/PortAudio/portaudio>
-- License: MIT
-- License texts: <https://github.com/spatialaudio/python-sounddevice/blob/master/LICENSE> and <https://github.com/PortAudio/portaudio/blob/master/LICENSE.txt>
-
-The release bundle includes the PortAudio DLL supplied by the python-sounddevice wheel. Microphone capture is disabled by default; audio frames are processed in memory and are not saved by VRCTranslate.
-
-## Alibaba Cloud Machine Translation SDK
-
-- Package: `alibabacloud-alimt20181012`
-- Version range: 1.5.2 to 1.x
-- Purpose: authenticated calls to Alibaba Cloud `TranslateGeneral` and `Translate`
-- Project: <https://github.com/aliyun/alibabacloud-python-sdk>
-- License: Apache License 2.0
-- License text: <https://www.apache.org/licenses/LICENSE-2.0>
-
-The SDK and its Tea runtime dependencies are used only by Alibaba Cloud text translation profiles. Realtime Alibaba Cloud NLS speech recognition continues to use its dedicated WebSocket protocol.
-
-## sherpa-onnx
-
-- Optional component version: 1.13.4
-- Purpose: CPU-only ONNX runtime adapter for local SenseVoice speech recognition
-- Project: <https://github.com/k2-fsa/sherpa-onnx>
-- License: Apache License 2.0
-- License text: <https://github.com/k2-fsa/sherpa-onnx/blob/master/LICENSE>
-
-The Python and native runtime wheels are downloaded only when the user installs the local speech component. They remain under `data/components/local-asr` beside the application and are not installed into the main Python environment.
-
-## SenseVoiceSmall model
-
-- Optional model: SenseVoiceSmall INT8, converted for sherpa-onnx (2024-07-17)
-- Purpose: offline Chinese, English, Japanese, Korean, and Cantonese speech recognition
-- Converted model: <https://huggingface.co/csukuangfj/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17>
-- Upstream project: <https://github.com/FunAudioLLM/SenseVoice>
-- License: MIT License
-- License text: <https://github.com/FunAudioLLM/SenseVoice/blob/main/LICENSE>
-
-The model and token table are optional downloads stored under `data/models/speech`. VRCTranslate verifies their fixed size and SHA-256 before use and does not redistribute them inside the base package.
-
-## OpenAI Whisper model (V2, bundled)
+## OpenAI Whisper model (bundled)
 
 - Model: `ggml-base-q5_1.bin` (Whisper base, Q5_1 quantization, whisper.cpp GGML conversion)
-- Purpose: offline English, Japanese, and Korean speech recognition in the V2 desktop app
+- Purpose: offline Chinese, English, Japanese, and Korean speech recognition
 - Original model and license: OpenAI Whisper, MIT License — <https://github.com/openai/whisper/blob/main/LICENSE>
 - GGML conversion source: <https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base-q5_1.bin>
 - whisper.cpp project: <https://github.com/ggml-org/whisper.cpp> (MIT License)
 - License text: <https://github.com/ggml-org/whisper.cpp/blob/master/LICENSE>
 
-The V2 desktop release ships this model file inside the application package under `Models/`. Whisper and whisper.cpp are MIT-licensed, which permits redistribution; this notice provides the required attribution. The runtime adapter is Whisper.net (also MIT): <https://github.com/sandrohanea/whisper.net>.
+The desktop release ships this model file inside the application package under `Models/`. Whisper and whisper.cpp are MIT-licensed, which permits redistribution; this notice provides the required attribution. The runtime adapter is Whisper.net (also MIT): <https://github.com/sandrohanea/whisper.net>.
 
-## NAudio (V2, bundled)
+## NAudio (bundled)
 
 - Packages: `NAudio.Core`, `NAudio.Wasapi`, `NAudio.WinMM` 2.2.1
 - Purpose: microphone and system-loopback audio capture for local speech recognition
@@ -109,3 +22,13 @@ The V2 desktop release ships this model file inside the application package unde
 - License text: <https://github.com/naudio/NAudio/blob/master/license.txt>
 
 The granular packages are used instead of the NAudio metapackage so the WinForms-oriented assemblies (and the Windows Desktop runtime they require) stay out of the published application.
+
+## Microsoft Windows App SDK and .NET (bundled)
+
+- Purpose: WinUI 3 desktop framework and self-contained .NET 10 runtime
+- Windows App SDK license: <https://github.com/microsoft/WindowsAppSDK/blob/main/LICENSE>
+- Windows App SDK notice: <https://github.com/microsoft/WindowsAppSDK/blob/main/NOTICE.md>
+- .NET runtime license: <https://github.com/dotnet/runtime/blob/main/LICENSE.TXT>
+- .NET third-party notices: <https://github.com/dotnet/runtime/blob/main/THIRD-PARTY-NOTICES.TXT>
+
+The release publishes self-contained copies of the Windows App SDK and the .NET runtime beside the application executable. The Windows AI components that ship with the App SDK deployment (onnxruntime, DirectML, Windows AI projections) are removed from the published output because the application never calls those APIs.

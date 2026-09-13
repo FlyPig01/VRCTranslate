@@ -1,37 +1,26 @@
-.venv/
-__pycache__/
-*.py[cod]
-.pytest_cache/
-.coverage
-htmlcov/
-build/
-dist/
-*.egg-info/
+**/bin/
+**/obj/
+.vs/
+*.user
+*.suo
 
-# 本文件包含明文 API 密钥，禁止提交。
-config.json
-config.json.broken-*
-logs/
-data/
-tmp/
+# Generated local validation/publish outputs are reproducible and far too
+# large for the source repository.
+artifacts/
+self-build.log
 
-# 独立基准测试环境和可再下载的大文件，不进入正式项目。
-benchmarks/.venv/
-benchmarks/cache/
-benchmarks/datasets/
-benchmarks/models/
-benchmarks/tmp/
-benchmarks/tools/
+# The bundled speech model is re-downloadable via
+# tests\Import-BundledSpeechModel.ps1 and far too large for the repository.
+assets/models/
 
-# 应用不应生成截图；若调试时意外生成，也不提交。
+# Incidental screenshots captured during debugging are not committed.
 *.bmp
 *.png
 *.jpg
 *.jpeg
 
-# 程序 UI 图标是正式资源，需要纳入版本控制。
-!src/vrctranslate/presentation/qt/resources/icons/*.png
-!src/vrctranslate/presentation/qt/resources/icons/*.ico
+# The app UI icon is a shipped product asset and must remain versioned.
+!src/VrcTranslate.Desktop/logo-mark.png
 
-# Trae IDE 生成的本地文档与 agent 数据，不提交。
+# Trae IDE generated local docs & agent data.
 .trae/

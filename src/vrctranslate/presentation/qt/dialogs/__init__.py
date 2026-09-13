@@ -1,2 +1,0 @@
-"""Qt dialogs and overlays."""
-

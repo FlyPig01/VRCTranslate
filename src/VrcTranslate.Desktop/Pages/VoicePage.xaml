@@ -2,7 +2,7 @@
     x:Class="VrcTranslate.Desktop.Pages.VoicePage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-  <Grid Background="Transparent" AutomationProperties.Name="字幕">
+  <Grid Background="Transparent" AutomationProperties.Name="语音">
     <Grid.Transitions>
       <TransitionCollection>
         <EntranceThemeTransition FromVerticalOffset="10" />
@@ -55,7 +55,7 @@
               </Grid>
               <TextBlock Grid.Column="1"
                          x:Name="VoiceStatusText"
-                         Text="字幕已停止"
+                         Text="他人语音识别停止"
                          FontSize="16"
                          FontWeight="SemiBold"
                          VerticalAlignment="Center" />
@@ -208,7 +208,7 @@
                              FontWeight="SemiBold"
                              Foreground="#16202E" />
                   <TextBlock x:Name="SpeakerStatus"
-                             Text="字幕暂不区分说话人"
+                             Text="他人语音暂不区分说话人"
                              FontSize="12"
                              Foreground="#607083"
                              TextWrapping="Wrap" />

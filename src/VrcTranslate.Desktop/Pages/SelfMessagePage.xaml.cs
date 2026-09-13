@@ -458,7 +458,7 @@ public sealed partial class SelfMessagePage : Page
             var modelStatus = State.LocalSpeech.GetModelStatus();
             if (modelStatus.State != LocalSpeechModelState.Ready)
             {
-                ShowInfo("本地语音模型未安装", "请先在字幕页安装本地语音模型。", InfoBarSeverity.Warning);
+                ShowInfo("本地语音模型未安装", "请先在语音页安装本地语音模型。", InfoBarSeverity.Warning);
                 UpdateSelfVoiceVisuals();
                 return;
             }

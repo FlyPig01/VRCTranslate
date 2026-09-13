@@ -69,8 +69,8 @@
               <Border Width="34" Height="34" CornerRadius="9" Background="#FFF2DD"><FontIcon Glyph="&#xE720;" FontSize="18" Foreground="#C7771C" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
               <Grid Grid.Row="1" ColumnSpacing="10" MinWidth="0">
                 <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
-                <TextBlock Text="字幕" Style="{StaticResource SectionTitleTextStyle}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
-                <Button Grid.Column="1" Content="打开" Click="OnOpenVoiceClicked" HorizontalAlignment="Right" VerticalAlignment="Center" MinWidth="72" AutomationProperties.Name="打开字幕" />
+                <TextBlock Text="语音" Style="{StaticResource SectionTitleTextStyle}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                <Button Grid.Column="1" Content="打开" Click="OnOpenVoiceClicked" HorizontalAlignment="Right" VerticalAlignment="Center" MinWidth="72" AutomationProperties.Name="打开语音" />
               </Grid>
             </Grid>
           </Border>

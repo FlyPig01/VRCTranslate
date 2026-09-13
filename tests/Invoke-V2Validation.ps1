@@ -402,7 +402,7 @@ foreach ($navId in @('run', 'input', 'voice', 'translation', 'settings', 'guide'
     $navAutomationId = 'AutomationProperties.AutomationId="nav-' + $navId + '"'
     if ($mainWindowMarkup -notmatch [regex]::Escape($navAutomationId)) { throw "The desktop shell is missing the '$navId' navigation automation id." }
 }
-if ($mainWindowSource -notmatch '"input"\s*=>\s*\(.*输入' -or $mainWindowSource -notmatch '"voice"\s*=>\s*\(.*字幕') { throw 'The desktop navigation must use the concise 输入 and 字幕 labels.' }
+if ($mainWindowSource -notmatch '"input"\s*=>\s*\(.*输入' -or $mainWindowSource -notmatch '"voice"\s*=>\s*\(.*语音') { throw 'The desktop navigation must use the concise 输入 and 语音 labels.' }
 if ($settingsMarkup -match 'Text="快捷输入"' -or (Get-Content -Raw $guidePage) -match 'Text="快捷输入"') { throw 'User-facing shortcut labels must not use the obsolete 快捷输入 name.' }
 if ((Get-Content -Raw $guidePage) -notmatch 'Text="打开输入框"' -or $inputMarkup -notmatch 'Content="打开输入框"' -or $runMarkup -notmatch 'Text="输入"') { throw 'The input action must use the concise 输入 page label and the unified 打开输入框 action.' }
 if ($mainWindowMarkup -match 'Background="#24314D"|BorderBrush="#5278CF"') { throw 'The sidebar brand icon must keep its transparent artwork without an opaque decorative frame.' }
@@ -1000,7 +1000,7 @@ public static class VrcTranslateSubtitleVisualNative {
         if ($null -eq $mainWindow) { throw 'Subtitle visual smoke could not find the shell window.' }
 
         $openCondition = New-Object System.Windows.Automation.PropertyCondition(
-            [System.Windows.Automation.AutomationElement]::NameProperty, '打开字幕')
+            [System.Windows.Automation.AutomationElement]::NameProperty, '打开语音')
         $openButton = $mainWindow.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $openCondition)
         if ($null -eq $openButton) { throw 'Subtitle visual smoke could not find the 打开字幕 action.' }
         $openButton.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke()

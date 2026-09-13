@@ -438,7 +438,7 @@ public sealed partial class VoicePage : Page
     {
         var active = new SolidColorBrush(Microsoft.UI.ColorHelper.FromArgb(255, 33, 165, 116));
         var inactive = new SolidColorBrush(Microsoft.UI.ColorHelper.FromArgb(255, 154, 168, 184));
-        VoiceStatusText.Text = IsRunning ? "字幕翻译中" : "字幕已停止";
+        VoiceStatusText.Text = IsRunning ? "他人语音识别中" : "他人语音识别停止";
         VoiceStartButton.Content = IsRunning ? "停止" : "开始";
         AutomationProperties.SetName(VoiceStartButton, IsRunning ? "停止识别" : "开始识别");
         VoiceStatusDot.Fill = IsRunning ? active : inactive;
@@ -645,7 +645,7 @@ public sealed partial class VoicePage : Page
                 ? _speakers.Count == 0
                     ? "已开启 · 等待第一位说话人"
                     : $"已开启 · 本会话识别到 {_speakers.Count} 位说话人，命名后会跨会话沿用"
-                : "字幕暂不区分说话人";
+                : "他人语音暂不区分说话人";
         UpdateSpeakerButtons();
     }
 

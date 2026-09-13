@@ -29,7 +29,7 @@ public sealed partial class MainWindow : Window
         var smoke = smokePage?.ToLowerInvariant() switch
         {
             "input" => (InputNavButton, typeof(SelfMessagePage), "输入"),
-            "voice" => (VoiceNavButton, typeof(VoicePage), "字幕"),
+            "voice" => (VoiceNavButton, typeof(VoicePage), "语音"),
             "translation" => (TranslationNavButton, typeof(TranslationPage), "翻译"),
             "settings" => (SettingsNavButton, typeof(SettingsPage), "设置"),
             "guide" => (GuideNavButton, typeof(GuidePage), "指南"),
@@ -163,7 +163,7 @@ public sealed partial class MainWindow : Window
         {
             "input" => (typeof(SelfMessagePage), "输入"),
             "translation" => (typeof(TranslationPage), "翻译"),
-            "voice" => (typeof(VoicePage), "字幕"),
+            "voice" => (typeof(VoicePage), "语音"),
             "guide" => (typeof(GuidePage), "指南"),
             "settings" => (typeof(SettingsPage), "设置"),
             _ => (typeof(RunPage), "运行")

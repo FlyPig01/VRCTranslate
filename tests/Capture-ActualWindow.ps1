@@ -84,7 +84,7 @@ try {
     }
     if ($null -eq $window) { throw 'VRCTranslate window was not found.' }
     if ($Target -ne 'main') {
-        $targetName = if ($Target -eq 'subtitle') { '打开字幕' } else { '打开输入框' }
+        $targetName = if ($Target -eq 'subtitle') { '打开语音' } else { '打开输入框' }
         $openCondition = New-Object System.Windows.Automation.PropertyCondition(
             [System.Windows.Automation.AutomationElement]::NameProperty, $targetName)
         $openButton = $window.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $openCondition)

@@ -1,3 +1,4 @@
+using System.Text.Json;
 using VrcTranslate.Infrastructure.Configuration;
 using VrcTranslate.Infrastructure.Translation;
 using VrcTranslate.Application.Abstractions;
@@ -104,13 +105,14 @@ public sealed class TranslationProviderCatalogTests
     {
         var catalog = new TranslationProviderCatalog([
             new EchoTranslationProvider(),
-            new OpenAiCompatibleTranslationProvider(),
+            new DeepSeekTranslationProvider(),
             new DeepLTranslationProvider()
         ]);
 
         Assert.True(catalog.IsRegistered("echo"));
-        Assert.True(catalog.IsRegistered("openai-compatible"));
+        Assert.True(catalog.IsRegistered("deepseek"));
         Assert.True(catalog.IsRegistered("deepl"));
+        Assert.False(catalog.IsRegistered("openai-compatible"));
         Assert.False(catalog.IsRegistered("google-cloud"));
         Assert.False(catalog.IsRegistered("tencent"));
         Assert.False(catalog.IsRegistered("aliyun"));
@@ -193,11 +195,11 @@ public sealed class RoutedProviderTests
     [Fact]
     public async Task Dispatches_legacy_openai_provider_alias_without_failing_route_lookup()
     {
-        // Unknown aliases still fail, but the legacy underscore spelling is
-        // normalized at the routing boundary when an adapter is registered.
-        var openAi = new OpenAiCompatibleTranslationProvider(
+        // Unknown aliases still fail, but the legacy OpenAI-compatible
+        // spellings are migrated to the dedicated DeepSeek provider.
+        var deepSeek = new DeepSeekTranslationProvider(
             new HttpClient(new StubHandler("{\"choices\":[{\"message\":{\"content\":\"你好\"}}]}")));
-        var aliasCatalog = new TranslationProviderCatalog([openAi]);
+        var aliasCatalog = new TranslationProviderCatalog([deepSeek]);
         var aliasRouted = new RoutedTranslationProvider(aliasCatalog);
 
         var result = await aliasRouted.TranslateAsync(new TranslationProviderRequest(
@@ -215,17 +217,42 @@ public sealed class RoutedProviderTests
     }
 
     [Fact]
-    public async Task Parses_openai_compatible_response_without_network()
+    public void DeepSeek_request_body_disables_thinking_by_default()
+    {
+        var request = new TranslationProviderRequest(
+            "hello", "zh-CN", "en", "deepseek-chat", new Uri("https://api.deepseek.com"), "secret", "test", "deepseek");
+
+        var serialized = JsonSerializer.Serialize(DeepSeekTranslationProvider.BuildRequestBody(request));
+
+        Assert.Contains("\"type\":\"disabled\"", serialized, StringComparison.Ordinal);
+        Assert.Contains("temperature", serialized, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void DeepSeek_request_body_enables_thinking_only_for_reasoner_models()
+    {
+        var request = new TranslationProviderRequest(
+            "hello", "zh-CN", "en", "deepseek-reasoner", new Uri("https://api.deepseek.com"), "secret", "test", "deepseek");
+
+        var serialized = JsonSerializer.Serialize(DeepSeekTranslationProvider.BuildRequestBody(request));
+
+        Assert.Contains("\"type\":\"enabled\"", serialized, StringComparison.Ordinal);
+        Assert.DoesNotContain("temperature", serialized, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Parses_deepseek_response_without_network()
     {
         var handler = new StubHandler("{\"choices\":[{\"message\":{\"content\":\"你好\"}}]}");
         using var client = new HttpClient(handler);
-        var provider = new OpenAiCompatibleTranslationProvider(client);
+        var provider = new DeepSeekTranslationProvider(client);
         var result = await provider.TranslateAsync(new TranslationProviderRequest(
-            "hello", "zh-CN", "en", "demo", new Uri("https://example.test/v1"), "secret", "test", "openai-compatible"));
+            "hello", "zh-CN", "en", "deepseek-chat", new Uri("https://api.deepseek.com"), "secret", "test", "deepseek"));
 
         Assert.Equal("你好", result.TranslatedText);
         Assert.Contains("zh-CN", handler.RequestBody, StringComparison.Ordinal);
         Assert.Contains("Translate", handler.RequestBody, StringComparison.Ordinal);
+        Assert.Contains("/chat/completions", handler.RequestUri!.ToString(), StringComparison.Ordinal);
     }
 
     [Fact]

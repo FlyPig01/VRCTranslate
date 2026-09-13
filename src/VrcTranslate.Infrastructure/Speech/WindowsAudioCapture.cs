@@ -13,6 +13,7 @@ public sealed class WindowsAudioCapture : IAudioCapture
 {
     private readonly object _sync = new();
     private readonly AudioCaptureMode _mode;
+    private readonly string? _microphoneEndpointId;
     private readonly int _microphoneDeviceNumber;
     private readonly bool _useDefaultMicrophoneEndpoint;
     private IWaveIn? _capture;
@@ -23,6 +24,11 @@ public sealed class WindowsAudioCapture : IAudioCapture
     {
         _mode = mode;
         _useDefaultMicrophoneEndpoint = IsDefaultMicrophoneId(microphoneDeviceId);
+        // A WASAPI endpoint id is a long "{...}" GUID string; plain digits are
+        // legacy wave-in indexes from older settings.
+        _microphoneEndpointId = !_useDefaultMicrophoneEndpoint && !IsWaveInIndex(microphoneDeviceId)
+            ? microphoneDeviceId!.Trim()
+            : null;
         _microphoneDeviceNumber = ParseMicrophoneDeviceNumber(microphoneDeviceId);
     }
 
@@ -117,6 +123,16 @@ public sealed class WindowsAudioCapture : IAudioCapture
             return new WasapiCapture(endpoint);
         }
 
+        if (_microphoneEndpointId is not null)
+        {
+            // Endpoint ids come from WindowsAudioDeviceEnumerator, so the
+            // selected device (e.g. a Bluetooth headset) is used even when it
+            // is not the system default.
+            using var enumerator = new MMDeviceEnumerator();
+            var endpoint = enumerator.GetDevice(_microphoneEndpointId);
+            return new WasapiCapture(endpoint);
+        }
+
         var capture = new WaveInEvent
         {
             DeviceNumber = _microphoneDeviceNumber,
@@ -130,6 +146,9 @@ public sealed class WindowsAudioCapture : IAudioCapture
     private static bool IsDefaultMicrophoneId(string? deviceId) =>
         string.IsNullOrWhiteSpace(deviceId)
         || deviceId.Trim().Equals("default", StringComparison.OrdinalIgnoreCase);
+
+    private static bool IsWaveInIndex(string? deviceId) =>
+        int.TryParse(deviceId?.Trim(), out var index) && index >= 0;
 
     private static int ParseMicrophoneDeviceNumber(string? deviceId)
     {
@@ -180,6 +199,57 @@ public sealed class WindowsAudioCaptureFactory : IAudioCaptureFactory
 
     public IAudioCapture Create(AudioCaptureMode mode, string? deviceId = null) =>
         new WindowsAudioCapture(mode, deviceId);
+}
+
+/// <summary>
+/// Lists active recording endpoints through WASAPI so the picker can offer
+/// every connected microphone (USB, Bluetooth, arrays), unlike the legacy
+/// wave-in enumeration that hides several device classes.
+/// </summary>
+public sealed class WindowsAudioDeviceEnumerator : IAudioDeviceEnumerator
+{
+    public IReadOnlyList<AudioDeviceInfo> ListMicrophones()
+    {
+        using var enumerator = new MMDeviceEnumerator();
+        var devices = enumerator.EnumerateAudioEndPoints(DataFlow.Capture, DeviceState.Active);
+        string defaultId;
+        try
+        {
+            defaultId = enumerator.GetDefaultAudioEndpoint(DataFlow.Capture, Role.Multimedia).ID;
+        }
+        catch
+        {
+            // No default endpoint (e.g. a fresh session without recording
+            // devices) still allows listing whatever is active.
+            defaultId = string.Empty;
+        }
+
+        var result = new List<AudioDeviceInfo>(devices.Count);
+        foreach (var device in devices)
+        {
+            string id;
+            string name;
+            try
+            {
+                id = device.ID;
+                name = device.FriendlyName;
+            }
+            catch
+            {
+                continue;
+            }
+
+            if (string.IsNullOrWhiteSpace(id)) continue;
+            result.Add(new AudioDeviceInfo(id, string.IsNullOrWhiteSpace(name) ? "麦克风" : name, id == defaultId));
+        }
+
+        // The default device first so the picker matches the system order the
+        // user already knows from Windows sound settings.
+        return result
+            .OrderByDescending(item => item.IsDefault)
+            .ThenBy(item => item.DisplayName, StringComparer.CurrentCulture)
+            .ToList();
+    }
 }
 
 /// <summary>Deterministic PCM/float conversion kept separate for unit testing.</summary>

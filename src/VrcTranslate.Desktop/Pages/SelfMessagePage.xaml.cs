@@ -339,7 +339,7 @@ public sealed partial class SelfMessagePage : Page
         catch { _settings = new SelfVoiceSettings(); }
 
         SelfVoiceHotkeySummary.Text = ReadGlobalSelfVoiceHotkey();
-        SelectByTag(MicrophoneBox, _settings.MicrophoneId);
+        PopulateMicrophoneList();
         // Own voice is always recognized as Simplified Chinese. Keep the
         // persisted field for backward compatibility, but never expose a
         // second language selector in this page.
@@ -347,6 +347,42 @@ public sealed partial class SelfMessagePage : Page
         SelectTargetControls(State.SelfTranslationTargets);
         UpdateSelfVoiceVisuals();
         _loaded = true;
+    }
+
+    /// <summary>
+    /// Rebuilds the microphone picker from the active WASAPI endpoints so a
+    /// USB/Bluetooth headset can be selected explicitly instead of relying on
+    /// the system default.
+    /// </summary>
+    private void PopulateMicrophoneList()
+    {
+        var previouslySelected = _settings.MicrophoneId;
+        MicrophoneBox.Items.Clear();
+        MicrophoneBox.Items.Add(new ComboBoxItem { Tag = "default", Content = "默认麦克风（跟随系统）" });
+        try
+        {
+            foreach (var device in State.AudioDevices.ListMicrophones())
+            {
+                MicrophoneBox.Items.Add(new ComboBoxItem
+                {
+                    Tag = device.Id,
+                    Content = device.IsDefault ? $"{device.DisplayName}（系统默认）" : device.DisplayName
+                });
+            }
+        }
+        catch
+        {
+            // Enumeration failures keep the default entry usable.
+        }
+
+        SelectByTag(MicrophoneBox, previouslySelected);
+        if (MicrophoneBox.SelectedItem is null)
+        {
+            // The stored device is gone (unplugged headset); fall back to the
+            // system default instead of an empty picker.
+            SelectByTag(MicrophoneBox, "default");
+        }
+        _settings.MicrophoneId = SelectedTag(MicrophoneBox, "default");
     }
 
     private void OnSelfVoiceStartClicked(object sender, RoutedEventArgs e)

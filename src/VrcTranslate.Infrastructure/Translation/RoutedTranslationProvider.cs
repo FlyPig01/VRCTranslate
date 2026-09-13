@@ -28,71 +28,12 @@ public sealed class RoutedTranslationProvider : ITranslationProvider
         ArgumentException.ThrowIfNullOrWhiteSpace(providerId);
         return providerId.Trim().ToLowerInvariant() switch
         {
-            "openai_compatible" => "openai-compatible",
+            // Profiles saved by earlier builds pointed at DeepSeek through the
+            // generic OpenAI-compatible mode; they become DeepSeek profiles.
+            "openai_compatible" or "openai-compatible" or "multimodal_openai" or "multimodal-openai" => "deepseek",
             "deep-l" => "deepl",
             _ => providerId.Trim()
         };
-    }
-}
-
-public sealed class OpenAiCompatibleTranslationProvider : ITranslationProvider
-{
-    private readonly HttpClient _httpClient;
-
-    public OpenAiCompatibleTranslationProvider(HttpClient? httpClient = null) => _httpClient = httpClient ?? new HttpClient();
-
-    public string Id => "openai-compatible";
-
-    public async Task<TranslationProviderResponse> TranslateAsync(TranslationProviderRequest request, CancellationToken cancellationToken = default)
-    {
-        ArgumentNullException.ThrowIfNull(request);
-        if (string.IsNullOrWhiteSpace(request.CredentialReference) || request.CredentialReference == "本地配置")
-            throw new InvalidOperationException("请先配置 API 密钥。");
-
-        using var message = new HttpRequestMessage(HttpMethod.Post, BuildChatEndpoint(request.Endpoint));
-        message.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", request.CredentialReference);
-        message.Content = JsonContent.Create(new
-        {
-            model = request.Model,
-            messages = new[]
-            {
-                new
-                {
-                    role = "system",
-                    content = BuildSystemPrompt(request)
-                },
-                new { role = "user", content = request.Text }
-            },
-            temperature = 0.1
-        });
-        using var response = await _httpClient.SendAsync(message, cancellationToken).ConfigureAwait(false);
-        var payload = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
-        if (!response.IsSuccessStatusCode)
-            throw new HttpRequestException($"翻译服务返回 {(int)response.StatusCode}：{payload}");
-        using var json = JsonDocument.Parse(payload);
-        var text = json.RootElement.GetProperty("choices")[0].GetProperty("message").GetProperty("content").GetString();
-        if (string.IsNullOrWhiteSpace(text)) throw new InvalidOperationException("翻译服务返回了空结果。");
-        return new TranslationProviderResponse(text.Trim(), request.SourceLanguage);
-    }
-
-    private static string BuildSystemPrompt(TranslationProviderRequest request)
-    {
-        var source = string.IsNullOrWhiteSpace(request.SourceLanguage)
-            ? "Detect the source language"
-            : $"The source language is {request.SourceLanguage}";
-        return $"Translate the user's text into {request.TargetLanguage}. {source}. Return only the translation, without explanations.";
-    }
-
-    private static Uri BuildChatEndpoint(Uri endpoint)
-    {
-        var builder = new UriBuilder(endpoint);
-        var path = builder.Path.TrimEnd('/');
-        if (!path.EndsWith("/chat/completions", StringComparison.OrdinalIgnoreCase))
-        {
-            builder.Path = path + "/chat/completions";
-        }
-
-        return builder.Uri;
     }
 }
 

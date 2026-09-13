@@ -61,8 +61,20 @@ public interface IAudioCaptureFactory
 
     /// <summary>
     /// Creates a capture session for the requested source. For microphone
-    /// capture, <paramref name="deviceId"/> may be <c>default</c> or a
-    /// numeric Windows wave-in device index. Loopback capture ignores it.
+    /// capture, <paramref name="deviceId"/> may be <c>default</c>, a WASAPI
+    /// endpoint id from <see cref="IAudioDeviceEnumerator"/>, or a numeric
+    /// Windows wave-in device index from older settings. Loopback capture
+    /// ignores it.
     /// </summary>
     IAudioCapture Create(AudioCaptureMode mode, string? deviceId) => Create(mode);
+}
+
+/// <summary>One selectable audio capture endpoint shown in the UI.</summary>
+public sealed record AudioDeviceInfo(string Id, string DisplayName, bool IsDefault);
+
+/// <summary>Enumerates the capture devices the user can pick for own-voice input.</summary>
+public interface IAudioDeviceEnumerator
+{
+    /// <summary>Active recording endpoints, the Windows default first.</summary>
+    IReadOnlyList<AudioDeviceInfo> ListMicrophones();
 }

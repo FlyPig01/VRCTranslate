@@ -123,14 +123,13 @@
                   <ColumnDefinition Width="*" />
                   <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
+                <!-- Items are populated from active WASAPI endpoints at runtime
+                     so connected USB/Bluetooth microphones can be selected. -->
                 <ComboBox x:Name="MicrophoneBox"
                           AutomationProperties.AutomationId="self-voice-microphone"
                           Header="麦克风"
-                          SelectedIndex="0"
                           SelectionChanged="OnSelfVoiceSettingChanged"
-                          MinWidth="0">
-                  <ComboBoxItem Tag="default" Content="默认麦克风" />
-                </ComboBox>
+                          MinWidth="0" />
                         <Button Grid.Column="1"
                                 x:Name="MicrophoneTestButton"
                         Content="检测声音"

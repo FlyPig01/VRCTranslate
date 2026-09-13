@@ -30,6 +30,7 @@ public sealed class AppState
         // and does not load a model until the user installs and starts it.
         LocalSpeech = LocalSpeechServiceFactory.CreateDefault();
         AudioCapture = new WindowsAudioCaptureFactory();
+        AudioDevices = new WindowsAudioDeviceEnumerator();
         // Recognition sessions live at application scope: switching pages must
         // not stop an in-flight translation and the shutdown path needs one
         // place to stop them.
@@ -39,13 +40,12 @@ public sealed class AppState
         RouteStore.SetCurrent(CreateDefaultRoute());
         var catalog = new TranslationProviderCatalog([
             new EchoTranslationProvider(),
-            new OpenAiCompatibleTranslationProvider(),
+            new DeepSeekTranslationProvider(),
             new DeepLTranslationProvider(),
             new GoogleFreeTranslationProvider(),
             new GoogleCloudTranslationProvider(),
             new TencentTranslationProvider(),
-            new AliyunTranslationProvider(),
-            new UnavailableTranslationProvider("multimodal-openai", "OpenAI 多模态")
+            new AliyunTranslationProvider()
         ]);
         TranslationProviderIds = catalog.Ids;
         _profiles = CreateDefaultProfiles();
@@ -83,6 +83,9 @@ public sealed class AppState
 
     /// <summary>Platform audio factory exposed through the application boundary.</summary>
     public IAudioCaptureFactory AudioCapture { get; }
+
+    /// <summary>Recording endpoints offered in the microphone picker.</summary>
+    public IAudioDeviceEnumerator AudioDevices { get; }
 
     /// <summary>Other-player caption recognition; owns the loopback session across page navigation.</summary>
     public SubtitleSpeechSession SubtitleVoice { get; }
@@ -442,13 +445,12 @@ public sealed class AppState
 
     private static List<TranslationProfileRecord> CreateProviderPlaceholders() =>
     [
-        new("openai-compatible", "OpenAI 兼容接口", "openai-compatible", "gpt-4.1-mini", "https://api.openai.com/v1", "本地配置", "auto", "zh-CN", "", new Dictionary<string, string>()),
+        new("deepseek", "DeepSeek", "deepseek", "deepseek-chat", "https://api.deepseek.com", "本地配置", "auto", "zh-CN", "", new Dictionary<string, string>()),
         new("deepl", "DeepL", "deepl", "deepl", "https://api-free.deepl.com/v2/translate", "本地配置", "auto", "zh-CN", "", new Dictionary<string, string>()),
         new("google-free", "Google 翻译（免费接口）", "google-free", "default", "https://translate.googleapis.com", "本地配置", "auto", "zh-CN", "", new Dictionary<string, string>()),
         new("google-cloud", "Google Cloud 翻译", "google-cloud", "v3", "https://translation.googleapis.com", "本地配置", "auto", "zh-CN", "", new Dictionary<string, string>()),
         new("tencent", "腾讯云翻译", "tencent", "TextTranslate", "https://tmt.tencentcloudapi.com", "本地配置", "auto", "zh-CN", "ap-beijing", new Dictionary<string, string>()),
-        new("aliyun", "阿里云机器翻译", "aliyun", "general", "https://mt.cn-hangzhou.aliyuncs.com", "本地配置", "auto", "zh-CN", "cn-hangzhou", new Dictionary<string, string>()),
-        new("multimodal-openai", "OpenAI 多模态", "multimodal-openai", "gpt-4.1-mini", "https://api.openai.com/v1", "本地配置", "auto", "zh-CN", "", new Dictionary<string, string>())
+        new("aliyun", "阿里云机器翻译", "aliyun", "general", "https://mt.cn-hangzhou.aliyuncs.com", "本地配置", "auto", "zh-CN", "cn-hangzhou", new Dictionary<string, string>())
     ];
 
     private static bool IsConfiguredProfile(TranslationProfileRecord profile)
@@ -537,25 +539,28 @@ public sealed class AppState
     private static string? NormalizeProvider(string? provider) => provider?.Trim().ToLowerInvariant() switch
     {
         "echo" => "echo",
-        "openai_compatible" or "openai-compatible" => "openai-compatible",
+        // Profiles saved by earlier builds talked to DeepSeek through the
+        // generic OpenAI-compatible mode; migrate them to the dedicated
+        // provider so existing keys and endpoints keep working.
+        "deepseek" or "openai_compatible" or "openai-compatible" or "multimodal_openai" or "multimodal-openai" => "deepseek",
         "deepl" or "deep-l" => "deepl",
         "google_free" or "google-free" => "google-free",
         "google_cloud" or "google-cloud" => "google-cloud",
         "tencent" => "tencent",
         "aliyun" or "aliyun_nls" => "aliyun",
-        "multimodal_openai" or "multimodal-openai" => "multimodal-openai",
         _ => null
     };
 
     private static string DefaultModelForProvider(string? provider) => provider?.Trim().ToLowerInvariant() switch
     {
         "echo" => "本地回显",
+        "deepseek" => "deepseek-chat",
         "deepl" => "v2",
         "google-free" => "translate",
         "google-cloud" => "v3",
         "tencent" => "TextTranslate",
         "aliyun" => "general",
-        _ => "gpt-4.1-mini"
+        _ => "deepseek-chat"
     };
 
     private static bool IsHttpEndpoint(Uri endpoint) =>

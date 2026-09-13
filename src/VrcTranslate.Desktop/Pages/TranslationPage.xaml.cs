@@ -21,13 +21,12 @@ public sealed partial class TranslationPage : Page
     private static readonly IReadOnlyDictionary<string, string> ProviderNames = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
     {
         ["echo"] = "本地测试",
-        ["openai-compatible"] = "OpenAI 兼容接口",
+        ["deepseek"] = "DeepSeek",
         ["deepl"] = "DeepL",
         ["google-free"] = "Google 翻译（免费）",
         ["google-cloud"] = "Google Cloud Translation",
         ["tencent"] = "腾讯云翻译",
-        ["aliyun"] = "阿里云机器翻译",
-        ["multimodal-openai"] = "OpenAI 多模态"
+        ["aliyun"] = "阿里云机器翻译"
     };
 
     public TranslationPage()
@@ -220,25 +219,26 @@ public sealed partial class TranslationPage : Page
         var nameBox = new TextBox { Header = "档案名称", Text = existing?.DisplayName ?? "新的翻译服务", PlaceholderText = "例如：日常中文翻译" };
         var providerBox = new ComboBox { Header = "服务类型", MinWidth = 0, HorizontalAlignment = HorizontalAlignment.Stretch };
         foreach (var pair in ProviderNames) providerBox.Items.Add(new ComboBoxItem { Content = pair.Value, Tag = pair.Key });
-        SelectByTag(providerBox, existing?.Provider ?? "openai-compatible");
+        SelectByTag(providerBox, existing?.Provider ?? "deepseek");
         var modelBox = new TextBox { Header = "模型或接口版本", Text = existing?.Model ?? string.Empty, PlaceholderText = "填写服务商提供的模型或版本" };
         var endpointBox = new TextBox { Header = "接口地址", Text = existing?.Endpoint ?? "", PlaceholderText = "https://api.example.com/v1" };
         var credentialBox = new PasswordBox { Header = "API 密钥", Password = existing?.CredentialReference == "本地配置" ? string.Empty : existing?.CredentialReference ?? string.Empty, PlaceholderText = "留空表示使用已保存凭据" };
         var secretBox = new PasswordBox { Header = "SecretKey / AccessKey Secret（可选）", Password = existing?.Options?.GetValueOrDefault("secret") ?? string.Empty };
         var regionBox = new TextBox { Header = "区域（可选）", Text = existing?.Region ?? string.Empty, PlaceholderText = "例如 ap-guangzhou" };
-        var lastProvider = existing?.Provider ?? "openai-compatible";
+        var lastProvider = existing?.Provider ?? "deepseek";
         void RefreshProviderFields()
         {
             var id = (providerBox.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? string.Empty;
             var defaults = id switch
             {
                 "echo" => ("本地回显", "https://localhost/echo", "无需密钥"),
+                "deepseek" => ("deepseek-chat", "https://api.deepseek.com", "DeepSeek API Key"),
                 "deepl" => ("v2", "https://api-free.deepl.com/v2/translate", "DeepL Auth Key"),
                 "google-free" => ("translate", "https://translate.googleapis.com", "无需密钥"),
                 "google-cloud" => ("v3", "https://translation.googleapis.com", "Google Cloud API Key"),
                 "tencent" => ("TextTranslate", "https://tmt.tencentcloudapi.com", "腾讯云 SecretId"),
                 "aliyun" => ("general", "https://mt.cn-hangzhou.aliyuncs.com", "阿里云 AccessKey ID"),
-                _ => ("gpt-4.1-mini", "https://api.openai.com/v1", "OpenAI API Key")
+                _ => ("deepseek-chat", "https://api.deepseek.com", "DeepSeek API Key")
             };
             modelBox.Header = id is "echo" or "deepl" or "google-free" or "google-cloud" or "tencent" or "aliyun" ? "接口版本" : "模型名称";
             modelBox.PlaceholderText = defaults.Item1;
@@ -261,8 +261,8 @@ public sealed partial class TranslationPage : Page
             var selectedProvider = (providerBox.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? string.Empty;
             if (!string.Equals(selectedProvider, lastProvider, StringComparison.OrdinalIgnoreCase))
             {
-                if (string.IsNullOrWhiteSpace(modelBox.Text) || modelBox.Text is "gpt-4.1-mini" or "本地回显" or "v2" or "translate" or "v3" or "TextTranslate" or "general") modelBox.Text = string.Empty;
-                if (endpointBox.Text is "https://api.openai.com/v1" or "https://localhost/echo" or "https://api-free.deepl.com/v2/translate" or "https://translate.googleapis.com" or "https://translation.googleapis.com" or "https://tmt.tencentcloudapi.com" or "https://mt.cn-hangzhou.aliyuncs.com") endpointBox.Text = string.Empty;
+                if (string.IsNullOrWhiteSpace(modelBox.Text) || modelBox.Text is "gpt-4.1-mini" or "deepseek-chat" or "本地回显" or "v2" or "translate" or "v3" or "TextTranslate" or "general") modelBox.Text = string.Empty;
+                if (endpointBox.Text is "https://api.deepseek.com" or "https://api.openai.com/v1" or "https://localhost/echo" or "https://api-free.deepl.com/v2/translate" or "https://translate.googleapis.com" or "https://translation.googleapis.com" or "https://tmt.tencentcloudapi.com" or "https://mt.cn-hangzhou.aliyuncs.com") endpointBox.Text = string.Empty;
                 lastProvider = selectedProvider;
             }
             RefreshProviderFields();

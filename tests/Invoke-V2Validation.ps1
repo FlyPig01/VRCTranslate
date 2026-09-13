@@ -60,6 +60,7 @@ $translationMarkup = Get-Content -Raw $translationPage
 $translationCode = Get-Content -Raw $translationPageCode
 $appStateSource = Get-Content -Raw (Join-Path $desktopSource 'AppState.cs')
 $sessionHostSource = Get-Content -Raw (Join-Path $desktopSource 'VoiceSessionHost.cs')
+$infrastructureSource = Get-Content -Raw (Join-Path $v2Root 'src\VrcTranslate.Infrastructure\Translation\DeepSeekTranslationProvider.cs')
 $settingsMarkup = Get-Content -Raw $settingsPage
 $settingsSource = Get-Content -Raw $settingsPageCode
 $mainWindowMarkup = Get-Content -Raw $mainWindow
@@ -184,7 +185,8 @@ if ($translationMarkup -notmatch 'HorizontalContentAlignment="Stretch"') { throw
 if ($translationCode -notmatch 'CreateProfileCard|ShowProfileDialogAsync|ContentDialog|SetDefaultProfile|DeleteProfile') { throw 'Translation profiles must support selectable cards and dialog-based add/edit/delete actions.' }
 if ($translationCode -notmatch 'google-free|google-cloud|tencent|aliyun') { throw 'The translation profile catalog must retain the legacy service types.' }
 if ($translationCode -match 'Header = "原文语言"|Header = "翻译为"|existing\.SourceLanguage|existing\.TargetLanguage') { throw 'Translation profile dialogs must not expose source or target language settings.' }
-if ($appStateSource -notmatch 'openai-compatible".*, "gpt-4\.1-mini"' -or $appStateSource -notmatch 'DefaultModelForProvider' -or $appStateSource -notmatch 'new\("tencent".*"auto".*"zh-CN"' -or $translationCode -notmatch '腾讯云 SecretKey' -or $translationCode -notmatch '阿里云 AccessKey Secret') { throw 'Translation profile defaults and provider-specific credential labels must be explicit.' }
+if ($appStateSource -notmatch 'deepseek".*, "deepseek-chat"' -or $appStateSource -notmatch 'DefaultModelForProvider' -or $appStateSource -notmatch 'new\("tencent".*"auto".*"zh-CN"' -or $translationCode -notmatch '腾讯云 SecretKey' -or $translationCode -notmatch '阿里云 AccessKey Secret') { throw 'Translation profile defaults and provider-specific credential labels must be explicit.' }
+if ($infrastructureSource -notmatch 'DeepSeekTranslationProvider' -or $infrastructureSource -notmatch '"type"\]\s*=\s*"disabled"' -or $infrastructureSource -match 'OpenAiCompatibleTranslationProvider') { throw 'DeepSeek must be a dedicated provider that disables thinking mode by default; the generic OpenAI-compatible adapter is retired.' }
 if ($translationMarkup -notmatch 'ListViewItem|HorizontalContentAlignment="Stretch"') { throw 'Glossary rows must stretch to the table width.' }
 if ($translationCode -notmatch 'DefaultTerms' -or $translationCode -notmatch 'if \(_terms\.Count == 0\)') { throw 'The glossary must seed its default terms when no saved terms exist.' }
 if ($translationCode -notmatch 'LayoutCard' -or $translationCode -notmatch 'grid\.ActualWidth' -or $translationCode -notmatch 'HorizontalScrollBarVisibility = ScrollBarVisibility\.Disabled') { throw 'Translation profile cards and dialogs must adapt to compact widths without horizontal clipping.' }

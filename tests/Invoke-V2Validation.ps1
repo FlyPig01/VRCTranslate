@@ -6,7 +6,7 @@ $desktopOutput = Join-Path $v2Root 'src\VrcTranslate.Desktop\bin\x64\Debug\net10
 $executable = Join-Path $desktopOutput 'VrcTranslate.exe'
 $icon = Join-Path $desktopOutput 'app.ico'
 $logo = Join-Path $desktopOutput 'logo-mark.png'
-$startupLog = Join-Path $env:TEMP 'VrcTranslate-startup.log'
+$startupLog = Join-Path $desktopOutput 'data\startup-error.log'
 $settingsPage = Join-Path $v2Root 'src\VrcTranslate.Desktop\Pages\SettingsPage.xaml'
 $settingsPageCode = Join-Path $v2Root 'src\VrcTranslate.Desktop\Pages\SettingsPage.xaml.cs'
 $guidePage = Join-Path $v2Root 'src\VrcTranslate.Desktop\Pages\GuidePage.xaml'
@@ -226,8 +226,8 @@ if ((Get-Content -Raw (Join-Path $desktopSource 'Pages\SelfMessagePage.xaml.cs')
 if ((Get-Content -Raw (Join-Path $desktopSource 'Pages\SelfMessagePage.xaml.cs')) -match 'SpeechRecognizer|Windows\.Media\.SpeechRecognition') { throw 'Self-voice must not fall back to Windows SpeechRecognizer.' }
 if ($inputMarkup -match '发送格式|仅发送译文|原文 \+ 译文|仅发送原文') { throw 'Quick input must not expose an unused send-format selector.' }
 $inputSource = Get-Content -Raw $inputPage.Replace('.xaml', '.xaml.cs')
-if ($inputSource -notmatch 'v2-self-voice-settings\.json' -or $inputSource -notmatch 'ToggleSelfVoiceFromHotkey' -or $inputSource -notmatch 'State\.AudioCapture\.Create\(AudioCaptureMode\.Microphone' -or $inputSource -notmatch 'SamplesReady' -or $inputSource -notmatch 'Task\.WhenAny' -or $inputSource -match 'MediaCapture') { throw 'Self voice must retain persisted controls, a hotkey entry point, and a real microphone frame test.' }
-if ($inputSource -match 'VrcTranslate\.Infrastructure') { throw 'Self voice page must use the application audio factory instead of a platform implementation.' }
+if ($inputSource -notmatch 'AppDataFiles\.SelfVoiceSettings' -or $inputSource -notmatch 'ToggleSelfVoiceFromHotkey' -or $inputSource -notmatch 'State\.AudioCapture\.Create\(AudioCaptureMode\.Microphone' -or $inputSource -notmatch 'SamplesReady' -or $inputSource -notmatch 'Task\.WhenAny' -or $inputSource -match 'MediaCapture') { throw 'Self voice must retain persisted controls, a hotkey entry point, and a real microphone frame test.' }
+if ($inputSource -match 'WindowsAudioCapture|NAudio\.|VrcTranslate\.Infrastructure\.Speech') { throw 'Self voice page must use the application audio factory instead of a platform implementation.' }
 # Recognition sessions moved to the application-scoped host so page navigation
 # no longer stops them; the wiring invariant now lives there.
 if ($sessionHostSource -notmatch 'LocalSpeechCaptureSession' -or $sessionHostSource -notmatch 'AudioCaptureMode\.Microphone' -or $sessionHostSource -notmatch 'session\.StartAsync' -or $sessionHostSource -notmatch 'session\.DisposeAsync' -or $appStateSource -notmatch 'ShutdownSpeechAsync') { throw 'Self voice must connect the microphone capture session and release it on stop/shutdown via the session host.' }
@@ -241,7 +241,7 @@ if ($voiceMarkup -notmatch '本地语音模型' -or $voiceMarkup -notmatch 'Sens
 if ($voiceSource -notmatch 'State\.LocalSpeech|GetModelStatus|InstallModelAsync|RecognizeLocalSamplesAsync') { throw 'VoicePage must expose the local SenseVoice model state and use the application speech boundary.' }
 if ($voiceSource -match 'SpeechRecognizer|Windows\.Media\.SpeechRecognition') { throw 'VoicePage must not use Windows SpeechRecognizer.' }
 if ($sessionHostSource -notmatch 'LocalSpeechCaptureSession' -or $sessionHostSource -notmatch 'AudioCaptureMode\.SystemLoopback' -or $sessionHostSource -notmatch 'session\.StartAsync' -or $sessionHostSource -notmatch 'session\.DisposeAsync') { throw 'The session host must connect the system-loopback capture session and release it on stop/shutdown.' }
-if ($voiceSource -match 'VrcTranslate\.Infrastructure') { throw 'Voice page must use the application audio factory instead of a platform implementation.' }
+if ($voiceSource -match 'WindowsAudioCapture|NAudio\.|VrcTranslate\.Infrastructure\.Speech') { throw 'Voice page must use the application audio factory instead of a platform implementation.' }
 if ($voiceMarkup -match 'Windows 系统识别 · 无需密钥') { throw 'VoicePage must keep the recognition status label concise.' }
 if ([regex]::Matches($voiceMarkup, 'AutomationProperties.Name="打开字幕"').Count -ne 1) { throw 'VoicePage must expose one concise subtitle entry instead of duplicate buttons.' }
 if ($voiceMarkup -notmatch 'ProgressRing|EntranceThemeTransition' -or $voiceMarkup -notmatch 'VoiceAudioLevel' -or $voiceSource -notmatch 'VoicePulse\.IsActive' -or $voiceSource -notmatch 'LevelChanged|OnAudioLevelChanged') { throw 'VoicePage must provide a compact animated recognition state and measured audio activity.' }
@@ -274,7 +274,7 @@ if ($overlayControllerSource -notmatch 'BestEffort\(\(\)\s*=>\s*ConfigurePresent
     $overlayCodeSource -notmatch 'OverlayWindowController\.ShowFallback\(this, activate\)') {
     throw 'Optional native presentation failures must retain an openable compatibility path for both overlays.'
 }
-if ($overlayHostSource -notmatch 'v2-overlay-layout\.json' -or
+if ($overlayHostSource -notmatch 'AppDataFiles\.OverlayLayout' -or
     $overlayHostSource -notmatch 'GetSavedLayout' -or
     $overlayHostSource -notmatch 'SaveLayout' -or
     $overlayHostSource -notmatch '\.Flush\(\)' -or
@@ -639,7 +639,7 @@ function Invoke-DesktopSmoke([string] $pageName) {
 }
 
 function Get-ConfiguredGlobalHotkey([string] $propertyName, [string] $fallback) {
-    $settingsPath = Join-Path $env:LOCALAPPDATA 'VRCTranslate\v2-user-settings.json'
+    $settingsPath = Join-Path $desktopOutput 'data\v2-user-settings.json'
     if (Test-Path -LiteralPath $settingsPath) {
         try {
             $settings = Get-Content -LiteralPath $settingsPath -Raw | ConvertFrom-Json

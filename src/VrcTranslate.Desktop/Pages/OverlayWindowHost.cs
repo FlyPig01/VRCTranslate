@@ -1,5 +1,6 @@
 using VrcTranslate.Core.Settings;
 using VrcTranslate.Infrastructure.Configuration;
+using VrcTranslate.Infrastructure.Storage;
 
 namespace VrcTranslate.Desktop.Pages;
 
@@ -195,7 +196,7 @@ internal static class OverlayWindowHost
     private static void EnsureLayoutStore()
     {
         if (_layoutStore is not null) return;
-        var path = Path.Combine(AppState.ResolveDataDirectory(), "v2-overlay-layout.json");
+        var path = PortableStorage.GetPath(AppDataFiles.OverlayLayout);
         _layoutStore = new OverlayWindowLayoutStore(path);
     }
 

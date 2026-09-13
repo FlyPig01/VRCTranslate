@@ -67,7 +67,7 @@ $exe = if ([string]::IsNullOrWhiteSpace($Executable)) {
     (Resolve-Path -LiteralPath $Executable).Path
 }
 $output = Split-Path -Parent $exe
-$startupLog = Join-Path $env:TEMP 'VrcTranslate-startup.log'
+$startupLog = Join-Path $output 'data\startup-error.log'
 Remove-Item $startupLog -ErrorAction SilentlyContinue
 $env:VRC_TRANSLATE_SMOKE_PAGE = $Page
 $process = Start-Process -FilePath $exe -WorkingDirectory $output -PassThru

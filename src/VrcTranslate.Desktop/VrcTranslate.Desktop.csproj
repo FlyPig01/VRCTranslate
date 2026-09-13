@@ -24,6 +24,12 @@
     <BundledSpeechModelDirectory>sensevoice</BundledSpeechModelDirectory>
     <BundledSpeechModelFile>model.int8.onnx</BundledSpeechModelFile>
     <BundledSpeechModelPath>..\..\assets\models\speech\$(BundledSpeechModelDirectory)</BundledSpeechModelPath>
+    <!-- Speaker separation payload (pyannote segmentation + speaker embedding).
+         It ships in the main package so speaker labels work out of the box,
+         with no first-run download. -->
+    <BundledSpeakerModelDirectory>speaker</BundledSpeakerModelDirectory>
+    <BundledSpeakerModelFile>embedding.onnx</BundledSpeakerModelFile>
+    <BundledSpeakerModelPath>..\..\assets\models\speech\$(BundledSpeakerModelDirectory)</BundledSpeakerModelPath>
     <!-- Pinned to the version referenced by VrcTranslate.Infrastructure; the
          native engine is re-copied into the publish output after stripping. -->
     <SherpaOnnxRuntimeVersion>1.13.8</SherpaOnnxRuntimeVersion>
@@ -41,6 +47,11 @@
              Link="Models\$(BundledSpeechModelDirectory)\%(RecursiveDir)%(Filename)%(Extension)"
              CopyToOutputDirectory="PreserveNewest"
              CopyToPublishDirectory="PreserveNewest" />
+    <Content Condition="Exists('$(BundledSpeakerModelPath)\$(BundledSpeakerModelFile)')"
+             Include="$(BundledSpeakerModelPath)\**\*"
+             Link="Models\$(BundledSpeakerModelDirectory)\%(RecursiveDir)%(Filename)%(Extension)"
+             CopyToOutputDirectory="PreserveNewest"
+             CopyToPublishDirectory="PreserveNewest" />
     <ProjectReference Include="..\VrcTranslate.Core\VrcTranslate.Core.csproj" />
     <ProjectReference Include="..\VrcTranslate.Application\VrcTranslate.Application.csproj" />
     <ProjectReference Include="..\VrcTranslate.Infrastructure\VrcTranslate.Infrastructure.csproj" />
@@ -50,6 +61,8 @@
   <Target Name="WarnWhenBundledSpeechModelMissing" BeforeTargets="Publish">
     <Warning Condition="!Exists('$(BundledSpeechModelPath)\$(BundledSpeechModelFile)')"
              Text="未找到内置语音模型 $(BundledSpeechModelDirectory)\$(BundledSpeechModelFile)，本次发布将回退为运行时下载；请先运行 tests\Import-BundledSpeechModel.ps1。" />
+    <Warning Condition="!Exists('$(BundledSpeakerModelPath)\$(BundledSpeakerModelFile)')"
+             Text="未找到内置说话人模型 $(BundledSpeakerModelDirectory)\$(BundledSpeakerModelFile)，说话人标签无法开箱即用；请先运行 tests\Import-BundledSpeechModel.ps1。" />
   </Target>
 
   <!-- The self-contained Windows App SDK deployment unconditionally copies its
@@ -69,6 +82,10 @@
       <PayloadToStrip Include="$(PublishDir)Microsoft.Windows.AI.winmd" />
       <PayloadToStrip Include="$(PublishDir)Microsoft.Graphics.Imaging*" />
       <PayloadToStrip Include="$(PublishDir)Microsoft.Graphics.Internal.Imaging*" />
+      <!-- The portable data folder holds per-machine state (settings, API keys,
+           downloaded models). Publishing over a folder that has been run must
+           never ship that state inside the package. -->
+      <LocalStateFolder Include="$(PublishDir)data" />
       <ForeignRuntimeFolder Include="$(PublishDir)runtimes\linux-arm" />
       <ForeignRuntimeFolder Include="$(PublishDir)runtimes\linux-arm64" />
       <ForeignRuntimeFolder Include="$(PublishDir)runtimes\linux-x64" />
@@ -80,7 +97,7 @@
     <Delete Files="@(PayloadToStrip)" TreatErrorsAsWarnings="true" />
     <!-- MSBuild "*" globs do not enumerate directories reliably, so the foreign
          RID set is enumerated explicitly. -->
-    <RemoveDir Directories="@(ForeignRuntimeFolder)" />
+    <RemoveDir Directories="@(ForeignRuntimeFolder);@(LocalStateFolder)" />
   </Target>
 
   <!-- The App SDK deployment and sherpa-onnx both contribute an

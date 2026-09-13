@@ -4,6 +4,7 @@ using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Media;
+using VrcTranslate.Infrastructure.Storage;
 using VrcTranslate.Application.Abstractions;
 using VrcTranslate.Application.Speech;
 using VrcTranslate.Core.Speech;
@@ -14,9 +15,7 @@ namespace VrcTranslate.Desktop.Pages;
 /// <summary>Controls the VRChat voice-caption workflow.</summary>
 public sealed partial class VoicePage : Page
 {
-    private readonly string _settingsPath = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "VRCTranslate", "v2-voice-settings.json");
+    private readonly string _settingsPath = PortableStorage.GetPath(AppDataFiles.VoiceSettings);
     private readonly AppState _state;
     private VoiceSettings _settings = new();
     private bool _loaded;
@@ -492,9 +491,7 @@ public sealed partial class VoicePage : Page
 
     private static string ReadGlobalVoiceHotkey()
     {
-        var path = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "VRCTranslate", "v2-user-settings.json");
+        var path = PortableStorage.GetPath(AppDataFiles.UserSettings);
         try
         {
             if (File.Exists(path))

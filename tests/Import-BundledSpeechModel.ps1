@@ -1,25 +1,28 @@
-# Places the bundled local speech model (SenseVoiceSmall INT8 in the
-# sherpa-onnx layout: model.int8.onnx + tokens.txt) into
-# assets/models/speech/sensevoice so the next build/publish ships it inside the
-# package. The payload is re-downloadable and therefore not stored in source
-# control; run this once per clone.
+# Places the bundled local speech models into assets/models/speech so the next
+# build/publish ships them inside the package. The payloads are re-downloadable
+# and therefore not stored in source control; run this once per clone.
+#
+#   sensevoice/  SenseVoiceSmall INT8 recognition (model.int8.onnx + tokens.txt)
+#   speaker/     speaker separation for the caption speaker labels:
+#                  segmentation.int8.onnx  pyannote segmentation 3.0 (int8)
+#                  embedding.onnx         3D-Speaker CAM++ speaker embedding (zh+en)
 #
 # Usage:
 #   powershell -ExecutionPolicy Bypass -File tests/Import-BundledSpeechModel.ps1
 #   powershell -ExecutionPolicy Bypass -File tests/Import-BundledSpeechModel.ps1 -Force
-#   powershell -ExecutionPolicy Bypass -File tests/Import-BundledSpeechModel.ps1 -Source https://my-mirror.example/sensevoice/
+#   powershell -ExecutionPolicy Bypass -File tests/Import-BundledSpeechModel.ps1 -Source https://my-mirror.example/
 [CmdletBinding()]
 param(
     # Re-download even when the local copy already verifies.
     [switch] $Force,
 
-    # Override the destination folder. Defaults to assets/models/speech/sensevoice
-    # next to this script.
+    # Override the destination folder. Defaults to assets/models/speech next to
+    # this script.
     [string] $Destination,
 
-    # Override the download base URL (must end with a slash). The built-in
-    # mirrors are hf-mirror.com first because it is reachable from mainland
-    # China, then huggingface.co.
+    # Replace the mirror host (must end with a slash). The built-in order is
+    # hf-mirror.com first because it is reachable from mainland China, then
+    # huggingface.co.
     [string] $Source
 )
 
@@ -27,36 +30,52 @@ $ErrorActionPreference = 'Stop'
 
 if (-not $Destination) {
     $scriptDirectory = Split-Path -Parent $MyInvocation.MyCommand.Path
-    $Destination = Join-Path $scriptDirectory '../assets/models/speech/sensevoice'
+    $Destination = Join-Path $scriptDirectory '../assets/models/speech'
 }
 
-# Pinned upstream revision: csukuangfj/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17.
-# Both files are verified against the exact size and SHA-256 published by that
-# revision, so a truncated download or an HTML error page can never be mistaken
-# for a model.
+$senseVoiceRepo = 'csukuangfj/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17/resolve/main/'
+$segmentationRepo = 'csukuangfj/sherpa-onnx-pyannote-segmentation-3-0/resolve/main/'
+$embeddingRepo = 'csukuangfj/speaker-embedding-models/resolve/main/'
+
+# Every file is pinned to the exact size and SHA-256 published by the upstream
+# revision it comes from, so a truncated download or an HTML error page can
+# never be mistaken for a model.
 $payload = @(
     [pscustomobject]@{
         Name   = 'model.int8.onnx'
+        Folder = 'sensevoice'
+        Remote = 'model.int8.onnx'
+        Repo   = $senseVoiceRepo
         Bytes  = 239233841
         Sha256 = 'C71F0CE00BEC95B07744E116345E33D8CBBE08CEF896382CF907BF4B51A2CD51'
     },
     [pscustomobject]@{
         Name   = 'tokens.txt'
+        Folder = 'sensevoice'
+        Remote = 'tokens.txt'
+        Repo   = $senseVoiceRepo
         Bytes  = 315894
         Sha256 = 'F449EB28DC567533D7FA59BE34E2ABCA8784F771850C78A47FB731A31429A1DC'
+    },
+    [pscustomobject]@{
+        Name   = 'segmentation.int8.onnx'
+        Folder = 'speaker'
+        Remote = 'model.int8.onnx'
+        Repo   = $segmentationRepo
+        Bytes  = 1540506
+        Sha256 = 'D582F4B4C6B48205DE7E0643C57DF0DF5615A3C176189BE3FC461E9D18827B5D'
+    },
+    [pscustomobject]@{
+        Name   = 'embedding.onnx'
+        Folder = 'speaker'
+        Remote = '3dspeaker_speech_campplus_sv_zh_en_16k-common_advanced.onnx'
+        Repo   = $embeddingRepo
+        Bytes  = 28281164
+        Sha256 = 'AA3CFC16963A10586A9393F5035D6D6B57E98D358B347F80C2A30BF4F00CEBA2'
     }
 )
 
-$repositoryPath = 'csukuangfj/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17/resolve/main/'
-if ($Source) {
-    $sources = @($Source)
-}
-else {
-    $sources = @(
-        ('https://hf-mirror.com/' + $repositoryPath),
-        ('https://huggingface.co/' + $repositoryPath)
-    )
-}
+$repositoryHosts = if ($Source) { @($Source) } else { @('https://hf-mirror.com/', 'https://huggingface.co/') }
 
 # PowerShell 5.1 still defaults to TLS 1.0 on some machines.
 try { [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 } catch { }
@@ -82,13 +101,15 @@ function Test-PayloadFile([string] $Path, $Entry, [ref] $Reason) {
     return $true
 }
 
-function Get-PayloadFile([string] $Directory, $Entry, [string[]] $Mirrors) {
-    $finalPath = Join-Path $Directory $Entry.Name
+function Get-PayloadFile([string] $Root, $Entry, [string[]] $Hosts) {
+    $directory = Join-Path $Root $Entry.Folder
+    New-Item -ItemType Directory -Force -Path $directory | Out-Null
+    $finalPath = Join-Path $directory $Entry.Name
     $temporaryPath = $finalPath + '.download'
     $lastError = $null
 
-    foreach ($mirror in $Mirrors) {
-        $uri = $mirror + $Entry.Name
+    foreach ($mirror in $Hosts) {
+        $uri = $mirror + $Entry.Repo + $Entry.Remote
         try {
             Write-Host "正在从 $uri 下载 $($Entry.Name)（$([math]::Round($Entry.Bytes / 1MB, 1)) MB）…"
             $client = New-Object System.Net.WebClient
@@ -125,7 +146,7 @@ $destinationPath = [System.IO.Path]::GetFullPath($Destination)
 $missing = @()
 foreach ($entry in $payload) {
     $reason = ''
-    $path = Join-Path $destinationPath $entry.Name
+    $path = Join-Path (Join-Path $destinationPath $entry.Folder) $entry.Name
     if (-not $Force -and (Test-PayloadFile $path $entry ([ref] $reason))) {
         Write-Host "已存在且校验通过：$path"
         continue
@@ -140,16 +161,16 @@ if ($missing.Count -eq 0) {
     return
 }
 
-New-Item -ItemType Directory -Force -Path $destinationPath | Out-Null
 foreach ($entry in $missing) {
-    $null = Get-PayloadFile $destinationPath $entry $sources
+    $null = Get-PayloadFile $destinationPath $entry $repositoryHosts
 }
 
 # Re-verify the whole payload so a partial run cannot leave a half-usable
 # folder behind for the build to pick up.
 foreach ($entry in $payload) {
     $reason = ''
-    if (-not (Test-PayloadFile (Join-Path $destinationPath $entry.Name) $entry ([ref] $reason))) {
+    $path = Join-Path (Join-Path $destinationPath $entry.Folder) $entry.Name
+    if (-not (Test-PayloadFile $path $entry ([ref] $reason))) {
         throw "语音模型安装后校验失败：$($entry.Name) — $reason"
     }
 }

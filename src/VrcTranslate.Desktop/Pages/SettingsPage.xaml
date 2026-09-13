@@ -47,6 +47,9 @@
               <TextBox x:Name="OscPortBox" Grid.Column="1" Header="端口" PlaceholderText="9000" TextChanged="OnSettingTextChanged" />
             </Grid>
             <InfoBar x:Name="SettingsInfo" IsOpen="False" Severity="Success" />
+            <TextBlock x:Name="StorageNotice"
+                       TextWrapping="Wrap"
+                       Style="{StaticResource SecondaryTextStyle}" />
           </StackPanel>
         </Border>
       </StackPanel>

@@ -4,6 +4,7 @@ using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Media;
+using VrcTranslate.Infrastructure.Storage;
 using VrcTranslate.Application.Abstractions;
 using VrcTranslate.Application.Speech;
 using VrcTranslate.Core.Speech;
@@ -14,9 +15,7 @@ namespace VrcTranslate.Desktop.Pages;
 /// <summary>Controls the user's microphone translation and shows the latest output.</summary>
 public sealed partial class SelfMessagePage : Page
 {
-    private readonly string _settingsPath = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "VRCTranslate", "v2-self-voice-settings.json");
+    private readonly string _settingsPath = PortableStorage.GetPath(AppDataFiles.SelfVoiceSettings);
     private SelfVoiceSettings _settings = new();
     private bool _loaded;
     private bool _loadingTargets;
@@ -673,7 +672,7 @@ public sealed partial class SelfMessagePage : Page
 
     private static string ReadGlobalSelfVoiceHotkey()
     {
-        var path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "VRCTranslate", "v2-user-settings.json");
+        var path = PortableStorage.GetPath(AppDataFiles.UserSettings);
         try
         {
             if (File.Exists(path))

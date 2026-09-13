@@ -3,6 +3,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using VrcTranslate.Core.Settings;
+using VrcTranslate.Infrastructure.Storage;
 
 namespace VrcTranslate.Desktop.Pages;
 
@@ -11,18 +12,30 @@ public sealed partial class SettingsPage : Page
     private bool _loading;
     private bool _hotkeyConfirmationOpen;
     private UserSettings _savedSettings = new();
-    private readonly string _path = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "VRCTranslate", "v2-user-settings.json");
+    private readonly string _path = PortableStorage.GetPath(AppDataFiles.UserSettings);
 
     public SettingsPage()
     {
         InitializeComponent();
+        UpdateStorageNotice();
         Loaded += (_, _) => LoadSettings();
         Loaded += (_, _) => QueueResponsiveLayout();
         HotkeyGrid.SizeChanged += (_, _) => QueueResponsiveLayout();
         OscGrid.SizeChanged += (_, _) => QueueResponsiveLayout();
         OscHeaderGrid.SizeChanged += (_, _) => QueueResponsiveLayout();
+    }
+
+    /// <summary>
+    /// Says where settings live. The portable layout keeps them beside the
+    /// executable, so an install that had to fall back to the user profile must
+    /// not do it silently.
+    /// </summary>
+    private void UpdateStorageNotice()
+    {
+        if (StorageNotice is null) return;
+        StorageNotice.Text = PortableStorage.UsesUserProfile
+            ? $"程序目录不可写，设置与模型已改存到 {PortableStorage.DataDirectory}（便携模式未生效）。"
+            : $"设置与模型保存在程序目录的 {PortableStorage.DataDirectory}";
     }
 
     private void OnViewportSizeChanged(object sender, SizeChangedEventArgs e)

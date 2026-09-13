@@ -12,6 +12,25 @@ VRCTranslate (V2 native desktop app) uses the following third-party components.
 
 The desktop release ships this payload inside the application package under `Models/sensevoice/`. SenseVoice is MIT-licensed, which permits redistribution; this notice provides the required attribution.
 
+## pyannote segmentation 3.0 model (bundled)
+
+- Model: `segmentation.int8.onnx`, converted from `pyannote/segmentation-3.0`
+- Purpose: locating speaker-change points so one captured sentence can be split between speakers
+- Upstream model: <https://huggingface.co/pyannote/segmentation-3.0>
+- ONNX conversion used here: <https://huggingface.co/csukuangfj/sherpa-onnx-pyannote-segmentation-3-0>
+- License (MIT License, Copyright (c) 2022 CNRS): the LICENSE file shipped in the conversion repository
+
+The desktop release ships this model inside the application package under `Models/speaker/`.
+
+## 3D-Speaker CAM++ speaker-embedding model (bundled)
+
+- Model: `embedding.onnx` (`3dspeaker_speech_campplus_sv_zh_en_16k-common_advanced.onnx`)
+- Purpose: extracting a voiceprint for each captured sentence so captions can carry a speaker label
+- Conversion source: <https://huggingface.co/csukuangfj/speaker-embedding-models>
+- Project and license (Apache License 2.0): <https://github.com/modelscope/3D-Speaker>
+
+The desktop release ships this model inside the application package under `Models/speaker/`. Both speaker models are used only when the user enables speaker labels; the voiceprints derived from them stay on the local machine.
+
 ## sherpa-onnx (bundled)
 
 - Packages: `org.k2fsa.sherpa.onnx` 1.13.8 (managed API) and `org.k2fsa.sherpa.onnx.runtime.win-x64` 1.13.8 (native `sherpa-onnx-c-api.dll` and the ONNX Runtime build it links)

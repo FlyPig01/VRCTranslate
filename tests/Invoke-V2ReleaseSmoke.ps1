@@ -5,7 +5,8 @@ param(
 $ErrorActionPreference = 'Stop'
 $Executable = (Resolve-Path -LiteralPath $Executable).Path
 $OutputDirectory = Split-Path -Parent $Executable
-$StartupLog = Join-Path $env:TEMP 'VrcTranslate-startup.log'
+# The app keeps its state (and its crash log) in the portable data folder beside the executable.
+$StartupLog = Join-Path $OutputDirectory 'data\startup-error.log'
 $IconPath = Join-Path $OutputDirectory 'app.ico'
 
 if (-not (Test-Path -LiteralPath $IconPath)) { throw "Release icon is missing: $IconPath" }

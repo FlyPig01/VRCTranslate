@@ -1,4 +1,5 @@
 using Microsoft.UI.Xaml;
+using VrcTranslate.Infrastructure.Storage;
 
 namespace VrcTranslate.Desktop;
 
@@ -36,7 +37,7 @@ public partial class App : Microsoft.UI.Xaml.Application
     {
         try
         {
-            var path = Path.Combine(Path.GetTempPath(), "VrcTranslate-startup.log");
+            var path = PortableStorage.GetPath(AppDataFiles.StartupErrorLog);
             File.WriteAllText(path, $"{DateTimeOffset.Now:O}\r\nHResult: 0x{exception.HResult:X8}\r\nType: {exception.GetType().FullName}\r\n{exception}\r\nInner: {exception.InnerException}\r\n");
         }
         catch

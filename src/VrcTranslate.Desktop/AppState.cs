@@ -7,6 +7,7 @@ using VrcTranslate.Infrastructure.Osc;
 using VrcTranslate.Application.Speech;
 using VrcTranslate.Application.Settings;
 using VrcTranslate.Infrastructure.Speech;
+using VrcTranslate.Infrastructure.Storage;
 using ApplicationTranslationService = VrcTranslate.Application.Translation.TranslationService;
 using System.Text.Json;
 
@@ -50,22 +51,16 @@ public sealed class AppState
         TranslationProviderIds = catalog.Ids;
         _profiles = CreateDefaultProfiles();
         Translator = new ApplicationTranslationService(new RoutedTranslationProvider(catalog), new PassThroughInvariantGuard());
-        OverlayAppearance = new OverlayAppearanceService(new JsonOverlayAppearanceStore(Path.Combine(
-            ResolveDataDirectory(),
-            "v2-overlay-appearance.json")));
-        var settingsPath = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "VRCTranslate",
-            "v2-route.json");
-        _settingsStore = new JsonConfigurationStore<RouteSettings>(settingsPath);
-        _profileStore = new JsonConfigurationStore<ProfileDocument>(Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "VRCTranslate",
-            "v2-profiles.json"));
-        _selfTranslationSettingsPath = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "VRCTranslate",
-            "v2-self-translation.json");
+        // Portable layout: every document lives in the data folder beside the
+        // executable unless the install location is read-only.
+        PortableStorage.MigrateLegacyData();
+        OverlayAppearance = new OverlayAppearanceService(new JsonOverlayAppearanceStore(
+            PortableStorage.GetPath(AppDataFiles.OverlayAppearance)));
+        _settingsStore = new JsonConfigurationStore<RouteSettings>(
+            PortableStorage.GetPath(AppDataFiles.Route));
+        _profileStore = new JsonConfigurationStore<ProfileDocument>(
+            PortableStorage.GetPath(AppDataFiles.Profiles));
+        _selfTranslationSettingsPath = PortableStorage.GetPath(AppDataFiles.SelfTranslation);
         _selfTranslationTargets = LoadSelfTranslationTargets();
         _osc = CreateOscClientFromUserSettings();
         _restoreTask = RestoreAsync();
@@ -123,22 +118,15 @@ public sealed class AppState
     public void ReloadOscSettings() => _osc = CreateOscClientFromUserSettings();
 
     /// <summary>
-    /// Resolves the writable settings directory. Tests and portable launches
-    /// may provide an exact directory through VRC_TRANSLATE_DATA_DIR.
+    /// Resolves the folder that holds user state: the data folder beside the
+    /// executable, or VRC_TRANSLATE_DATA_DIR when a test or portable launch
+    /// overrides it.
     /// </summary>
-    public static string ResolveDataDirectory()
-    {
-        var configured = Environment.GetEnvironmentVariable("VRC_TRANSLATE_DATA_DIR");
-        return !string.IsNullOrWhiteSpace(configured)
-            ? Path.GetFullPath(configured.Trim())
-            : Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "VRCTranslate");
-    }
+    public static string ResolveDataDirectory() => PortableStorage.DataDirectory;
 
     private static OscChatboxClient CreateOscClientFromUserSettings()
     {
-        var path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "VRCTranslate", "v2-user-settings.json");
+        var path = PortableStorage.GetPath(AppDataFiles.UserSettings);
         try
         {
             if (File.Exists(path))

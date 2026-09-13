@@ -7,9 +7,10 @@ param(
 $ErrorActionPreference = 'Stop'
 $Executable = (Resolve-Path -LiteralPath $Executable -ErrorAction Stop).Path
 $packageDirectory = Split-Path -Parent $Executable
-$startupLog = Join-Path $env:TEMP 'VrcTranslate-startup.log'
 $temporaryRoot = [System.IO.Path]::GetFullPath((Join-Path $env:TEMP 'VRCTranslate-overlay-window-smoke'))
 $testDataDirectory = Join-Path $temporaryRoot ([Guid]::NewGuid().ToString('N'))
+# The crash log follows VRC_TRANSLATE_DATA_DIR, which this script points at $testDataDirectory.
+$startupLog = Join-Path $testDataDirectory 'startup-error.log'
 $previousDataDirectory = [Environment]::GetEnvironmentVariable('VRC_TRANSLATE_DATA_DIR', 'Process')
 $previousSmokePage = [Environment]::GetEnvironmentVariable('VRC_TRANSLATE_SMOKE_PAGE', 'Process')
 
@@ -438,7 +439,7 @@ function Get-ConfiguredHotkey {
         [string]$Fallback
     )
 
-    $settingsPath = Join-Path $env:LOCALAPPDATA 'VRCTranslate\v2-user-settings.json'
+    $settingsPath = Join-Path $testDataDirectory 'v2-user-settings.json'
     if (Test-Path -LiteralPath $settingsPath) {
         try {
             $settings = Get-Content -LiteralPath $settingsPath -Raw | ConvertFrom-Json

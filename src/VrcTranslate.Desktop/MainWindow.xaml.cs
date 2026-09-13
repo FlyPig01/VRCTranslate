@@ -5,6 +5,7 @@ using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml.Input;
 using WinRT.Interop;
 using VrcTranslate.Core.Settings;
+using VrcTranslate.Infrastructure.Storage;
 using VrcTranslate.Desktop.Pages;
 using System.Runtime.InteropServices;
 
@@ -258,7 +259,7 @@ public sealed partial class MainWindow : Window
 
     private static IReadOnlyDictionary<string, string> ReadHotkeys()
     {
-        var path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "VRCTranslate", "v2-user-settings.json");
+        var path = PortableStorage.GetPath(AppDataFiles.UserSettings);
         try
         {
             if (File.Exists(path))

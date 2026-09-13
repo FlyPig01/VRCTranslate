@@ -6,6 +6,7 @@ using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
+using VrcTranslate.Infrastructure.Storage;
 using Microsoft.UI.Text;
 using VrcTranslate.Infrastructure.Configuration;
 
@@ -32,7 +33,7 @@ public sealed partial class TranslationPage : Page
     public TranslationPage()
     {
         InitializeComponent();
-        _glossaryStore = new JsonConfigurationStore<GlossaryDocument>(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "VRCTranslate", "glossary.json"));
+        _glossaryStore = new JsonConfigurationStore<GlossaryDocument>(PortableStorage.GetPath(AppDataFiles.Glossary));
         GlossaryList.ItemsSource = _terms;
         Loaded += OnLoaded;
         Unloaded += OnUnloaded;

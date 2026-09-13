@@ -1,4 +1,5 @@
 using VrcTranslate.Core.Speech;
+using VrcTranslate.Infrastructure.Storage;
 
 namespace VrcTranslate.Infrastructure.Speech;
 
@@ -26,12 +27,11 @@ public static class LocalSpeechModelCatalog
     public static string GetBundledModelDirectory() => Path.Combine(
         AppContext.BaseDirectory, BundledRelativeFolder, ModelDirectory);
 
-    public static string DefaultDirectory => Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "VRCTranslate",
-        "v2",
-        "models",
-        ModelDirectory);
+    /// <summary>
+    /// Where an on-demand download is written: inside the portable data folder,
+    /// never in the user profile.
+    /// </summary>
+    public static string DefaultDirectory => PortableStorage.Combine("models", ModelDirectory);
 
     /// <summary>All model payload files that must exist for the recognizer to load.</summary>
     public static IReadOnlyList<string> PayloadFiles { get; } = [ModelFileName, TokensFileName];

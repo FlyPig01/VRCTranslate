@@ -398,7 +398,11 @@ public sealed class SelfVoiceSpeechSession : VoiceSessionHost
             result.Primary.TranslatedText,
             result.Secondary?.TranslatedText,
             result.Targets);
-        await _state.Osc.SendChatboxAsync(TranslationOutputFormatter.FormatForOsc(result))
+        // The same formatting rule as the manual input: translations, plus the
+        // recognized original unless the OSC preference turned it off.
+        await _state.Osc.SendChatboxAsync(TranslationOutputFormatter.FormatForChatbox(
+                result,
+                OscChatboxSettings.ReadIncludeOriginal()))
             .ConfigureAwait(false);
     }
 }

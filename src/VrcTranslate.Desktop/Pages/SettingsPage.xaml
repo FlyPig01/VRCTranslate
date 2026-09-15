@@ -88,6 +88,21 @@
               <TextBox x:Name="OscHostBox" Grid.Column="0" Header="主机" PlaceholderText="127.0.0.1" TextChanged="OnSettingTextChanged" />
               <TextBox x:Name="OscPortBox" Grid.Column="1" Header="端口" PlaceholderText="9000" TextChanged="OnSettingTextChanged" />
             </Grid>
+            <!-- 自身消息（手动输入 / 自身语音）发到聊天框的那份文本是否带原文；他人语音的字幕一直是纯译文。 -->
+            <Grid x:Name="OscContentGrid" ColumnSpacing="12">
+              <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+              <TextBlock Text="OSC 消息带原文"
+                         VerticalAlignment="Center" />
+              <ToggleSwitch Grid.Column="1"
+                            x:Name="OscIncludeOriginalToggle"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Center"
+                            OnContent="译文 / 原文"
+                            OffContent="仅译文"
+                            Toggled="OnOscIncludeOriginalToggled"
+                            AutomationProperties.AutomationId="osc-include-original-toggle"
+                            AutomationProperties.Name="OSC 消息是否带原文" />
+            </Grid>
             <InfoBar x:Name="SettingsInfo" IsOpen="False" Severity="Success" />
             <TextBlock x:Name="StorageNotice"
                        TextWrapping="Wrap"

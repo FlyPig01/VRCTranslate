@@ -66,6 +66,44 @@ public static class TranslationOutputFormatter
         return TrimForOsc(Format(result));
     }
 
+    /// <summary>
+    /// The text actually sent to the VRChat chatbox for the user's own message:
+    /// the translations, optionally followed by the original Chinese text. The
+    /// recognized line is the part a chat partner usually does not need, so it is
+    /// the one thing the reader can leave out; the translations - including the
+    /// optional second one - always stay.
+    /// </summary>
+    public static string FormatForChatbox(
+        string? originalText,
+        string? primaryTranslation,
+        string? secondaryTranslation,
+        bool includeOriginal)
+    {
+        // With nothing translated the original is the only content there is:
+        // dropping it as well would send an empty chatbox line and erase what the
+        // user just typed instead of showing it. A missing translation therefore
+        // always falls back to the recognized text.
+        var translatedSomething = !string.IsNullOrWhiteSpace(primaryTranslation) ||
+                                  !string.IsNullOrWhiteSpace(secondaryTranslation);
+        var payload = Format(
+            includeOriginal || !translatedSomething ? originalText : null,
+            primaryTranslation,
+            secondaryTranslation);
+        // The chatbox has one length limit, so the optional original can never
+        // push the payload past it unseen.
+        return TrimForOsc(payload);
+    }
+
+    public static string FormatForChatbox(TextTranslationBatchResult result, bool includeOriginal)
+    {
+        ArgumentNullException.ThrowIfNull(result);
+        return FormatForChatbox(
+            result.Request.Text,
+            result.Primary.TranslatedText,
+            result.Secondary?.TranslatedText,
+            includeOriginal);
+    }
+
     private static void AddIfPresent(ICollection<string> parts, string? value)
     {
         if (!string.IsNullOrWhiteSpace(value))

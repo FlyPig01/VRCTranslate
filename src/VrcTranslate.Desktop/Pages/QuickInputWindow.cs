@@ -451,8 +451,12 @@ public sealed class QuickInputWindow : Window
                 source,
                 TextTranslationSource.ManualText,
                 timeout.Token);
-            // 结果区主行是译文，小字是真正通过 OSC 发出去的那一份文本。
-            var oscText = TrimForChatbox(result.FormattedText);
+            // 结果区主行是译文，小字是真正通过 OSC 发出去的那一份文本（是否带原文由设置决定，
+            // 发送时刻读一次，和下面真正发出去的那份完全同源）。
+            var oscText = BuildChatboxText(
+                source,
+                result.Primary.TranslatedText,
+                result.Secondary?.TranslatedText);
             _state.SetTranslationPreview(
                 source,
                 result.Primary.TranslatedText,
@@ -515,10 +519,8 @@ public sealed class QuickInputWindow : Window
     {
         // 发送期间结果区归「翻译中…」所有；这次发送结束时会自己写入最新结果。
         if (_sending) return;
-        var oscText = TrimForChatbox(TranslationOutputFormatter.Format(
-            original,
-            translated,
-            secondaryTranslated));
+        // 这一行就是「VRChat 实发文本」的预览，所以它必须按同一个设置拼装。
+        var oscText = BuildChatboxText(original, translated, secondaryTranslated);
         // 主行是译文本身；没有译文时退回这一条消息的完整内容，保证结果区不空。
         ShowTranslation(
             string.IsNullOrWhiteSpace(translated) ? oscText : translated,
@@ -580,6 +582,16 @@ public sealed class QuickInputWindow : Window
         return new SolidColorBrush(Microsoft.UI.ColorHelper.FromArgb(a, r, g, b));
     }
 
-    private static string TrimForChatbox(string text)
-        => TranslationOutputFormatter.TrimForOsc(text);
+    /// <summary>
+    /// Chatbox payload for the user's own message: translations, plus the original
+    /// Chinese text unless the OSC preference turned it off. The preference is read
+    /// per call so a change on the settings page applies to the next send without
+    /// a restart, and the preview line and the sent packet are always identical.
+    /// </summary>
+    private static string BuildChatboxText(string? original, string? translated, string? secondaryTranslated) =>
+        TranslationOutputFormatter.FormatForChatbox(
+            original,
+            translated,
+            secondaryTranslated,
+            OscChatboxSettings.ReadIncludeOriginal());
 }

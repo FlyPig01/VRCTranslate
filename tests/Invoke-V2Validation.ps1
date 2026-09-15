@@ -215,6 +215,30 @@ if ($subtitleOverlayMinWidth -lt 240 -or $subtitleOverlayMinHeight -lt 56) {
 }
 
 if ($settingsMarkup -notmatch '<Grid\.RowDefinitions>\s*<RowDefinition Height="Auto" />\s*<RowDefinition Height="Auto" />\s*<RowDefinition Height="Auto" />') { throw 'Shortcut settings must define three separate rows so labels cannot overlap.' }
+
+# D11：自身消息发到聊天框的那份文本是否带原文必须可选，并且落在 OSC 那一张卡片里。
+$oscToggle = [regex]::Match($settingsMarkup, '(?s)<ToggleSwitch[^>]*osc-include-original-toggle.*?/>')
+if (-not $oscToggle.Success -or
+    $oscToggle.Value -notmatch 'Toggled="OnOscIncludeOriginalToggled"') {
+    throw 'The OSC card must expose a toggle for whether the chatbox message carries the original text.'
+}
+$oscSaveSource = [regex]::Match($settingsSource, '(?s)private void OnOscIncludeOriginalToggled.*?\n    \}')
+if (-not $oscSaveSource.Success -or $oscSaveSource.Value -notmatch 'TrySave') {
+    throw 'The chatbox content toggle must persist immediately, like the OSC host and port boxes.'
+}
+if ($settingsSource -notmatch 'IncludeOriginalInOsc = OscIncludeOriginalToggle\.IsOn' -or
+    $settingsSource -notmatch 'OscChatboxSettings\.DefaultIncludeOriginal') {
+    throw 'The saved chatbox content choice must come from the toggle and default to the shipped behaviour.'
+}
+if ($quickInputSource -notmatch 'OscChatboxSettings\.ReadIncludeOriginal\(\)' -or
+    $quickInputSource -notmatch 'TranslationOutputFormatter\.FormatForChatbox\(') {
+    throw 'The quick-input send path must build its chatbox payload through the shared formatter and the persisted choice.'
+}
+if ($sessionHostSource -notmatch 'TranslationOutputFormatter\.FormatForChatbox\(' -or
+    $sessionHostSource -notmatch 'OscChatboxSettings\.ReadIncludeOriginal\(\)' -or
+    $sessionHostSource -match 'FormatForOsc\(result\)') {
+    throw 'Own-voice OSC sends must use the same chatbox formatter and preference as the manual input, never the older entry point.'
+}
 if ($runSource -notmatch 'FeatureGrid\??\.ActualWidth' -or $runSource -notmatch 'LayoutSummary') { throw 'RunPage must derive its responsive layout from the measured content width.' }
 if ($runMarkup -notmatch '(?s)<Grid Grid\.Row="1"[^>]*ColumnSpacing="10".*?<Button Grid\.Column="1"[^>]*Content="打开"[^>]*HorizontalAlignment="Right"' -or $runMarkup -match '<Button Grid\.Row="2"[^>]*Content="打开"') {
     throw 'RunPage feature cards must place the open action on the title row and align it to the right edge.'
@@ -319,7 +343,7 @@ if ($inputMarkup -match '激活范围|SelfVoiceScopeBox' -or $inputCodeForLayout
 if ($inputMarkup -notmatch 'ProgressRing|EntranceThemeTransition' -or $inputMarkup -notmatch 'SelfVoiceStartButton' -or $inputMarkup -match 'SelfVoiceEnabledSwitch|OnContent="开"|OffContent="关"' -or $inputCodeForLayout -notmatch 'SelfVoicePulse\.IsActive|OnSelfVoiceStartClicked' -or $inputCodeForLayout -notmatch 'AnimateMicrophoneLevel|_microphoneLevelTimer|LevelChanged') { throw 'Self voice must provide one direct start/stop action, a visible animated state, and measured volume activity feedback.' }
 if ($inputMarkup -notmatch 'MicrophoneLevelHost' -or $inputMarkup -notmatch 'x:Name="MicrophoneLevel"' -or $inputCodeForLayout -notmatch 'PlaceStatusElement\(SelfVoiceStatusLine') { throw 'Self voice status must keep the microphone level meter and lay the status line out for the compact column.' }
 if ($quickInputSource -notmatch 'TextBox' -or $quickInputSource -match 'ComboBox|目标语言|第二语言|quick-target-language|quick-secondary-language' -or $quickInputSource -notmatch 'Translate(Self)?Async' -or $quickInputSource -notmatch 'SendChatboxAsync' -or $quickInputSource -notmatch 'SetTranslationPreview') { throw 'The global quick-input overlay must accept Chinese text, read its saved language pair from the input page, translate it, send it through OSC, and update the preview without duplicate language controls.' }
-if ($quickInputSource -match 'AcceptsReturn\s*=\s*true' -or $quickInputSource -notmatch 'e\.Key\s*==\s*Windows\.System\.VirtualKey\.Enter' -or $quickInputSource -match '翻译并发送|_send\b' -or $quickInputSource -notmatch 'TrimForChatbox' -or $quickInputSource -notmatch 'new\s+OverlayWindowController') { throw 'The quick-input overlay must submit on Enter without a send button, respect the VRChat message length limit, and use the shared native-window controller.' }
+if ($quickInputSource -match 'AcceptsReturn\s*=\s*true' -or $quickInputSource -notmatch 'e\.Key\s*==\s*Windows\.System\.VirtualKey\.Enter' -or $quickInputSource -match '翻译并发送|_send\b' -or $quickInputSource -notmatch 'TranslationOutputFormatter\.FormatForChatbox' -or $quickInputSource -notmatch 'new\s+OverlayWindowController') { throw 'The quick-input overlay must submit on Enter without a send button, build its OSC payload through the shared chatbox formatter (message length limit), and use the shared native-window controller.' }
 $legacyOverlayChrome = Join-Path $desktopSource 'Pages\OverlayWindowChrome.cs'
 if (Test-Path -LiteralPath $legacyOverlayChrome) {
     throw 'The legacy custom OverlayWindowChrome implementation must remain deleted.'
@@ -629,9 +653,10 @@ if ($outputFormatterSource -notmatch 'Separator\s*=\s*" / "' -or
     $outputFormatterSource -notmatch 'OscChatboxMaxUtf16Length\s*=\s*144') {
     throw 'Translation output formatting must use one slash-separated primary/secondary/original order and the VRChat 144 UTF-16 limit.'
 }
-if ($quickInputSource -notmatch 'TranslationOutputFormatter\.Format' -or
-    $quickInputSource -notmatch 'result\.FormattedText' -or
-    $sessionHostSource -notmatch 'TranslationOutputFormatter\.(FormatForOsc|TrimForOsc)') {
+if ($quickInputSource -notmatch 'TranslationOutputFormatter\.FormatForChatbox' -or
+    $quickInputSource -notmatch 'result\.Primary\.TranslatedText' -or
+    $sessionHostSource -notmatch 'TranslationOutputFormatter\.FormatForChatbox' -or
+    $sessionHostSource -notmatch 'TranslationOutputFormatter\.TrimForOsc') {
     throw 'Own-input preview and own-voice OSC output must share the Core translation formatter.'
 }
 if ($sessionHostSource -notmatch 'TranslationOutputFormatter\.TrimForOsc' -or
@@ -1412,6 +1437,256 @@ public static class VrcTranslateValidationNative {
     }
 }
 
+function Ensure-ValidationSmokeNative {
+    # 专门的类型名：别的冒烟也会定义 VrcTranslateValidationNative，同一个会话里后定义的会直接失败。
+    if ($null -ne ('VrcTranslateOscSmokeNative' -as [type])) { return }
+    Add-Type @'
+using System;
+using System.Runtime.InteropServices;
+public static class VrcTranslateOscSmokeNative {
+    [DllImport("user32.dll")]
+    public static extern bool SetForegroundWindow(IntPtr hWnd);
+    [DllImport("user32.dll")]
+    public static extern IntPtr GetForegroundWindow();
+    [DllImport("user32.dll", EntryPoint = "keybd_event")]
+    public static extern void KeybdEvent(byte virtualKey, byte scanCode, uint flags, UIntPtr extraInfo);
+}
+'@
+}
+
+function Receive-OscChatboxPacket {
+    <#
+    等一个 /chatbox/input 报文并返回它的字符串参数。这是应用真正写出的线格式，收到即证明
+    VRChat 会看到什么。
+    #>
+    param(
+        [Parameter(Mandatory)] $Client,
+        [int] $TimeoutMs = 20000
+    )
+
+    $deadline = [DateTime]::UtcNow.AddMilliseconds($TimeoutMs)
+    while ([DateTime]::UtcNow -lt $deadline) {
+        $Client.Client.ReceiveTimeout = [Math]::Max(250, [int]($deadline - [DateTime]::UtcNow).TotalMilliseconds)
+        try {
+            $remote = [System.Net.IPEndPoint]::new([System.Net.IPAddress]::Any, 0)
+            $datagram = $Client.Receive([ref]$remote)
+        }
+        catch [System.Net.Sockets.SocketException] {
+            continue
+        }
+        if ($null -eq $datagram -or $datagram.Length -lt 8) { continue }
+        $addressEnd = [Array]::IndexOf($datagram, [byte]0)
+        if ($addressEnd -lt 0) { continue }
+        $address = [System.Text.Encoding]::ASCII.GetString($datagram, 0, $addressEnd)
+        if ($address -ne '/chatbox/input') { continue }
+        $offset = [int]([Math]::Ceiling(($addressEnd + 1) / 4.0) * 4)
+        if ($offset -ge $datagram.Length) { continue }
+        # 类型标签以 0 结尾、再补齐到 4 字节边界；字符串参数本身也是「0 结尾 + 补齐」，
+        # 所以直接读到下一个 0 为止，不假设前面有长度字段。
+        $tagsEnd = [Array]::IndexOf($datagram, [byte]0, $offset)
+        if ($tagsEnd -lt 0) { continue }
+        $valueStart = [int]([Math]::Ceiling(($tagsEnd + 1) / 4.0) * 4)
+        if ($valueStart -ge $datagram.Length) { continue }
+        $valueEnd = [Array]::IndexOf($datagram, [byte]0, $valueStart)
+        if ($valueEnd -le $valueStart) { continue }
+        return [System.Text.Encoding]::UTF8.GetString($datagram, $valueStart, $valueEnd - $valueStart)
+    }
+
+    return $null
+}
+
+function Set-QuickInputText {
+    param(
+        [Parameter(Mandatory)] $Root,
+        [Parameter(Mandatory)] [int] $ProcessId,
+        [Parameter(Mandatory)] [string] $Text
+    )
+
+    $textBox = $null
+    for ($attempt = 0; $attempt -lt 30 -and $null -eq $textBox; $attempt++) {
+        Start-Sleep -Milliseconds 200
+        $textBox = @($Root.FindAll(
+            [System.Windows.Automation.TreeScope]::Descendants,
+            (New-Object System.Windows.Automation.PropertyCondition(
+                [System.Windows.Automation.AutomationElement]::AutomationIdProperty, 'quick-input-text'))) |
+            Where-Object { $_.Current.ProcessId -eq $ProcessId }) | Select-Object -First 1
+    }
+    if ($null -eq $textBox) { throw 'OSC chatbox smoke could not find the quick-input text box.' }
+
+    $valuePattern = $textBox.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern)
+    $valuePattern.SetValue($Text)
+    if ($valuePattern.Current.Value -ne $Text) {
+        throw ('Quick-input did not accept the smoke text (got ' + $valuePattern.Current.Value + ').')
+    }
+
+    return $textBox
+}
+
+function Send-QuickInputText {
+    param(
+        [Parameter(Mandatory)] $TextBox,
+        [Parameter(Mandatory)] [IntPtr] $WindowHandle
+    )
+
+    # 先把浮窗提到前台，再用 keybd_event 送一次 Enter：pwsh 里 WScript.Shell 是迟绑定 COM，
+    # 拿不到 SendWait，而键盘事件只会送到前台窗口。焦点可能在窗口刚建好时又被拿走，所以确认一次。
+    for ($attempt = 0; $attempt -lt 5; $attempt++) {
+        [VrcTranslateOscSmokeNative]::SetForegroundWindow($WindowHandle) | Out-Null
+        Start-Sleep -Milliseconds 300
+        $TextBox.SetFocus()
+        Start-Sleep -Milliseconds 200
+        if ([VrcTranslateOscSmokeNative]::GetForegroundWindow() -eq $WindowHandle) { break }
+    }
+    [VrcTranslateOscSmokeNative]::KeybdEvent(0x0D, 0, 0, [UIntPtr]::Zero)
+    Start-Sleep -Milliseconds 80
+    [VrcTranslateOscSmokeNative]::KeybdEvent(0x0D, 0, 2, [UIntPtr]::Zero)
+    Start-Sleep -Milliseconds 300
+}
+
+function Find-QuickInputWindow {
+    param(
+        [Parameter(Mandatory)] $Root,
+        [Parameter(Mandatory)] [int] $ProcessId,
+        [Parameter(Mandatory)] [int] $MainWindowHandle
+    )
+
+    return @($Root.FindAll(
+        [System.Windows.Automation.TreeScope]::Children,
+        (New-Object System.Windows.Automation.PropertyCondition(
+            [System.Windows.Automation.AutomationElement]::ControlTypeProperty,
+            [System.Windows.Automation.ControlType]::Window)))) |
+        Where-Object {
+            $_.Current.ProcessId -eq $ProcessId -and
+            $_.Current.NativeWindowHandle -ne $MainWindowHandle -and
+            $null -ne $_.FindFirst(
+                [System.Windows.Automation.TreeScope]::Descendants,
+                (New-Object System.Windows.Automation.PropertyCondition(
+                    [System.Windows.Automation.AutomationElement]::AutomationIdProperty,
+                    'quick-input-text')))
+        } | Select-Object -First 1
+}
+
+function Open-QuickInputWindow {
+    param(
+        [Parameter(Mandatory)] $Root,
+        [Parameter(Mandatory)] [int] $ProcessId,
+        [Parameter(Mandatory)] [int] $MainWindowHandle
+    )
+
+    # 输入浮窗随主窗口一起出现在桌面上，先找已经打开的那个；找不到再按导航页上的
+    # 「打开输入框」——那个按钮是开关，窗口已经在屏幕上时按下去反而会关掉它。
+    $inputWindow = $null
+    for ($attempt = 0; $attempt -lt 15 -and $null -eq $inputWindow; $attempt++) {
+        $inputWindow = Find-QuickInputWindow -Root $Root -ProcessId $ProcessId -MainWindowHandle $MainWindowHandle
+        if ($null -eq $inputWindow) { Start-Sleep -Milliseconds 200 }
+    }
+    if ($null -ne $inputWindow) { return $inputWindow }
+
+    $openCondition = New-Object System.Windows.Automation.PropertyCondition(
+        [System.Windows.Automation.AutomationElement]::NameProperty, '打开输入框')
+    $openButton = $Root.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $openCondition)
+    if ($null -eq $openButton) { throw 'OSC chatbox smoke could not find the quick-input entry.' }
+    $openButton.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke()
+
+    for ($attempt = 0; $attempt -lt 30 -and $null -eq $inputWindow; $attempt++) {
+        Start-Sleep -Milliseconds 200
+        $inputWindow = Find-QuickInputWindow -Root $Root -ProcessId $ProcessId -MainWindowHandle $MainWindowHandle
+    }
+    if ($null -eq $inputWindow) { throw 'OSC chatbox smoke could not open the quick-input window.' }
+
+    return $inputWindow
+}
+
+function Invoke-OscChatboxSmoke {
+    <#
+    自身消息（手动输入）发到 VRChat 聊天框的那份文本必须可选带原文。这一份冒烟在隔离数据
+    目录里跑真实发送链路（输入框 → 翻译 → OSC），用一个真实 UDP 监听当 VRChat 端，核对收到
+    的 /chatbox/input 报文里有没有原文。隔离目录里只有内置的离线回显档案，所以译文就是输入
+    本身：带原文＝这段文字出现两次（译文 + 原文），不带原文＝只出现一次。断言不依赖网络与密钥。
+    #>
+    Add-Type -AssemblyName UIAutomationClient
+    Add-Type -AssemblyName UIAutomationTypes
+    Ensure-ValidationSmokeNative
+
+    $smokeDataDirectory = Join-Path $env:TEMP ('vrc-osc-chatbox-smoke-' + [Guid]::NewGuid().ToString('N'))
+    New-Item -ItemType Directory -Force -Path $smokeDataDirectory | Out-Null
+    $listener = [System.Net.Sockets.UdpClient]::new(0)
+    $port = ([System.Net.IPEndPoint]$listener.Client.LocalEndPoint).Port
+    $probeText = '冒烟原文-' + [Guid]::NewGuid().ToString('N').Substring(0, 6)
+    $settingsPath = Join-Path $smokeDataDirectory 'v2-user-settings.json'
+    $process = $null
+    try {
+        # OSC 客户端在应用启动时按 settings 里的 host/port 建一次，所以端口必须在启动前写好；
+        # 带不带原文是每次发送时读的，可以在两次发送之间改。
+        [System.IO.File]::WriteAllText($settingsPath, (@{
+            OscHost = '127.0.0.1'
+            OscPort = $port
+            IncludeOriginalInOsc = $true
+        } | ConvertTo-Json), (New-Object System.Text.UTF8Encoding($false)))
+        $env:VRC_TRANSLATE_DATA_DIR = $smokeDataDirectory
+        $env:VRC_TRANSLATE_SMOKE_PAGE = 'input'
+        $process = Start-Process -FilePath $executable -WorkingDirectory $desktopOutput -PassThru
+        $root = [System.Windows.Automation.AutomationElement]::RootElement
+        $window = $null
+        for ($attempt = 0; $attempt -lt 40 -and $null -eq $window; $attempt++) {
+            Start-Sleep -Milliseconds 200
+            $window = @($root.FindAll(
+                [System.Windows.Automation.TreeScope]::Children,
+                [System.Windows.Automation.Condition]::TrueCondition)) |
+                Where-Object { $_.Current.Name -eq 'VRCTranslate' -and $_.Current.ProcessId -eq $process.Id } |
+                Select-Object -First 1
+        }
+        if ($null -eq $window) { throw 'OSC chatbox smoke could not find the shell window.' }
+        # 与手工诊断一致的稳定点：等主窗口完全就绪再发（否则输入浮窗可能刚建好还没接收键盘）。
+        Start-Sleep -Seconds 4
+
+        foreach ($includeOriginal in @($true, $false)) {
+            [System.IO.File]::WriteAllText($settingsPath, (@{
+                OscHost = '127.0.0.1'
+                OscPort = $port
+                IncludeOriginalInOsc = $includeOriginal
+            } | ConvertTo-Json), (New-Object System.Text.UTF8Encoding($false)))
+
+            $inputWindow = Open-QuickInputWindow -Root $root -ProcessId $process.Id -MainWindowHandle $window.Current.NativeWindowHandle
+            $textBox = Set-QuickInputText -Root $root -ProcessId $process.Id -Text $probeText
+            Send-QuickInputText -TextBox $textBox -WindowHandle ([IntPtr]$inputWindow.Current.NativeWindowHandle)
+
+            $payload = Receive-OscChatboxPacket -Client $listener -TimeoutMs 25000
+            if ($null -eq $payload) {
+                throw ('No /chatbox/input datagram arrived with IncludeOriginalInOsc set to ' + $includeOriginal + '.')
+            }
+
+            # 隔离数据目录里每个目标语言都用离线回显档案，所以「译文」这一份总是等于输入本身，
+            # 出现几次就说明载荷里有几段译/原文；开与关只差末尾那一段原文，这个差值才是断言对象。
+            $occurrences = ([regex]::Matches($payload, [regex]::Escape($probeText))).Count
+            $expectedOccurrences = if ($includeOriginal) { 3 } else { 2 }
+            if ($occurrences -ne $expectedOccurrences) {
+                throw ("The chatbox payload must carry the original text exactly when the switch is on (expected " +
+                    $expectedOccurrences + ' occurrences, found ' + $occurrences + "): '" + $payload + "'.")
+            }
+            if (-not $payload.EndsWith($probeText, [StringComparison]::Ordinal)) {
+                throw ("The original text must be the last part of the chatbox payload: '" + $payload + "'.")
+            }
+
+            try { $inputWindow.GetCurrentPattern([System.Windows.Automation.WindowPattern]::Pattern).Close() } catch { }
+            Start-Sleep -Milliseconds 400
+        }
+
+        Write-Host '  OSC chatbox payload smoke passed (original on and off, real datagram).' -ForegroundColor Green
+    }
+    finally {
+        if ($null -ne $process -and -not $process.HasExited) { Stop-Process -Id $process.Id -Force }
+        $listener.Dispose()
+        Remove-Item Env:VRC_TRANSLATE_DATA_DIR -ErrorAction SilentlyContinue
+        Remove-Item Env:VRC_TRANSLATE_SMOKE_PAGE -ErrorAction SilentlyContinue
+        Start-Sleep -Seconds 2
+        Remove-Item -LiteralPath $smokeDataDirectory -Recurse -Force -ErrorAction SilentlyContinue
+    }
+    if (Test-Path $startupLog) {
+        throw 'OSC chatbox smoke wrote a startup failure log.'
+    }
+}
+
 function Invoke-QuickInputUiSmoke {
     Add-Type -AssemblyName UIAutomationClient
     Add-Type -AssemblyName UIAutomationTypes
@@ -1992,6 +2267,8 @@ $overlayWindowSmoke = Join-Path $PSScriptRoot 'Invoke-V2OverlayWindowSmoke.ps1'
 & powershell -NoProfile -ExecutionPolicy Bypass -File $overlayWindowSmoke -Executable $executable
 if ($LASTEXITCODE -ne 0) { throw "Native overlay-window smoke failed with exit code $LASTEXITCODE." }
 Invoke-QuickInputUiSmoke
+# 自身消息的 OSC 载荷是否带原文：隔离数据目录里跑真实发送链路并用真实 UDP 报文核对。
+Invoke-OscChatboxSmoke
 Invoke-VoiceUiSmoke
 Invoke-SubtitleVisualSmoke
 foreach ($page in @('run', 'input', 'voice', 'translation', 'settings', 'guide')) {

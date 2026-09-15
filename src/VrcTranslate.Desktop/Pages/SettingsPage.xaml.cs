@@ -205,6 +205,7 @@ public sealed partial class SettingsPage : Page
         RenderSavedHotkey(SelfVoiceHotkeyBox);
         OscHostBox.Text = settings.OscHost;
         OscPortBox.Text = settings.OscPort.ToString();
+        OscIncludeOriginalToggle.IsOn = settings.IncludeOriginalInOsc;
         _loading = false;
     }
 
@@ -240,6 +241,17 @@ public sealed partial class SettingsPage : Page
     }
 
     private void OnSettingTextChanged(object sender, TextChangedEventArgs e)
+    {
+        if (_loading) return;
+        if (!TrySave(_savedSettings, out var error)) ShowResult(error, InfoBarSeverity.Warning);
+    }
+
+    /// <summary>
+    /// The chatbox content choice is stored with the connection and applied to the
+    /// next send; saving it immediately keeps it in step with the host and port
+    /// boxes, which have no separate save button either.
+    /// </summary>
+    private void OnOscIncludeOriginalToggled(object sender, RoutedEventArgs e)
     {
         if (_loading) return;
         if (!TrySave(_savedSettings, out var error)) ShowResult(error, InfoBarSeverity.Warning);
@@ -602,7 +614,8 @@ public sealed partial class SettingsPage : Page
             SelfVoiceHotkey = selfVoice,
             OscIntervalSeconds = _savedSettings.OscIntervalSeconds,
             PlaySound = _savedSettings.PlaySound,
-            KeepRunning = _savedSettings.KeepRunning
+            KeepRunning = _savedSettings.KeepRunning,
+            IncludeOriginalInOsc = _savedSettings.IncludeOriginalInOsc
         };
         return TrySave(source, out error);
     }
@@ -630,7 +643,9 @@ public sealed partial class SettingsPage : Page
             OscPort = port,
             OscIntervalSeconds = hotkeySource.OscIntervalSeconds,
             PlaySound = hotkeySource.PlaySound,
-            KeepRunning = hotkeySource.KeepRunning
+            KeepRunning = hotkeySource.KeepRunning,
+            // 这个开关的状态来自界面（开关自己触发的保存），而不是只从内存里抄一份。
+            IncludeOriginalInOsc = OscIncludeOriginalToggle.IsOn
         };
         if (!TryValidateHotkeys(settings, out error)) return false;
 
@@ -740,5 +755,8 @@ public sealed partial class SettingsPage : Page
         public double OscIntervalSeconds { get; set; } = 1.5;
         public bool PlaySound { get; set; } = true;
         public bool KeepRunning { get; set; } = true;
+
+        [System.Text.Json.Serialization.JsonPropertyName(OscChatboxSettings.IncludeOriginalPropertyName)]
+        public bool IncludeOriginalInOsc { get; set; } = OscChatboxSettings.DefaultIncludeOriginal;
     }
 }

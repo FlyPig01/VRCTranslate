@@ -305,7 +305,10 @@ public sealed class SubtitleSpeechSession : VoiceSessionHost
             new TextTranslationRequest(text, voiceRoute, TextTranslationSource.SpeechRecognition,
                 sourceLanguageHint: sourceMode == SourceLanguageMode.Fixed ? recognizedLanguage : null))
             .ConfigureAwait(false);
-        _state.SetTranslationPreview(text, translated.TranslatedText);
+        // Other players' captions belong to the subtitle surface only. The shared
+        // translation preview feeds the quick-input window and the own-voice page,
+        // which are about what the user says - writing another player's sentence
+        // there made their translation show up in the input box.
         // Other-player captions are translated to Simplified Chinese only;
         // use the shared OSC length guard without adding own-input targets
         // or the original text to this stream.

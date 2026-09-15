@@ -311,10 +311,10 @@ public sealed class SubtitleSpeechSession : VoiceSessionHost
         // or the original text to this stream.
         await _state.Osc.SendChatboxAsync(TranslationOutputFormatter.TrimForOsc(translated.TranslatedText))
             .ConfigureAwait(false);
-        // Captions carry the speaker label; the OSC chat line stays
-        // translation-only so the in-game stream keeps its existing shape.
-        var caption = result.HasSpeaker ? $"{result.SpeakerLabel}：{text}" : text;
-        OverlayWindowHost.SetSubtitleFromAnyThread(caption, translated.TranslatedText);
+        // The caption message carries the speaker label as its own part; the
+        // OSC chat line stays translation-only so the in-game stream keeps its
+        // existing shape.
+        OverlayWindowHost.AppendSubtitleFromAnyThread(text, translated.TranslatedText, result.SpeakerLabel);
     }
 }
 

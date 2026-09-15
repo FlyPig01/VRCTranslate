@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
@@ -7,6 +8,7 @@ using Microsoft.UI.Xaml.Media;
 using VrcTranslate.Infrastructure.Storage;
 using VrcTranslate.Application.Abstractions;
 using VrcTranslate.Application.Speech;
+using VrcTranslate.Application.Subtitles;
 using VrcTranslate.Core.Speech;
 using VrcTranslate.Core.Translation;
 using VrcTranslate.Desktop.Controls;
@@ -552,6 +554,7 @@ public sealed partial class VoicePage : Page
 
         _settings.Provider = "local";
         State.LocalSpeech.SpeakerLabelsEnabled = _settings.SpeakerLabels;
+        ApplySubtitleContentSetting();
         SpeechModelBox.SelectedIndex = 0;
         VoiceHotkeyValue.Text = ReadGlobalVoiceHotkey();
         AutomationProperties.SetName(VoiceHotkeyValue, VoiceHotkeyValue.Text);
@@ -601,6 +604,31 @@ public sealed partial class VoicePage : Page
         }
 
         return "F7";
+    }
+
+    /// <summary>
+    /// Mirrors the persisted caption option into the switch and into the open
+    /// caption surface. "译文 + 原文" is the shape earlier builds always used.
+    /// </summary>
+    private void ApplySubtitleContentSetting()
+    {
+        var mode = SubtitleCaptionSettings.FromTag(_settings.SubtitleContent);
+        _settings.SubtitleContent = SubtitleCaptionSettings.ToTag(mode);
+        SubtitleContentToggle.IsOn = mode == SubtitleContentMode.TranslatedWithOriginal;
+        OverlayWindowHost.ApplySubtitleContentMode(mode);
+    }
+
+    private void OnSubtitleContentToggled(object sender, RoutedEventArgs e)
+    {
+        // The switch is set from the saved value while the page loads; that pass
+        // must not write the file back.
+        if (!_loaded) return;
+        var mode = SubtitleContentToggle.IsOn
+            ? SubtitleContentMode.TranslatedWithOriginal
+            : SubtitleContentMode.TranslatedOnly;
+        _settings.SubtitleContent = SubtitleCaptionSettings.ToTag(mode);
+        SaveSettings();
+        OverlayWindowHost.ApplySubtitleContentMode(mode);
     }
 
     private void OnSpeakerToggleToggled(object sender, RoutedEventArgs e)
@@ -744,6 +772,13 @@ public sealed partial class VoicePage : Page
         public string Provider { get; set; } = "local";
 
         public bool SpeakerLabels { get; set; }
+
+        /// <summary>
+        /// Caption message content: "translated-only" or "translated-with-original".
+        /// The overlay reads the same property out of v2-voice-settings.json.
+        /// </summary>
+        [JsonPropertyName(SubtitleCaptionSettings.ContentPropertyName)]
+        public string SubtitleContent { get; set; } = SubtitleCaptionSettings.TranslatedWithOriginalTag;
     }
 
     private sealed class GlobalHotkeySettings

@@ -60,19 +60,39 @@
                   IsHitTestVisible="False" />
       </Grid>
 
-      <TextBlock x:Name="SubtitleText"
-                 Grid.Column="2"
-                 AutomationProperties.AutomationId="subtitle-text"
-                 FontSize="22"
-                 FontWeight="SemiBold"
-                 Foreground="#FFFFFF"
-                 TextAlignment="Left"
-                 TextWrapping="Wrap"
-                 TextTrimming="CharacterEllipsis"
-                 MaxLines="3"
-                 Margin="4,0"
-                 HorizontalAlignment="Stretch"
-                 VerticalAlignment="Center" />
+      <!-- Chat-style column: one message per recognized sentence, newest at the
+           bottom. The viewer owns pointer and wheel scrolling so a long
+           conversation can be read back, and messages stick to the bottom while
+           the reader stays there. -->
+      <ScrollViewer x:Name="CaptionScroll"
+                    Grid.Column="2"
+                    AutomationProperties.AutomationId="subtitle-text"
+                    Margin="4,0"
+                    Padding="0,2"
+                    HorizontalAlignment="Stretch"
+                    VerticalAlignment="Stretch"
+                    HorizontalScrollBarVisibility="Disabled"
+                    HorizontalScrollMode="Disabled"
+                    VerticalScrollBarVisibility="Auto"
+                    VerticalScrollMode="Auto"
+                    VerticalContentAlignment="Bottom">
+        <StackPanel x:Name="CaptionMessages"
+                    HorizontalAlignment="Stretch"
+                    VerticalAlignment="Bottom" />
+      </ScrollViewer>
+
+      <!-- Offered only after the reader scrolled back; nothing moves the view
+           away from an older message. -->
+      <Button x:Name="NewCaptionHint"
+              Grid.Column="2"
+              Content="有新消息"
+              Visibility="Collapsed"
+              HorizontalAlignment="Right"
+              VerticalAlignment="Bottom"
+              Margin="0,0,16,8"
+              Padding="10,3"
+              FontSize="12"
+              AutomationProperties.AutomationId="subtitle-new-message" />
     </Grid>
   </Grid>
 </Window>

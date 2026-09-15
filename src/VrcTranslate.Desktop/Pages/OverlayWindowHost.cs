@@ -1,3 +1,4 @@
+using VrcTranslate.Application.Subtitles;
 using VrcTranslate.Core.Settings;
 using VrcTranslate.Infrastructure.Configuration;
 using VrcTranslate.Infrastructure.Storage;
@@ -26,22 +27,49 @@ internal static class OverlayWindowHost
     public static SubtitleOverlayWindow? Subtitle => _subtitle;
 
     /// <summary>
-    /// Updates the caption from any thread. Recognition results are processed
-    /// by the application-scoped session host off the UI thread, so the
-    /// marshal happens here instead of at every call site.
+    /// Appends one caption message from any thread. Recognition results are
+    /// processed by the application-scoped session host off the UI thread, so
+    /// the marshal happens here instead of at every call site.
     /// </summary>
-    public static void SetSubtitleFromAnyThread(string original, string translated)
+    public static void AppendSubtitleFromAnyThread(string original, string translated, string? speakerLabel = null)
     {
         var window = _subtitle;
         if (window is null) return;
         if (_dispatcherQueue is { } queue)
         {
-            queue.TryEnqueue(() => window.SetSubtitle(original, translated));
+            queue.TryEnqueue(() => window.AppendCaption(original, translated, speakerLabel));
         }
         else
         {
-            window.SetSubtitle(original, translated);
+            window.AppendCaption(original, translated, speakerLabel);
         }
+    }
+
+    /// <summary>Applies the caption presentation option chosen on the voice page.</summary>
+    public static void ApplySubtitleContentMode(SubtitleContentMode mode)
+    {
+        var window = _subtitle;
+        if (window is null) return;
+        if (_dispatcherQueue is { } queue && !queue.HasThreadAccess)
+        {
+            queue.TryEnqueue(() => window.ApplyContentMode(mode));
+        }
+        else
+        {
+            window.ApplyContentMode(mode);
+        }
+    }
+
+    /// <summary>
+    /// Mirrors the recognition session onto the caption stream: stopping
+    /// recognition pauses appending and keeps every message already shown.
+    /// </summary>
+    private static void OnSubtitleSessionRunningChanged(object? sender, EventArgs e)
+    {
+        var paused = _state?.SubtitleVoice.IsRunning != true;
+        void Apply() => _subtitle?.SetStreamPaused(paused);
+        if (_dispatcherQueue is null || _dispatcherQueue.HasThreadAccess) Apply();
+        else _dispatcherQueue.TryEnqueue(Apply);
     }
 
     public static void Initialize(AppState state)
@@ -53,9 +81,15 @@ internal static class OverlayWindowHost
         }
         if (!ReferenceEquals(_state, state))
         {
-            if (_state is not null) _state.OverlayAppearance.Changed -= OnAppearanceChanged;
+            if (_state is not null)
+            {
+                _state.OverlayAppearance.Changed -= OnAppearanceChanged;
+                _state.SubtitleVoice.RunningChanged -= OnSubtitleSessionRunningChanged;
+            }
+
             _state = state;
             _state.OverlayAppearance.Changed += OnAppearanceChanged;
+            _state.SubtitleVoice.RunningChanged += OnSubtitleSessionRunningChanged;
         }
         _dispatcherQueue ??= Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread();
         EnsureLayoutStore();
@@ -102,6 +136,8 @@ internal static class OverlayWindowHost
         EnsureLayoutStore();
         var resolvedState = _state ?? throw new InvalidOperationException("Overlay host is not initialized.");
         var window = new SubtitleOverlayWindow(resolvedState.OverlayAppearance.Current.SubtitleOverlayOpacity);
+        // Recognition may already be running when the surface is first created.
+        window.SetStreamPaused(!resolvedState.SubtitleVoice.IsRunning);
         window.Closed += (_, _) =>
         {
             SaveCurrentLayout(window, SubtitleLayoutKey);
@@ -163,7 +199,11 @@ internal static class OverlayWindowHost
         var subtitle = _subtitle;
         _quickInput = null;
         _subtitle = null;
-        if (_state is not null) _state.OverlayAppearance.Changed -= OnAppearanceChanged;
+        if (_state is not null)
+        {
+            _state.OverlayAppearance.Changed -= OnAppearanceChanged;
+            _state.SubtitleVoice.RunningChanged -= OnSubtitleSessionRunningChanged;
+        }
 
         // Capture the final screen rectangles before requesting destruction.
         // Window.Close normally raises Closed synchronously, but the native

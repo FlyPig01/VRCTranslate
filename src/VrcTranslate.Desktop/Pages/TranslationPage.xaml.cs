@@ -17,6 +17,7 @@ public sealed partial class TranslationPage : Page
     private readonly JsonConfigurationStore<GlossaryDocument> _glossaryStore;
     private readonly ObservableCollection<GlossaryEntry> _terms = [];
     private bool _loaded;
+    private bool _glossaryAutoSaveReady;
     private AppState State => ((App)Microsoft.UI.Xaml.Application.Current).State;
 
     private static readonly IReadOnlyDictionary<string, string> ProviderNames = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
@@ -69,6 +70,9 @@ public sealed partial class TranslationPage : Page
                 foreach (var term in DefaultTerms) _terms.Add(term);
         }
         UpdateGlossaryEmptyState();
+        // From here on every list change writes the document: the card has no
+        // save button, so the file must always match what is on screen.
+        _glossaryAutoSaveReady = true;
     }
 
     private void OnUnloaded(object sender, RoutedEventArgs e) => State.RouteChanged -= OnRouteChanged;
@@ -309,10 +313,37 @@ public sealed partial class TranslationPage : Page
         var source = TermSourceBox.Text.Trim(); var target = TermTargetBox.Text.Trim();
         if (source.Length == 0 || target.Length == 0) { ShowGlossaryMessage("请填写原词和译词。", InfoBarSeverity.Warning); return; }
         var existing = _terms.FirstOrDefault(x => string.Equals(x.Source, source, StringComparison.OrdinalIgnoreCase)); if (existing is not null) _terms[_terms.IndexOf(existing)] = new GlossaryEntry(source, target); else _terms.Add(new GlossaryEntry(source, target)); TermSourceBox.Text = string.Empty; TermTargetBox.Text = string.Empty; UpdateGlossaryEmptyState();
+        _ = PersistGlossaryAsync();
     }
 
-    private void OnRemoveTermClicked(object sender, RoutedEventArgs e) { if (sender is Button { Tag: GlossaryEntry term }) _terms.Remove(term); UpdateGlossaryEmptyState(); }
-    private async void OnSaveGlossaryClicked(object sender, RoutedEventArgs e) { try { await _glossaryStore.SaveAsync(new GlossaryDocument { Enabled = GlossaryEnabledSwitch.IsOn, Entries = _terms.ToList() }); ShowGlossaryMessage("术语库已保存。", InfoBarSeverity.Success); } catch (Exception ex) { ShowGlossaryMessage($"保存失败：{ex.Message}", InfoBarSeverity.Error); } }
+    private void OnRemoveTermClicked(object sender, RoutedEventArgs e) { if (sender is Button { Tag: GlossaryEntry term }) _terms.Remove(term); UpdateGlossaryEmptyState(); _ = PersistGlossaryAsync(); }
+
+    /// <summary>Enabling or disabling the glossary is part of the same document and is persisted too.</summary>
+    private void OnGlossaryEnabledToggled(object sender, RoutedEventArgs e)
+    {
+        // Restoring the saved document sets the switch; that pass must not write it back.
+        if (!_glossaryAutoSaveReady) return;
+        _ = PersistGlossaryAsync();
+    }
+
+    /// <summary>
+    /// The glossary card has no save button, so every add, edit, removal and
+    /// enable change writes the whole document immediately. Without this the
+    /// list would look saved while glossary.json stayed stale.
+    /// </summary>
+    private async Task PersistGlossaryAsync()
+    {
+        try
+        {
+            await _glossaryStore.SaveAsync(new GlossaryDocument { Enabled = GlossaryEnabledSwitch.IsOn, Entries = _terms.ToList() });
+            ShowGlossaryMessage("术语库已自动保存。", InfoBarSeverity.Success);
+        }
+        catch (Exception ex)
+        {
+            ShowGlossaryMessage($"保存失败：{ex.Message}", InfoBarSeverity.Error);
+        }
+    }
+
     private void UpdateGlossaryEmptyState() => GlossaryEmptyText.Visibility = _terms.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
     private void ShowGlossaryMessage(string message, InfoBarSeverity severity) { GlossaryInfo.Title = severity == InfoBarSeverity.Success ? "已完成" : "请检查"; GlossaryInfo.Message = message; GlossaryInfo.Severity = severity; GlossaryInfo.IsOpen = true; }
     private void ShowMessage(string message, InfoBarSeverity severity) { ResultInfo.Title = severity == InfoBarSeverity.Success ? "已完成" : "请检查"; ResultInfo.Message = message; ResultInfo.Severity = severity; ResultInfo.IsOpen = true; RebuildProfiles(); }

@@ -82,6 +82,8 @@ $overlayMarkup = Get-Content -Raw $overlayPage
 $overlayCodeSource = Get-Content -Raw (Join-Path $desktopSource 'Pages\SubtitleOverlayWindow.xaml.cs')
 $overlayLayoutContract = Get-Content -Raw (Join-Path $v2Root 'src\VrcTranslate.Core\Settings\OverlayWindowLayout.cs')
 $overlayLayoutStore = Get-Content -Raw (Join-Path $v2Root 'src\VrcTranslate.Infrastructure\Configuration\OverlayWindowLayoutStore.cs')
+$captionBufferSource = Get-Content -Raw (Join-Path $v2Root 'src\VrcTranslate.Application\Subtitles\SubtitleCaptionBuffer.cs')
+$captionSettingsSource = Get-Content -Raw (Join-Path $desktopSource 'SubtitleCaptionSettings.cs')
 
 function Get-ConfiguredOverlaySize {
     param(
@@ -189,6 +191,21 @@ if ($appStateSource -notmatch 'deepseek".*, "deepseek-flash"' -or $appStateSourc
 if ($infrastructureSource -notmatch 'DeepSeekTranslationProvider' -or $infrastructureSource -notmatch '"type"\]\s*=\s*"disabled"' -or $infrastructureSource -match 'OpenAiCompatibleTranslationProvider') { throw 'DeepSeek must be a dedicated provider that disables thinking mode by default; the generic OpenAI-compatible adapter is retired.' }
 if ($translationMarkup -notmatch 'ListViewItem|HorizontalContentAlignment="Stretch"') { throw 'Glossary rows must stretch to the table width.' }
 if ($translationCode -notmatch 'DefaultTerms' -or $translationCode -notmatch 'if \(_terms\.Count == 0\)') { throw 'The glossary must seed its default terms when no saved terms exist.' }
+# D2：术语库卡片删掉「保存」按钮和重复的「启用」文字，标题与开关并回同一条标题行。
+# 术语表本来就是自动保存的，所以新增 / 修改 / 删除 / 开关都必须自己立即落盘。
+if ($translationMarkup -match 'glossary-save|Content="保存"|Header="启用"') {
+    throw 'The glossary card must not keep a save button or a duplicated 启用 label; the switch already shows 开 / 关.'
+}
+if ($translationCode -match 'OnSaveGlossaryClicked') {
+    throw 'The retired glossary save handler must be removed together with its button.'
+}
+if ($translationCode -notmatch 'PersistGlossaryAsync' -or
+    ([regex]::Matches($translationCode, '_ = PersistGlossaryAsync\(\)').Count -lt 3)) {
+    throw 'Adding, editing, removing and enabling a glossary term must each persist the document immediately.'
+}
+if ($translationMarkup -notmatch '(?s)<Grid ColumnSpacing="12" MinWidth="0">\s*<Grid\.ColumnDefinitions>\s*<ColumnDefinition Width="\*" />\s*<ColumnDefinition Width="Auto" />\s*</Grid\.ColumnDefinitions>\s*<TextBlock Text="术语库"[\s\S]{0,600}<ToggleSwitch[^>]*Grid\.Column="1"') {
+    throw 'The glossary title and its switch must share one aligned header row like the translation-service card.'
+}
 if ($translationCode -notmatch 'LayoutCard' -or $translationCode -notmatch 'grid\.ActualWidth' -or $translationCode -notmatch 'HorizontalScrollBarVisibility = ScrollBarVisibility\.Disabled') { throw 'Translation profile cards and dialogs must adapt to compact widths without horizontal clipping.' }
 if (($translationCode -notmatch 'CreateProviderPlaceholders|IsConfiguredProfile' -and $appStateSource -notmatch 'CreateProviderPlaceholders|IsConfiguredProfile') -or $appStateSource -notmatch 'Only this offline profile' -or $appStateSource -notmatch 'IsConfiguredRoute') { throw 'Translation profiles must hide unconfigured provider placeholders and keep only the local test profile by default.' }
 if ($settingsMarkup -notmatch 'Text="打开输入框"' -or $settingsMarkup -match 'Text="自身输入"') { throw 'Shortcut settings must name the quick-input action as 打开输入框.' }
@@ -307,6 +324,43 @@ if ($overlayMarkup -notmatch 'AutomationProperties.AutomationId="subtitle-text"'
      ([regex]::Matches($overlayMarkup, 'subtitle-activity-mark').Count -ne 1)) {
      throw 'Subtitle overlay must keep only the left activity mark; the removed irregular right-side decoration must not return.'
  }
+# D1：长对话改成消息条滚动列表。消息只在本次运行期间存在（不写盘、没有清空入口），
+# 停止识别只暂停追加而不改变已有消息，用户上翻时不得被强制拉回底部。
+if ($captionBufferSource -notmatch 'DefaultCapacity\s*=\s*200' -or
+    $captionBufferSource -notmatch 'RemoveAt\(0\)' -or
+    $captionBufferSource -notmatch 'IsPaused') {
+    throw 'Caption messages must be a bounded log (200 newest, oldest dropped) that can be paused without clearing it.'
+}
+if ($overlayMarkup -notmatch '<ScrollViewer[^>]*subtitle-text' -or
+    ([regex]::Matches($overlayMarkup, 'AutomationProperties.AutomationId="subtitle-text"').Count -ne 1) -or
+    $overlayMarkup -match 'x:Name="SubtitleText"|清空') {
+    throw 'The subtitle overlay must render one scrolling message list: no single-caption block and no clear action.'
+}
+if ($overlayMarkup -notmatch 'subtitle-new-message' -or $overlayMarkup -notmatch '有新消息' -or
+    $overlayCodeSource -notmatch 'SubtitleCaptionBuffer' -or
+    $overlayCodeSource -notmatch 'AppendCaption' -or
+    $overlayCodeSource -notmatch 'ScrollToLatest' -or
+    $overlayCodeSource -notmatch 'OnCaptionViewChanged' -or
+    $overlayCodeSource -notmatch 'NewCaptionHint') {
+    throw 'The subtitle overlay must append messages, follow the newest one and offer a new-message hint instead of forcing the view down.'
+}
+if ($overlayCodeSource -notmatch 'SetStreamPaused' -or
+    $overlayHostSource -notmatch 'SubtitleVoice\.RunningChanged' -or
+    $overlayHostSource -notmatch 'SetStreamPaused') {
+    throw 'Stopping recognition must pause the caption stream without clearing the messages already shown, and restarting must continue below them.'
+}
+if ($overlayCodeSource -notmatch 'SubtitleCaptionSettings\.Read\(\)' -or
+    $overlayCodeSource -notmatch 'ApplyContentMode' -or
+    $captionSettingsSource -notmatch 'ContentPropertyName\s*=\s*"SubtitleContent"' -or
+    $captionSettingsSource -notmatch 'translated-only') {
+    throw 'The caption surface must read the persisted 仅译文 / 译文 + 原文 option and follow later changes.'
+}
+if ($voiceMarkup -notmatch 'subtitle-content-toggle' -or
+    $voiceSource -notmatch 'SubtitleCaptionSettings' -or
+    $voiceSource -notmatch 'OverlayWindowHost\.ApplySubtitleContentMode' -or
+    $voiceSource -notmatch 'SubtitleContent') {
+    throw 'VoicePage must offer the caption content option next to the subtitle opacity and persist it in the voice settings document.'
+}
 if ($quickInputSource -notmatch 'new\s+OverlayWindowController' -or
     $quickInputSource -notmatch 'OverlayWindowHost\.GetSavedLayout' -or
     $quickInputSource -notmatch 'OverlayWindowHost\.SaveLayout' -or
@@ -470,11 +524,62 @@ if ($visibleXaml -match '翻译设置') { throw 'The old duplicate translation-s
 if ($visibleXaml -match 'gpt-4o-mini') { throw 'A provider-specific model must not be hard-coded into the desktop UI.' }
 if ($visibleXaml -notmatch 'TermSourceBox|术语库') { throw 'The translation page must expose an editable glossary.' }
 
+function Wait-JsonDocument {
+    param(
+        [Parameter(Mandatory)][string] $Path,
+        [Parameter(Mandatory)][scriptblock] $Predicate,
+        [Parameter(Mandatory)][string] $Failure,
+        [int] $Attempts = 40
+    )
+
+    for ($attempt = 0; $attempt -lt $Attempts; $attempt++) {
+        try {
+            if (Test-Path -LiteralPath $Path) {
+                $document = Get-Content -LiteralPath $Path -Raw | ConvertFrom-Json
+                if (& $Predicate $document) { return }
+            }
+        }
+        catch {
+            # The atomic replace can be observed mid-write; retry.
+        }
+        Start-Sleep -Milliseconds 150
+    }
+    throw $Failure
+}
+
+function Find-GlossaryRowDeleteButton {
+    param(
+        [Parameter(Mandatory)] $Window,
+        [Parameter(Mandatory)][string] $RowText
+    )
+
+    $row = $Window.FindFirst(
+        [System.Windows.Automation.TreeScope]::Descendants,
+        (New-Object System.Windows.Automation.PropertyCondition(
+            [System.Windows.Automation.AutomationElement]::NameProperty, $RowText)))
+    if ($null -eq $row) { return $null }
+
+    $deleteCondition = New-Object System.Windows.Automation.PropertyCondition(
+        [System.Windows.Automation.AutomationElement]::AutomationIdProperty, 'glossary-delete')
+    $walker = [System.Windows.Automation.TreeWalker]::ControlViewWalker
+    $node = $row
+    while ($null -ne $node) {
+        $button = $node.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $deleteCondition)
+        if ($null -ne $button) { return $button }
+        $node = $walker.GetParent($node)
+    }
+    return $null
+}
+
 function Invoke-TranslationUiSmoke {
     Add-Type -AssemblyName UIAutomationClient
     Add-Type -AssemblyName UIAutomationTypes
     Remove-Item $startupLog -ErrorAction SilentlyContinue
     $env:VRC_TRANSLATE_SMOKE_PAGE = 'run'
+    # The glossary writes itself now, so this smoke checks the real document and
+    # restores it afterwards.
+    $glossaryPath = Join-Path $desktopOutput 'data\glossary.json'
+    $glossarySnapshot = if (Test-Path -LiteralPath $glossaryPath) { Get-Content -LiteralPath $glossaryPath -Raw } else { $null }
     $process = $null
     try {
         $process = Start-Process -FilePath $executable -WorkingDirectory $desktopOutput -PassThru
@@ -635,12 +740,106 @@ function Invoke-TranslationUiSmoke {
                 throw 'A glossary delete button is outside the application window.'
             }
         }
+
+        # 术语库没有保存按钮了：用一个一次性术语证明修改、新增、删除和启用开关
+        # 都立刻写进了磁盘文件，而不是"看起来保存了"。
+        $probeTarget = 'V2-验证-目标-' + [Guid]::NewGuid().ToString('N').Substring(0, 8)
+        $probeTerm = 'V2-验证-词条-' + [Guid]::NewGuid().ToString('N').Substring(0, 8)
+        $firstDeleteButton = $deleteButtons |
+            Where-Object { $_.Current.BoundingRectangle.Width -gt 0 } |
+            Select-Object -First 1
+        if ($null -eq $firstDeleteButton) { throw 'UI smoke could not find a rendered glossary row to edit.' }
+        $firstRow = [System.Windows.Automation.TreeWalker]::ControlViewWalker.GetParent($firstDeleteButton)
+        $firstRowText = $firstRow.FindFirst(
+            [System.Windows.Automation.TreeScope]::Descendants,
+            (New-Object System.Windows.Automation.PropertyCondition(
+                [System.Windows.Automation.AutomationElement]::ControlTypeProperty,
+                [System.Windows.Automation.ControlType]::Text)))
+        if ($null -eq $firstRowText -or [string]::IsNullOrWhiteSpace($firstRowText.Current.Name)) {
+            throw 'UI smoke could not read the glossary row that is about to be edited.'
+        }
+
+        $termSource = $window.FindFirst(
+            [System.Windows.Automation.TreeScope]::Descendants,
+            (New-Object System.Windows.Automation.PropertyCondition(
+                [System.Windows.Automation.AutomationElement]::AutomationIdProperty, 'TermSourceBox')))
+        $termTarget = $window.FindFirst(
+            [System.Windows.Automation.TreeScope]::Descendants,
+            (New-Object System.Windows.Automation.PropertyCondition(
+                [System.Windows.Automation.AutomationElement]::AutomationIdProperty, 'TermTargetBox')))
+        $addTerm = $window.FindFirst(
+            [System.Windows.Automation.TreeScope]::Descendants,
+            (New-Object System.Windows.Automation.PropertyCondition(
+                [System.Windows.Automation.AutomationElement]::AutomationIdProperty, 'glossary-add')))
+        if ($null -eq $termSource -or $null -eq $termTarget -or $null -eq $addTerm) {
+            throw 'UI smoke could not find the glossary editors.'
+        }
+        $sourceValue = $termSource.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern)
+        $targetValue = $termTarget.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern)
+        $addInvoke = $addTerm.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern)
+
+        # 修改：把已渲染术语的译词改成探针值。
+        $sourceValue.SetValue($firstRowText.Current.Name)
+        $targetValue.SetValue($probeTarget)
+        $addInvoke.Invoke()
+        Wait-JsonDocument -Path $glossaryPath -Failure "Editing a glossary term did not persist '$probeTarget' into $glossaryPath; the removed save button must be replaced by an immediate write." -Predicate {
+            param($document)
+            @($document.entries) | Where-Object { $_.target -eq $probeTarget } | Select-Object -First 1
+        }
+
+        # 新增：新词条必须同样立即落盘。
+        $sourceValue.SetValue($probeTerm)
+        $targetValue.SetValue($probeTerm)
+        $addInvoke.Invoke()
+        Wait-JsonDocument -Path $glossaryPath -Failure "Adding a glossary term did not persist '$probeTerm' into $glossaryPath." -Predicate {
+            param($document)
+            @($document.entries) | Where-Object { $_.source -eq $probeTerm } | Select-Object -First 1
+        }
+
+        # 删除：删掉刚才修改的那一条，文件里不能留下探针值。
+        $probeDeleteButton = Find-GlossaryRowDeleteButton -Window $window -RowText $probeTarget
+        if ($null -eq $probeDeleteButton) { throw 'UI smoke could not find the glossary row it just edited.' }
+        $probeDeleteButton.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke()
+        Wait-JsonDocument -Path $glossaryPath -Failure "Deleting a glossary term left '$probeTarget' in $glossaryPath." -Predicate {
+            param($document)
+            -not (@($document.entries) | Where-Object { $_.target -eq $probeTarget })
+        }
+
+        # 启用开关：原来的保存按钮也会写 Enabled，所以开关同样必须自己落盘。
+        $glossarySwitch = $window.FindFirst(
+            [System.Windows.Automation.TreeScope]::Descendants,
+            (New-Object System.Windows.Automation.PropertyCondition(
+                [System.Windows.Automation.AutomationElement]::AutomationIdProperty, 'glossary-enabled')))
+        if ($null -eq $glossarySwitch) { throw 'UI smoke could not find the glossary enable switch.' }
+        $glossaryToggle = $glossarySwitch.GetCurrentPattern([System.Windows.Automation.TogglePattern]::Pattern)
+        $wasEnabled = $glossaryToggle.Current.ToggleState -eq [System.Windows.Automation.ToggleState]::On
+        $glossaryToggle.Toggle()
+        Wait-JsonDocument -Path $glossaryPath -Failure "Turning the glossary switch off did not persist Enabled=false into $glossaryPath." -Predicate {
+            param($document)
+            [bool]$document.enabled -ne $wasEnabled
+        }
+        $glossaryToggle.Toggle()
+        Wait-JsonDocument -Path $glossaryPath -Failure "Turning the glossary switch back did not persist Enabled=$wasEnabled into $glossaryPath." -Predicate {
+            param($document)
+            [bool]$document.enabled -eq $wasEnabled
+        }
+
         Write-Host '  Translation UI interaction smoke passed.'
     }
     finally {
         if ($null -ne $process -and -not $process.HasExited) { Stop-Process -Id $process.Id -Force }
         Remove-Item Env:VRC_TRANSLATE_SMOKE_PAGE -ErrorAction SilentlyContinue
         Start-Sleep -Seconds 2
+        # 恢复验证前的术语库文件：验证本身不改变本机数据目录。
+        try {
+            if ($null -ne $glossarySnapshot) {
+                [System.IO.File]::WriteAllText($glossaryPath, $glossarySnapshot, (New-Object System.Text.UTF8Encoding($false)))
+            }
+            elseif (Test-Path -LiteralPath $glossaryPath) {
+                Remove-Item -LiteralPath $glossaryPath -Force
+            }
+        }
+        catch { }
     }
     if (Test-Path $startupLog) {
         throw "Translation UI smoke wrote a startup failure log:`n$(Get-Content $startupLog -Raw)"
@@ -742,6 +941,9 @@ function Invoke-VoiceUiSmoke {
     Add-Type -AssemblyName UIAutomationTypes
     Remove-Item $startupLog -ErrorAction SilentlyContinue
     $env:VRC_TRANSLATE_SMOKE_PAGE = 'voice'
+    # The caption content option is persisted here; restore it after the smoke.
+    $voiceSettingsPath = Join-Path $desktopOutput 'data\v2-voice-settings.json'
+    $voiceSettingsSnapshot = if (Test-Path -LiteralPath $voiceSettingsPath) { Get-Content -LiteralPath $voiceSettingsPath -Raw } else { $null }
     $process = $null
     try {
         $process = Start-Process -FilePath $executable -WorkingDirectory $desktopOutput -PassThru
@@ -861,6 +1063,56 @@ function Invoke-VoiceUiSmoke {
         if (-not [VrcTranslateValidationNative]::IsWindowVisible($overlayHandle)) {
             throw 'The subtitle shortcut did not show the overlay again.'
         }
+        # D1：字幕内容选项（仅译文 / 译文 + 原文）持久化在 v2-voice-settings.json。
+        # 切换后必须立刻写入，重新进入语音页时必须从文件读回，切回原值也要落盘。
+        $contentCondition = New-Object System.Windows.Automation.PropertyCondition(
+            [System.Windows.Automation.AutomationElement]::AutomationIdProperty, 'subtitle-content-toggle')
+        $contentToggle = $window.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $contentCondition)
+        if ($null -eq $contentToggle) { throw 'Voice page does not expose the caption content option.' }
+        $contentPattern = $contentToggle.GetCurrentPattern([System.Windows.Automation.TogglePattern]::Pattern)
+        $wasFullCaption = $contentPattern.Current.ToggleState -eq [System.Windows.Automation.ToggleState]::On
+        $expectedTag = if ($wasFullCaption) { 'translated-only' } else { 'translated-with-original' }
+        $contentPattern.Toggle()
+        Wait-JsonDocument -Path $voiceSettingsPath -Failure "Switching the caption content option did not persist '$expectedTag' into $voiceSettingsPath." -Predicate {
+            param($document)
+            [string]$document.SubtitleContent -eq $expectedTag
+        }
+
+        # 读回验证：重新进入语音页，开关状态必须来自刚写入的文件。
+        foreach ($navigationId in @('nav-run', 'nav-voice')) {
+            $navigationButton = $window.FindFirst(
+                [System.Windows.Automation.TreeScope]::Descendants,
+                (New-Object System.Windows.Automation.PropertyCondition(
+                    [System.Windows.Automation.AutomationElement]::AutomationIdProperty, $navigationId)))
+            if ($null -eq $navigationButton) { throw "Voice smoke could not find the '$navigationId' navigation entry." }
+            $navigationButton.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke()
+            Start-Sleep -Milliseconds 300
+        }
+        $expectedState = if ($wasFullCaption) { [System.Windows.Automation.ToggleState]::Off } else { [System.Windows.Automation.ToggleState]::On }
+        $restoredState = $null
+        for ($attempt = 0; $attempt -lt 40; $attempt++) {
+            Start-Sleep -Milliseconds 150
+            $reloadedToggle = $window.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $contentCondition)
+            if ($null -eq $reloadedToggle) { continue }
+            try {
+                $restoredState = $reloadedToggle.GetCurrentPattern([System.Windows.Automation.TogglePattern]::Pattern).Current.ToggleState
+            }
+            catch {
+                continue
+            }
+            if ($restoredState -eq $expectedState) { break }
+        }
+        if ($restoredState -ne $expectedState) {
+            throw "Reopening the voice page did not restore the caption content option from $voiceSettingsPath (state '$restoredState')."
+        }
+
+        $reloadedToggle.GetCurrentPattern([System.Windows.Automation.TogglePattern]::Pattern).Toggle()
+        $restoredTag = if ($wasFullCaption) { 'translated-with-original' } else { 'translated-only' }
+        Wait-JsonDocument -Path $voiceSettingsPath -Failure "Switching the caption content option back did not persist '$restoredTag' into $voiceSettingsPath." -Predicate {
+            param($document)
+            [string]$document.SubtitleContent -eq $restoredTag
+        }
+
         try { $overlay.GetCurrentPattern([System.Windows.Automation.WindowPattern]::Pattern).Close() } catch { }
         Write-Host '  Voice subtitle-window interaction smoke passed.'
     }
@@ -868,6 +1120,16 @@ function Invoke-VoiceUiSmoke {
         if ($null -ne $process -and -not $process.HasExited) { Stop-Process -Id $process.Id -Force }
         Remove-Item Env:VRC_TRANSLATE_SMOKE_PAGE -ErrorAction SilentlyContinue
         Start-Sleep -Seconds 2
+        # 恢复验证前的语音设置文件：验证本身不改变本机数据目录。
+        try {
+            if ($null -ne $voiceSettingsSnapshot) {
+                [System.IO.File]::WriteAllText($voiceSettingsPath, $voiceSettingsSnapshot, (New-Object System.Text.UTF8Encoding($false)))
+            }
+            elseif (Test-Path -LiteralPath $voiceSettingsPath) {
+                Remove-Item -LiteralPath $voiceSettingsPath -Force
+            }
+        }
+        catch { }
     }
     if (Test-Path $startupLog) {
         throw "Voice UI smoke wrote a startup failure log:`n$(Get-Content $startupLog -Raw)"

@@ -186,6 +186,24 @@
                            TextAlignment="Right"
                            VerticalAlignment="Center" />
               </Grid>
+              <!-- 与透明度同级：只切换消息条里是否带原文，不新增卡片或下拉。 -->
+              <Grid ColumnSpacing="12">
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="Auto" />
+                  <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="字幕内容"
+                           VerticalAlignment="Center" />
+                <ToggleSwitch Grid.Column="1"
+                              x:Name="SubtitleContentToggle"
+                              HorizontalAlignment="Left"
+                              VerticalAlignment="Center"
+                              OnContent="译文 + 原文"
+                              OffContent="仅译文"
+                              Toggled="OnSubtitleContentToggled"
+                              AutomationProperties.AutomationId="subtitle-content-toggle"
+                              AutomationProperties.Name="字幕消息内容" />
+              </Grid>
             </StackPanel>
           </Border>
 

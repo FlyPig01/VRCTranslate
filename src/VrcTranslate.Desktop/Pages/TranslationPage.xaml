@@ -39,18 +39,24 @@
 
         <Border Style="{StaticResource SurfaceBorderStyle}" Padding="20">
           <StackPanel Spacing="12" HorizontalAlignment="Stretch">
-            <StackPanel Spacing="8" HorizontalAlignment="Stretch">
-              <TextBlock Text="术语库" Style="{StaticResource SectionTitleTextStyle}" />
-              <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right">
-                <ToggleSwitch x:Name="GlossaryEnabledSwitch"
-                              Header="启用"
-                              IsOn="True" />
-                <Button Content="保存"
-                        Click="OnSaveGlossaryClicked"
-                        AutomationProperties.AutomationId="glossary-save"
-                        MinWidth="72" />
-              </StackPanel>
-            </StackPanel>
+            <!-- 与「翻译服务」卡片共用同一套标题行：标题在左、控件右对齐同一行。
+                 术语库自动保存，因此没有保存按钮；开关自身的开 / 关提示已足够。 -->
+            <Grid ColumnSpacing="12" MinWidth="0">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+              </Grid.ColumnDefinitions>
+              <TextBlock Text="术语库"
+                         Style="{StaticResource SectionTitleTextStyle}"
+                         VerticalAlignment="Center" />
+              <ToggleSwitch Grid.Column="1"
+                            x:Name="GlossaryEnabledSwitch"
+                            IsOn="True"
+                            VerticalAlignment="Center"
+                            Toggled="OnGlossaryEnabledToggled"
+                            AutomationProperties.AutomationId="glossary-enabled"
+                            AutomationProperties.Name="启用术语库" />
+            </Grid>
 
             <Grid ColumnSpacing="10" RowSpacing="8" MinWidth="0">
               <Grid.ColumnDefinitions>

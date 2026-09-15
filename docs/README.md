@@ -51,6 +51,28 @@
 | 他人语音采集自动切换方案.md | 已实施 · 含 COM 健壮性措施 |
 | 翻译服务配置简化方案.md | **待审核**（未改代码）· 含实施前遗留点与"与既有决定的关系" |
 
+## 3.1 发布手测包的两条硬要求（踩过坑）
+
+1. **必须清空输出目录再发布**，否则会混进上一次的产物：
+   ```powershell
+   Remove-Item -Recurse -Force artifacts\manual-test
+   dotnet publish src/VrcTranslate.Desktop/VrcTranslate.Desktop.csproj -c Release `
+     -p:Platform=x64 -r win-x64 --self-contained true -o artifacts/manual-test
+   ```
+   症状：`dotnet publish -o` **不会清空**目标目录，一次不带 `--self-contained` 的发布会把
+   **框架依赖版**的 `VrcTranslate.runtimeconfig.json` 留在里面，和自包含的 `coreclr.dll` 混在一起。
+   双击 exe 就会弹「You must install or update .NET to run this application」——
+   即使机器上装了 .NET 10 也一样，因为 apphost 按 runtimeconfig 去找运行时。
+   **自检**：干净的包，`VrcTranslate.runtimeconfig.json` 里应该是 `includedFrameworks`（带着版本号），
+   **不是** `framework`。
+2. **发布后必须重铺 `data` 目录**（档案/密钥都在里面，发布不会带走）：
+   ```powershell
+   pwsh -NoProfile -ExecutionPolicy Bypass -File artifacts\seed-profiles.ps1
+   ```
+   该脚本会在 `artifacts\profile-backup\` 留一份备份，密钥来源按"备份 → 包内 → 用户目录"回退；
+   任何一家缺密钥都会**明确报错而不是写半份档案**。
+   另外**发布前先关掉正在运行的软件**，否则文件被占用会导致发布失败（exe 保持旧时间戳）。
+
 ## 4. 归档（`archive/`）
 
 | 文档 | 归档原因 | 仍然有效的部分 |

@@ -550,10 +550,13 @@ if ($quickInputSource -match 'quick-secondary-language|quick-target-language|第
          throw "Quick-input TextBox does not neutralize the $resourceKey visual-state resource."
      }
  }
- if ($quickInputSource -notmatch 'UseSystemFocusVisuals\s*=\s*false' -or
+ # 编辑行现在是贴顶的固定 46px 条带，正文靠上下对称留白垂直居中；左右内边距必须
+# 保持 0，编辑文字才与下方结果行左对齐，焦点也仍然只由编辑行外部那条下划线表达，
+# 不会在编辑框里画出第二个矩形。
+if ($quickInputSource -notmatch 'UseSystemFocusVisuals\s*=\s*false' -or
      $quickInputSource -notmatch 'TextControlBorderThemeThicknessFocused' -or
-     $quickInputSource -notmatch 'Padding\s*=\s*new Thickness\(0\)') {
-     throw 'Quick-input focus visuals must remain transparent and borderless in every TextBox state.'
+     $quickInputSource -notmatch 'Padding\s*=\s*new Thickness\(0,\s*\d+(?:\.\d+)?,\s*0,\s*\d+(?:\.\d+)?\)') {
+     throw 'Quick-input focus visuals must stay transparent and borderless in every TextBox state, with a zero horizontal inset that keeps the editor text flush with the result lines.'
  }
 if ($outputFormatterSource -notmatch 'Separator\s*=\s*" / "' -or
     $outputFormatterSource -notmatch 'AddIfPresent\(parts, primaryTranslation\)' -or

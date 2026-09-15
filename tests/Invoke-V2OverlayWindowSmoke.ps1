@@ -610,9 +610,29 @@ function Resize-And-MoveOverlay {
 
     if ($CheckInputGrowth) {
         $editorAfter = $input.Current.BoundingRectangle
-        if ($editorAfter.Width -lt ($editorBefore.Width + 70) -or
-            $editorAfter.Height -lt ($editorBefore.Height + 35)) {
-            throw "Input editor did not follow its window resize: before $([Math]::Round($editorBefore.Width))x$([Math]::Round($editorBefore.Height)); after $([Math]::Round($editorAfter.Width))x$([Math]::Round($editorAfter.Height))."
+        # 输入行是贴顶的固定高度条带：窗口变高时它只跟着变宽，高度和贴顶间距不动，
+        # 多出来的高度必须全部落在线的下方结果区。旧断言要求编辑框跟着窗口长高，
+        # 那正是"窗口一高文字就飘到中间"的成因，这里按新结构重新表达同一个意图。
+        if ($editorAfter.Width -lt ($editorBefore.Width + 70)) {
+            throw "Input editor did not follow its window width: before $([Math]::Round($editorBefore.Width)); after $([Math]::Round($editorAfter.Width))."
+        }
+        # UIA 矩形是物理像素（本机 150% 缩放时 46 DIP 读作 69px），所以这里只比较
+        # 前后变化和它相对窗口的占比，不写死任何像素高度。
+        if ([Math]::Abs($editorAfter.Height - $editorBefore.Height) -gt 6) {
+            throw "Input editor must keep its fixed top strip: before $([Math]::Round($editorBefore.Height))px; after $([Math]::Round($editorAfter.Height))px."
+        }
+        if ($editorAfter.Height -ge ($largeBounds.Height * 0.5)) {
+            throw "Input editor must stay a compact top strip instead of filling the window: $([Math]::Round($editorAfter.Height))px of $($largeBounds.Height)px."
+        }
+        $editorInsetBefore = $editorBefore.Top - $smallBounds.Top
+        $editorInsetAfter = $editorAfter.Top - $largeBounds.Top
+        if ([Math]::Abs($editorInsetAfter - $editorInsetBefore) -gt 6) {
+            throw "Input editor must stay pinned to the top edge: inset before $([Math]::Round($editorInsetBefore))px; after $([Math]::Round($editorInsetAfter))px."
+        }
+        $resultSpaceBefore = ($smallBounds.Top + $smallBounds.Height) - $editorBefore.Bottom
+        $resultSpaceAfter = ($largeBounds.Top + $largeBounds.Height) - $editorAfter.Bottom
+        if ($resultSpaceAfter -lt ($resultSpaceBefore + 35)) {
+            throw "The result area below the editor must absorb the window growth: before $([Math]::Round($resultSpaceBefore))px; after $([Math]::Round($resultSpaceAfter))px."
         }
     }
 

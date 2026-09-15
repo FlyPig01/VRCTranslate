@@ -272,20 +272,6 @@ public sealed partial class TranslationPage : Page
         var secretBox = new PasswordBox { Header = "SecretKey / AccessKey Secret（可选）", Password = existing?.Options?.GetValueOrDefault("secret") ?? string.Empty };
         var regionBox = new TextBox { Header = "区域（可选）", Text = existing?.Region ?? string.Empty, PlaceholderText = "例如 ap-guangzhou" };
 
-        // 双密钥一次粘贴自动拆分（两行 / 空格 Tab / Key=Value 形态）；
-        // 拆不出来就不动，用户分别粘贴也一样。
-        credentialBox.PasswordChanged += (_, _) =>
-        {
-            var currentProvider = (providerBox.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? string.Empty;
-            if (currentProvider is not ("tencent" or "aliyun")) return;
-            if (!string.IsNullOrWhiteSpace(secretBox.Password)) return;
-            if (TrySplitPastedCredential(credentialBox.Password, out var first, out var second))
-            {
-                credentialBox.Password = first;
-                secretBox.Password = second;
-            }
-        };
-
         void RefreshProviderFields()
         {
             var id = (providerBox.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? string.Empty;
@@ -307,8 +293,8 @@ public sealed partial class TranslationPage : Page
             secretBox.Visibility = id is "tencent" or "aliyun" ? Visibility.Visible : Visibility.Collapsed;
             secretBox.Header = id switch
             {
-                "tencent" => "腾讯云 SecretKey（可把两段密钥一起粘贴到上面，自动拆分）",
-                "aliyun" => "阿里云 AccessKey Secret（可把两段密钥一起粘贴到上面，自动拆分）",
+                "tencent" => "腾讯云 SecretKey",
+                "aliyun" => "阿里云 AccessKey Secret",
                 _ => "附加密钥（可选）"
             };
             regionBox.Visibility = id is "tencent" or "aliyun" ? Visibility.Visible : Visibility.Collapsed;
@@ -413,16 +399,15 @@ public sealed partial class TranslationPage : Page
             testStatus.Visibility = Visibility.Visible;
             try
             {
-                var model = string.IsNullOrWhiteSpace(modelBox.Text)
-                    ? id switch
-                    {
-                        "deepseek" => "deepseek-flash",
-                        "xiaomi" => "mimo-v2.5",
-                        "tencent" => "TextTranslate",
-                        "aliyun" => "general",
-                        _ => "本地回显"
-                    }
-                    : modelBox.Text.Trim();
+                var model = id switch
+                {
+                    // 阿里云的版本来自下拉（模型字段这时是不可见的），其余按输入框。
+                    "aliyun" => (aliyunSceneBox.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "general",
+                    "tencent" => "TextTranslate",
+                    "deepseek" => string.IsNullOrWhiteSpace(modelBox.Text) ? "deepseek-flash" : modelBox.Text.Trim(),
+                    "xiaomi" => string.IsNullOrWhiteSpace(modelBox.Text) ? "mimo-v2.5" : modelBox.Text.Trim(),
+                    _ => string.IsNullOrWhiteSpace(modelBox.Text) ? "本地回显" : modelBox.Text.Trim()
+                };
                 var options = new Dictionary<string, string>();
                 if (!string.IsNullOrWhiteSpace(secret)) options["secret"] = secret;
                 if (id == "aliyun")
@@ -500,7 +485,8 @@ public sealed partial class TranslationPage : Page
         var model = provider switch
         {
             "tencent" => "TextTranslate",
-            "aliyun" => "general",
+            // 阿里云的"版本"就是它的模型语义：存下来，档案卡片与运行页才显示得对。
+            "aliyun" => (aliyunSceneBox.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "general",
             "echo" => "本地回显",
             "xiaomi" => string.IsNullOrWhiteSpace(modelBox.Text) ? "mimo-v2.5" : modelBox.Text.Trim(),
             _ => string.IsNullOrWhiteSpace(modelBox.Text) ? "deepseek-flash" : modelBox.Text.Trim()
@@ -547,45 +533,6 @@ public sealed partial class TranslationPage : Page
             var candidate = $"{desired} {index}";
             if (!taken.Contains(candidate)) return candidate;
         }
-    }
-
-    /// <summary>
-    /// 把一次粘贴进 API 密钥框的两段密钥拆开。支持两行、空格 / Tab 分隔、
-    /// “SecretId=xxx&amp;SecretKey=yyy”这类键值形态；AKID / LTAI 前缀只用来排序，
-    /// 不当判据（可能只复制到一段或被截断）。拆不出两段就返回 false，原样保留。
-    /// </summary>
-    internal static bool TrySplitPastedCredential(string pasted, out string first, out string second)
-    {
-        first = string.Empty;
-        second = string.Empty;
-        if (string.IsNullOrWhiteSpace(pasted)) return false;
-        var tokens = pasted
-            .Replace('\t', ' ')
-            .Replace('\r', ' ')
-            .Replace('\n', ' ')
-            .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .Select(token => token.Trim(';', ','))
-            .Where(token => token.Length > 0)
-            .ToList();
-        if (tokens.Count == 1 && tokens[0].Contains('&'))
-        {
-            tokens = tokens[0]
-                .Split('&', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                .ToList();
-        }
-        if (tokens.Count == 2 && tokens.All(token => token.Contains('=')))
-        {
-            tokens = tokens.Select(token => token.Split('=', 2).Last().Trim()).ToList();
-        }
-        if (tokens.Count != 2) return false;
-        first = tokens[0];
-        second = tokens[1];
-        if (second.StartsWith("AKID", StringComparison.OrdinalIgnoreCase) &&
-            !first.StartsWith("AKID", StringComparison.OrdinalIgnoreCase))
-        {
-            (first, second) = (second, first);
-        }
-        return true;
     }
 
     private void OnAddTermClicked(object sender, RoutedEventArgs e)

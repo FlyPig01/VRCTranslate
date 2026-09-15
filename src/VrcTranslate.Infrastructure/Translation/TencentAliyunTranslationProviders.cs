@@ -123,6 +123,7 @@ public sealed class AliyunTranslationProvider : ITranslationProvider
         if (string.IsNullOrWhiteSpace(accessKeySecret) || accessKeySecret.StartsWith("vault:", StringComparison.OrdinalIgnoreCase))
             throw new InvalidOperationException("请配置阿里云 AccessKey Secret（档案的附加密钥）。");
         var options = request.Options;
+        var scene = ResolveScene(request.Model, TencentTranslationProvider.Option(options, "scene"));
         var parameters = new Dictionary<string, string>(StringComparer.Ordinal)
         {
             ["AccessKeyId"] = accessKeyId,
@@ -137,7 +138,7 @@ public sealed class AliyunTranslationProvider : ITranslationProvider
             ["SourceLanguage"] = MapAliyunLanguage(request.SourceLanguage, true),
             ["TargetLanguage"] = MapAliyunLanguage(request.TargetLanguage, false),
             ["SourceText"] = request.Text,
-            ["Scene"] = TencentTranslationProvider.FirstNonEmpty(TencentTranslationProvider.Option(options, "scene"), request.Model.Equals("professional", StringComparison.OrdinalIgnoreCase) ? "professional" : "general")
+            ["Scene"] = scene
         };
         var canonicalized = string.Join("&", parameters.OrderBy(item => item.Key, StringComparer.Ordinal).Select(item => $"{Encode(item.Key)}={Encode(item.Value)}"));
         var stringToSign = $"POST&%2F&{Encode(canonicalized)}";
@@ -160,6 +161,18 @@ public sealed class AliyunTranslationProvider : ITranslationProvider
         if (string.IsNullOrWhiteSpace(translated)) throw new InvalidOperationException("阿里云翻译返回了空结果。");
         return new TranslationProviderResponse(translated.Trim(), request.SourceLanguage);
     }
+
+    /// <summary>
+    /// Which Aliyun machine-translation edition this profile uses. An explicit
+    /// <c>scene</c> option wins; otherwise the profile's model carries it, because
+    /// the translation page now saves the chosen edition there as well. Anything
+    /// else is the general edition.
+    /// </summary>
+    internal static string ResolveScene(string? model, string? configuredScene) =>
+        TencentTranslationProvider.FirstNonEmpty(
+            configuredScene,
+            string.Equals(model?.Trim(), "professional", StringComparison.OrdinalIgnoreCase) ? "professional" : null,
+            "general");
 
     private static string MapAliyunLanguage(string? language, bool source)
     {

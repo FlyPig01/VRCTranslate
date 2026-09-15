@@ -754,12 +754,14 @@ if ($hotkeyDefaultsSource -notmatch 'ResolvePersisted' -or
 $guideMarkup = Get-Content -Raw $guidePage
 if ($guideMarkup -notmatch '翻译服务配置' -or
     $guideMarkup -notmatch 'guide-tencent-console' -or
+    $guideMarkup -notmatch 'guide-tencent-keys' -or
     $guideMarkup -notmatch 'guide-aliyun-console' -or
+    $guideMarkup -notmatch 'guide-aliyun-keys' -or
     $guideMarkup -notmatch 'guide-deepseek-console' -or
     $guideMarkup -notmatch 'guide-xiaomi-console' -or
     $guideMarkup -notmatch '以官网为准' -or
     $guideMarkup -match 'AKID|LTAI|sk-[A-Za-z0-9]{10,}') {
-    throw 'Guide page must carry the translation-service card: four console links with AutomationIds, quota hints marked 以官网为准, and no key or example key material.'
+    throw 'Guide page must carry the translation-service card: 开通 + 创建密钥 links with AutomationIds for every shipped provider, quota hints marked 以官网为准, and no key or example key material.'
 }
 # 配置简化 A：档案对话框提供自愿的「测试连接」（含错误码中文映射），
 # 保存永远不被测试结果门禁（对话框不得出现“测试通过才能保存”类逻辑）。
@@ -768,19 +770,29 @@ if ($translationCode -notmatch '测试连接' -or
     $translationCode -notmatch '指南 → 翻译服务配置' -or
     $translationCode -match '测试[^。]*才能保存' -or
     $connectionTesterCode -notmatch 'AuthFailure\.SecretIdNotFound' -or
-    $connectionTesterCode -notmatch 'InvalidAccessKeyId\.NotFound' -or
-    $connectionTesterCode -notmatch '网络不通') {
+    $connectionTesterCode -notmatch 'InvalidAccessKeyId' -or
+    $connectionTesterCode -notmatch '网络不通' -or
+    $connectionTesterCode -notmatch '"返回 402"' -or
+    $connectionTesterCode -notmatch '"返回 403"') {
     throw 'Profile dialog must offer an opt-in 测试连接 with provider error hints; saving must never depend on the test outcome.'
 }
 # 配置简化 B：表单分层——接口地址 / 区域收进默认折叠的高级 Expander；
-# 阿里云版本写 Options["scene"]（不塞 Model）；腾讯隐藏模型但保存 TextTranslate；
-# 双密钥一次粘贴自动拆分（前缀只当排序提示）。
+# 阿里云版本写 Options["scene"] **并且**写进 Model（两处必须一致，卡片与 Scene 才不会打架）；
+# 腾讯隐藏模型但保存 TextTranslate；档案名防重名。
+# 密钥粘贴自动拆分按用户决定**已移除**：代码里不得再出现自动拆分。
 if ($translationCode -notmatch 'Expander' -or
     $translationCode -notmatch 'options\["scene"\]' -or
     $translationCode -notmatch '"tencent" => "TextTranslate"' -or
-    $translationCode -notmatch 'TrySplitPastedCredential' -or
-    $translationCode -notmatch 'DedupeProfileName') {
-    throw 'Profile dialog must fold endpoint/region into a collapsed advanced expander, write the Aliyun edition into Options["scene"], keep tencent TextTranslate explicit, and split pasted key pairs.'
+    $translationCode -notmatch '"aliyun" => \(aliyunSceneBox\.SelectedItem as ComboBoxItem\)' -or
+    $translationCode -notmatch 'DedupeProfileName' -or
+    $translationCode -match 'TrySplitPastedCredential|自动拆分') {
+    throw 'Profile dialog must fold endpoint/region into a collapsed advanced expander, save the Aliyun edition into both Model and Options["scene"], keep tencent TextTranslate explicit, dedupe names, and NOT auto-split pasted keys.'
+}
+# 阿里云适配器：Scene 必须能由 Model 兜底（只存了 Model 的档案也要按所选版本调用），并做成可测方法。
+$aliyunSource = Get-Content -Raw (Join-Path $v2Root 'src\VrcTranslate.Infrastructure\Translation\TencentAliyunTranslationProviders.cs')
+if ($aliyunSource -notmatch 'internal static string ResolveScene' -or
+    $aliyunSource -notmatch '\["Scene"\] = scene') {
+    throw 'Aliyun provider must resolve the machine-translation edition from the profile (scene option or model) instead of hardcoding the general edition.'
 }
 $previewHandlerMatch = [regex]::Match(
     $mainWindowSource,

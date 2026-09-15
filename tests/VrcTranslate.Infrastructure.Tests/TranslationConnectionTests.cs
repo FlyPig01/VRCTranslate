@@ -19,6 +19,8 @@ public sealed class TranslationConnectionTests
     [InlineData("tencent", "腾讯云翻译失败：[LimitExceeded] too fast", "免费额度已用完")]
     [InlineData("tencent", "腾讯云翻译失败：[FailedOperation.UserNotRegistered] enroll first", "还没有开通「机器翻译 TMT」")]
     [InlineData("aliyun", "阿里云翻译失败：[InvalidAccessKeyId.NotFound] no key", "AccessKey ID 不存在")]
+    // 该适配器把非 200 的 RPC 响应抛成 HTTP 异常，错误码只在响应体里——提示必须也能从这种消息里认出来。
+    [InlineData("aliyun", "阿里云翻译返回 404：{Code:InvalidAccessKeyId.NotFound,Message:Specified access key is not found.}", "AccessKey ID 不存在")]
     [InlineData("aliyun", "阿里云翻译失败：[SignatureDoesNotMatch] bad sig", "AccessKey Secret 不匹配")]
     [InlineData("aliyun", "阿里云翻译失败：[Throttling.User] slow down", "触发限流")]
     [InlineData("aliyun", "阿里云翻译失败：[Forbidden] no permission", "子账号未授权")]
@@ -26,6 +28,9 @@ public sealed class TranslationConnectionTests
     [InlineData("deepseek", "DeepSeek 返回 401：Authentication Fails", "API Key 无效或已被撤销")]
     [InlineData("xiaomi", "小米 MiMo 返回 402：余额不足", "余额不足")]
     [InlineData("deepseek", "DeepSeek 返回 429：rate limit", "触发限流")]
+    [InlineData("deepseek", "DeepSeek 返回 400：invalid model", "请求被拒绝")]
+    [InlineData("xiaomi", "小米 MiMo 返回 403：forbidden", "账号无权调用该模型")]
+    [InlineData("xiaomi", "小米 MiMo 返回 401：bad key", "API Key 无效")]
     public void Hints_map_provider_error_signatures(string providerId, string message, string expected)
     {
         Assert.True(TranslationErrorHints.TryDescribe(providerId, new InvalidOperationException(message), out var hint));
@@ -89,6 +94,48 @@ public sealed class TranslationConnectionTests
 
         Assert.Contains("[InvalidAccessKeyId.NotFound]", error.Message, StringComparison.Ordinal);
         Assert.Contains("指定的Access Key不存在", error.Message, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("professional", null, "professional")]
+    [InlineData("general", null, "general")]
+    [InlineData(null, "professional", "professional")]
+    [InlineData("PROFESSIONAL", null, "professional")]
+    [InlineData("", null, "general")]
+    [InlineData(null, null, "general")]
+    // 显式 scene 优先于 Model：老档案里 scene 才是权威。
+    [InlineData("professional", "general", "general")]
+    public void Aliyun_scene_follows_the_profile_edition(string? model, string? configuredScene, string expected)
+    {
+        Assert.Equal(expected, AliyunTranslationProvider.ResolveScene(model, configuredScene));
+    }
+
+    [Fact]
+    public async Task Aliyun_request_carries_the_professional_scene_from_the_model()
+    {
+        var handler = new CapturingHandler("{\"Code\":\"200\",\"Data\":{\"Translated\":\"你好\"}}");
+        using var client = new HttpClient(handler);
+        var provider = new AliyunTranslationProvider(client);
+        var request = new Abstractions.TranslationProviderRequest(
+            "hello", "zh-CN", null, "professional", new Uri("https://example.test"), "access-id", "t", "aliyun",
+            "cn-hangzhou", new Dictionary<string, string> { ["secret"] = "access-secret" });
+
+        await provider.TranslateAsync(request);
+
+        // 选了专业版就必须按专业版调用，不能被写死成通用版。
+        Assert.Contains("Scene=professional", handler.LastBody, StringComparison.Ordinal);
+    }
+
+    private sealed class CapturingHandler(string payload) : HttpMessageHandler
+    {
+        public string LastBody { get; private set; } = string.Empty;
+
+        protected override async Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            LastBody = Uri.UnescapeDataString(await request.Content!.ReadAsStringAsync(cancellationToken));
+            return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(payload) };
+        }
     }
 
     private sealed class ThrowingProvider(Exception exception) : ITranslationProvider

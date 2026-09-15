@@ -44,17 +44,21 @@
           <StackPanel Spacing="3">
             <StackPanel Orientation="Horizontal" Spacing="8">
               <TextBlock Text="腾讯云" FontWeight="SemiBold" VerticalAlignment="Center" />
-              <HyperlinkButton Content="打开控制台：API 密钥管理" NavigateUri="https://console.cloud.tencent.com/cam/capi"
+              <HyperlinkButton Content="① 开通机器翻译" NavigateUri="https://console.cloud.tencent.com/tmt"
                                Padding="0" AutomationProperties.AutomationId="guide-tencent-console" />
+              <HyperlinkButton Content="② 创建 API 密钥" NavigateUri="https://console.cloud.tencent.com/cam/capi"
+                               Padding="0" AutomationProperties.AutomationId="guide-tencent-keys" />
             </StackPanel>
             <TextBlock Style="{StaticResource SecondaryTextStyle}" TextWrapping="Wrap"
-                       Text="开通「机器翻译 TMT」即可使用；每月 500 万字符免费（超量 58 元/百万字符，额度当月有效，以官网为准）。" />
+                       Text="开通「机器翻译 TMT」即可使用；每月 500 万字符免费，额度当月有效、不结转（是否人人都有以官网为准）；超量 58 元/百万字符。" />
           </StackPanel>
           <StackPanel Spacing="3">
             <StackPanel Orientation="Horizontal" Spacing="8">
               <TextBlock Text="阿里云" FontWeight="SemiBold" VerticalAlignment="Center" />
-              <HyperlinkButton Content="打开控制台：RAM 访问控制" NavigateUri="https://ram.console.aliyun.com/manage/ak"
+              <HyperlinkButton Content="① 开通机器翻译" NavigateUri="https://mt.console.aliyun.com/"
                                Padding="0" AutomationProperties.AutomationId="guide-aliyun-console" />
+              <HyperlinkButton Content="② 创建 AccessKey" NavigateUri="https://ram.console.aliyun.com/manage/ak"
+                               Padding="0" AutomationProperties.AutomationId="guide-aliyun-keys" />
             </StackPanel>
             <TextBlock Style="{StaticResource SecondaryTextStyle}" TextWrapping="Wrap"
                        Text="建议创建 RAM 子账号并只授权「机器翻译」；通用版与专业版各每月 100 万字符免费（超量 50 / 60 元/百万字符，以官网为准）。" />
@@ -62,7 +66,7 @@
           <StackPanel Spacing="3">
             <StackPanel Orientation="Horizontal" Spacing="8">
               <TextBlock Text="DeepSeek" FontWeight="SemiBold" VerticalAlignment="Center" />
-              <HyperlinkButton Content="打开控制台：API Keys" NavigateUri="https://platform.deepseek.com"
+              <HyperlinkButton Content="打开控制台：API Keys" NavigateUri="https://platform.deepseek.com/api_keys"
                                Padding="0" AutomationProperties.AutomationId="guide-deepseek-console" />
             </StackPanel>
             <TextBlock Style="{StaticResource SecondaryTextStyle}" TextWrapping="Wrap"
@@ -71,7 +75,7 @@
           <StackPanel Spacing="3">
             <StackPanel Orientation="Horizontal" Spacing="8">
               <TextBlock Text="小米 MiMo" FontWeight="SemiBold" VerticalAlignment="Center" />
-              <HyperlinkButton Content="打开控制台：API Keys" NavigateUri="https://platform.xiaomimimo.com"
+              <HyperlinkButton Content="打开控制台：API Keys" NavigateUri="https://platform.xiaomimimo.com/#/console/api-keys"
                                Padding="0" AutomationProperties.AutomationId="guide-xiaomi-console" />
             </StackPanel>
             <TextBlock Style="{StaticResource SecondaryTextStyle}" TextWrapping="Wrap"

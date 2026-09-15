@@ -66,7 +66,7 @@ public static class TranslationErrorHints
                 if (Contains(message, "FailedOperation.UserNotRegistered")) return "该账号还没有开通「机器翻译 TMT」服务。";
                 break;
             case "aliyun":
-                if (Contains(message, "InvalidAccessKeyId.NotFound")) return "AccessKey ID 不存在，请到 RAM 访问控制重新创建。";
+                if (Contains(message, "InvalidAccessKeyId")) return "AccessKey ID 不存在或已停用，请到 RAM 访问控制确认。";
                 if (Contains(message, "SignatureDoesNotMatch")) return "AccessKey Secret 不匹配，请重新复制。";
                 if (Contains(message, "Throttling")) return "触发限流，请稍后重试。";
                 if (Contains(message, "Forbidden") || Contains(message, "InvalidAction")) return "子账号未授权「机器翻译」或该版本不支持。";
@@ -75,6 +75,8 @@ public static class TranslationErrorHints
             case "xiaomi":
                 if (Contains(message, "返回 401")) return "API Key 无效或已被撤销。";
                 if (Contains(message, "返回 402")) return "账户余额不足，请充值。";
+                if (Contains(message, "返回 403")) return "账号无权调用该模型，请确认已开通并有可用额度。";
+                if (Contains(message, "返回 400")) return "请求被拒绝：请检查模型名称是否正确（例如 deepseek-flash / mimo-v2.5）。";
                 if (Contains(message, "返回 429")) return "触发限流，请稍后重试。";
                 break;
         }

@@ -1,0 +1,540 @@
+{"error": "", "item": "zh-1", "ms": null, "output": "开饭时间早上9点至下午5点。", "provider": "tencent", "round": 1, "skipped": true}
+{"error": "", "item": "zh-1", "ms": null, "output": "开饭时间早上9点至下午5点。", "provider": "aliyun-general", "round": 1, "skipped": true}
+{"error": "", "item": "zh-1", "ms": null, "output": "开饭时间早上9点至下午5点。", "provider": "aliyun-professional", "round": 1, "skipped": true}
+{"error": "", "item": "zh-1", "ms": null, "output": "开饭时间早上9点至下午5点。", "provider": "deepseek", "round": 1, "skipped": true}
+{"error": "", "item": "zh-1", "ms": null, "output": "开饭时间早上9点至下午5点。", "provider": "xiaomi", "round": 1, "skipped": true}
+{"error": "", "item": "zh-2", "ms": null, "output": "你那边网络是不是卡了？我看你一直在原地转圈。", "provider": "tencent", "round": 1, "skipped": true}
+{"error": "", "item": "zh-2", "ms": null, "output": "你那边网络是不是卡了？我看你一直在原地转圈。", "provider": "aliyun-general", "round": 1, "skipped": true}
+{"error": "", "item": "zh-2", "ms": null, "output": "你那边网络是不是卡了？我看你一直在原地转圈。", "provider": "aliyun-professional", "round": 1, "skipped": true}
+{"error": "", "item": "zh-2", "ms": null, "output": "你那边网络是不是卡了？我看你一直在原地转圈。", "provider": "deepseek", "round": 1, "skipped": true}
+{"error": "", "item": "zh-2", "ms": null, "output": "你那边网络是不是卡了？我看你一直在原地转圈。", "provider": "xiaomi", "round": 1, "skipped": true}
+{"error": "", "item": "zh-3", "ms": null, "output": "这个图好像有人掉线了，我们等一下吧。", "provider": "tencent", "round": 1, "skipped": true}
+{"error": "", "item": "zh-3", "ms": null, "output": "这个图好像有人掉线了，我们等一下吧。", "provider": "aliyun-general", "round": 1, "skipped": true}
+{"error": "", "item": "zh-3", "ms": null, "output": "这个图好像有人掉线了，我们等一下吧。", "provider": "aliyun-professional", "round": 1, "skipped": true}
+{"error": "", "item": "zh-3", "ms": null, "output": "这个图好像有人掉线了，我们等一下吧。", "provider": "deepseek", "round": 1, "skipped": true}
+{"error": "", "item": "zh-3", "ms": null, "output": "这个图好像有人掉线了，我们等一下吧。", "provider": "xiaomi", "round": 1, "skipped": true}
+{"error": "", "item": "yue-1", "ms": null, "output": "唔该你帮我睇下佢系咪企喺门口。", "provider": "tencent", "round": 1, "skipped": true}
+{"error": "", "item": "yue-1", "ms": null, "output": "唔该你帮我睇下佢系咪企喺门口。", "provider": "aliyun-general", "round": 1, "skipped": true}
+{"error": "", "item": "yue-1", "ms": null, "output": "唔该你帮我睇下佢系咪企喺门口。", "provider": "aliyun-professional", "round": 1, "skipped": true}
+{"error": "", "item": "yue-1", "ms": null, "output": "唔该你帮我睇下佢系咪企喺门口。", "provider": "deepseek", "round": 1, "skipped": true}
+{"error": "", "item": "yue-1", "ms": null, "output": "唔该你帮我睇下佢系咪企喺门口。", "provider": "xiaomi", "round": 1, "skipped": true}
+{"error": "", "item": "yue-2", "ms": null, "output": "我今日唔得闲，听日先啦。", "provider": "tencent", "round": 1, "skipped": true}
+{"error": "", "item": "yue-2", "ms": null, "output": "我今日唔得闲，听日先啦。", "provider": "aliyun-general", "round": 1, "skipped": true}
+{"error": "", "item": "yue-2", "ms": null, "output": "我今日唔得闲，听日先啦。", "provider": "aliyun-professional", "round": 1, "skipped": true}
+{"error": "", "item": "yue-2", "ms": null, "output": "我今日唔得闲，听日先啦。", "provider": "deepseek", "round": 1, "skipped": true}
+{"error": "", "item": "yue-2", "ms": null, "output": "我今日唔得闲，听日先啦。", "provider": "xiaomi", "round": 1, "skipped": true}
+{"error": "", "item": "en-1", "ms": 653.8, "output": "嘿，你现在能听到我说话了吗？我刚刚修好了我的麦克风。", "provider": "tencent", "round": 1, "skipped": false}
+{"error": "", "item": "en-1", "ms": 319.6, "output": "嘿，你现在能听到我吗？我刚修好了我的麦克风。", "provider": "aliyun-general", "round": 1, "skipped": false}
+{"error": "", "item": "en-1", "ms": 200.4, "output": "嘿，你现在能听到我吗？我刚修好了我的麦克风。", "provider": "aliyun-professional", "round": 1, "skipped": false}
+{"error": "", "item": "en-1", "ms": 654.5, "output": "嘿，你现在能听到我说话吗？我刚修好了我的麦克风。", "provider": "deepseek", "round": 1, "skipped": false}
+{"error": "", "item": "en-1", "ms": 770.9, "output": "嘿，现在能听到我说话了吗？我刚修好了麦克风。", "provider": "xiaomi", "round": 1, "skipped": false}
+{"error": "", "item": "en-2", "ms": 316.0, "output": "是的，听起来很有趣，今晚晚些时候下班后我会继续。", "provider": "tencent", "round": 1, "skipped": false}
+{"error": "", "item": "en-2", "ms": 369.5, "output": "是的，听起来很有趣，我今晚下班后会跳上去。", "provider": "aliyun-general", "round": 1, "skipped": false}
+{"error": "", "item": "en-2", "ms": 207.6, "output": "嗯，听起来挺好玩的，我今晚下班后再上线。", "provider": "aliyun-professional", "round": 1, "skipped": false}
+{"error": "", "item": "en-2", "ms": 819.9, "output": "是啊，听起来挺有趣的，我今晚下班后会加入。", "provider": "deepseek", "round": 1, "skipped": false}
+{"error": "", "item": "en-2", "ms": 698.1, "output": "听起来挺有意思的，我今晚下班后就上线。", "provider": "xiaomi", "round": 1, "skipped": false}
+{"error": "", "item": "en-3", "ms": 318.4, "output": "抱歉，我的麦克风停了一下，你说什么？", "provider": "tencent", "round": 1, "skipped": false}
+{"error": "", "item": "en-3", "ms": 406.2, "output": "抱歉，我的麦克风断了一会儿，你说什么？", "provider": "aliyun-general", "round": 1, "skipped": false}
+{"error": "", "item": "en-3", "ms": 220.4, "output": "抱歉，我的麦克风刚才断了一下，你刚才说什么？", "provider": "aliyun-professional", "round": 1, "skipped": false}
+{"error": "", "item": "en-3", "ms": 541.5, "output": "抱歉，我的麦克风刚才断了一下，你说什么？", "provider": "deepseek", "round": 1, "skipped": false}
+{"error": "", "item": "en-3", "ms": 689.4, "output": "抱歉，我的麦克风刚才断了一下，你说什么？", "provider": "xiaomi", "round": 1, "skipped": false}
+{"error": "", "item": "en-4", "ms": 368.6, "output": "你能告诉我你在哪里得到那个化身吗？我一直在寻找这样的。", "provider": "tencent", "round": 1, "skipped": false}
+{"error": "", "item": "en-4", "ms": 513.4, "output": "你能告诉我你从哪里得到那个化身吗？我一直在寻找一个像这样的。", "provider": "aliyun-general", "round": 1, "skipped": false}
+{"error": "", "item": "en-4", "ms": 312.5, "output": "你能告诉我你是在哪里得到那个头像的吗？我一直在找一个像这样的。", "provider": "aliyun-professional", "round": 1, "skipped": false}
+{"error": "", "item": "en-4", "ms": 517.1, "output": "你能告诉我你从哪里得到那个头像的吗？我一直在找像那样的。", "provider": "deepseek", "round": 1, "skipped": false}
+{"error": "", "item": "en-4", "ms": 660.5, "output": "你能告诉我你的头像是从哪里找的吗？我一直在找类似的头像。", "provider": "xiaomi", "round": 1, "skipped": false}
+{"error": "", "item": "en-5", "ms": 338.8, "output": "现在滞后真的很严重，我认为服务器正在苦苦挣扎。", "provider": "tencent", "round": 1, "skipped": false}
+{"error": "", "item": "en-5", "ms": 390.6, "output": "现在的滞后真的很糟糕，我认为服务器正在挣扎。", "provider": "aliyun-general", "round": 1, "skipped": false}
+{"error": "", "item": "en-5", "ms": 290.0, "output": "现在的延迟真的很严重，我觉得服务器有点吃力。", "provider": "aliyun-professional", "round": 1, "skipped": false}
+{"error": "", "item": "en-5", "ms": 744.9, "output": "现在的延迟真的很严重，我觉得服务器有点撑不住了。", "provider": "deepseek", "round": 1, "skipped": false}
+{"error": "", "item": "en-5", "ms": 758.4, "output": "现在延迟真的很严重，我觉得服务器可能撑不住了。", "provider": "xiaomi", "round": 1, "skipped": false}
+{"error": "", "item": "ja-1", "ms": null, "output": "うちの中学は弁当制で持っていきない場合は50円の学校販売のパンを買う。", "provider": "tencent", "round": 1, "skipped": true}
+{"error": "", "item": "ja-1", "ms": null, "output": "うちの中学は弁当制で持っていきない場合は50円の学校販売のパンを買う。", "provider": "aliyun-general", "round": 1, "skipped": true}
+{"error": "", "item": "ja-1", "ms": null, "output": "うちの中学は弁当制で持っていきない場合は50円の学校販売のパンを買う。", "provider": "aliyun-professional", "round": 1, "skipped": true}
+{"error": "", "item": "ja-1", "ms": null, "output": "うちの中学は弁当制で持っていきない場合は50円の学校販売のパンを買う。", "provider": "deepseek", "round": 1, "skipped": true}
+{"error": "", "item": "ja-1", "ms": null, "output": "うちの中学は弁当制で持っていきない場合は50円の学校販売のパンを買う。", "provider": "xiaomi", "round": 1, "skipped": true}
+{"error": "", "item": "ja-2", "ms": null, "output": "ちょっと待って、いま準備してるから。", "provider": "tencent", "round": 1, "skipped": true}
+{"error": "", "item": "ja-2", "ms": null, "output": "ちょっと待って、いま準備してるから。", "provider": "aliyun-general", "round": 1, "skipped": true}
+{"error": "", "item": "ja-2", "ms": null, "output": "ちょっと待って、いま準備してるから。", "provider": "aliyun-professional", "round": 1, "skipped": true}
+{"error": "", "item": "ja-2", "ms": null, "output": "ちょっと待って、いま準備してるから。", "provider": "deepseek", "round": 1, "skipped": true}
+{"error": "", "item": "ja-2", "ms": null, "output": "ちょっと待って、いま準備してるから。", "provider": "xiaomi", "round": 1, "skipped": true}
+{"error": "", "item": "ja-3", "ms": null, "output": "このワールド、前に来たことある気がする。", "provider": "tencent", "round": 1, "skipped": true}
+{"error": "", "item": "ja-3", "ms": null, "output": "このワールド、前に来たことある気がする。", "provider": "aliyun-general", "round": 1, "skipped": true}
+{"error": "", "item": "ja-3", "ms": null, "output": "このワールド、前に来たことある気がする。", "provider": "aliyun-professional", "round": 1, "skipped": true}
+{"error": "", "item": "ja-3", "ms": null, "output": "このワールド、前に来たことある気がする。", "provider": "deepseek", "round": 1, "skipped": true}
+{"error": "", "item": "ja-3", "ms": null, "output": "このワールド、前に来たことある気がする。", "provider": "xiaomi", "round": 1, "skipped": true}
+{"error": "", "item": "ja-4", "ms": null, "output": "ごめん、いまマイクの調子が悪くて聞こえないかも。", "provider": "tencent", "round": 1, "skipped": true}
+{"error": "", "item": "ja-4", "ms": null, "output": "ごめん、いまマイクの調子が悪くて聞こえないかも。", "provider": "aliyun-general", "round": 1, "skipped": true}
+{"error": "", "item": "ja-4", "ms": null, "output": "ごめん、いまマイクの調子が悪くて聞こえないかも。", "provider": "aliyun-professional", "round": 1, "skipped": true}
+{"error": "", "item": "ja-4", "ms": null, "output": "ごめん、いまマイクの調子が悪くて聞こえないかも。", "provider": "deepseek", "round": 1, "skipped": true}
+{"error": "", "item": "ja-4", "ms": null, "output": "ごめん、いまマイクの調子が悪くて聞こえないかも。", "provider": "xiaomi", "round": 1, "skipped": true}
+{"error": "", "item": "ja-5", "ms": null, "output": "まだ合流できてないんだけど、先にワールド回ってて。", "provider": "tencent", "round": 1, "skipped": true}
+{"error": "", "item": "ja-5", "ms": null, "output": "まだ合流できてないんだけど、先にワールド回ってて。", "provider": "aliyun-general", "round": 1, "skipped": true}
+{"error": "", "item": "ja-5", "ms": null, "output": "まだ合流できてないんだけど、先にワールド回ってて。", "provider": "aliyun-professional", "round": 1, "skipped": true}
+{"error": "", "item": "ja-5", "ms": null, "output": "まだ合流できてないんだけど、先にワールド回ってて。", "provider": "deepseek", "round": 1, "skipped": true}
+{"error": "", "item": "ja-5", "ms": null, "output": "まだ合流できてないんだけど、先にワールド回ってて。", "provider": "xiaomi", "round": 1, "skipped": true}
+{"error": "", "item": "ko-1", "ms": 432.6, "output": "麦克风听不见了 ， 你能再说一遍吗 ？", "provider": "tencent", "round": 1, "skipped": false}
+{"error": "", "item": "ko-1", "ms": 553.6, "output": "你能再告诉我一次吗？因为迈克听不见我说话？", "provider": "aliyun-general", "round": 1, "skipped": false}
+{"error": "", "item": "ko-1", "ms": 830.8, "output": "我的麦克风没打开，能再说一遍吗？", "provider": "aliyun-professional", "round": 1, "skipped": false}
+{"error": "", "item": "ko-1", "ms": 925.4, "output": "麦克风听不到，你能再说一遍吗？", "provider": "deepseek", "round": 1, "skipped": false}
+{"error": "", "item": "ko-1", "ms": 1695.7, "output": "麦克风没声音，能再说一遍吗？", "provider": "xiaomi", "round": 1, "skipped": false}
+{"error": "", "item": "ko-2", "ms": 359.4, "output": "这个世界真的很美 ， 你在哪里看到的 ？", "provider": "tencent", "round": 1, "skipped": false}
+{"error": "", "item": "ko-2", "ms": 656.6, "output": "这个世界真的很美，你在哪里看到的？", "provider": "aliyun-general", "round": 1, "skipped": false}
+{"error": "", "item": "ko-2", "ms": 2011.3, "output": "这个世界真漂亮，好像在哪儿见过？", "provider": "aliyun-professional", "round": 1, "skipped": false}
+{"error": "", "item": "ko-2", "ms": 529.1, "output": "这个世界真漂亮，你在哪里看到的？", "provider": "deepseek", "round": 1, "skipped": false}
+{"error": "", "item": "ko-2", "ms": 1047.6, "output": "这个世界真漂亮，你在哪里看到的？", "provider": "xiaomi", "round": 1, "skipped": false}
+{"error": "", "item": "ko-3", "ms": 300.1, "output": "因为雷克 ， 我现在动不了了。", "provider": "tencent", "round": 1, "skipped": false}
+{"error": "", "item": "ko-3", "ms": 639.5, "output": "因为现在的列克，我不能动了。", "provider": "aliyun-general", "round": 1, "skipped": false}
+{"error": "", "item": "ko-3", "ms": 1374.3, "output": "我现在因为卡顿动不了了。", "provider": "aliyun-professional", "round": 1, "skipped": false}
+{"error": "", "item": "ko-3", "ms": 380.8, "output": "我现在因为卡顿动不了了。", "provider": "deepseek", "round": 1, "skipped": false}
+{"error": "", "item": "ko-3", "ms": 604.0, "output": "我现在卡得动不了了。", "provider": "xiaomi", "round": 1, "skipped": false}
+{"error": "", "item": "ko-4", "ms": 296.5, "output": "等一下 ， 我来换个化身。", "provider": "tencent", "round": 1, "skipped": false}
+{"error": "", "item": "ko-4", "ms": 756.2, "output": "等一下，我要换衣服。", "provider": "aliyun-general", "round": 1, "skipped": false}
+{"error": "", "item": "ko-4", "ms": 928.9, "output": "等会儿，我会洗完澡就来。", "provider": "aliyun-professional", "round": 1, "skipped": false}
+{"error": "", "item": "ko-4", "ms": 657.2, "output": "等一下，我换个头像就来。", "provider": "deepseek", "round": 1, "skipped": false}
+{"error": "", "item": "ko-4", "ms": 543.8, "output": "等一下，我去换个头像就来。", "provider": "xiaomi", "round": 1, "skipped": false}
+{"error": "", "item": "cs-1", "ms": null, "output": "这个ワールド昨天我逛过了，挺有意思的。", "provider": "tencent", "round": 1, "skipped": true}
+{"error": "", "item": "cs-1", "ms": null, "output": "这个ワールド昨天我逛过了，挺有意思的。", "provider": "aliyun-general", "round": 1, "skipped": true}
+{"error": "", "item": "cs-1", "ms": null, "output": "这个ワールド昨天我逛过了，挺有意思的。", "provider": "aliyun-professional", "round": 1, "skipped": true}
+{"error": "", "item": "cs-1", "ms": null, "output": "这个ワールド昨天我逛过了，挺有意思的。", "provider": "deepseek", "round": 1, "skipped": true}
+{"error": "", "item": "cs-1", "ms": null, "output": "这个ワールド昨天我逛过了，挺有意思的。", "provider": "xiaomi", "round": 1, "skipped": true}
+{"error": "", "item": "cs-2", "ms": null, "output": "ちょっと待って、我换个avatar就来。", "provider": "tencent", "round": 1, "skipped": true}
+{"error": "", "item": "cs-2", "ms": null, "output": "ちょっと待って、我换个avatar就来。", "provider": "aliyun-general", "round": 1, "skipped": true}
+{"error": "", "item": "cs-2", "ms": null, "output": "ちょっと待って、我换个avatar就来。", "provider": "aliyun-professional", "round": 1, "skipped": true}
+{"error": "", "item": "cs-2", "ms": null, "output": "ちょっと待って、我换个avatar就来。", "provider": "deepseek", "round": 1, "skipped": true}
+{"error": "", "item": "cs-2", "ms": null, "output": "ちょっと待って、我换个avatar就来。", "provider": "xiaomi", "round": 1, "skipped": true}
+{"error": "", "item": "cs-3", "ms": null, "output": "OK guys 我先下线了，明天见。", "provider": "tencent", "round": 1, "skipped": true}
+{"error": "", "item": "cs-3", "ms": null, "output": "OK guys 我先下线了，明天见。", "provider": "aliyun-general", "round": 1, "skipped": true}
+{"error": "", "item": "cs-3", "ms": null, "output": "OK guys 我先下线了，明天见。", "provider": "aliyun-professional", "round": 1, "skipped": true}
+{"error": "", "item": "cs-3", "ms": null, "output": "OK guys 我先下线了，明天见。", "provider": "deepseek", "round": 1, "skipped": true}
+{"error": "", "item": "cs-3", "ms": null, "output": "OK guys 我先下线了，明天见。", "provider": "xiaomi", "round": 1, "skipped": true}
+{"error": "", "item": "cs-4", "ms": null, "output": "이거 한국에서 온 거예요? 看着像国内的模型。", "provider": "tencent", "round": 1, "skipped": true}
+{"error": "", "item": "cs-4", "ms": null, "output": "이거 한국에서 온 거예요? 看着像国内的模型。", "provider": "aliyun-general", "round": 1, "skipped": true}
+{"error": "", "item": "cs-4", "ms": null, "output": "이거 한국에서 온 거예요? 看着像国内的模型。", "provider": "aliyun-professional", "round": 1, "skipped": true}
+{"error": "", "item": "cs-4", "ms": null, "output": "이거 한국에서 온 거예요? 看着像国内的模型。", "provider": "deepseek", "round": 1, "skipped": true}
+{"error": "", "item": "cs-4", "ms": null, "output": "이거 한국에서 온 거예요? 看着像国内的模型。", "provider": "xiaomi", "round": 1, "skipped": true}
+{"error": "", "item": "cs-5", "ms": null, "output": "唔该晒，我而家去换衫，wait for me。", "provider": "tencent", "round": 1, "skipped": true}
+{"error": "", "item": "cs-5", "ms": null, "output": "唔该晒，我而家去换衫，wait for me。", "provider": "aliyun-general", "round": 1, "skipped": true}
+{"error": "", "item": "cs-5", "ms": null, "output": "唔该晒，我而家去换衫，wait for me。", "provider": "aliyun-professional", "round": 1, "skipped": true}
+{"error": "", "item": "cs-5", "ms": null, "output": "唔该晒，我而家去换衫，wait for me。", "provider": "deepseek", "round": 1, "skipped": true}
+{"error": "", "item": "cs-5", "ms": null, "output": "唔该晒，我而家去换衫，wait for me。", "provider": "xiaomi", "round": 1, "skipped": true}
+{"error": "", "item": "2sp-1", "ms": null, "output": "A: 你好，初次见面。B: Hi! Nice to meet you, I'm from Canada.", "provider": "tencent", "round": 1, "skipped": true}
+{"error": "", "item": "2sp-1", "ms": null, "output": "A: 你好，初次见面。B: Hi! Nice to meet you, I'm from Canada.", "provider": "aliyun-general", "round": 1, "skipped": true}
+{"error": "", "item": "2sp-1", "ms": null, "output": "A: 你好，初次见面。B: Hi! Nice to meet you, I'm from Canada.", "provider": "aliyun-professional", "round": 1, "skipped": true}
+{"error": "", "item": "2sp-1", "ms": null, "output": "A: 你好，初次见面。B: Hi! Nice to meet you, I'm from Canada.", "provider": "deepseek", "round": 1, "skipped": true}
+{"error": "", "item": "2sp-1", "ms": null, "output": "A: 你好，初次见面。B: Hi! Nice to meet you, I'm from Canada.", "provider": "xiaomi", "round": 1, "skipped": true}
+{"error": "", "item": "2sp-2", "ms": null, "output": "A: これどうやって開くの？B: 按一下那边的按钮就行了。", "provider": "tencent", "round": 1, "skipped": true}
+{"error": "", "item": "2sp-2", "ms": null, "output": "A: これどうやって開くの？B: 按一下那边的按钮就行了。", "provider": "aliyun-general", "round": 1, "skipped": true}
+{"error": "", "item": "2sp-2", "ms": null, "output": "A: これどうやって開くの？B: 按一下那边的按钮就行了。", "provider": "aliyun-professional", "round": 1, "skipped": true}
+{"error": "", "item": "2sp-2", "ms": null, "output": "A: これどうやって開くの？B: 按一下那边的按钮就行了。", "provider": "deepseek", "round": 1, "skipped": true}
+{"error": "", "item": "2sp-2", "ms": null, "output": "A: これどうやって開くの？B: 按一下那边的按钮就行了。", "provider": "xiaomi", "round": 1, "skipped": true}
+{"error": "", "item": "2sp-3", "ms": null, "output": "A: Are you joining the event tonight? B: 应该会去，你要一起吗？", "provider": "tencent", "round": 1, "skipped": true}
+{"error": "", "item": "2sp-3", "ms": null, "output": "A: Are you joining the event tonight? B: 应该会去，你要一起吗？", "provider": "aliyun-general", "round": 1, "skipped": true}
+{"error": "", "item": "2sp-3", "ms": null, "output": "A: Are you joining the event tonight? B: 应该会去，你要一起吗？", "provider": "aliyun-professional", "round": 1, "skipped": true}
+{"error": "", "item": "2sp-3", "ms": null, "output": "A: Are you joining the event tonight? B: 应该会去，你要一起吗？", "provider": "deepseek", "round": 1, "skipped": true}
+{"error": "", "item": "2sp-3", "ms": null, "output": "A: Are you joining the event tonight? B: 应该会去，你要一起吗？", "provider": "xiaomi", "round": 1, "skipped": true}
+{"error": "", "item": "zh-1", "ms": null, "output": "开饭时间早上9点至下午5点。", "provider": "tencent", "round": 2, "skipped": true}
+{"error": "", "item": "zh-1", "ms": null, "output": "开饭时间早上9点至下午5点。", "provider": "aliyun-general", "round": 2, "skipped": true}
+{"error": "", "item": "zh-1", "ms": null, "output": "开饭时间早上9点至下午5点。", "provider": "aliyun-professional", "round": 2, "skipped": true}
+{"error": "", "item": "zh-1", "ms": null, "output": "开饭时间早上9点至下午5点。", "provider": "deepseek", "round": 2, "skipped": true}
+{"error": "", "item": "zh-1", "ms": null, "output": "开饭时间早上9点至下午5点。", "provider": "xiaomi", "round": 2, "skipped": true}
+{"error": "", "item": "zh-2", "ms": null, "output": "你那边网络是不是卡了？我看你一直在原地转圈。", "provider": "tencent", "round": 2, "skipped": true}
+{"error": "", "item": "zh-2", "ms": null, "output": "你那边网络是不是卡了？我看你一直在原地转圈。", "provider": "aliyun-general", "round": 2, "skipped": true}
+{"error": "", "item": "zh-2", "ms": null, "output": "你那边网络是不是卡了？我看你一直在原地转圈。", "provider": "aliyun-professional", "round": 2, "skipped": true}
+{"error": "", "item": "zh-2", "ms": null, "output": "你那边网络是不是卡了？我看你一直在原地转圈。", "provider": "deepseek", "round": 2, "skipped": true}
+{"error": "", "item": "zh-2", "ms": null, "output": "你那边网络是不是卡了？我看你一直在原地转圈。", "provider": "xiaomi", "round": 2, "skipped": true}
+{"error": "", "item": "zh-3", "ms": null, "output": "这个图好像有人掉线了，我们等一下吧。", "provider": "tencent", "round": 2, "skipped": true}
+{"error": "", "item": "zh-3", "ms": null, "output": "这个图好像有人掉线了，我们等一下吧。", "provider": "aliyun-general", "round": 2, "skipped": true}
+{"error": "", "item": "zh-3", "ms": null, "output": "这个图好像有人掉线了，我们等一下吧。", "provider": "aliyun-professional", "round": 2, "skipped": true}
+{"error": "", "item": "zh-3", "ms": null, "output": "这个图好像有人掉线了，我们等一下吧。", "provider": "deepseek", "round": 2, "skipped": true}
+{"error": "", "item": "zh-3", "ms": null, "output": "这个图好像有人掉线了，我们等一下吧。", "provider": "xiaomi", "round": 2, "skipped": true}
+{"error": "", "item": "yue-1", "ms": null, "output": "唔该你帮我睇下佢系咪企喺门口。", "provider": "tencent", "round": 2, "skipped": true}
+{"error": "", "item": "yue-1", "ms": null, "output": "唔该你帮我睇下佢系咪企喺门口。", "provider": "aliyun-general", "round": 2, "skipped": true}
+{"error": "", "item": "yue-1", "ms": null, "output": "唔该你帮我睇下佢系咪企喺门口。", "provider": "aliyun-professional", "round": 2, "skipped": true}
+{"error": "", "item": "yue-1", "ms": null, "output": "唔该你帮我睇下佢系咪企喺门口。", "provider": "deepseek", "round": 2, "skipped": true}
+{"error": "", "item": "yue-1", "ms": null, "output": "唔该你帮我睇下佢系咪企喺门口。", "provider": "xiaomi", "round": 2, "skipped": true}
+{"error": "", "item": "yue-2", "ms": null, "output": "我今日唔得闲，听日先啦。", "provider": "tencent", "round": 2, "skipped": true}
+{"error": "", "item": "yue-2", "ms": null, "output": "我今日唔得闲，听日先啦。", "provider": "aliyun-general", "round": 2, "skipped": true}
+{"error": "", "item": "yue-2", "ms": null, "output": "我今日唔得闲，听日先啦。", "provider": "aliyun-professional", "round": 2, "skipped": true}
+{"error": "", "item": "yue-2", "ms": null, "output": "我今日唔得闲，听日先啦。", "provider": "deepseek", "round": 2, "skipped": true}
+{"error": "", "item": "yue-2", "ms": null, "output": "我今日唔得闲，听日先啦。", "provider": "xiaomi", "round": 2, "skipped": true}
+{"error": "", "item": "en-1", "ms": 303.7, "output": "嘿，你现在能听到我说话了吗？我刚刚修好了我的麦克风。", "provider": "tencent", "round": 2, "skipped": false}
+{"error": "", "item": "en-1", "ms": 284.5, "output": "嘿，你现在能听到我吗？我刚修好了我的麦克风。", "provider": "aliyun-general", "round": 2, "skipped": false}
+{"error": "", "item": "en-1", "ms": 280.1, "output": "嘿，你现在能听到我吗？我刚修好了我的麦克风。", "provider": "aliyun-professional", "round": 2, "skipped": false}
+{"error": "", "item": "en-1", "ms": 847.4, "output": "嘿，你现在能听到我说话吗？我刚修好了我的麦克风。", "provider": "deepseek", "round": 2, "skipped": false}
+{"error": "", "item": "en-1", "ms": 1374.1, "output": "嘿，现在能听到我说话了吗？我刚修好了我的麦克风。", "provider": "xiaomi", "round": 2, "skipped": false}
+{"error": "", "item": "en-2", "ms": 323.1, "output": "是的，听起来很有趣，今晚晚些时候下班后我会继续。", "provider": "tencent", "round": 2, "skipped": false}
+{"error": "", "item": "en-2", "ms": 303.3, "output": "嗯，听起来挺好玩的，我今晚下班后再上线。", "provider": "aliyun-general", "round": 2, "skipped": false}
+{"error": "", "item": "en-2", "ms": 291.0, "output": "嗯，听起来挺好玩的，我今晚下班后再上线。", "provider": "aliyun-professional", "round": 2, "skipped": false}
+{"error": "", "item": "en-2", "ms": 435.7, "output": "是啊，听起来挺有趣的，我今晚下班后就上线。", "provider": "deepseek", "round": 2, "skipped": false}
+{"error": "", "item": "en-2", "ms": 966.4, "output": "听起来挺有意思的，我今晚下班后会上线。", "provider": "xiaomi", "round": 2, "skipped": false}
+{"error": "", "item": "en-3", "ms": 175.7, "output": "抱歉，我的麦克风停了一下，你说什么？", "provider": "tencent", "round": 2, "skipped": false}
+{"error": "", "item": "en-3", "ms": 189.6, "output": "抱歉，我的麦克风刚才断了一下，你刚才说什么？", "provider": "aliyun-general", "round": 2, "skipped": false}
+{"error": "", "item": "en-3", "ms": 291.6, "output": "抱歉，我的麦克风刚才断了一下，你刚才说什么？", "provider": "aliyun-professional", "round": 2, "skipped": false}
+{"error": "", "item": "en-3", "ms": 651.9, "output": "抱歉，我的麦克风刚才断了一下，你说什么？", "provider": "deepseek", "round": 2, "skipped": false}
+{"error": "", "item": "en-3", "ms": 539.0, "output": "抱歉，我的麦克风刚才断了一下，你说什么？", "provider": "xiaomi", "round": 2, "skipped": false}
+{"error": "", "item": "en-4", "ms": 283.3, "output": "你能告诉我你在哪里得到那个化身吗？我一直在寻找这样的。", "provider": "tencent", "round": 2, "skipped": false}
+{"error": "", "item": "en-4", "ms": 268.8, "output": "你能告诉我你是在哪里得到那个头像的吗？我一直在找一个像这样的。", "provider": "aliyun-general", "round": 2, "skipped": false}
+{"error": "", "item": "en-4", "ms": 198.5, "output": "你能告诉我你是在哪里得到那个头像的吗？我一直在找一个像这样的。", "provider": "aliyun-professional", "round": 2, "skipped": false}
+{"error": "", "item": "en-4", "ms": 432.2, "output": "你能告诉我你从哪里得到那个头像的吗？我一直在找像那样的。", "provider": "deepseek", "round": 2, "skipped": false}
+{"error": "", "item": "en-4", "ms": 636.0, "output": "你能告诉我你从哪里得到那个头像的吗？我一直在找类似的头像。", "provider": "xiaomi", "round": 2, "skipped": false}
+{"error": "", "item": "en-5", "ms": 162.1, "output": "现在滞后真的很严重，我认为服务器正在苦苦挣扎。", "provider": "tencent", "round": 2, "skipped": false}
+{"error": "", "item": "en-5", "ms": 193.2, "output": "现在的延迟真的很严重，我觉得服务器有点吃力。", "provider": "aliyun-general", "round": 2, "skipped": false}
+{"error": "", "item": "en-5", "ms": 185.9, "output": "现在的延迟真的很严重，我觉得服务器有点吃力。", "provider": "aliyun-professional", "round": 2, "skipped": false}
+{"error": "", "item": "en-5", "ms": 477.8, "output": "现在的延迟真的很严重，我觉得服务器有点撑不住了。", "provider": "deepseek", "round": 2, "skipped": false}
+{"error": "", "item": "en-5", "ms": 554.8, "output": "现在延迟真的很严重，我觉得服务器快撑不住了。", "provider": "xiaomi", "round": 2, "skipped": false}
+{"error": "", "item": "ja-1", "ms": null, "output": "うちの中学は弁当制で持っていきない場合は50円の学校販売のパンを買う。", "provider": "tencent", "round": 2, "skipped": true}
+{"error": "", "item": "ja-1", "ms": null, "output": "うちの中学は弁当制で持っていきない場合は50円の学校販売のパンを買う。", "provider": "aliyun-general", "round": 2, "skipped": true}
+{"error": "", "item": "ja-1", "ms": null, "output": "うちの中学は弁当制で持っていきない場合は50円の学校販売のパンを買う。", "provider": "aliyun-professional", "round": 2, "skipped": true}
+{"error": "", "item": "ja-1", "ms": null, "output": "うちの中学は弁当制で持っていきない場合は50円の学校販売のパンを買う。", "provider": "deepseek", "round": 2, "skipped": true}
+{"error": "", "item": "ja-1", "ms": null, "output": "うちの中学は弁当制で持っていきない場合は50円の学校販売のパンを買う。", "provider": "xiaomi", "round": 2, "skipped": true}
+{"error": "", "item": "ja-2", "ms": null, "output": "ちょっと待って、いま準備してるから。", "provider": "tencent", "round": 2, "skipped": true}
+{"error": "", "item": "ja-2", "ms": null, "output": "ちょっと待って、いま準備してるから。", "provider": "aliyun-general", "round": 2, "skipped": true}
+{"error": "", "item": "ja-2", "ms": null, "output": "ちょっと待って、いま準備してるから。", "provider": "aliyun-professional", "round": 2, "skipped": true}
+{"error": "", "item": "ja-2", "ms": null, "output": "ちょっと待って、いま準備してるから。", "provider": "deepseek", "round": 2, "skipped": true}
+{"error": "", "item": "ja-2", "ms": null, "output": "ちょっと待って、いま準備してるから。", "provider": "xiaomi", "round": 2, "skipped": true}
+{"error": "", "item": "ja-3", "ms": null, "output": "このワールド、前に来たことある気がする。", "provider": "tencent", "round": 2, "skipped": true}
+{"error": "", "item": "ja-3", "ms": null, "output": "このワールド、前に来たことある気がする。", "provider": "aliyun-general", "round": 2, "skipped": true}
+{"error": "", "item": "ja-3", "ms": null, "output": "このワールド、前に来たことある気がする。", "provider": "aliyun-professional", "round": 2, "skipped": true}
+{"error": "", "item": "ja-3", "ms": null, "output": "このワールド、前に来たことある気がする。", "provider": "deepseek", "round": 2, "skipped": true}
+{"error": "", "item": "ja-3", "ms": null, "output": "このワールド、前に来たことある気がする。", "provider": "xiaomi", "round": 2, "skipped": true}
+{"error": "", "item": "ja-4", "ms": null, "output": "ごめん、いまマイクの調子が悪くて聞こえないかも。", "provider": "tencent", "round": 2, "skipped": true}
+{"error": "", "item": "ja-4", "ms": null, "output": "ごめん、いまマイクの調子が悪くて聞こえないかも。", "provider": "aliyun-general", "round": 2, "skipped": true}
+{"error": "", "item": "ja-4", "ms": null, "output": "ごめん、いまマイクの調子が悪くて聞こえないかも。", "provider": "aliyun-professional", "round": 2, "skipped": true}
+{"error": "", "item": "ja-4", "ms": null, "output": "ごめん、いまマイクの調子が悪くて聞こえないかも。", "provider": "deepseek", "round": 2, "skipped": true}
+{"error": "", "item": "ja-4", "ms": null, "output": "ごめん、いまマイクの調子が悪くて聞こえないかも。", "provider": "xiaomi", "round": 2, "skipped": true}
+{"error": "", "item": "ja-5", "ms": null, "output": "まだ合流できてないんだけど、先にワールド回ってて。", "provider": "tencent", "round": 2, "skipped": true}
+{"error": "", "item": "ja-5", "ms": null, "output": "まだ合流できてないんだけど、先にワールド回ってて。", "provider": "aliyun-general", "round": 2, "skipped": true}
+{"error": "", "item": "ja-5", "ms": null, "output": "まだ合流できてないんだけど、先にワールド回ってて。", "provider": "aliyun-professional", "round": 2, "skipped": true}
+{"error": "", "item": "ja-5", "ms": null, "output": "まだ合流できてないんだけど、先にワールド回ってて。", "provider": "deepseek", "round": 2, "skipped": true}
+{"error": "", "item": "ja-5", "ms": null, "output": "まだ合流できてないんだけど、先にワールド回ってて。", "provider": "xiaomi", "round": 2, "skipped": true}
+{"error": "", "item": "ko-1", "ms": 192.5, "output": "麦克风听不见了 ， 你能再说一遍吗 ？", "provider": "tencent", "round": 2, "skipped": false}
+{"error": "", "item": "ko-1", "ms": 394.8, "output": "我听不见你——你能再说一遍吗？", "provider": "aliyun-general", "round": 2, "skipped": false}
+{"error": "", "item": "ko-1", "ms": 297.6, "output": "我的麦克风没打开，能再说一遍吗？", "provider": "aliyun-professional", "round": 2, "skipped": false}
+{"error": "", "item": "ko-1", "ms": 773.4, "output": "麦克风听不到，你能再说一遍吗？", "provider": "deepseek", "round": 2, "skipped": false}
+{"error": "", "item": "ko-1", "ms": 707.4, "output": "麦克风没声音，能再说一遍吗？", "provider": "xiaomi", "round": 2, "skipped": false}
+{"error": "", "item": "ko-2", "ms": 243.7, "output": "这个世界真的很美 ， 你在哪里看到的 ？", "provider": "tencent", "round": 2, "skipped": false}
+{"error": "", "item": "ko-2", "ms": 365.4, "output": "这个世界真美——你是在哪里看到的？", "provider": "aliyun-general", "round": 2, "skipped": false}
+{"error": "", "item": "ko-2", "ms": 273.9, "output": "这个世界真漂亮，好像在哪儿见过？", "provider": "aliyun-professional", "round": 2, "skipped": false}
+{"error": "", "item": "ko-2", "ms": 530.2, "output": "这个世界真漂亮，你在哪里看到的？", "provider": "deepseek", "round": 2, "skipped": false}
+{"error": "", "item": "ko-2", "ms": 597.8, "output": "这个世界真漂亮，你在哪里看到的？", "provider": "xiaomi", "round": 2, "skipped": false}
+{"error": "", "item": "ko-3", "ms": 303.9, "output": "因为雷克 ， 我现在动不了了。", "provider": "tencent", "round": 2, "skipped": false}
+{"error": "", "item": "ko-3", "ms": 384.3, "output": "我现在因为延迟动不了。", "provider": "aliyun-general", "round": 2, "skipped": false}
+{"error": "", "item": "ko-3", "ms": 196.7, "output": "我现在因为卡顿动不了了。", "provider": "aliyun-professional", "round": 2, "skipped": false}
+{"error": "", "item": "ko-3", "ms": 325.2, "output": "我现在因为卡顿动不了了。", "provider": "deepseek", "round": 2, "skipped": false}
+{"error": "", "item": "ko-3", "ms": 623.9, "output": "我现在卡得动不了了。", "provider": "xiaomi", "round": 2, "skipped": false}
+{"error": "", "item": "ko-4", "ms": 254.2, "output": "等一下 ， 我来换个化身。", "provider": "tencent", "round": 2, "skipped": false}
+{"error": "", "item": "ko-4", "ms": 373.3, "output": "等一下，我换个头像，马上回来。", "provider": "aliyun-general", "round": 2, "skipped": false}
+{"error": "", "item": "ko-4", "ms": 208.7, "output": "等会儿，我会洗完澡就来。", "provider": "aliyun-professional", "round": 2, "skipped": false}
+{"error": "", "item": "ko-4", "ms": 374.1, "output": "等一下，我换个头像就来。", "provider": "deepseek", "round": 2, "skipped": false}
+{"error": "", "item": "ko-4", "ms": 596.0, "output": "等一下，我去换个头像就来。", "provider": "xiaomi", "round": 2, "skipped": false}
+{"error": "", "item": "cs-1", "ms": null, "output": "这个ワールド昨天我逛过了，挺有意思的。", "provider": "tencent", "round": 2, "skipped": true}
+{"error": "", "item": "cs-1", "ms": null, "output": "这个ワールド昨天我逛过了，挺有意思的。", "provider": "aliyun-general", "round": 2, "skipped": true}
+{"error": "", "item": "cs-1", "ms": null, "output": "这个ワールド昨天我逛过了，挺有意思的。", "provider": "aliyun-professional", "round": 2, "skipped": true}
+{"error": "", "item": "cs-1", "ms": null, "output": "这个ワールド昨天我逛过了，挺有意思的。", "provider": "deepseek", "round": 2, "skipped": true}
+{"error": "", "item": "cs-1", "ms": null, "output": "这个ワールド昨天我逛过了，挺有意思的。", "provider": "xiaomi", "round": 2, "skipped": true}
+{"error": "", "item": "cs-2", "ms": null, "output": "ちょっと待って、我换个avatar就来。", "provider": "tencent", "round": 2, "skipped": true}
+{"error": "", "item": "cs-2", "ms": null, "output": "ちょっと待って、我换个avatar就来。", "provider": "aliyun-general", "round": 2, "skipped": true}
+{"error": "", "item": "cs-2", "ms": null, "output": "ちょっと待って、我换个avatar就来。", "provider": "aliyun-professional", "round": 2, "skipped": true}
+{"error": "", "item": "cs-2", "ms": null, "output": "ちょっと待って、我换个avatar就来。", "provider": "deepseek", "round": 2, "skipped": true}
+{"error": "", "item": "cs-2", "ms": null, "output": "ちょっと待って、我换个avatar就来。", "provider": "xiaomi", "round": 2, "skipped": true}
+{"error": "", "item": "cs-3", "ms": null, "output": "OK guys 我先下线了，明天见。", "provider": "tencent", "round": 2, "skipped": true}
+{"error": "", "item": "cs-3", "ms": null, "output": "OK guys 我先下线了，明天见。", "provider": "aliyun-general", "round": 2, "skipped": true}
+{"error": "", "item": "cs-3", "ms": null, "output": "OK guys 我先下线了，明天见。", "provider": "aliyun-professional", "round": 2, "skipped": true}
+{"error": "", "item": "cs-3", "ms": null, "output": "OK guys 我先下线了，明天见。", "provider": "deepseek", "round": 2, "skipped": true}
+{"error": "", "item": "cs-3", "ms": null, "output": "OK guys 我先下线了，明天见。", "provider": "xiaomi", "round": 2, "skipped": true}
+{"error": "", "item": "cs-4", "ms": null, "output": "이거 한국에서 온 거예요? 看着像国内的模型。", "provider": "tencent", "round": 2, "skipped": true}
+{"error": "", "item": "cs-4", "ms": null, "output": "이거 한국에서 온 거예요? 看着像国内的模型。", "provider": "aliyun-general", "round": 2, "skipped": true}
+{"error": "", "item": "cs-4", "ms": null, "output": "이거 한국에서 온 거예요? 看着像国内的模型。", "provider": "aliyun-professional", "round": 2, "skipped": true}
+{"error": "", "item": "cs-4", "ms": null, "output": "이거 한국에서 온 거예요? 看着像国内的模型。", "provider": "deepseek", "round": 2, "skipped": true}
+{"error": "", "item": "cs-4", "ms": null, "output": "이거 한국에서 온 거예요? 看着像国内的模型。", "provider": "xiaomi", "round": 2, "skipped": true}
+{"error": "", "item": "cs-5", "ms": null, "output": "唔该晒，我而家去换衫，wait for me。", "provider": "tencent", "round": 2, "skipped": true}
+{"error": "", "item": "cs-5", "ms": null, "output": "唔该晒，我而家去换衫，wait for me。", "provider": "aliyun-general", "round": 2, "skipped": true}
+{"error": "", "item": "cs-5", "ms": null, "output": "唔该晒，我而家去换衫，wait for me。", "provider": "aliyun-professional", "round": 2, "skipped": true}
+{"error": "", "item": "cs-5", "ms": null, "output": "唔该晒，我而家去换衫，wait for me。", "provider": "deepseek", "round": 2, "skipped": true}
+{"error": "", "item": "cs-5", "ms": null, "output": "唔该晒，我而家去换衫，wait for me。", "provider": "xiaomi", "round": 2, "skipped": true}
+{"error": "", "item": "2sp-1", "ms": null, "output": "A: 你好，初次见面。B: Hi! Nice to meet you, I'm from Canada.", "provider": "tencent", "round": 2, "skipped": true}
+{"error": "", "item": "2sp-1", "ms": null, "output": "A: 你好，初次见面。B: Hi! Nice to meet you, I'm from Canada.", "provider": "aliyun-general", "round": 2, "skipped": true}
+{"error": "", "item": "2sp-1", "ms": null, "output": "A: 你好，初次见面。B: Hi! Nice to meet you, I'm from Canada.", "provider": "aliyun-professional", "round": 2, "skipped": true}
+{"error": "", "item": "2sp-1", "ms": null, "output": "A: 你好，初次见面。B: Hi! Nice to meet you, I'm from Canada.", "provider": "deepseek", "round": 2, "skipped": true}
+{"error": "", "item": "2sp-1", "ms": null, "output": "A: 你好，初次见面。B: Hi! Nice to meet you, I'm from Canada.", "provider": "xiaomi", "round": 2, "skipped": true}
+{"error": "", "item": "2sp-2", "ms": null, "output": "A: これどうやって開くの？B: 按一下那边的按钮就行了。", "provider": "tencent", "round": 2, "skipped": true}
+{"error": "", "item": "2sp-2", "ms": null, "output": "A: これどうやって開くの？B: 按一下那边的按钮就行了。", "provider": "aliyun-general", "round": 2, "skipped": true}
+{"error": "", "item": "2sp-2", "ms": null, "output": "A: これどうやって開くの？B: 按一下那边的按钮就行了。", "provider": "aliyun-professional", "round": 2, "skipped": true}
+{"error": "", "item": "2sp-2", "ms": null, "output": "A: これどうやって開くの？B: 按一下那边的按钮就行了。", "provider": "deepseek", "round": 2, "skipped": true}
+{"error": "", "item": "2sp-2", "ms": null, "output": "A: これどうやって開くの？B: 按一下那边的按钮就行了。", "provider": "xiaomi", "round": 2, "skipped": true}
+{"error": "", "item": "2sp-3", "ms": null, "output": "A: Are you joining the event tonight? B: 应该会去，你要一起吗？", "provider": "tencent", "round": 2, "skipped": true}
+{"error": "", "item": "2sp-3", "ms": null, "output": "A: Are you joining the event tonight? B: 应该会去，你要一起吗？", "provider": "aliyun-general", "round": 2, "skipped": true}
+{"error": "", "item": "2sp-3", "ms": null, "output": "A: Are you joining the event tonight? B: 应该会去，你要一起吗？", "provider": "aliyun-professional", "round": 2, "skipped": true}
+{"error": "", "item": "2sp-3", "ms": null, "output": "A: Are you joining the event tonight? B: 应该会去，你要一起吗？", "provider": "deepseek", "round": 2, "skipped": true}
+{"error": "", "item": "2sp-3", "ms": null, "output": "A: Are you joining the event tonight? B: 应该会去，你要一起吗？", "provider": "xiaomi", "round": 2, "skipped": true}
+{"error": "", "item": "zh-1", "ms": null, "output": "开饭时间早上9点至下午5点。", "provider": "tencent", "round": 3, "skipped": true}
+{"error": "", "item": "zh-1", "ms": null, "output": "开饭时间早上9点至下午5点。", "provider": "aliyun-general", "round": 3, "skipped": true}
+{"error": "", "item": "zh-1", "ms": null, "output": "开饭时间早上9点至下午5点。", "provider": "aliyun-professional", "round": 3, "skipped": true}
+{"error": "", "item": "zh-1", "ms": null, "output": "开饭时间早上9点至下午5点。", "provider": "deepseek", "round": 3, "skipped": true}
+{"error": "", "item": "zh-1", "ms": null, "output": "开饭时间早上9点至下午5点。", "provider": "xiaomi", "round": 3, "skipped": true}
+{"error": "", "item": "zh-2", "ms": null, "output": "你那边网络是不是卡了？我看你一直在原地转圈。", "provider": "tencent", "round": 3, "skipped": true}
+{"error": "", "item": "zh-2", "ms": null, "output": "你那边网络是不是卡了？我看你一直在原地转圈。", "provider": "aliyun-general", "round": 3, "skipped": true}
+{"error": "", "item": "zh-2", "ms": null, "output": "你那边网络是不是卡了？我看你一直在原地转圈。", "provider": "aliyun-professional", "round": 3, "skipped": true}
+{"error": "", "item": "zh-2", "ms": null, "output": "你那边网络是不是卡了？我看你一直在原地转圈。", "provider": "deepseek", "round": 3, "skipped": true}
+{"error": "", "item": "zh-2", "ms": null, "output": "你那边网络是不是卡了？我看你一直在原地转圈。", "provider": "xiaomi", "round": 3, "skipped": true}
+{"error": "", "item": "zh-3", "ms": null, "output": "这个图好像有人掉线了，我们等一下吧。", "provider": "tencent", "round": 3, "skipped": true}
+{"error": "", "item": "zh-3", "ms": null, "output": "这个图好像有人掉线了，我们等一下吧。", "provider": "aliyun-general", "round": 3, "skipped": true}
+{"error": "", "item": "zh-3", "ms": null, "output": "这个图好像有人掉线了，我们等一下吧。", "provider": "aliyun-professional", "round": 3, "skipped": true}
+{"error": "", "item": "zh-3", "ms": null, "output": "这个图好像有人掉线了，我们等一下吧。", "provider": "deepseek", "round": 3, "skipped": true}
+{"error": "", "item": "zh-3", "ms": null, "output": "这个图好像有人掉线了，我们等一下吧。", "provider": "xiaomi", "round": 3, "skipped": true}
+{"error": "", "item": "yue-1", "ms": null, "output": "唔该你帮我睇下佢系咪企喺门口。", "provider": "tencent", "round": 3, "skipped": true}
+{"error": "", "item": "yue-1", "ms": null, "output": "唔该你帮我睇下佢系咪企喺门口。", "provider": "aliyun-general", "round": 3, "skipped": true}
+{"error": "", "item": "yue-1", "ms": null, "output": "唔该你帮我睇下佢系咪企喺门口。", "provider": "aliyun-professional", "round": 3, "skipped": true}
+{"error": "", "item": "yue-1", "ms": null, "output": "唔该你帮我睇下佢系咪企喺门口。", "provider": "deepseek", "round": 3, "skipped": true}
+{"error": "", "item": "yue-1", "ms": null, "output": "唔该你帮我睇下佢系咪企喺门口。", "provider": "xiaomi", "round": 3, "skipped": true}
+{"error": "", "item": "yue-2", "ms": null, "output": "我今日唔得闲，听日先啦。", "provider": "tencent", "round": 3, "skipped": true}
+{"error": "", "item": "yue-2", "ms": null, "output": "我今日唔得闲，听日先啦。", "provider": "aliyun-general", "round": 3, "skipped": true}
+{"error": "", "item": "yue-2", "ms": null, "output": "我今日唔得闲，听日先啦。", "provider": "aliyun-professional", "round": 3, "skipped": true}
+{"error": "", "item": "yue-2", "ms": null, "output": "我今日唔得闲，听日先啦。", "provider": "deepseek", "round": 3, "skipped": true}
+{"error": "", "item": "yue-2", "ms": null, "output": "我今日唔得闲，听日先啦。", "provider": "xiaomi", "round": 3, "skipped": true}
+{"error": "", "item": "en-1", "ms": 295.9, "output": "嘿，你现在能听到我说话了吗？我刚刚修好了我的麦克风。", "provider": "tencent", "round": 3, "skipped": false}
+{"error": "", "item": "en-1", "ms": 193.8, "output": "嘿，你现在能听到我吗？我刚修好了我的麦克风。", "provider": "aliyun-general", "round": 3, "skipped": false}
+{"error": "", "item": "en-1", "ms": 197.4, "output": "嘿，你现在能听到我吗？我刚修好了我的麦克风。", "provider": "aliyun-professional", "round": 3, "skipped": false}
+{"error": "", "item": "en-1", "ms": 393.5, "output": "嘿，你现在能听到我说话吗？我刚修好了我的麦克风。", "provider": "deepseek", "round": 3, "skipped": false}
+{"error": "", "item": "en-1", "ms": 690.3, "output": "嘿，现在能听到我说话了吗？我刚修好了麦克风。", "provider": "xiaomi", "round": 3, "skipped": false}
+{"error": "", "item": "en-2", "ms": 174.1, "output": "是的，听起来很有趣，今晚晚些时候下班后我会继续。", "provider": "tencent", "round": 3, "skipped": false}
+{"error": "", "item": "en-2", "ms": 306.4, "output": "嗯，听起来挺好玩的，我今晚下班后再上线。", "provider": "aliyun-general", "round": 3, "skipped": false}
+{"error": "", "item": "en-2", "ms": 204.3, "output": "嗯，听起来挺好玩的，我今晚下班后再上线。", "provider": "aliyun-professional", "round": 3, "skipped": false}
+{"error": "", "item": "en-2", "ms": 418.8, "output": "是啊，听起来挺有趣的，我今晚下班后会加入。", "provider": "deepseek", "round": 3, "skipped": false}
+{"error": "", "item": "en-2", "ms": 593.8, "output": "听起来挺有意思的，我今晚下班后会上线。", "provider": "xiaomi", "round": 3, "skipped": false}
+{"error": "", "item": "en-3", "ms": 184.7, "output": "抱歉，我的麦克风停了一下，你说什么？", "provider": "tencent", "round": 3, "skipped": false}
+{"error": "", "item": "en-3", "ms": 194.5, "output": "抱歉，我的麦克风刚才断了一下，你刚才说什么？", "provider": "aliyun-general", "round": 3, "skipped": false}
+{"error": "", "item": "en-3", "ms": 189.6, "output": "抱歉，我的麦克风刚才断了一下，你刚才说什么？", "provider": "aliyun-professional", "round": 3, "skipped": false}
+{"error": "", "item": "en-3", "ms": 454.3, "output": "抱歉，我的麦克风刚才断了一下，你说什么？", "provider": "deepseek", "round": 3, "skipped": false}
+{"error": "", "item": "en-3", "ms": 1194.5, "output": "抱歉，我的麦克风刚才断了一下，你说什么？", "provider": "xiaomi", "round": 3, "skipped": false}
+{"error": "", "item": "en-4", "ms": 294.4, "output": "你能告诉我你在哪里得到那个化身吗？我一直在寻找这样的。", "provider": "tencent", "round": 3, "skipped": false}
+{"error": "", "item": "en-4", "ms": 323.0, "output": "你能告诉我你是在哪里得到那个头像的吗？我一直在找一个像这样的。", "provider": "aliyun-general", "round": 3, "skipped": false}
+{"error": "", "item": "en-4", "ms": 182.5, "output": "你能告诉我你是在哪里得到那个头像的吗？我一直在找一个像这样的。", "provider": "aliyun-professional", "round": 3, "skipped": false}
+{"error": "", "item": "en-4", "ms": 668.2, "output": "你能告诉我你从哪里得到那个头像的吗？我一直在找像那样的。", "provider": "deepseek", "round": 3, "skipped": false}
+{"error": "", "item": "en-4", "ms": 1270.4, "output": "你能告诉我你从哪里得到那个头像的吗？我一直在找类似的头像。", "provider": "xiaomi", "round": 3, "skipped": false}
+{"error": "", "item": "en-5", "ms": 246.1, "output": "现在滞后真的很严重，我认为服务器正在苦苦挣扎。", "provider": "tencent", "round": 3, "skipped": false}
+{"error": "", "item": "en-5", "ms": 184.3, "output": "现在的延迟真的很严重，我觉得服务器有点吃力。", "provider": "aliyun-general", "round": 3, "skipped": false}
+{"error": "", "item": "en-5", "ms": 235.7, "output": "现在的延迟真的很严重，我觉得服务器有点吃力。", "provider": "aliyun-professional", "round": 3, "skipped": false}
+{"error": "", "item": "en-5", "ms": 587.4, "output": "现在的延迟真的很严重，我觉得服务器有点撑不住了。", "provider": "deepseek", "round": 3, "skipped": false}
+{"error": "", "item": "en-5", "ms": 1122.8, "output": "现在延迟真的很严重，我觉得服务器可能撑不住了。", "provider": "xiaomi", "round": 3, "skipped": false}
+{"error": "", "item": "ja-1", "ms": null, "output": "うちの中学は弁当制で持っていきない場合は50円の学校販売のパンを買う。", "provider": "tencent", "round": 3, "skipped": true}
+{"error": "", "item": "ja-1", "ms": null, "output": "うちの中学は弁当制で持っていきない場合は50円の学校販売のパンを買う。", "provider": "aliyun-general", "round": 3, "skipped": true}
+{"error": "", "item": "ja-1", "ms": null, "output": "うちの中学は弁当制で持っていきない場合は50円の学校販売のパンを買う。", "provider": "aliyun-professional", "round": 3, "skipped": true}
+{"error": "", "item": "ja-1", "ms": null, "output": "うちの中学は弁当制で持っていきない場合は50円の学校販売のパンを買う。", "provider": "deepseek", "round": 3, "skipped": true}
+{"error": "", "item": "ja-1", "ms": null, "output": "うちの中学は弁当制で持っていきない場合は50円の学校販売のパンを買う。", "provider": "xiaomi", "round": 3, "skipped": true}
+{"error": "", "item": "ja-2", "ms": null, "output": "ちょっと待って、いま準備してるから。", "provider": "tencent", "round": 3, "skipped": true}
+{"error": "", "item": "ja-2", "ms": null, "output": "ちょっと待って、いま準備してるから。", "provider": "aliyun-general", "round": 3, "skipped": true}
+{"error": "", "item": "ja-2", "ms": null, "output": "ちょっと待って、いま準備してるから。", "provider": "aliyun-professional", "round": 3, "skipped": true}
+{"error": "", "item": "ja-2", "ms": null, "output": "ちょっと待って、いま準備してるから。", "provider": "deepseek", "round": 3, "skipped": true}
+{"error": "", "item": "ja-2", "ms": null, "output": "ちょっと待って、いま準備してるから。", "provider": "xiaomi", "round": 3, "skipped": true}
+{"error": "", "item": "ja-3", "ms": null, "output": "このワールド、前に来たことある気がする。", "provider": "tencent", "round": 3, "skipped": true}
+{"error": "", "item": "ja-3", "ms": null, "output": "このワールド、前に来たことある気がする。", "provider": "aliyun-general", "round": 3, "skipped": true}
+{"error": "", "item": "ja-3", "ms": null, "output": "このワールド、前に来たことある気がする。", "provider": "aliyun-professional", "round": 3, "skipped": true}
+{"error": "", "item": "ja-3", "ms": null, "output": "このワールド、前に来たことある気がする。", "provider": "deepseek", "round": 3, "skipped": true}
+{"error": "", "item": "ja-3", "ms": null, "output": "このワールド、前に来たことある気がする。", "provider": "xiaomi", "round": 3, "skipped": true}
+{"error": "", "item": "ja-4", "ms": null, "output": "ごめん、いまマイクの調子が悪くて聞こえないかも。", "provider": "tencent", "round": 3, "skipped": true}
+{"error": "", "item": "ja-4", "ms": null, "output": "ごめん、いまマイクの調子が悪くて聞こえないかも。", "provider": "aliyun-general", "round": 3, "skipped": true}
+{"error": "", "item": "ja-4", "ms": null, "output": "ごめん、いまマイクの調子が悪くて聞こえないかも。", "provider": "aliyun-professional", "round": 3, "skipped": true}
+{"error": "", "item": "ja-4", "ms": null, "output": "ごめん、いまマイクの調子が悪くて聞こえないかも。", "provider": "deepseek", "round": 3, "skipped": true}
+{"error": "", "item": "ja-4", "ms": null, "output": "ごめん、いまマイクの調子が悪くて聞こえないかも。", "provider": "xiaomi", "round": 3, "skipped": true}
+{"error": "", "item": "ja-5", "ms": null, "output": "まだ合流できてないんだけど、先にワールド回ってて。", "provider": "tencent", "round": 3, "skipped": true}
+{"error": "", "item": "ja-5", "ms": null, "output": "まだ合流できてないんだけど、先にワールド回ってて。", "provider": "aliyun-general", "round": 3, "skipped": true}
+{"error": "", "item": "ja-5", "ms": null, "output": "まだ合流できてないんだけど、先にワールド回ってて。", "provider": "aliyun-professional", "round": 3, "skipped": true}
+{"error": "", "item": "ja-5", "ms": null, "output": "まだ合流できてないんだけど、先にワールド回ってて。", "provider": "deepseek", "round": 3, "skipped": true}
+{"error": "", "item": "ja-5", "ms": null, "output": "まだ合流できてないんだけど、先にワールド回ってて。", "provider": "xiaomi", "round": 3, "skipped": true}
+{"error": "", "item": "ko-1", "ms": 260.5, "output": "麦克风听不见了 ， 你能再说一遍吗 ？", "provider": "tencent", "round": 3, "skipped": false}
+{"error": "", "item": "ko-1", "ms": 372.0, "output": "我听不见你——你能再说一遍吗？", "provider": "aliyun-general", "round": 3, "skipped": false}
+{"error": "", "item": "ko-1", "ms": 190.9, "output": "我的麦克风没打开，能再说一遍吗？", "provider": "aliyun-professional", "round": 3, "skipped": false}
+{"error": "", "item": "ko-1", "ms": 479.4, "output": "麦克风听不到，你能再说一遍吗？", "provider": "deepseek", "round": 3, "skipped": false}
+{"error": "", "item": "ko-1", "ms": 561.8, "output": "麦克风没声音，能再说一遍吗？", "provider": "xiaomi", "round": 3, "skipped": false}
+{"error": "", "item": "ko-2", "ms": 171.4, "output": "这个世界真的很美 ， 你在哪里看到的 ？", "provider": "tencent", "round": 3, "skipped": false}
+{"error": "", "item": "ko-2", "ms": 284.7, "output": "这个世界真美——你是在哪里看到的？", "provider": "aliyun-general", "round": 3, "skipped": false}
+{"error": "", "item": "ko-2", "ms": 295.4, "output": "这个世界真漂亮，好像在哪儿见过？", "provider": "aliyun-professional", "round": 3, "skipped": false}
+{"error": "", "item": "ko-2", "ms": 336.6, "output": "这个世界真漂亮，你在哪里看到的？", "provider": "deepseek", "round": 3, "skipped": false}
+{"error": "", "item": "ko-2", "ms": 1309.4, "output": "这个场景真漂亮，你是在哪里看到的？", "provider": "xiaomi", "round": 3, "skipped": false}
+{"error": "", "item": "ko-3", "ms": 341.5, "output": "因为雷克 ， 我现在动不了了。", "provider": "tencent", "round": 3, "skipped": false}
+{"error": "", "item": "ko-3", "ms": 484.6, "output": "我现在因为延迟动不了。", "provider": "aliyun-general", "round": 3, "skipped": false}
+{"error": "", "item": "ko-3", "ms": 282.1, "output": "我现在因为卡顿动不了了。", "provider": "aliyun-professional", "round": 3, "skipped": false}
+{"error": "", "item": "ko-3", "ms": 560.3, "output": "我现在因为卡顿动不了了。", "provider": "deepseek", "round": 3, "skipped": false}
+{"error": "", "item": "ko-3", "ms": 677.5, "output": "我现在卡得动不了了。", "provider": "xiaomi", "round": 3, "skipped": false}
+{"error": "", "item": "ko-4", "ms": 208.4, "output": "等一下 ， 我来换个化身。", "provider": "tencent", "round": 3, "skipped": false}
+{"error": "", "item": "ko-4", "ms": 364.9, "output": "等一下，我换个头像，马上回来。", "provider": "aliyun-general", "round": 3, "skipped": false}
+{"error": "", "item": "ko-4", "ms": 1223.5, "output": "等会儿，我会洗完澡就来。", "provider": "aliyun-professional", "round": 3, "skipped": false}
+{"error": "", "item": "ko-4", "ms": 883.8, "output": "等一下，我换个头像就来。", "provider": "deepseek", "round": 3, "skipped": false}
+{"error": "", "item": "ko-4", "ms": 574.2, "output": "等一下，我去换个头像就来。", "provider": "xiaomi", "round": 3, "skipped": false}
+{"error": "", "item": "cs-1", "ms": null, "output": "这个ワールド昨天我逛过了，挺有意思的。", "provider": "tencent", "round": 3, "skipped": true}
+{"error": "", "item": "cs-1", "ms": null, "output": "这个ワールド昨天我逛过了，挺有意思的。", "provider": "aliyun-general", "round": 3, "skipped": true}
+{"error": "", "item": "cs-1", "ms": null, "output": "这个ワールド昨天我逛过了，挺有意思的。", "provider": "aliyun-professional", "round": 3, "skipped": true}
+{"error": "", "item": "cs-1", "ms": null, "output": "这个ワールド昨天我逛过了，挺有意思的。", "provider": "deepseek", "round": 3, "skipped": true}
+{"error": "", "item": "cs-1", "ms": null, "output": "这个ワールド昨天我逛过了，挺有意思的。", "provider": "xiaomi", "round": 3, "skipped": true}
+{"error": "", "item": "cs-2", "ms": null, "output": "ちょっと待って、我换个avatar就来。", "provider": "tencent", "round": 3, "skipped": true}
+{"error": "", "item": "cs-2", "ms": null, "output": "ちょっと待って、我换个avatar就来。", "provider": "aliyun-general", "round": 3, "skipped": true}
+{"error": "", "item": "cs-2", "ms": null, "output": "ちょっと待って、我换个avatar就来。", "provider": "aliyun-professional", "round": 3, "skipped": true}
+{"error": "", "item": "cs-2", "ms": null, "output": "ちょっと待って、我换个avatar就来。", "provider": "deepseek", "round": 3, "skipped": true}
+{"error": "", "item": "cs-2", "ms": null, "output": "ちょっと待って、我换个avatar就来。", "provider": "xiaomi", "round": 3, "skipped": true}
+{"error": "", "item": "cs-3", "ms": null, "output": "OK guys 我先下线了，明天见。", "provider": "tencent", "round": 3, "skipped": true}
+{"error": "", "item": "cs-3", "ms": null, "output": "OK guys 我先下线了，明天见。", "provider": "aliyun-general", "round": 3, "skipped": true}
+{"error": "", "item": "cs-3", "ms": null, "output": "OK guys 我先下线了，明天见。", "provider": "aliyun-professional", "round": 3, "skipped": true}
+{"error": "", "item": "cs-3", "ms": null, "output": "OK guys 我先下线了，明天见。", "provider": "deepseek", "round": 3, "skipped": true}
+{"error": "", "item": "cs-3", "ms": null, "output": "OK guys 我先下线了，明天见。", "provider": "xiaomi", "round": 3, "skipped": true}
+{"error": "", "item": "cs-4", "ms": null, "output": "이거 한국에서 온 거예요? 看着像国内的模型。", "provider": "tencent", "round": 3, "skipped": true}
+{"error": "", "item": "cs-4", "ms": null, "output": "이거 한국에서 온 거예요? 看着像国内的模型。", "provider": "aliyun-general", "round": 3, "skipped": true}
+{"error": "", "item": "cs-4", "ms": null, "output": "이거 한국에서 온 거예요? 看着像国内的模型。", "provider": "aliyun-professional", "round": 3, "skipped": true}
+{"error": "", "item": "cs-4", "ms": null, "output": "이거 한국에서 온 거예요? 看着像国内的模型。", "provider": "deepseek", "round": 3, "skipped": true}
+{"error": "", "item": "cs-4", "ms": null, "output": "이거 한국에서 온 거예요? 看着像国内的模型。", "provider": "xiaomi", "round": 3, "skipped": true}
+{"error": "", "item": "cs-5", "ms": null, "output": "唔该晒，我而家去换衫，wait for me。", "provider": "tencent", "round": 3, "skipped": true}
+{"error": "", "item": "cs-5", "ms": null, "output": "唔该晒，我而家去换衫，wait for me。", "provider": "aliyun-general", "round": 3, "skipped": true}
+{"error": "", "item": "cs-5", "ms": null, "output": "唔该晒，我而家去换衫，wait for me。", "provider": "aliyun-professional", "round": 3, "skipped": true}
+{"error": "", "item": "cs-5", "ms": null, "output": "唔该晒，我而家去换衫，wait for me。", "provider": "deepseek", "round": 3, "skipped": true}
+{"error": "", "item": "cs-5", "ms": null, "output": "唔该晒，我而家去换衫，wait for me。", "provider": "xiaomi", "round": 3, "skipped": true}
+{"error": "", "item": "2sp-1", "ms": null, "output": "A: 你好，初次见面。B: Hi! Nice to meet you, I'm from Canada.", "provider": "tencent", "round": 3, "skipped": true}
+{"error": "", "item": "2sp-1", "ms": null, "output": "A: 你好，初次见面。B: Hi! Nice to meet you, I'm from Canada.", "provider": "aliyun-general", "round": 3, "skipped": true}
+{"error": "", "item": "2sp-1", "ms": null, "output": "A: 你好，初次见面。B: Hi! Nice to meet you, I'm from Canada.", "provider": "aliyun-professional", "round": 3, "skipped": true}
+{"error": "", "item": "2sp-1", "ms": null, "output": "A: 你好，初次见面。B: Hi! Nice to meet you, I'm from Canada.", "provider": "deepseek", "round": 3, "skipped": true}
+{"error": "", "item": "2sp-1", "ms": null, "output": "A: 你好，初次见面。B: Hi! Nice to meet you, I'm from Canada.", "provider": "xiaomi", "round": 3, "skipped": true}
+{"error": "", "item": "2sp-2", "ms": null, "output": "A: これどうやって開くの？B: 按一下那边的按钮就行了。", "provider": "tencent", "round": 3, "skipped": true}
+{"error": "", "item": "2sp-2", "ms": null, "output": "A: これどうやって開くの？B: 按一下那边的按钮就行了。", "provider": "aliyun-general", "round": 3, "skipped": true}
+{"error": "", "item": "2sp-2", "ms": null, "output": "A: これどうやって開くの？B: 按一下那边的按钮就行了。", "provider": "aliyun-professional", "round": 3, "skipped": true}
+{"error": "", "item": "2sp-2", "ms": null, "output": "A: これどうやって開くの？B: 按一下那边的按钮就行了。", "provider": "deepseek", "round": 3, "skipped": true}
+{"error": "", "item": "2sp-2", "ms": null, "output": "A: これどうやって開くの？B: 按一下那边的按钮就行了。", "provider": "xiaomi", "round": 3, "skipped": true}
+{"error": "", "item": "2sp-3", "ms": null, "output": "A: Are you joining the event tonight? B: 应该会去，你要一起吗？", "provider": "tencent", "round": 3, "skipped": true}
+{"error": "", "item": "2sp-3", "ms": null, "output": "A: Are you joining the event tonight? B: 应该会去，你要一起吗？", "provider": "aliyun-general", "round": 3, "skipped": true}
+{"error": "", "item": "2sp-3", "ms": null, "output": "A: Are you joining the event tonight? B: 应该会去，你要一起吗？", "provider": "aliyun-professional", "round": 3, "skipped": true}
+{"error": "", "item": "2sp-3", "ms": null, "output": "A: Are you joining the event tonight? B: 应该会去，你要一起吗？", "provider": "deepseek", "round": 3, "skipped": true}
+{"error": "", "item": "2sp-3", "ms": null, "output": "A: Are you joining the event tonight? B: 应该会去，你要一起吗？", "provider": "xiaomi", "round": 3, "skipped": true}
+{"error": "", "item": "zh-1", "ms": null, "output": "开饭时间早上9点至下午5点。", "provider": "tencent", "round": 4, "skipped": true}
+{"error": "", "item": "zh-1", "ms": null, "output": "开饭时间早上9点至下午5点。", "provider": "aliyun-general", "round": 4, "skipped": true}
+{"error": "", "item": "zh-1", "ms": null, "output": "开饭时间早上9点至下午5点。", "provider": "aliyun-professional", "round": 4, "skipped": true}
+{"error": "", "item": "zh-1", "ms": null, "output": "开饭时间早上9点至下午5点。", "provider": "deepseek", "round": 4, "skipped": true}
+{"error": "", "item": "zh-1", "ms": null, "output": "开饭时间早上9点至下午5点。", "provider": "xiaomi", "round": 4, "skipped": true}
+{"error": "", "item": "zh-2", "ms": null, "output": "你那边网络是不是卡了？我看你一直在原地转圈。", "provider": "tencent", "round": 4, "skipped": true}
+{"error": "", "item": "zh-2", "ms": null, "output": "你那边网络是不是卡了？我看你一直在原地转圈。", "provider": "aliyun-general", "round": 4, "skipped": true}
+{"error": "", "item": "zh-2", "ms": null, "output": "你那边网络是不是卡了？我看你一直在原地转圈。", "provider": "aliyun-professional", "round": 4, "skipped": true}
+{"error": "", "item": "zh-2", "ms": null, "output": "你那边网络是不是卡了？我看你一直在原地转圈。", "provider": "deepseek", "round": 4, "skipped": true}
+{"error": "", "item": "zh-2", "ms": null, "output": "你那边网络是不是卡了？我看你一直在原地转圈。", "provider": "xiaomi", "round": 4, "skipped": true}
+{"error": "", "item": "zh-3", "ms": null, "output": "这个图好像有人掉线了，我们等一下吧。", "provider": "tencent", "round": 4, "skipped": true}
+{"error": "", "item": "zh-3", "ms": null, "output": "这个图好像有人掉线了，我们等一下吧。", "provider": "aliyun-general", "round": 4, "skipped": true}
+{"error": "", "item": "zh-3", "ms": null, "output": "这个图好像有人掉线了，我们等一下吧。", "provider": "aliyun-professional", "round": 4, "skipped": true}
+{"error": "", "item": "zh-3", "ms": null, "output": "这个图好像有人掉线了，我们等一下吧。", "provider": "deepseek", "round": 4, "skipped": true}
+{"error": "", "item": "zh-3", "ms": null, "output": "这个图好像有人掉线了，我们等一下吧。", "provider": "xiaomi", "round": 4, "skipped": true}
+{"error": "", "item": "yue-1", "ms": null, "output": "唔该你帮我睇下佢系咪企喺门口。", "provider": "tencent", "round": 4, "skipped": true}
+{"error": "", "item": "yue-1", "ms": null, "output": "唔该你帮我睇下佢系咪企喺门口。", "provider": "aliyun-general", "round": 4, "skipped": true}
+{"error": "", "item": "yue-1", "ms": null, "output": "唔该你帮我睇下佢系咪企喺门口。", "provider": "aliyun-professional", "round": 4, "skipped": true}
+{"error": "", "item": "yue-1", "ms": null, "output": "唔该你帮我睇下佢系咪企喺门口。", "provider": "deepseek", "round": 4, "skipped": true}
+{"error": "", "item": "yue-1", "ms": null, "output": "唔该你帮我睇下佢系咪企喺门口。", "provider": "xiaomi", "round": 4, "skipped": true}
+{"error": "", "item": "yue-2", "ms": null, "output": "我今日唔得闲，听日先啦。", "provider": "tencent", "round": 4, "skipped": true}
+{"error": "", "item": "yue-2", "ms": null, "output": "我今日唔得闲，听日先啦。", "provider": "aliyun-general", "round": 4, "skipped": true}
+{"error": "", "item": "yue-2", "ms": null, "output": "我今日唔得闲，听日先啦。", "provider": "aliyun-professional", "round": 4, "skipped": true}
+{"error": "", "item": "yue-2", "ms": null, "output": "我今日唔得闲，听日先啦。", "provider": "deepseek", "round": 4, "skipped": true}
+{"error": "", "item": "yue-2", "ms": null, "output": "我今日唔得闲，听日先啦。", "provider": "xiaomi", "round": 4, "skipped": true}
+{"error": "", "item": "en-1", "ms": 239.4, "output": "嘿，你现在能听到我说话了吗？我刚刚修好了我的麦克风。", "provider": "tencent", "round": 4, "skipped": false}
+{"error": "", "item": "en-1", "ms": 194.8, "output": "嘿，你现在能听到我吗？我刚修好了我的麦克风。", "provider": "aliyun-general", "round": 4, "skipped": false}
+{"error": "", "item": "en-1", "ms": 335.7, "output": "嘿，你现在能听到我吗？我刚修好了我的麦克风。", "provider": "aliyun-professional", "round": 4, "skipped": false}
+{"error": "", "item": "en-1", "ms": 555.6, "output": "嘿，你现在能听到我说话吗？我刚修好了我的麦克风。", "provider": "deepseek", "round": 4, "skipped": false}
+{"error": "", "item": "en-1", "ms": 1576.8, "output": "嘿，现在能听到我说话了吗？我刚修好了麦克风。", "provider": "xiaomi", "round": 4, "skipped": false}
+{"error": "", "item": "en-2", "ms": 169.7, "output": "是的，听起来很有趣，今晚晚些时候下班后我会继续。", "provider": "tencent", "round": 4, "skipped": false}
+{"error": "", "item": "en-2", "ms": 300.4, "output": "嗯，听起来挺好玩的，我今晚下班后再上线。", "provider": "aliyun-general", "round": 4, "skipped": false}
+{"error": "", "item": "en-2", "ms": 207.1, "output": "嗯，听起来挺好玩的，我今晚下班后再上线。", "provider": "aliyun-professional", "round": 4, "skipped": false}
+{"error": "", "item": "en-2", "ms": 342.9, "output": "是啊，听起来挺有趣的，我今晚下班后会加入。", "provider": "deepseek", "round": 4, "skipped": false}
+{"error": "", "item": "en-2", "ms": 660.7, "output": "听起来挺有意思的，我今晚下班后就上线。", "provider": "xiaomi", "round": 4, "skipped": false}
+{"error": "", "item": "en-3", "ms": 241.4, "output": "抱歉，我的麦克风停了一下，你说什么？", "provider": "tencent", "round": 4, "skipped": false}
+{"error": "", "item": "en-3", "ms": 186.4, "output": "抱歉，我的麦克风刚才断了一下，你刚才说什么？", "provider": "aliyun-general", "round": 4, "skipped": false}
+{"error": "", "item": "en-3", "ms": 186.3, "output": "抱歉，我的麦克风刚才断了一下，你刚才说什么？", "provider": "aliyun-professional", "round": 4, "skipped": false}
+{"error": "", "item": "en-3", "ms": 634.5, "output": "抱歉，我的麦克风刚才断了一下，你说什么？", "provider": "deepseek", "round": 4, "skipped": false}
+{"error": "", "item": "en-3", "ms": 819.5, "output": "抱歉，我的麦克风刚才断了一下，你说了什么？", "provider": "xiaomi", "round": 4, "skipped": false}
+{"error": "", "item": "en-4", "ms": 175.7, "output": "你能告诉我你在哪里得到那个化身吗？我一直在寻找这样的。", "provider": "tencent", "round": 4, "skipped": false}
+{"error": "", "item": "en-4", "ms": 183.5, "output": "你能告诉我你是在哪里得到那个头像的吗？我一直在找一个像这样的。", "provider": "aliyun-general", "round": 4, "skipped": false}
+{"error": "", "item": "en-4", "ms": 197.7, "output": "你能告诉我你是在哪里得到那个头像的吗？我一直在找一个像这样的。", "provider": "aliyun-professional", "round": 4, "skipped": false}
+{"error": "", "item": "en-4", "ms": 390.5, "output": "你能告诉我你从哪里得到那个头像的吗？我一直在找像那样的。", "provider": "deepseek", "round": 4, "skipped": false}
+{"error": "", "item": "en-4", "ms": 789.0, "output": "你能告诉我你从哪里得到那个头像的吗？我一直在找类似的头像。", "provider": "xiaomi", "round": 4, "skipped": false}
+{"error": "", "item": "en-5", "ms": 247.1, "output": "现在滞后真的很严重，我认为服务器正在苦苦挣扎。", "provider": "tencent", "round": 4, "skipped": false}
+{"error": "", "item": "en-5", "ms": 291.0, "output": "现在的延迟真的很严重，我觉得服务器有点吃力。", "provider": "aliyun-general", "round": 4, "skipped": false}
+{"error": "", "item": "en-5", "ms": 290.5, "output": "现在的延迟真的很严重，我觉得服务器有点吃力。", "provider": "aliyun-professional", "round": 4, "skipped": false}
+{"error": "", "item": "en-5", "ms": 684.8, "output": "现在的延迟真的很严重，我觉得服务器有点撑不住了。", "provider": "deepseek", "round": 4, "skipped": false}
+{"error": "", "item": "en-5", "ms": 630.8, "output": "现在延迟真的很严重，我觉得服务器可能快撑不住了。", "provider": "xiaomi", "round": 4, "skipped": false}
+{"error": "", "item": "ja-1", "ms": null, "output": "うちの中学は弁当制で持っていきない場合は50円の学校販売のパンを買う。", "provider": "tencent", "round": 4, "skipped": true}
+{"error": "", "item": "ja-1", "ms": null, "output": "うちの中学は弁当制で持っていきない場合は50円の学校販売のパンを買う。", "provider": "aliyun-general", "round": 4, "skipped": true}
+{"error": "", "item": "ja-1", "ms": null, "output": "うちの中学は弁当制で持っていきない場合は50円の学校販売のパンを買う。", "provider": "aliyun-professional", "round": 4, "skipped": true}
+{"error": "", "item": "ja-1", "ms": null, "output": "うちの中学は弁当制で持っていきない場合は50円の学校販売のパンを買う。", "provider": "deepseek", "round": 4, "skipped": true}
+{"error": "", "item": "ja-1", "ms": null, "output": "うちの中学は弁当制で持っていきない場合は50円の学校販売のパンを買う。", "provider": "xiaomi", "round": 4, "skipped": true}
+{"error": "", "item": "ja-2", "ms": null, "output": "ちょっと待って、いま準備してるから。", "provider": "tencent", "round": 4, "skipped": true}
+{"error": "", "item": "ja-2", "ms": null, "output": "ちょっと待って、いま準備してるから。", "provider": "aliyun-general", "round": 4, "skipped": true}
+{"error": "", "item": "ja-2", "ms": null, "output": "ちょっと待って、いま準備してるから。", "provider": "aliyun-professional", "round": 4, "skipped": true}
+{"error": "", "item": "ja-2", "ms": null, "output": "ちょっと待って、いま準備してるから。", "provider": "deepseek", "round": 4, "skipped": true}
+{"error": "", "item": "ja-2", "ms": null, "output": "ちょっと待って、いま準備してるから。", "provider": "xiaomi", "round": 4, "skipped": true}
+{"error": "", "item": "ja-3", "ms": null, "output": "このワールド、前に来たことある気がする。", "provider": "tencent", "round": 4, "skipped": true}
+{"error": "", "item": "ja-3", "ms": null, "output": "このワールド、前に来たことある気がする。", "provider": "aliyun-general", "round": 4, "skipped": true}
+{"error": "", "item": "ja-3", "ms": null, "output": "このワールド、前に来たことある気がする。", "provider": "aliyun-professional", "round": 4, "skipped": true}
+{"error": "", "item": "ja-3", "ms": null, "output": "このワールド、前に来たことある気がする。", "provider": "deepseek", "round": 4, "skipped": true}
+{"error": "", "item": "ja-3", "ms": null, "output": "このワールド、前に来たことある気がする。", "provider": "xiaomi", "round": 4, "skipped": true}
+{"error": "", "item": "ja-4", "ms": null, "output": "ごめん、いまマイクの調子が悪くて聞こえないかも。", "provider": "tencent", "round": 4, "skipped": true}
+{"error": "", "item": "ja-4", "ms": null, "output": "ごめん、いまマイクの調子が悪くて聞こえないかも。", "provider": "aliyun-general", "round": 4, "skipped": true}
+{"error": "", "item": "ja-4", "ms": null, "output": "ごめん、いまマイクの調子が悪くて聞こえないかも。", "provider": "aliyun-professional", "round": 4, "skipped": true}
+{"error": "", "item": "ja-4", "ms": null, "output": "ごめん、いまマイクの調子が悪くて聞こえないかも。", "provider": "deepseek", "round": 4, "skipped": true}
+{"error": "", "item": "ja-4", "ms": null, "output": "ごめん、いまマイクの調子が悪くて聞こえないかも。", "provider": "xiaomi", "round": 4, "skipped": true}
+{"error": "", "item": "ja-5", "ms": null, "output": "まだ合流できてないんだけど、先にワールド回ってて。", "provider": "tencent", "round": 4, "skipped": true}
+{"error": "", "item": "ja-5", "ms": null, "output": "まだ合流できてないんだけど、先にワールド回ってて。", "provider": "aliyun-general", "round": 4, "skipped": true}
+{"error": "", "item": "ja-5", "ms": null, "output": "まだ合流できてないんだけど、先にワールド回ってて。", "provider": "aliyun-professional", "round": 4, "skipped": true}
+{"error": "", "item": "ja-5", "ms": null, "output": "まだ合流できてないんだけど、先にワールド回ってて。", "provider": "deepseek", "round": 4, "skipped": true}
+{"error": "", "item": "ja-5", "ms": null, "output": "まだ合流できてないんだけど、先にワールド回ってて。", "provider": "xiaomi", "round": 4, "skipped": true}
+{"error": "", "item": "ko-1", "ms": 262.7, "output": "麦克风听不见了 ， 你能再说一遍吗 ？", "provider": "tencent", "round": 4, "skipped": false}
+{"error": "", "item": "ko-1", "ms": 491.0, "output": "我听不见你——你能再说一遍吗？", "provider": "aliyun-general", "round": 4, "skipped": false}
+{"error": "", "item": "ko-1", "ms": 281.0, "output": "我的麦克风没打开，能再说一遍吗？", "provider": "aliyun-professional", "round": 4, "skipped": false}
+{"error": "", "item": "ko-1", "ms": 515.6, "output": "麦克风听不到，你能再说一遍吗？", "provider": "deepseek", "round": 4, "skipped": false}
+{"error": "", "item": "ko-1", "ms": 773.4, "output": "麦克风没声音，能再说一遍吗？", "provider": "xiaomi", "round": 4, "skipped": false}
+{"error": "", "item": "ko-2", "ms": 238.3, "output": "这个世界真的很美 ， 你在哪里看到的 ？", "provider": "tencent", "round": 4, "skipped": false}
+{"error": "", "item": "ko-2", "ms": 415.5, "output": "这个世界真美——你是在哪里看到的？", "provider": "aliyun-general", "round": 4, "skipped": false}
+{"error": "", "item": "ko-2", "ms": 179.7, "output": "这个世界真漂亮，好像在哪儿见过？", "provider": "aliyun-professional", "round": 4, "skipped": false}
+{"error": "", "item": "ko-2", "ms": 381.0, "output": "这个世界真漂亮，你在哪里看到的？", "provider": "deepseek", "round": 4, "skipped": false}
+{"error": "", "item": "ko-2", "ms": 524.2, "output": "这个世界真漂亮，你在哪里看到的？", "provider": "xiaomi", "round": 4, "skipped": false}
+{"error": "", "item": "ko-3", "ms": 243.0, "output": "因为雷克 ， 我现在动不了了。", "provider": "tencent", "round": 4, "skipped": false}
+{"error": "", "item": "ko-3", "ms": 457.5, "output": "我现在因为延迟动不了。", "provider": "aliyun-general", "round": 4, "skipped": false}
+{"error": "", "item": "ko-3", "ms": 301.8, "output": "我现在因为卡顿动不了了。", "provider": "aliyun-professional", "round": 4, "skipped": false}
+{"error": "", "item": "ko-3", "ms": 447.2, "output": "我现在因为卡顿动不了了。", "provider": "deepseek", "round": 4, "skipped": false}
+{"error": "", "item": "ko-3", "ms": 687.3, "output": "我现在卡得动不了了。", "provider": "xiaomi", "round": 4, "skipped": false}
+{"error": "", "item": "ko-4", "ms": 273.7, "output": "等一下 ， 我来换个化身。", "provider": "tencent", "round": 4, "skipped": false}
+{"error": "", "item": "ko-4", "ms": 363.8, "output": "等一下，我换个头像，马上回来。", "provider": "aliyun-general", "round": 4, "skipped": false}
+{"error": "", "item": "ko-4", "ms": 270.1, "output": "等会儿，我会洗完澡就来。", "provider": "aliyun-professional", "round": 4, "skipped": false}
+{"error": "", "item": "ko-4", "ms": 306.5, "output": "等一下，我换个头像就来。", "provider": "deepseek", "round": 4, "skipped": false}
+{"error": "", "item": "ko-4", "ms": 788.7, "output": "等一下，我去换个头像就来。", "provider": "xiaomi", "round": 4, "skipped": false}
+{"error": "", "item": "cs-1", "ms": null, "output": "这个ワールド昨天我逛过了，挺有意思的。", "provider": "tencent", "round": 4, "skipped": true}
+{"error": "", "item": "cs-1", "ms": null, "output": "这个ワールド昨天我逛过了，挺有意思的。", "provider": "aliyun-general", "round": 4, "skipped": true}
+{"error": "", "item": "cs-1", "ms": null, "output": "这个ワールド昨天我逛过了，挺有意思的。", "provider": "aliyun-professional", "round": 4, "skipped": true}
+{"error": "", "item": "cs-1", "ms": null, "output": "这个ワールド昨天我逛过了，挺有意思的。", "provider": "deepseek", "round": 4, "skipped": true}
+{"error": "", "item": "cs-1", "ms": null, "output": "这个ワールド昨天我逛过了，挺有意思的。", "provider": "xiaomi", "round": 4, "skipped": true}
+{"error": "", "item": "cs-2", "ms": null, "output": "ちょっと待って、我换个avatar就来。", "provider": "tencent", "round": 4, "skipped": true}
+{"error": "", "item": "cs-2", "ms": null, "output": "ちょっと待って、我换个avatar就来。", "provider": "aliyun-general", "round": 4, "skipped": true}
+{"error": "", "item": "cs-2", "ms": null, "output": "ちょっと待って、我换个avatar就来。", "provider": "aliyun-professional", "round": 4, "skipped": true}
+{"error": "", "item": "cs-2", "ms": null, "output": "ちょっと待って、我换个avatar就来。", "provider": "deepseek", "round": 4, "skipped": true}
+{"error": "", "item": "cs-2", "ms": null, "output": "ちょっと待って、我换个avatar就来。", "provider": "xiaomi", "round": 4, "skipped": true}
+{"error": "", "item": "cs-3", "ms": null, "output": "OK guys 我先下线了，明天见。", "provider": "tencent", "round": 4, "skipped": true}
+{"error": "", "item": "cs-3", "ms": null, "output": "OK guys 我先下线了，明天见。", "provider": "aliyun-general", "round": 4, "skipped": true}
+{"error": "", "item": "cs-3", "ms": null, "output": "OK guys 我先下线了，明天见。", "provider": "aliyun-professional", "round": 4, "skipped": true}
+{"error": "", "item": "cs-3", "ms": null, "output": "OK guys 我先下线了，明天见。", "provider": "deepseek", "round": 4, "skipped": true}
+{"error": "", "item": "cs-3", "ms": null, "output": "OK guys 我先下线了，明天见。", "provider": "xiaomi", "round": 4, "skipped": true}
+{"error": "", "item": "cs-4", "ms": null, "output": "이거 한국에서 온 거예요? 看着像国内的模型。", "provider": "tencent", "round": 4, "skipped": true}
+{"error": "", "item": "cs-4", "ms": null, "output": "이거 한국에서 온 거예요? 看着像国内的模型。", "provider": "aliyun-general", "round": 4, "skipped": true}
+{"error": "", "item": "cs-4", "ms": null, "output": "이거 한국에서 온 거예요? 看着像国内的模型。", "provider": "aliyun-professional", "round": 4, "skipped": true}
+{"error": "", "item": "cs-4", "ms": null, "output": "이거 한국에서 온 거예요? 看着像国内的模型。", "provider": "deepseek", "round": 4, "skipped": true}
+{"error": "", "item": "cs-4", "ms": null, "output": "이거 한국에서 온 거예요? 看着像国内的模型。", "provider": "xiaomi", "round": 4, "skipped": true}
+{"error": "", "item": "cs-5", "ms": null, "output": "唔该晒，我而家去换衫，wait for me。", "provider": "tencent", "round": 4, "skipped": true}
+{"error": "", "item": "cs-5", "ms": null, "output": "唔该晒，我而家去换衫，wait for me。", "provider": "aliyun-general", "round": 4, "skipped": true}
+{"error": "", "item": "cs-5", "ms": null, "output": "唔该晒，我而家去换衫，wait for me。", "provider": "aliyun-professional", "round": 4, "skipped": true}
+{"error": "", "item": "cs-5", "ms": null, "output": "唔该晒，我而家去换衫，wait for me。", "provider": "deepseek", "round": 4, "skipped": true}
+{"error": "", "item": "cs-5", "ms": null, "output": "唔该晒，我而家去换衫，wait for me。", "provider": "xiaomi", "round": 4, "skipped": true}
+{"error": "", "item": "2sp-1", "ms": null, "output": "A: 你好，初次见面。B: Hi! Nice to meet you, I'm from Canada.", "provider": "tencent", "round": 4, "skipped": true}
+{"error": "", "item": "2sp-1", "ms": null, "output": "A: 你好，初次见面。B: Hi! Nice to meet you, I'm from Canada.", "provider": "aliyun-general", "round": 4, "skipped": true}
+{"error": "", "item": "2sp-1", "ms": null, "output": "A: 你好，初次见面。B: Hi! Nice to meet you, I'm from Canada.", "provider": "aliyun-professional", "round": 4, "skipped": true}
+{"error": "", "item": "2sp-1", "ms": null, "output": "A: 你好，初次见面。B: Hi! Nice to meet you, I'm from Canada.", "provider": "deepseek", "round": 4, "skipped": true}
+{"error": "", "item": "2sp-1", "ms": null, "output": "A: 你好，初次见面。B: Hi! Nice to meet you, I'm from Canada.", "provider": "xiaomi", "round": 4, "skipped": true}
+{"error": "", "item": "2sp-2", "ms": null, "output": "A: これどうやって開くの？B: 按一下那边的按钮就行了。", "provider": "tencent", "round": 4, "skipped": true}
+{"error": "", "item": "2sp-2", "ms": null, "output": "A: これどうやって開くの？B: 按一下那边的按钮就行了。", "provider": "aliyun-general", "round": 4, "skipped": true}
+{"error": "", "item": "2sp-2", "ms": null, "output": "A: これどうやって開くの？B: 按一下那边的按钮就行了。", "provider": "aliyun-professional", "round": 4, "skipped": true}
+{"error": "", "item": "2sp-2", "ms": null, "output": "A: これどうやって開くの？B: 按一下那边的按钮就行了。", "provider": "deepseek", "round": 4, "skipped": true}
+{"error": "", "item": "2sp-2", "ms": null, "output": "A: これどうやって開くの？B: 按一下那边的按钮就行了。", "provider": "xiaomi", "round": 4, "skipped": true}
+{"error": "", "item": "2sp-3", "ms": null, "output": "A: Are you joining the event tonight? B: 应该会去，你要一起吗？", "provider": "tencent", "round": 4, "skipped": true}
+{"error": "", "item": "2sp-3", "ms": null, "output": "A: Are you joining the event tonight? B: 应该会去，你要一起吗？", "provider": "aliyun-general", "round": 4, "skipped": true}
+{"error": "", "item": "2sp-3", "ms": null, "output": "A: Are you joining the event tonight? B: 应该会去，你要一起吗？", "provider": "aliyun-professional", "round": 4, "skipped": true}
+{"error": "", "item": "2sp-3", "ms": null, "output": "A: Are you joining the event tonight? B: 应该会去，你要一起吗？", "provider": "deepseek", "round": 4, "skipped": true}
+{"error": "", "item": "2sp-3", "ms": null, "output": "A: Are you joining the event tonight? B: 应该会去，你要一起吗？", "provider": "xiaomi", "round": 4, "skipped": true}

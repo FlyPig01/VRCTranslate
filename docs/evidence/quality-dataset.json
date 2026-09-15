@@ -1,0 +1,203 @@
+{
+  "meta": {
+    "name": "VRCTranslate 翻译质量评测集 v1",
+    "purpose": "他人语音字幕场景：把非中文语音译成简体中文字幕。用于 chrF/BLEU 打分。",
+    "reference": "gold = 中文参考译文（人工撰写，口语风格，非逐字直译）",
+    "note": "参考译文不是唯一正确答案；chrF/BLEU 只用于同一评测集上横向比较不同引擎。"
+  },
+  "single_language": [
+    {
+      "id": "zh-1",
+      "lang": "zh",
+      "source": "开饭时间早上9点至下午5点。",
+      "gold": "开饭时间早上9点至下午5点。",
+      "category": "中文（应跳过翻译）"
+    },
+    {
+      "id": "zh-2",
+      "lang": "zh",
+      "source": "你那边网络是不是卡了？我看你一直在原地转圈。",
+      "gold": "你那边网络是不是卡了？我看你一直在原地转圈。",
+      "category": "中文（应跳过翻译）"
+    },
+    {
+      "id": "zh-3",
+      "lang": "zh",
+      "source": "这个图好像有人掉线了，我们等一下吧。",
+      "gold": "这个图好像有人掉线了，我们等一下吧。",
+      "category": "中文（应跳过翻译）"
+    },
+    {
+      "id": "yue-1",
+      "lang": "yue",
+      "source": "唔该你帮我睇下佢系咪企喺门口。",
+      "gold": "麻烦你帮我看一下他是不是站在门口。",
+      "category": "粤语（书面中文，非普通话）"
+    },
+    {
+      "id": "yue-2",
+      "lang": "yue",
+      "source": "我今日唔得闲，听日先啦。",
+      "gold": "我今天没空，明天再说吧。",
+      "category": "粤语"
+    },
+    {
+      "id": "en-1",
+      "lang": "en",
+      "source": "Hey, can you hear me now? I just fixed my microphone.",
+      "gold": "嘿，你现在能听到我说话吗？我刚把麦克风修好了。",
+      "category": "英语"
+    },
+    {
+      "id": "en-2",
+      "lang": "en",
+      "source": "Yeah that sounds fun, I'll hop on later tonight after work.",
+      "gold": "好啊，听起来挺有意思，我今晚下班后再上线。",
+      "category": "英语"
+    },
+    {
+      "id": "en-3",
+      "lang": "en",
+      "source": "Sorry, my mic cut out for a second, what did you say?",
+      "gold": "抱歉，我麦克风刚才断了一下，你说什么？",
+      "category": "英语"
+    },
+    {
+      "id": "en-4",
+      "lang": "en",
+      "source": "Can you show me where you got that avatar? I have been looking for one like it.",
+      "gold": "能告诉我你这个模型是在哪弄的吗？我一直在找这种的。",
+      "category": "英语"
+    },
+    {
+      "id": "en-5",
+      "lang": "en",
+      "source": "The lag is really bad right now, I think the server is struggling.",
+      "gold": "现在延迟特别严重，我觉得服务器快撑不住了。",
+      "category": "英语"
+    },
+    {
+      "id": "ja-1",
+      "lang": "ja",
+      "source": "うちの中学は弁当制で持っていきない場合は50円の学校販売のパンを買う。",
+      "gold": "我们中学是盒饭制，没带饭的话就花50日元买学校卖的麵包。",
+      "category": "日语"
+    },
+    {
+      "id": "ja-2",
+      "lang": "ja",
+      "source": "ちょっと待って、いま準備してるから。",
+      "gold": "稍等一下，我现在正在准备。",
+      "category": "日语"
+    },
+    {
+      "id": "ja-3",
+      "lang": "ja",
+      "source": "このワールド、前に来たことある気がする。",
+      "gold": "这个世界我好像以前来过。",
+      "category": "日语"
+    },
+    {
+      "id": "ja-4",
+      "lang": "ja",
+      "source": "ごめん、いまマイクの調子が悪くて聞こえないかも。",
+      "gold": "不好意思，我麦克风现在有点问题，可能听不到。",
+      "category": "日语"
+    },
+    {
+      "id": "ja-5",
+      "lang": "ja",
+      "source": "まだ合流できてないんだけど、先にワールド回ってて。",
+      "gold": "我还没法进房间，你们先逛着这个世界。",
+      "category": "日语"
+    },
+    {
+      "id": "ko-1",
+      "lang": "ko",
+      "source": "마이크가 안 들려서 다시 말해 줄래?",
+      "gold": "听不到你麦克风，能再说一遍吗？",
+      "category": "韩语"
+    },
+    {
+      "id": "ko-2",
+      "lang": "ko",
+      "source": "이 월드 진짜 예쁘다, 어디서 본 거야?",
+      "gold": "这个世界真漂亮，你从哪看到的？",
+      "category": "韩语"
+    },
+    {
+      "id": "ko-3",
+      "lang": "ko",
+      "source": "나 지금 렉 때문에 못 움직이겠어.",
+      "gold": "我现在卡得动不了了。",
+      "category": "韩语"
+    },
+    {
+      "id": "ko-4",
+      "lang": "ko",
+      "source": "잠깐만, 아바타 바꾸고 올게.",
+      "gold": "等我一下，我换个模型就来。",
+      "category": "韩语"
+    }
+  ],
+  "code_switching": [
+    {
+      "id": "cs-1",
+      "lang": "mix",
+      "source": "这个ワールド昨天我逛过了，挺有意思的。",
+      "gold": "这个世界我昨天逛过了，挺有意思的。",
+      "category": "中+日 混说"
+    },
+    {
+      "id": "cs-2",
+      "lang": "mix",
+      "source": "ちょっと待って、我换个avatar就来。",
+      "gold": "稍等一下，我换个模型就来。",
+      "category": "日+英 混说"
+    },
+    {
+      "id": "cs-3",
+      "lang": "mix",
+      "source": "OK guys 我先下线了，明天见。",
+      "gold": "好的各位，我先下线了，明天见。",
+      "category": "英+中 混说"
+    },
+    {
+      "id": "cs-4",
+      "lang": "mix",
+      "source": "이거 한국에서 온 거예요? 看着像国内的模型。",
+      "gold": "这是从韩国来的吗？看着像国内的模型。",
+      "category": "韩+中 混说"
+    },
+    {
+      "id": "cs-5",
+      "lang": "mix",
+      "source": "唔该晒，我而家去换衫，wait for me。",
+      "gold": "谢谢啦，我现在去换衣服，等我一下。",
+      "category": "粤+英 混说"
+    }
+  ],
+  "two_speakers": [
+    {
+      "id": "2sp-1",
+      "lang": "mix",
+      "source": "A: 你好，初次见面。B: Hi! Nice to meet you, I'm from Canada.",
+      "gold": "A：你好，初次见面。B：你好！很高兴认识你，我是加拿大人。",
+      "category": "两人对话：中+英"
+    },
+    {
+      "id": "2sp-2",
+      "lang": "mix",
+      "source": "A: これどうやって開くの？B: 按一下那边的按钮就行了。",
+      "gold": "A：这个怎么打开？B：按一下那边的按钮就行了。",
+      "category": "两人对话：日+中"
+    },
+    {
+      "id": "2sp-3",
+      "lang": "mix",
+      "source": "A: Are you joining the event tonight? B: 应该会去，你要一起吗？",
+      "gold": "A：你今晚参加活动吗？B：应该会去，你要一起吗？",
+      "category": "两人对话：英+中"
+    }
+  ]
+}

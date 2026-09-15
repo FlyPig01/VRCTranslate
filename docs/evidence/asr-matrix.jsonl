@@ -1,0 +1,50 @@
+{"detected": "auto", "file": "zh", "mode": "auto", "ms_max": 165.9, "ms_median": 158.6, "ms_min": 153.9, "ms_p90": 161.8, "samples": 10, "text": "开饭时间早上9点至下午5点。"}
+{"detected": "zh", "file": "zh", "mode": "zh", "ms_max": 2161.9, "ms_median": 159.1, "ms_min": 155.3, "ms_p90": 163.0, "samples": 10, "text": "开饭时间早上9点至下午5点。"}
+{"detected": "ja", "file": "zh", "mode": "ja", "ms_max": 2444.4, "ms_median": 152.0, "ms_min": 148.8, "ms_p90": 166.5, "samples": 10, "text": "开饭时间早上9点至下午5点。"}
+{"detected": "ko", "file": "zh", "mode": "ko", "ms_max": 2450.6, "ms_median": 159.2, "ms_min": 151.4, "ms_p90": 163.1, "samples": 10, "text": "开饭时间早上9点至下午5点。"}
+{"detected": "en", "file": "zh", "mode": "en", "ms_max": 2407.0, "ms_median": 159.4, "ms_min": 157.2, "ms_p90": 160.8, "samples": 10, "text": "开饭时间早上9点至下午5点。"}
+{"detected": "auto", "file": "ja", "mode": "auto", "ms_max": 2404.5, "ms_median": 203.4, "ms_min": 193.9, "ms_p90": 208.1, "samples": 10, "text": "うちの中学は弁当制で持っていきない場合は50円の学校販売のパンを買う。"}
+{"detected": "zh", "file": "ja", "mode": "zh", "ms_max": 2343.3, "ms_median": 197.2, "ms_min": 191.4, "ms_p90": 203.2, "samples": 10, "text": "うちの中学は弁当制で持っていきない場合は50円の学校販売のパンを買う。"}
+{"detected": "ja", "file": "ja", "mode": "ja", "ms_max": 2355.2, "ms_median": 204.5, "ms_min": 195.2, "ms_p90": 208.7, "samples": 10, "text": "うちの中学は弁当制で持っていきない場合は50円の学校販売のパンを買う。"}
+{"detected": "ko", "file": "ja", "mode": "ko", "ms_max": 2416.9, "ms_median": 204.2, "ms_min": 200.2, "ms_p90": 208.4, "samples": 10, "text": "うちの中学は弁当制で持ってきない場合は50円の学校販売のパンを買う。"}
+{"detected": "en", "file": "ja", "mode": "en", "ms_max": 2413.5, "ms_median": 205.0, "ms_min": 193.5, "ms_p90": 209.7, "samples": 10, "text": "うちの中学は弁当制で持ってきない場合は50円の学校販売のパンを買う。"}
+{"detected": "auto", "file": "ko", "mode": "auto", "ms_max": 2446.9, "ms_median": 134.3, "ms_min": 127.6, "ms_p90": 138.4, "samples": 10, "text": "조금만 생각을 하면서 살면 훨씬 편할 거야."}
+{"detected": "zh", "file": "ko", "mode": "zh", "ms_max": 2493.2, "ms_median": 129.7, "ms_min": 125.1, "ms_p90": 133.4, "samples": 10, "text": "조금만 생각을 하면서 살면 훨씬 편할 거야."}
+{"detected": "ja", "file": "ko", "mode": "ja", "ms_max": 2302.2, "ms_median": 128.4, "ms_min": 125.9, "ms_p90": 130.6, "samples": 10, "text": "조금만 생각을 하면서 살면 훨씬 편할 거야."}
+{"detected": "ko", "file": "ko", "mode": "ko", "ms_max": 2211.5, "ms_median": 127.0, "ms_min": 123.0, "ms_p90": 131.4, "samples": 10, "text": "조금만 생각을 하면서 살면 훨씬 편할 거야."}
+{"detected": "en", "file": "ko", "mode": "en", "ms_max": 2359.5, "ms_median": 136.5, "ms_min": 130.1, "ms_p90": 137.1, "samples": 10, "text": "조금만 생각을 하면서 살면 훨씬 편할 거야."}
+{"detected": "auto", "file": "en", "mode": "auto", "ms_max": 2372.6, "ms_median": 196.6, "ms_min": 189.8, "ms_p90": 198.5, "samples": 10, "text": "The tribal chieftain called for the boy and presented him with 50 pieces of code."}
+{"detected": "zh", "file": "en", "mode": "zh", "ms_max": 2456.0, "ms_median": 192.8, "ms_min": 184.0, "ms_p90": 228.0, "samples": 10, "text": "The tribal chieftain called for the boy and presented him with 50 pieces of code."}
+{"detected": "ja", "file": "en", "mode": "ja", "ms_max": 2616.8, "ms_median": 201.6, "ms_min": 182.8, "ms_p90": 204.2, "samples": 10, "text": "The tribal chieftain called for the boy and presented him with 50 pieces of code."}
+{"detected": "ko", "file": "en", "mode": "ko", "ms_max": 2525.6, "ms_median": 201.6, "ms_min": 198.0, "ms_p90": 206.5, "samples": 10, "text": "The tribal chieftain called for the boy and presented him with 50 pieces of code."}
+{"detected": "en", "file": "en", "mode": "en", "ms_max": 2521.5, "ms_median": 203.0, "ms_min": 182.8, "ms_p90": 206.5, "samples": 10, "text": "The tribal chieftain called for the boy and presented him with 50 pieces of code."}
+{"detected": "auto", "file": "mix_zh_ja_seq", "mode": "auto", "ms_max": 2525.5, "ms_median": 336.1, "ms_min": 314.2, "ms_p90": 355.9, "samples": 10, "text": "开饭 うちの中学は弁当制で持っていきない場合は50円の学校販売のパンを買う。"}
+{"detected": "zh", "file": "mix_zh_ja_seq", "mode": "zh", "ms_max": 2495.9, "ms_median": 332.6, "ms_min": 310.9, "ms_p90": 360.5, "samples": 10, "text": "开饭9うちの中学は弁当制で持ってきない場合は50円の学校販売のパンを買う。"}
+{"detected": "ja", "file": "mix_zh_ja_seq", "mode": "ja", "ms_max": 2650.5, "ms_median": 325.6, "ms_min": 317.2, "ms_p90": 350.0, "samples": 10, "text": "开饭9 うちの中学は弁当制で持っていけない場合は50円の学校販売のパンを買う。"}
+{"detected": "ko", "file": "mix_zh_ja_seq", "mode": "ko", "ms_max": 2570.3, "ms_median": 330.9, "ms_min": 317.8, "ms_p90": 350.3, "samples": 10, "text": "うちの中学は弁当制で持てきない場合は50円の学校販売のパンを買う。"}
+{"detected": "en", "file": "mix_zh_ja_seq", "mode": "en", "ms_max": 2713.9, "ms_median": 317.0, "ms_min": 301.0, "ms_p90": 328.7, "samples": 10, "text": "うちの中学は弁当制で持てきない場合は50円の学校販売のパンを買う。"}
+{"detected": "auto", "file": "mix_en_ko_seq", "mode": "auto", "ms_max": 2491.3, "ms_median": 287.7, "ms_min": 283.8, "ms_p90": 299.4, "samples": 10, "text": "The tribal chieftain called for the boy and presented him with 50 pieces of good 조금만 생각을 하면서 살면 훨씬 편할 거야."}
+{"detected": "zh", "file": "mix_en_ko_seq", "mode": "zh", "ms_max": 2493.6, "ms_median": 291.8, "ms_min": 281.9, "ms_p90": 298.0, "samples": 10, "text": "The tribal chieftain called for the boy and presented him with 5 pieces of 조금만 생각을 하면서 살면 훨씬 편할 거야."}
+{"detected": "ja", "file": "mix_en_ko_seq", "mode": "ja", "ms_max": 2485.6, "ms_median": 286.7, "ms_min": 282.1, "ms_p90": 313.8, "samples": 10, "text": "The tribal chieftain called for the boy and presented him with 5 pieces of good 조금만 생각을 하면서 살면 훨씬 편할 거야."}
+{"detected": "ko", "file": "mix_en_ko_seq", "mode": "ko", "ms_max": 2473.3, "ms_median": 288.7, "ms_min": 283.5, "ms_p90": 315.7, "samples": 10, "text": "The tribal chieftain called for the boy and presented him with 5 pieces of good 조금만 생각을 하면서 살면 훨씬 편할 거야."}
+{"detected": "en", "file": "mix_en_ko_seq", "mode": "en", "ms_max": 2619.4, "ms_median": 299.6, "ms_min": 289.2, "ms_p90": 316.9, "samples": 10, "text": "The tribal chieftain called for the boy and presented him with 50 pieces of good 조만 생각을 하면서 살qua."}
+{"detected": "auto", "file": "mix_zh_ja_over", "mode": "auto", "ms_max": 2437.5, "ms_median": 142.8, "ms_min": 139.7, "ms_p90": 156.6, "samples": 10, "text": "うちの中学は別当生で持ってきない場合は50円の学校販売のパ。"}
+{"detected": "zh", "file": "mix_zh_ja_over", "mode": "zh", "ms_max": 2361.5, "ms_median": 143.5, "ms_min": 139.3, "ms_p90": 160.0, "samples": 10, "text": "うちの中学は別当生で持ってきない場合は50年の学校販売のパ。"}
+{"detected": "ja", "file": "mix_zh_ja_over", "mode": "ja", "ms_max": 2326.1, "ms_median": 151.8, "ms_min": 140.9, "ms_p90": 157.6, "samples": 10, "text": "うち の 中学 は 弁当 制 で 持っ ていきない 場 合は 50 円の 学校 販売 の パン。"}
+{"detected": "ko", "file": "mix_zh_ja_over", "mode": "ko", "ms_max": 2311.3, "ms_median": 153.4, "ms_min": 139.5, "ms_p90": 159.5, "samples": 10, "text": "출 세이벳 롯데 히라이바이와 호주엔도깎고 한."}
+{"detected": "en", "file": "mix_zh_ja_over", "mode": "en", "ms_max": 2411.2, "ms_median": 145.8, "ms_min": 139.7, "ms_p90": 156.0, "samples": 10, "text": "うちのでもてない場合は十円の販."}
+{"detected": "auto", "file": "mix_en_ko_over", "mode": "auto", "ms_max": 2382.8, "ms_median": 133.3, "ms_min": 118.9, "ms_p90": 135.1, "samples": 10, "text": "The tribal chieftain called for the boy and presented."}
+{"detected": "zh", "file": "mix_en_ko_over", "mode": "zh", "ms_max": 2300.2, "ms_median": 128.3, "ms_min": 117.2, "ms_p90": 137.8, "samples": 10, "text": "The tribal chieftain called for the boy and presented."}
+{"detected": "ja", "file": "mix_en_ko_over", "mode": "ja", "ms_max": 2331.8, "ms_median": 131.5, "ms_min": 119.8, "ms_p90": 133.6, "samples": 10, "text": "The chief."}
+{"detected": "ko", "file": "mix_en_ko_over", "mode": "ko", "ms_max": 2275.3, "ms_median": 134.6, "ms_min": 126.8, "ms_p90": 136.1, "samples": 10, "text": "The tribal chieftain called for the boy and presented."}
+{"detected": "en", "file": "mix_en_ko_over", "mode": "en", "ms_max": 2356.5, "ms_median": 133.4, "ms_min": 120.5, "ms_p90": 135.3, "samples": 10, "text": "The tribal chieftain called for the boy and presented."}
+{"detected": "auto", "file": "mix_zh_ja_half", "mode": "auto", "ms_max": 2343.1, "ms_median": 158.8, "ms_min": 146.9, "ms_p90": 161.0, "samples": 10, "text": "开饭时间早上9点至下午5点。"}
+{"detected": "zh", "file": "mix_zh_ja_half", "mode": "zh", "ms_max": 2328.1, "ms_median": 155.4, "ms_min": 138.5, "ms_p90": 159.2, "samples": 10, "text": "开饭时间早上9点至下午5点。"}
+{"detected": "ja", "file": "mix_zh_ja_half", "mode": "ja", "ms_max": 2381.8, "ms_median": 156.4, "ms_min": 140.6, "ms_p90": 163.4, "samples": 10, "text": "开饭时间早上9点至下午5点。"}
+{"detected": "ko", "file": "mix_zh_ja_half", "mode": "ko", "ms_max": 2338.6, "ms_median": 155.9, "ms_min": 139.6, "ms_p90": 157.4, "samples": 10, "text": "开饭时间早上9点至下午5点。"}
+{"detected": "en", "file": "mix_zh_ja_half", "mode": "en", "ms_max": 2370.3, "ms_median": 157.4, "ms_min": 138.2, "ms_p90": 161.5, "samples": 10, "text": "开饭时间早上9点至下午5点。"}
+{"detected": "auto", "file": "mix_multi3", "mode": "auto", "ms_max": 2665.0, "ms_median": 446.2, "ms_min": 436.0, "ms_p90": 500.0, "samples": 10, "text": "presented 조금만 생각을 하면서 살면 훨씬 편할 거야."}
+{"detected": "zh", "file": "mix_multi3", "mode": "zh", "ms_max": 2875.7, "ms_median": 444.3, "ms_min": 435.2, "ms_p90": 452.8, "samples": 10, "text": "조만 생각을 하면서 살면 훨씬 편할 거야."}
+{"detected": "ja", "file": "mix_multi3", "mode": "ja", "ms_max": 2723.3, "ms_median": 445.8, "ms_min": 437.9, "ms_p90": 453.6, "samples": 10, "text": "조금만 생각을 하면서 살면 훨씬 편할 거야."}
+{"detected": "ko", "file": "mix_multi3", "mode": "ko", "ms_max": 2669.4, "ms_median": 447.8, "ms_min": 441.4, "ms_p90": 489.5, "samples": 10, "text": "조금만 생각을 하면서 살면 훨씬 편할 거야."}
+{"detected": "en", "file": "mix_multi3", "mode": "en", "ms_max": 2871.2, "ms_median": 446.5, "ms_min": 438.6, "ms_p90": 452.5, "samples": 10, "text": "饭时95, the tribal chieftain called for the boy and presented him with 50 pieces of 조만 생각을."}

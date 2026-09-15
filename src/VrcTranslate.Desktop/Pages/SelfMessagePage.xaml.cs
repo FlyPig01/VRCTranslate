@@ -470,7 +470,7 @@ public sealed partial class SelfMessagePage : Page
         var received = new TaskCompletionSource<AudioSamplesEventArgs>(TaskCreationOptions.RunContinuationsAsynchronously);
         try
         {
-            capture = State.AudioCapture.Create(AudioCaptureMode.Microphone, _settings.MicrophoneId);
+            capture = State.AudioCapture.Create(AudioCaptureRequest.Microphone(_settings.MicrophoneId));
             void OnSamples(object? _, AudioSamplesEventArgs args) => received.TrySetResult(args);
             capture.SamplesReady += OnSamples;
             await capture.StartAsync();

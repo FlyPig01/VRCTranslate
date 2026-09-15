@@ -19,6 +19,7 @@ public sealed class WindowsAudioCapture : IAudioCapture
     private IWaveIn? _capture;
     private bool _started;
     private bool _disposed;
+    private bool _stopPublished;
 
     public WindowsAudioCapture(AudioCaptureMode mode, string? microphoneDeviceId = null)
     {
@@ -34,6 +35,10 @@ public sealed class WindowsAudioCapture : IAudioCapture
 
     public AudioCaptureMode Mode => _mode;
 
+    public AudioCaptureSourceKind SourceKind => _mode == AudioCaptureMode.Microphone
+        ? AudioCaptureSourceKind.Microphone
+        : AudioCaptureSourceKind.SystemLoopback;
+
     /// <summary>Resolved wave-in index used when <see cref="Mode"/> is Microphone.</summary>
     public int MicrophoneDeviceNumber => _microphoneDeviceNumber;
 
@@ -44,9 +49,17 @@ public sealed class WindowsAudioCapture : IAudioCapture
 
     public event EventHandler<AudioSamplesEventArgs>? SamplesReady;
 
+    /// <summary>This capture never changes source, so the event only reports the initial one.</summary>
+    public event EventHandler<AudioSourceChangedEventArgs>? SourceChanged;
+
+    public event EventHandler<AudioCaptureFaultedEventArgs>? Faulted;
+
+    public event EventHandler<AudioCaptureStoppedEventArgs>? Stopped;
+
     public Task StartAsync(CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        var started = false;
         lock (_sync)
         {
             ThrowIfDisposed();
@@ -62,6 +75,8 @@ public sealed class WindowsAudioCapture : IAudioCapture
             {
                 capture.StartRecording();
                 _started = true;
+                _stopPublished = false;
+                started = true;
             }
             catch
             {
@@ -73,6 +88,8 @@ public sealed class WindowsAudioCapture : IAudioCapture
             }
         }
 
+        // Published outside the lock so a subscriber may call back into the capture.
+        if (started) RaiseSourceChanged();
         return Task.CompletedTask;
     }
 
@@ -98,6 +115,9 @@ public sealed class WindowsAudioCapture : IAudioCapture
             capture.DataAvailable -= OnDataAvailable;
             capture.RecordingStopped -= OnRecordingStopped;
             capture.Dispose();
+            // Deterministic counterpart to the platform callback: whichever
+            // path runs first publishes, the other one is suppressed.
+            RaiseStopped(exception: null);
         }
 
         return Task.CompletedTask;
@@ -182,8 +202,38 @@ public sealed class WindowsAudioCapture : IAudioCapture
 
     private void OnRecordingStopped(object? sender, StoppedEventArgs args)
     {
-        // A disconnected device is observed by the next start attempt. No UI
-        // work is performed on the NAudio callback thread.
+        // NAudio reports an invalidated device here; nothing is repaired on the
+        // callback thread, the events only let the coordinator decide what to do.
+        if (args.Exception is not null) RaiseFaulted(args.Exception);
+        RaiseStopped(args.Exception);
+    }
+
+    private void RaiseSourceChanged()
+    {
+        try
+        {
+            SourceChanged?.Invoke(this, new AudioSourceChangedEventArgs(
+                new AudioSourceState(SourceKind), generation: 0, isBoundary: false));
+        }
+        catch { }
+    }
+
+    private void RaiseFaulted(Exception exception)
+    {
+        try { Faulted?.Invoke(this, new AudioCaptureFaultedEventArgs(SourceKind, exception)); }
+        catch { }
+    }
+
+    private void RaiseStopped(Exception? exception)
+    {
+        lock (_sync)
+        {
+            if (_stopPublished) return;
+            _stopPublished = true;
+        }
+
+        try { Stopped?.Invoke(this, new AudioCaptureStoppedEventArgs(SourceKind, exception)); }
+        catch { }
     }
 
     private void ThrowIfDisposed()
@@ -195,10 +245,22 @@ public sealed class WindowsAudioCapture : IAudioCapture
 /// <summary>Windows composition-root implementation of the audio port.</summary>
 public sealed class WindowsAudioCaptureFactory : IAudioCaptureFactory
 {
-    public IAudioCapture Create(AudioCaptureMode mode) => new WindowsAudioCapture(mode);
-
-    public IAudioCapture Create(AudioCaptureMode mode, string? deviceId = null) =>
-        new WindowsAudioCapture(mode, deviceId);
+    public IAudioCapture Create(AudioCaptureRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        return request.SourceKind switch
+        {
+            AudioCaptureSourceKind.Microphone =>
+                new WindowsAudioCapture(AudioCaptureMode.Microphone, request.MicrophoneDeviceId),
+            // Process loopback needs the Windows Application Loopback COM
+            // surface, which this build does not have yet. Reporting it as
+            // unsupported keeps the caller on system audio instead of silently
+            // capturing every application.
+            AudioCaptureSourceKind.ProcessLoopback =>
+                throw new ProcessLoopbackNotSupportedException("当前版本尚未提供进程回环采集，请使用系统回环。"),
+            _ => new WindowsAudioCapture(AudioCaptureMode.SystemLoopback)
+        };
+    }
 }
 
 /// <summary>

@@ -36,14 +36,30 @@ public sealed class AudioLevelEventArgs : EventArgs
     public float Peak { get; }
 }
 
-/// <summary>Small platform boundary for microphone and VRChat audio capture.</summary>
+/// <summary>
+/// Small platform boundary for microphone and loopback audio capture. Events
+/// only carry application-layer values: no NAudio, COM or Win32 type ever
+/// crosses this boundary.
+/// </summary>
 public interface IAudioCapture : IAsyncDisposable
 {
     AudioCaptureMode Mode { get; }
 
+    /// <summary>The source this capture delivers right now.</summary>
+    AudioCaptureSourceKind SourceKind { get; }
+
     int SampleRate { get; }
 
     event EventHandler<AudioSamplesEventArgs>? SamplesReady;
+
+    /// <summary>Raised whenever the delivered source changes; never raised twice for one state.</summary>
+    event EventHandler<AudioSourceChangedEventArgs>? SourceChanged;
+
+    /// <summary>Raised when the source fails; the capture may still be recovering.</summary>
+    event EventHandler<AudioCaptureFaultedEventArgs>? Faulted;
+
+    /// <summary>Raised at most once per start, after the capture stopped delivering samples.</summary>
+    event EventHandler<AudioCaptureStoppedEventArgs>? Stopped;
 
     Task StartAsync(CancellationToken cancellationToken = default);
 
@@ -52,21 +68,17 @@ public interface IAudioCapture : IAsyncDisposable
 
 /// <summary>
 /// Composition boundary for platform audio devices. Desktop pages request a
-/// capture mode without depending on NAudio or a Windows implementation.
+/// source without depending on NAudio or a Windows implementation.
 /// </summary>
 public interface IAudioCaptureFactory
 {
-    /// <summary>Creates a capture session using the platform default device.</summary>
-    IAudioCapture Create(AudioCaptureMode mode);
-
     /// <summary>
-    /// Creates a capture session for the requested source. For microphone
-    /// capture, <paramref name="deviceId"/> may be <c>default</c>, a WASAPI
-    /// endpoint id from <see cref="IAudioDeviceEnumerator"/>, or a numeric
-    /// Windows wave-in device index from older settings. Loopback capture
-    /// ignores it.
+    /// Creates a capture session for the requested source. A process loopback
+    /// request on a platform without that capability fails with
+    /// <see cref="ProcessLoopbackNotSupportedException"/> instead of silently
+    /// falling back to a different source.
     /// </summary>
-    IAudioCapture Create(AudioCaptureMode mode, string? deviceId) => Create(mode);
+    IAudioCapture Create(AudioCaptureRequest request);
 }
 
 /// <summary>One selectable audio capture endpoint shown in the UI.</summary>

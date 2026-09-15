@@ -74,6 +74,18 @@ public sealed class SileroVadSegmenter : ISpeechSegmenter, IDisposable
         }
     }
 
+    public void Reset()
+    {
+        lock (_sync)
+        {
+            // Flush completes the segment that is still open, then the tail
+            // buffer is dropped: audio from two sources must never share a caption.
+            _vad.Flush();
+            _ = DrainCompleted();
+            _vad.Reset();
+        }
+    }
+
     public void Dispose()
     {
         lock (_sync)

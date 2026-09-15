@@ -63,6 +63,11 @@ public abstract class VoiceSessionHost
 
     protected abstract AudioCaptureMode CaptureMode { get; }
 
+    /// <summary>Source request handed to the platform factory for the next start.</summary>
+    private AudioCaptureRequest CreateCaptureRequest() => CaptureMode == AudioCaptureMode.Microphone
+        ? AudioCaptureRequest.Microphone(MicrophoneId)
+        : AudioCaptureRequest.SystemLoopback();
+
     /// <summary>
     /// Runs the recognized sentence through translation and output. The whole
     /// result is passed so a session can also use the speaker label.
@@ -82,7 +87,7 @@ public abstract class VoiceSessionHost
             if (_running && _session?.IsStarted == true) return;
 
             var session = new LocalSpeechCaptureSession(
-                _captures.Create(CaptureMode, MicrophoneId),
+                _captures.Create(CreateCaptureRequest()),
                 _speech,
                 SourceLanguage,
                 // Silero VAD when its bundled model is present, adaptive

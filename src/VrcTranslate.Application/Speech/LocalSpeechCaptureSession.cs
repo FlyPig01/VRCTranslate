@@ -16,6 +16,9 @@ public sealed class LocalSpeechCaptureSession : IAsyncDisposable
     private readonly SemaphoreSlim _recognitionGate = new(1, 1);
     private readonly string _sourceLanguage;
     private readonly object _sync = new();
+    private CancellationTokenSource _sourceCts = new();
+    private AudioSourceState _sourceState;
+    private long _sourceGeneration;
     private bool _started;
     private bool _disposed;
 
@@ -33,12 +36,17 @@ public sealed class LocalSpeechCaptureSession : IAsyncDisposable
         }
 
         _segmenter = segmenter ?? new SpeechSegmenter();
+        _sourceState = new AudioSourceState(_capture.SourceKind);
         _capture.SamplesReady += OnSamplesReady;
+        _capture.SourceChanged += OnSourceChanged;
     }
 
     public event EventHandler<SpeechRecognitionResult>? ResultReady;
 
     public event EventHandler<Exception>? Faulted;
+
+    /// <summary>Forwards capture source changes so the shell can label the input.</summary>
+    public event EventHandler<AudioSourceChangedEventArgs>? SourceChanged;
 
     /// <summary>Forwards measured input activity to a compact visualizer.</summary>
     public event EventHandler<AudioLevelEventArgs>? LevelChanged;
@@ -46,6 +54,37 @@ public sealed class LocalSpeechCaptureSession : IAsyncDisposable
     public bool IsStarted
     {
         get { lock (_sync) return _started; }
+    }
+
+    /// <summary>Source the recognizer is currently fed from.</summary>
+    public AudioSourceState SourceState
+    {
+        get { lock (_sync) return _sourceState; }
+    }
+
+    /// <summary>
+    /// Source boundary entry point: the unclosed segment is dropped and
+    /// recognition started for the previous source is cancelled, so a late
+    /// result can never be published as if it came from the new source. The
+    /// capture raises it through <see cref="IAudioCapture.SourceChanged"/>.
+    /// </summary>
+    public void ResetForSourceBoundary()
+    {
+        CancellationTokenSource? retired;
+        lock (_sync)
+        {
+            if (_disposed) return;
+            _sourceGeneration++;
+            retired = _sourceCts;
+            _sourceCts = new CancellationTokenSource();
+        }
+
+        // A recognition may still be running on the retired token, so it is
+        // cancelled but not disposed: a CancellationTokenSource without timers
+        // owns no unmanaged handle and is collected together with its tasks.
+        try { retired.Cancel(); }
+        catch (ObjectDisposedException) { }
+        _segmenter.Reset();
     }
 
     public async Task StartAsync(CancellationToken cancellationToken = default)
@@ -96,9 +135,12 @@ public sealed class LocalSpeechCaptureSession : IAsyncDisposable
         }
 
         await _capture.StopAsync(cancellationToken).ConfigureAwait(false);
+        // The flushed tail belongs to the source that is still current, so it
+        // keeps the stop-time behaviour of publishing the last half sentence.
+        var generation = CurrentSourceGeneration();
         foreach (var pending in _segmenter.Flush())
         {
-            await RecognizeSegmentAsync(pending, cancellationToken).ConfigureAwait(false);
+            await RecognizeSegmentAsync(pending, generation, cancellationToken).ConfigureAwait(false);
         }
         if (_segmenter is SpeechSegmenter energy)
         {
@@ -122,8 +164,11 @@ public sealed class LocalSpeechCaptureSession : IAsyncDisposable
         {
             _disposed = true;
             _capture.SamplesReady -= OnSamplesReady;
+            _capture.SourceChanged -= OnSourceChanged;
             await _capture.DisposeAsync().ConfigureAwait(false);
             if (_segmenter is IDisposable disposableSegmenter) disposableSegmenter.Dispose();
+            _sourceCts.Cancel();
+            _sourceCts.Dispose();
             _recognitionGate.Dispose();
         }
     }
@@ -138,10 +183,48 @@ public sealed class LocalSpeechCaptureSession : IAsyncDisposable
             return;
         }
 
+        if (!TrySnapshotSource(out var generation, out var token)) return;
         foreach (var segment in _segmenter.Append(args.Samples))
         {
-            _ = RecognizeSegmentAsync(segment, CancellationToken.None);
+            _ = RecognizeSegmentAsync(segment, generation, token);
         }
+    }
+
+    private void OnSourceChanged(object? sender, AudioSourceChangedEventArgs args)
+    {
+        lock (_sync) _sourceState = args.State;
+        if (args.IsBoundary) ResetForSourceBoundary();
+        try { SourceChanged?.Invoke(this, args); }
+        catch (Exception exception) { RaiseFaulted(exception); }
+    }
+
+    /// <summary>Generation and cancellation token of the source that is fed right now.</summary>
+    private bool TrySnapshotSource(out long generation, out CancellationToken token)
+    {
+        lock (_sync)
+        {
+            generation = _sourceGeneration;
+            try
+            {
+                token = _sourceCts.Token;
+                return !token.IsCancellationRequested;
+            }
+            catch (ObjectDisposedException)
+            {
+                token = CancellationToken.None;
+                return false;
+            }
+        }
+    }
+
+    private long CurrentSourceGeneration()
+    {
+        lock (_sync) return _sourceGeneration;
+    }
+
+    private bool IsStaleSource(long generation)
+    {
+        lock (_sync) return generation != _sourceGeneration;
     }
 
     private void RaiseLevelChanged(ReadOnlySpan<float> samples)
@@ -161,13 +244,19 @@ public sealed class LocalSpeechCaptureSession : IAsyncDisposable
         catch (Exception exception) { RaiseFaulted(exception); }
     }
 
-    private async Task RecognizeSegmentAsync(ReadOnlyMemory<float> samples, CancellationToken cancellationToken)
+    private async Task RecognizeSegmentAsync(
+        ReadOnlyMemory<float> samples,
+        long generation,
+        CancellationToken cancellationToken)
     {
         try
         {
+            // Work queued for a source that is already gone is never started.
+            if (IsStaleSource(generation)) return;
             await _recognitionGate.WaitAsync(cancellationToken).ConfigureAwait(false);
             try
             {
+                if (IsStaleSource(generation)) return;
                 // One span normally; two or three when one sentence holds two voices.
                 foreach (var span in PlanSpeakerSpans(samples))
                 {
@@ -176,6 +265,8 @@ public sealed class LocalSpeechCaptureSession : IAsyncDisposable
                         new SpeechRecognitionRequest(part, _segmenter.SampleRate, _sourceLanguage),
                         cancellationToken).ConfigureAwait(false);
                     if (string.IsNullOrWhiteSpace(result.Text)) continue;
+                    // A slow result must not surface after the source switched.
+                    if (IsStaleSource(generation)) return;
                     RaiseResultReady(AttachSpeaker(result, part));
                 }
             }

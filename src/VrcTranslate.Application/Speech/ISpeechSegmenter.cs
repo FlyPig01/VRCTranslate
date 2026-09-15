@@ -14,4 +14,11 @@ public interface ISpeechSegmenter
 
     /// <summary>Closes any pending tail audio; returns zero or more final segments.</summary>
     IReadOnlyList<ReadOnlyMemory<float>> Flush();
+
+    /// <summary>
+    /// Drops buffered audio and restarts the gate with the sensitivity of a
+    /// fresh segmenter. A capture source switch calls this so audio recorded
+    /// before the boundary never joins a caption with what follows it.
+    /// </summary>
+    void Reset();
 }

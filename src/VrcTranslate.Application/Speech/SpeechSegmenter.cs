@@ -39,6 +39,7 @@ public sealed class SpeechSegmenter : ISpeechSegmenter
     private readonly int _maximumSamples;
     private readonly int _minimumSpeechSamples;
     private readonly int _preRollSamples;
+    private readonly float _initialNoiseFloor;
     private int _noiseWindowHead;
     private int _windowsSinceFloorUpdate;
     private float _noiseFloor;
@@ -69,6 +70,7 @@ public sealed class SpeechSegmenter : ISpeechSegmenter
         _preRollSamples = sampleRate * PreRollMilliseconds / 1000;
         // Seed the tracker so the first utterance is judged against the
         // requested sensitivity until real ambient data takes over.
+        _initialNoiseFloor = energyThreshold;
         Array.Fill(_noiseWindows, energyThreshold);
         _noiseFloor = energyThreshold;
     }
@@ -132,6 +134,23 @@ public sealed class SpeechSegmenter : ISpeechSegmenter
         {
             var segment = CompleteSegment();
             return segment.IsEmpty ? [] : [segment];
+        }
+    }
+
+    public void Reset()
+    {
+        lock (_sync)
+        {
+            // The counters stay cumulative: they describe the whole session, and
+            // a source switch must not erase how much audio was already judged.
+            _samples.Clear();
+            _silentSamples = 0;
+            _activeSamples = 0;
+            _hasSpeech = false;
+            _noiseWindowHead = 0;
+            _windowsSinceFloorUpdate = 0;
+            Array.Fill(_noiseWindows, _initialNoiseFloor);
+            _noiseFloor = _initialNoiseFloor;
         }
     }
 

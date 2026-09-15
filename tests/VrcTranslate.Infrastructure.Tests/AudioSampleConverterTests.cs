@@ -41,14 +41,29 @@ public sealed class AudioSampleConverterTests
     public async Task Windows_factory_keeps_microphone_and_loopback_modes_separate()
     {
         var factory = new WindowsAudioCaptureFactory();
-        await using var microphone = factory.Create(AudioCaptureMode.Microphone);
-        await using var loopback = factory.Create(AudioCaptureMode.SystemLoopback);
+        await using var microphone = factory.Create(AudioCaptureRequest.Microphone());
+        await using var loopback = factory.Create(AudioCaptureRequest.SystemLoopback());
 
         Assert.Equal(AudioCaptureMode.Microphone, microphone.Mode);
         Assert.Equal(AudioCaptureMode.SystemLoopback, loopback.Mode);
+        Assert.Equal(AudioCaptureSourceKind.Microphone, microphone.SourceKind);
+        Assert.Equal(AudioCaptureSourceKind.SystemLoopback, loopback.SourceKind);
         Assert.Equal(16_000, microphone.SampleRate);
         Assert.Equal(16_000, loopback.SampleRate);
     }
+
+    [Fact]
+    public void Windows_factory_never_downgrades_a_process_request_to_system_audio()
+    {
+        // Until the Application Loopback surface exists, a process request must
+        // fail loudly: silently returning system loopback would capture every
+        // application while the caller believes only VRChat is being recorded.
+        var factory = new WindowsAudioCaptureFactory();
+
+        Assert.Throws<ProcessLoopbackNotSupportedException>(
+            () => factory.Create(AudioCaptureRequest.ProcessLoopback(new ProcessIdentity(4_242))));
+    }
+
 
     [Theory]
     [InlineData(null, 0)]

@@ -25,6 +25,7 @@ public sealed partial class TranslationPage : Page
     {
         ["echo"] = "本地测试",
         ["deepseek"] = "DeepSeek",
+        ["xiaomi"] = "小米 MiMo",
         ["tencent"] = "腾讯云翻译",
         ["aliyun"] = "阿里云机器翻译"
     };
@@ -211,10 +212,37 @@ public sealed partial class TranslationPage : Page
     private async void OnProfileCardTapped(object sender, TappedRoutedEventArgs e)
     {
         if (e.OriginalSource is Button || sender is not Border { Tag: string id }) return;
+        var record = State.TranslationProfiles?.FirstOrDefault(profile => profile.Id == id);
+        // 出厂预设（小米 MiMo / 腾讯云 / 阿里云）还没有密钥时，选中它只会让下一次翻译失败：
+        // 直接打开编辑对话框，用户粘贴密钥保存即生效，少绕一步。
+        if (record is not null && IsUnconfiguredPreset(record))
+        {
+            await ShowProfileDialogAsync(record);
+            return;
+        }
+
         State.SetDefaultProfile(id);
         ShowMessage("已切换当前翻译服务。", InfoBarSeverity.Success);
-        await Task.CompletedTask;
     }
+
+    /// <summary>
+    /// True while a profile still carries exactly the shipped preset values and no
+    /// key of its own - that is, the user has not configured this service yet.
+    /// </summary>
+    private static bool IsUnconfiguredPreset(TranslationProfileRecord profile) =>
+        string.Equals(profile.CredentialReference, "本地配置", StringComparison.Ordinal) &&
+        PresetEndpoints.TryGetValue(profile.Provider, out var endpoint) &&
+        profile.Endpoint.TrimEnd('/').Equals(endpoint.TrimEnd('/'), StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>Endpoints of the shipped presets; a profile still on one of them has no user configuration.</summary>
+    private static readonly IReadOnlyDictionary<string, string> PresetEndpoints = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+    {
+        ["deepseek"] = "https://api.deepseek.com",
+        ["xiaomi"] = "https://api.xiaomimimo.com/v1",
+        ["tencent"] = "https://tmt.tencentcloudapi.com",
+        ["aliyun"] = "https://mt.cn-hangzhou.aliyuncs.com",
+        ["echo"] = "https://localhost/echo"
+    };
 
     private async Task ShowProfileDialogAsync(TranslationProfileRecord? existing)
     {
@@ -236,6 +264,7 @@ public sealed partial class TranslationPage : Page
             {
                 "echo" => ("本地回显", "https://localhost/echo", "无需密钥"),
                 "deepseek" => ("deepseek-flash", "https://api.deepseek.com", "DeepSeek API Key"),
+                "xiaomi" => ("mimo-v2.5", "https://api.xiaomimimo.com/v1", "小米 MiMo API Key（sk- 开头）"),
                 "tencent" => ("TextTranslate", "https://tmt.tencentcloudapi.com", "腾讯云 SecretId"),
                 "aliyun" => ("general", "https://mt.cn-hangzhou.aliyuncs.com", "阿里云 AccessKey ID"),
                 _ => ("deepseek-flash", "https://api.deepseek.com", "DeepSeek API Key")
@@ -261,8 +290,8 @@ public sealed partial class TranslationPage : Page
             var selectedProvider = (providerBox.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? string.Empty;
             if (!string.Equals(selectedProvider, lastProvider, StringComparison.OrdinalIgnoreCase))
             {
-                if (string.IsNullOrWhiteSpace(modelBox.Text) || modelBox.Text is "gpt-4.1-mini" or "deepseek-chat" or "deepseek-flash" or "本地回显" or "TextTranslate" or "general") modelBox.Text = string.Empty;
-                if (endpointBox.Text is "https://api.deepseek.com" or "https://api.openai.com/v1" or "https://localhost/echo" or "https://tmt.tencentcloudapi.com" or "https://mt.cn-hangzhou.aliyuncs.com") endpointBox.Text = string.Empty;
+                if (string.IsNullOrWhiteSpace(modelBox.Text) || modelBox.Text is "gpt-4.1-mini" or "deepseek-chat" or "deepseek-flash" or "mimo-v2.5" or "本地回显" or "TextTranslate" or "general") modelBox.Text = string.Empty;
+                if (endpointBox.Text is "https://api.deepseek.com" or "https://api.openai.com/v1" or "https://api.xiaomimimo.com/v1" or "https://localhost/echo" or "https://tmt.tencentcloudapi.com" or "https://mt.cn-hangzhou.aliyuncs.com") endpointBox.Text = string.Empty;
                 lastProvider = selectedProvider;
             }
             RefreshProviderFields();

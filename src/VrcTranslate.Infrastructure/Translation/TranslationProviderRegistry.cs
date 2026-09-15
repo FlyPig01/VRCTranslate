@@ -17,7 +17,7 @@ public static class TranslationProviderRegistry
 
     /// <summary>Provider ids this build registers, in registration order.</summary>
     public static IReadOnlyList<string> ShippedProviderIds { get; } =
-        [EchoTranslationProvider.ProviderId, DefaultProviderId, "tencent", "aliyun"];
+        [EchoTranslationProvider.ProviderId, DefaultProviderId, XiaomiTranslationProvider.ProviderId, "tencent", "aliyun"];
 
     /// <summary>Provider ids earlier builds shipped and this build removed.</summary>
     public static IReadOnlyList<string> RetiredProviderIds { get; } =
@@ -31,6 +31,7 @@ public static class TranslationProviderRegistry
     [
         new EchoTranslationProvider(),
         new DeepSeekTranslationProvider(),
+        new XiaomiTranslationProvider(),
         new TencentTranslationProvider(),
         new AliyunTranslationProvider()
     ];

@@ -461,6 +461,7 @@ public sealed class AppState
     private static List<TranslationProfileRecord> CreateProviderPlaceholders() =>
     [
         new("deepseek", "DeepSeek", "deepseek", "deepseek-flash", "https://api.deepseek.com", "本地配置", "auto", "zh-CN", "", new Dictionary<string, string>()),
+        new("xiaomi", "小米 MiMo", "xiaomi", "mimo-v2.5", "https://api.xiaomimimo.com/v1", "本地配置", "auto", "zh-CN", "", new Dictionary<string, string>()),
         new("tencent", "腾讯云翻译", "tencent", "TextTranslate", "https://tmt.tencentcloudapi.com", "本地配置", "auto", "zh-CN", "ap-beijing", new Dictionary<string, string>()),
         new("aliyun", "阿里云机器翻译", "aliyun", "general", "https://mt.cn-hangzhou.aliyuncs.com", "本地配置", "auto", "zh-CN", "cn-hangzhou", new Dictionary<string, string>())
     ];
@@ -560,6 +561,7 @@ public sealed class AppState
     {
         "echo" => "本地回显",
         "deepseek" => "deepseek-flash",
+        "xiaomi" => "mimo-v2.5",
         "tencent" => "TextTranslate",
         "aliyun" => "general",
         _ => "deepseek-flash"

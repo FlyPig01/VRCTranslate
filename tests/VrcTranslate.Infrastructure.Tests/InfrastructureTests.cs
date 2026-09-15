@@ -314,6 +314,58 @@ public sealed class RoutedProviderTests
     }
 
     [Fact]
+    public void Xiaomi_request_body_uses_the_mimo_model_and_disables_thinking_by_default()
+    {
+        Assert.Equal("mimo-v2.5", XiaomiTranslationProvider.DefaultModel);
+        Assert.Equal("https://api.xiaomimimo.com/v1", XiaomiTranslationProvider.DefaultEndpoint);
+        var request = new TranslationProviderRequest(
+            "hello", "zh-CN", "en", XiaomiTranslationProvider.DefaultModel, new Uri("https://api.xiaomimimo.com/v1"), "secret", "test", "xiaomi");
+
+        var serialized = JsonSerializer.Serialize(XiaomiTranslationProvider.BuildRequestBody(request));
+
+        // MiMo accepts the same thinking switch as DeepSeek, so a one-sentence
+        // translation must not pay for reasoning it does not use.
+        Assert.Contains("\"model\":\"mimo-v2.5\"", serialized, StringComparison.Ordinal);
+        Assert.Contains("\"type\":\"disabled\"", serialized, StringComparison.Ordinal);
+        Assert.Contains("temperature", serialized, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Parses_xiaomi_response_without_network()
+    {
+        var provider = new XiaomiTranslationProvider(
+            new HttpClient(new StubHandler("{\"choices\":[{\"message\":{\"content\":\"你好\"}}]}")));
+
+        var result = await provider.TranslateAsync(new TranslationProviderRequest(
+            "hello", "zh-CN", "en", XiaomiTranslationProvider.DefaultModel, new Uri("https://api.xiaomimimo.com/v1"), "secret", "test", "xiaomi"));
+
+        Assert.Equal("你好", result.TranslatedText);
+    }
+
+    [Fact]
+    public async Task Xiaomi_requires_a_key_before_calling_the_service()
+    {
+        var provider = new XiaomiTranslationProvider(
+            new HttpClient(new StubHandler("{\"choices\":[{\"message\":{\"content\":\"你好\"}}]}")));
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => provider.TranslateAsync(
+            new TranslationProviderRequest(
+                "hello", "zh-CN", "en", XiaomiTranslationProvider.DefaultModel, new Uri("https://api.xiaomimimo.com/v1"), "本地配置", "test", "xiaomi")));
+
+        Assert.Contains("小米", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Xiaomi_chat_endpoint_is_built_from_the_platform_base_url()
+    {
+        // The saved preset is the platform base URL, so the adapter has to append
+        // the chat path itself; /v1 must stay part of the address.
+        var endpoint = ChatCompletionsTranslation.BuildChatEndpoint(new Uri("https://api.xiaomimimo.com/v1"));
+
+        Assert.Equal("https://api.xiaomimimo.com/v1/chat/completions", endpoint.ToString());
+    }
+
+    [Fact]
     public void DeepSeek_request_body_disables_thinking_by_default()
     {
         Assert.Equal("deepseek-flash", DeepSeekTranslationProvider.DefaultModel);

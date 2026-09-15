@@ -257,7 +257,7 @@ if ($translationMarkup -notmatch 'HorizontalContentAlignment="Stretch"') { throw
 if ($translationCode -notmatch 'CreateProfileCard|ShowProfileDialogAsync|ContentDialog|SetDefaultProfile|DeleteProfile') { throw 'Translation profiles must support selectable cards and dialog-based add/edit/delete actions.' }
 # D8：DeepL、Google（免费接口）与 Google Cloud 已从产品删除。这里既要求保留的服务仍可选，
 # 也要求被删掉的服务不再以任何形式回到翻译页或外壳的注册 / 默认值 / 迁移表里（反向断言）。
-if ($translationCode -notmatch 'deepseek|tencent|aliyun') { throw 'The translation page must keep offering the shipped services (DeepSeek / 腾讯云 / 阿里云).' }
+if ($translationCode -notmatch 'deepseek|xiaomi|tencent|aliyun') { throw 'The translation page must keep offering the shipped services (DeepSeek / 小米 MiMo / 腾讯云 / 阿里云).' }
 if ($translationCode -match '(?i)deepl|google') { throw 'The removed DeepL and Google services must not be selectable on the translation page any more.' }
 if ($appStateSource -match '"deepl"|"deep-l"|"google-free"|"google_free"|"google-cloud"|"google_cloud"') { throw 'The removed DeepL and Google providers must not be registered, preset or migrated by the shell any more.' }
 if (Test-Path -LiteralPath (Join-Path $v2Root 'src\VrcTranslate.Infrastructure\Translation\GoogleTranslationProviders.cs')) { throw 'The Google translation adapters must stay deleted.' }
@@ -276,7 +276,31 @@ if ($appStateSource -notmatch 'TranslationProviderRegistry\.CreateShippedProvide
 }
 if ($translationCode -match 'Header = "原文语言"|Header = "翻译为"|existing\.SourceLanguage|existing\.TargetLanguage') { throw 'Translation profile dialogs must not expose source or target language settings.' }
 if ($appStateSource -notmatch 'deepseek".*, "deepseek-flash"' -or $appStateSource -notmatch 'DefaultModelForProvider' -or $appStateSource -notmatch 'new\("tencent".*"auto".*"zh-CN"' -or $translationCode -notmatch '腾讯云 SecretKey' -or $translationCode -notmatch '阿里云 AccessKey Secret') { throw 'Translation profile defaults and provider-specific credential labels must be explicit.' }
-if ($infrastructureSource -notmatch 'DeepSeekTranslationProvider' -or $infrastructureSource -notmatch '"type"\]\s*=\s*"disabled"' -or $infrastructureSource -match 'OpenAiCompatibleTranslationProvider') { throw 'DeepSeek must be a dedicated provider that disables thinking mode by default; the generic OpenAI-compatible adapter is retired.' }
+# 小米 MiMo：同一个 OpenAI 兼容协议，但必须是自己的档案 + 自己的预设（端点 / 模型 / 密钥标签），
+# 且默认用非思考模型——实测 -pro 单句要 2.9-4.9 秒，翻译用不上。
+$xiaomiProviderSource = Get-Content -Raw (Join-Path $v2Root 'src\VrcTranslate.Infrastructure\Translation\XiaomiTranslationProvider.cs')
+if ($appStateSource -notmatch 'xiaomi".*, "mimo-v2\.5"' -or
+    $appStateSource -notmatch '"xiaomi" => "mimo-v2\.5"' -or
+    $translationCode -notmatch '小米 MiMo' -or
+    $translationCode -notmatch 'https://api\.xiaomimimo\.com/v1' -or
+    $xiaomiProviderSource -notmatch 'DefaultModel = "mimo-v2\.5"' -or
+    $xiaomiProviderSource -notmatch 'DefaultEndpoint = "https://api\.xiaomimimo\.com/v1"') {
+    throw 'Xiaomi MiMo must ship as its own profile preset with the non-reasoning model and the platform endpoint.'
+}
+if ($providerRegistrySource -notmatch 'new XiaomiTranslationProvider\(\)' -or
+    $providerRegistrySource -notmatch 'XiaomiTranslationProvider\.ProviderId') {
+    throw 'The Xiaomi MiMo provider must be registered in the shipped provider list.'
+}
+if ($infrastructureSource -notmatch 'DeepSeekTranslationProvider' -or $infrastructureSource -match 'OpenAiCompatibleTranslationProvider') { throw 'DeepSeek must stay a dedicated provider; the generic OpenAI-compatible adapter is retired.' }
+# 思考开关与请求体只在共享实现里写一次，DeepSeek 与小米都从那里取（各自只声明默认值/错误文案）。
+$chatCompletionsSource = Get-Content -Raw (Join-Path $v2Root 'src\VrcTranslate.Infrastructure\Translation\ChatCompletionsTranslation.cs')
+if ($chatCompletionsSource -notmatch '"type"\]\s*=\s*"disabled"' -or
+    $chatCompletionsSource -notmatch 'BuildChatEndpoint' -or
+    $chatCompletionsSource -notmatch 'ReadTranslation' -or
+    $infrastructureSource -notmatch 'ChatCompletionsTranslation\.BuildRequest' -or
+    $xiaomiProviderSource -notmatch 'ChatCompletionsTranslation\.BuildRequest') {
+    throw 'The chat-completions wire format (thinking switch, endpoint, reply parsing) must live in one shared implementation used by both DeepSeek and Xiaomi MiMo.'
+}
 if ($translationMarkup -notmatch 'ListViewItem|HorizontalContentAlignment="Stretch"') { throw 'Glossary rows must stretch to the table width.' }
 if ($translationCode -notmatch 'DefaultTerms' -or $translationCode -notmatch 'if \(_terms\.Count == 0\)') { throw 'The glossary must seed its default terms when no saved terms exist.' }
 # D2：术语库卡片删掉「保存」按钮和重复的「启用」文字，标题与开关并回同一条标题行。

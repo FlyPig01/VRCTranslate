@@ -765,6 +765,7 @@ if ($guideMarkup -notmatch 'guide-comparison' -or
     $guideMarkup -notmatch '700 万字符/月' -or
     $guideMarkup -notmatch '约 600 句' -or
     $guideMarkup -notmatch '价格会变动' -or
+    $guideMarkup -match '0\.0000\d+ 元' -or
     $xiaomiModels -notmatch 'mimo-v2\.5-pro' -or
     $guideMarkup -match 'mimo-v2\.5-pro' -or
     $guideMarkup -match 'v4-pro') {

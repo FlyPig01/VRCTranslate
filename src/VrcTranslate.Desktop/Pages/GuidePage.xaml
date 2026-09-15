@@ -70,7 +70,7 @@
                                Padding="0" AutomationProperties.AutomationId="guide-deepseek-console" />
             </StackPanel>
             <TextBlock Style="{StaticResource SecondaryTextStyle}" TextWrapping="Wrap"
-                       Text="充值使用；实测翻译约 0.00007 元/句（每月一万句约 0.7~1.4 元，价格以官网为准）。" />
+                       Text="充值使用；实测说 1 小时约 0.05 元（价格以官网为准）。" />
           </StackPanel>
           <StackPanel Spacing="3">
             <StackPanel Orientation="Horizontal" Spacing="8">
@@ -79,7 +79,7 @@
                                Padding="0" AutomationProperties.AutomationId="guide-xiaomi-console" />
             </StackPanel>
             <TextBlock Style="{StaticResource SecondaryTextStyle}" TextWrapping="Wrap"
-                       Text="小米账号登录即可创建 API 密钥；实测约 0.00004 元/句（价格以官网为准）。" />
+                       Text="小米账号登录即可创建 API 密钥；实测说 1 小时约 0.04 元（价格以官网为准）。" />
           </StackPanel>
         </StackPanel>
       </Border>

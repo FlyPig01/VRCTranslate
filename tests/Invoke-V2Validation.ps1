@@ -749,6 +749,18 @@ if ($hotkeyDefaultsSource -notmatch 'ResolvePersisted' -or
     (Get-Content -Raw $guidePage) -match 'Text="(F7|Ctrl\+F8|Ctrl\+Alt\+I)"') {
     throw 'Every shortcut readout must share the poller semantics: a cleared shortcut stays 未设置 everywhere and only a missing, unreadable or unsupported value falls back to the default.'
 }
+# 翻译服务配置卡片（方案《翻译服务配置简化方案》A0）：只给控制台直达与额度要点，
+# 额度必须带「以官网为准」，页面不得出现任何密钥或示例密钥。
+$guideMarkup = Get-Content -Raw $guidePage
+if ($guideMarkup -notmatch '翻译服务配置' -or
+    $guideMarkup -notmatch 'guide-tencent-console' -or
+    $guideMarkup -notmatch 'guide-aliyun-console' -or
+    $guideMarkup -notmatch 'guide-deepseek-console' -or
+    $guideMarkup -notmatch 'guide-xiaomi-console' -or
+    $guideMarkup -notmatch '以官网为准' -or
+    $guideMarkup -match 'AKID|LTAI|sk-[A-Za-z0-9]{10,}') {
+    throw 'Guide page must carry the translation-service card: four console links with AutomationIds, quota hints marked 以官网为准, and no key or example key material.'
+}
 $previewHandlerMatch = [regex]::Match(
     $mainWindowSource,
     '(?s)private\s+void\s+OnTranslationPreviewChanged\s*\([^)]*\)\s*\{(?<body>.*?)(?=\r?\n\s*private\s+)')

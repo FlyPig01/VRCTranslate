@@ -772,6 +772,16 @@ if ($translationCode -notmatch '测试连接' -or
     $connectionTesterCode -notmatch '网络不通') {
     throw 'Profile dialog must offer an opt-in 测试连接 with provider error hints; saving must never depend on the test outcome.'
 }
+# 配置简化 B：表单分层——接口地址 / 区域收进默认折叠的高级 Expander；
+# 阿里云版本写 Options["scene"]（不塞 Model）；腾讯隐藏模型但保存 TextTranslate；
+# 双密钥一次粘贴自动拆分（前缀只当排序提示）。
+if ($translationCode -notmatch 'Expander' -or
+    $translationCode -notmatch 'options\["scene"\]' -or
+    $translationCode -notmatch '"tencent" => "TextTranslate"' -or
+    $translationCode -notmatch 'TrySplitPastedCredential' -or
+    $translationCode -notmatch 'DedupeProfileName') {
+    throw 'Profile dialog must fold endpoint/region into a collapsed advanced expander, write the Aliyun edition into Options["scene"], keep tencent TextTranslate explicit, and split pasted key pairs.'
+}
 $previewHandlerMatch = [regex]::Match(
     $mainWindowSource,
     '(?s)private\s+void\s+OnTranslationPreviewChanged\s*\([^)]*\)\s*\{(?<body>.*?)(?=\r?\n\s*private\s+)')

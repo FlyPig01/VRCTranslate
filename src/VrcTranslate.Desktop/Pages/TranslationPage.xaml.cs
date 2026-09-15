@@ -248,16 +248,44 @@ public sealed partial class TranslationPage : Page
     private async Task ShowProfileDialogAsync(TranslationProfileRecord? existing)
     {
         var isNew = existing is null;
-        var nameBox = new TextBox { Header = "档案名称", Text = existing?.DisplayName ?? "新的翻译服务", PlaceholderText = "例如：日常中文翻译" };
+        var lastProvider = existing?.Provider ?? "deepseek";
+        var nameSuggestion = SuggestProfileName(lastProvider);
+        var nameBox = new TextBox { Header = "档案名称", Text = existing?.DisplayName ?? nameSuggestion, PlaceholderText = "例如：日常中文翻译" };
         var providerBox = new ComboBox { Header = "服务类型", MinWidth = 0, HorizontalAlignment = HorizontalAlignment.Stretch };
         foreach (var pair in ProviderNames) providerBox.Items.Add(new ComboBoxItem { Content = pair.Value, Tag = pair.Key });
-        SelectByTag(providerBox, existing?.Provider ?? "deepseek");
-        var modelBox = new TextBox { Header = "模型或接口版本", Text = existing?.Model ?? string.Empty, PlaceholderText = "填写服务商提供的模型或版本" };
+        SelectByTag(providerBox, lastProvider);
+
+        // 模型/版本按服务商变形：DeepSeek / 小米是自由文本（官方模型线更新快，
+        // 写死下拉会过期），阿里云是真正的二选一（通用版 / 专业版），
+        // 腾讯与回显没有可选项，字段不出现。
+        var modelBox = new TextBox { Header = "模型名称", Text = existing?.Model ?? string.Empty, PlaceholderText = "deepseek-flash" };
+        var aliyunSceneBox = new ComboBox { Header = "版本", MinWidth = 0, HorizontalAlignment = HorizontalAlignment.Stretch };
+        aliyunSceneBox.Items.Add(new ComboBoxItem { Content = "通用版（每月 100 万字符免费，以官网为准）", Tag = "general" });
+        aliyunSceneBox.Items.Add(new ComboBoxItem { Content = "专业版（每月 100 万字符免费，以官网为准）", Tag = "professional" });
+        var existingScene = existing?.Options?.GetValueOrDefault("scene");
+        if (string.IsNullOrWhiteSpace(existingScene)) existingScene = string.Equals(existing?.Model, "professional", StringComparison.OrdinalIgnoreCase) ? "professional" : null;
+        SelectByTag(aliyunSceneBox, string.IsNullOrWhiteSpace(existingScene) ? "general" : existingScene);
+
+        // 接口地址 / 区域是无需用户决策的参数，收进高级折叠，默认不可见。
         var endpointBox = new TextBox { Header = "接口地址", Text = existing?.Endpoint ?? "", PlaceholderText = "https://api.example.com/v1" };
         var credentialBox = new PasswordBox { Header = "API 密钥", Password = existing?.CredentialReference == "本地配置" ? string.Empty : existing?.CredentialReference ?? string.Empty, PlaceholderText = "留空表示使用已保存凭据" };
         var secretBox = new PasswordBox { Header = "SecretKey / AccessKey Secret（可选）", Password = existing?.Options?.GetValueOrDefault("secret") ?? string.Empty };
         var regionBox = new TextBox { Header = "区域（可选）", Text = existing?.Region ?? string.Empty, PlaceholderText = "例如 ap-guangzhou" };
-        var lastProvider = existing?.Provider ?? "deepseek";
+
+        // 双密钥一次粘贴自动拆分（两行 / 空格 Tab / Key=Value 形态）；
+        // 拆不出来就不动，用户分别粘贴也一样。
+        credentialBox.PasswordChanged += (_, _) =>
+        {
+            var currentProvider = (providerBox.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? string.Empty;
+            if (currentProvider is not ("tencent" or "aliyun")) return;
+            if (!string.IsNullOrWhiteSpace(secretBox.Password)) return;
+            if (TrySplitPastedCredential(credentialBox.Password, out var first, out var second))
+            {
+                credentialBox.Password = first;
+                secretBox.Password = second;
+            }
+        };
+
         void RefreshProviderFields()
         {
             var id = (providerBox.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? string.Empty;
@@ -265,26 +293,33 @@ public sealed partial class TranslationPage : Page
             {
                 "echo" => ("本地回显", "https://localhost/echo", "无需密钥"),
                 "deepseek" => ("deepseek-flash", "https://api.deepseek.com", "DeepSeek API Key"),
-                "xiaomi" => ("mimo-v2.5", "https://api.xiaomimimo.com/v1", "小米 MiMo API Key（sk- 开头）"),
+                "xiaomi" => ("mimo-v2.5", "https://api.xiaomimimo.com/v1", "小米 MiMo API Key"),
                 "tencent" => ("TextTranslate", "https://tmt.tencentcloudapi.com", "腾讯云 SecretId"),
                 "aliyun" => ("general", "https://mt.cn-hangzhou.aliyuncs.com", "阿里云 AccessKey ID"),
                 _ => ("deepseek-flash", "https://api.deepseek.com", "DeepSeek API Key")
             };
-            modelBox.Header = id is "echo" or "tencent" or "aliyun" ? "接口版本" : "模型名称";
-            modelBox.PlaceholderText = defaults.Item1;
-            endpointBox.PlaceholderText = defaults.Item2;
             credentialBox.Header = defaults.Item3;
+            endpointBox.PlaceholderText = defaults.Item2;
             endpointBox.Header = id is "echo" ? "服务地址" : "接口地址";
-            if (string.IsNullOrWhiteSpace(modelBox.Text)) modelBox.Text = defaults.Item1;
-            if (string.IsNullOrWhiteSpace(endpointBox.Text)) endpointBox.Text = defaults.Item2;
+            modelBox.Visibility = id is "deepseek" or "xiaomi" ? Visibility.Visible : Visibility.Collapsed;
+            modelBox.PlaceholderText = defaults.Item1;
+            aliyunSceneBox.Visibility = id is "aliyun" ? Visibility.Visible : Visibility.Collapsed;
             secretBox.Visibility = id is "tencent" or "aliyun" ? Visibility.Visible : Visibility.Collapsed;
-            regionBox.Visibility = id is "tencent" or "aliyun" ? Visibility.Visible : Visibility.Collapsed;
             secretBox.Header = id switch
             {
-                "tencent" => "腾讯云 SecretKey",
-                "aliyun" => "阿里云 AccessKey Secret",
+                "tencent" => "腾讯云 SecretKey（可把两段密钥一起粘贴到上面，自动拆分）",
+                "aliyun" => "阿里云 AccessKey Secret（可把两段密钥一起粘贴到上面，自动拆分）",
                 _ => "附加密钥（可选）"
             };
+            regionBox.Visibility = id is "tencent" or "aliyun" ? Visibility.Visible : Visibility.Collapsed;
+            if (string.IsNullOrWhiteSpace(modelBox.Text)) modelBox.Text = defaults.Item1;
+            if (string.IsNullOrWhiteSpace(endpointBox.Text)) endpointBox.Text = defaults.Item2;
+            // 新建档案且用户没改过名：跟随服务商换建议名（防重名交给保存时的去重）。
+            if (existing is null && (string.IsNullOrWhiteSpace(nameBox.Text) || nameBox.Text == nameSuggestion))
+            {
+                nameSuggestion = SuggestProfileName(id);
+                nameBox.Text = nameSuggestion;
+            }
         }
         providerBox.SelectionChanged += (_, _) =>
         {
@@ -390,6 +425,10 @@ public sealed partial class TranslationPage : Page
                     : modelBox.Text.Trim();
                 var options = new Dictionary<string, string>();
                 if (!string.IsNullOrWhiteSpace(secret)) options["secret"] = secret;
+                if (id == "aliyun")
+                {
+                    options["scene"] = (aliyunSceneBox.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "general";
+                }
                 var request = new TranslationProviderRequest(
                     "你好", "en", "zh-CN", model, endpoint, credential ?? "本地配置",
                     Guid.NewGuid().ToString("N"), id, regionBox.Text.Trim(), options);
@@ -418,13 +457,21 @@ public sealed partial class TranslationPage : Page
                 testButton.IsEnabled = true;
             }
         };
+        // 高级设置：默认折叠——接口地址与区域已预填，绝大多数档案不需要碰。
+        var advanced = new Expander
+        {
+            Header = "高级设置（接口地址 / 区域，已预填，通常无需修改）",
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            HorizontalContentAlignment = HorizontalAlignment.Stretch,
+            Content = new StackPanel { Spacing = 12, Children = { endpointBox, regionBox } }
+        };
         var stack = new StackPanel
         {
             Spacing = 12,
             HorizontalAlignment = HorizontalAlignment.Stretch,
             Children =
             {
-                nameBox, providerBox, modelBox, endpointBox, credentialBox, secretBox, regionBox,
+                nameBox, providerBox, modelBox, aliyunSceneBox, credentialBox, secretBox, advanced,
                 guideHint,
                 new StackPanel { Spacing = 6, Children = { testButton, testNote, testStatus } }
             }
@@ -448,12 +495,27 @@ public sealed partial class TranslationPage : Page
         var result = await dialog.ShowAsync();
         if (result is not (ContentDialogResult.Primary or ContentDialogResult.Secondary)) return;
         var provider = (providerBox.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "echo";
-        var options = new Dictionary<string, string>(); if (!string.IsNullOrWhiteSpace(secretBox.Password)) options["secret"] = secretBox.Password;
+        // 模型字段的保存值按服务商收敛：腾讯没有可选项也要显式保存 TextTranslate
+        //（档案卡片与运行页显示它，也防未来加"必填"校验），阿里云的版本走 Options["scene"]。
+        var model = provider switch
+        {
+            "tencent" => "TextTranslate",
+            "aliyun" => "general",
+            "echo" => "本地回显",
+            "xiaomi" => string.IsNullOrWhiteSpace(modelBox.Text) ? "mimo-v2.5" : modelBox.Text.Trim(),
+            _ => string.IsNullOrWhiteSpace(modelBox.Text) ? "deepseek-flash" : modelBox.Text.Trim()
+        };
+        var options = new Dictionary<string, string>();
+        if (!string.IsNullOrWhiteSpace(secretBox.Password)) options["secret"] = secretBox.Password;
+        if (provider == "aliyun")
+        {
+            options["scene"] = (aliyunSceneBox.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "general";
+        }
         var record = new TranslationProfileRecord(
             existing?.Id ?? Guid.NewGuid().ToString("N"),
-            string.IsNullOrWhiteSpace(nameBox.Text) ? "新的翻译服务" : nameBox.Text.Trim(),
+            DedupeProfileName(string.IsNullOrWhiteSpace(nameBox.Text) ? "新的翻译服务" : nameBox.Text.Trim(), existing?.Id),
             provider,
-            modelBox.Text.Trim(),
+            model,
             endpointBox.Text.Trim(),
             string.IsNullOrWhiteSpace(credentialBox.Password) ? "本地配置" : credentialBox.Password,
             existing?.SourceLanguage ?? "auto",
@@ -461,6 +523,69 @@ public sealed partial class TranslationPage : Page
             regionBox.Text.Trim(),
             options);
         try { State.SaveProfile(record, result == ContentDialogResult.Primary); ShowMessage("档案已保存。", InfoBarSeverity.Success); } catch (Exception ex) { ShowMessage($"保存失败：{ex.Message}", InfoBarSeverity.Error); }
+    }
+
+    private static string SuggestProfileName(string providerId) => providerId switch
+    {
+        "tencent" => "腾讯云翻译",
+        "aliyun" => "阿里云机器翻译",
+        "xiaomi" => "小米 MiMo",
+        "deepseek" => "DeepSeek",
+        _ => "新的翻译服务"
+    };
+
+    /// <summary>重名自动加序号（“小米 MiMo 2”），只与本档案之外的名称比较。</summary>
+    private string DedupeProfileName(string desired, string? selfId)
+    {
+        var taken = (State.TranslationProfiles ?? Enumerable.Empty<TranslationProfileRecord>())
+            .Where(profile => !string.Equals(profile.Id, selfId, StringComparison.Ordinal))
+            .Select(profile => profile.DisplayName)
+            .ToHashSet(StringComparer.Ordinal);
+        if (!taken.Contains(desired)) return desired;
+        for (var index = 2; ; index++)
+        {
+            var candidate = $"{desired} {index}";
+            if (!taken.Contains(candidate)) return candidate;
+        }
+    }
+
+    /// <summary>
+    /// 把一次粘贴进 API 密钥框的两段密钥拆开。支持两行、空格 / Tab 分隔、
+    /// “SecretId=xxx&amp;SecretKey=yyy”这类键值形态；AKID / LTAI 前缀只用来排序，
+    /// 不当判据（可能只复制到一段或被截断）。拆不出两段就返回 false，原样保留。
+    /// </summary>
+    internal static bool TrySplitPastedCredential(string pasted, out string first, out string second)
+    {
+        first = string.Empty;
+        second = string.Empty;
+        if (string.IsNullOrWhiteSpace(pasted)) return false;
+        var tokens = pasted
+            .Replace('\t', ' ')
+            .Replace('\r', ' ')
+            .Replace('\n', ' ')
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(token => token.Trim(';', ','))
+            .Where(token => token.Length > 0)
+            .ToList();
+        if (tokens.Count == 1 && tokens[0].Contains('&'))
+        {
+            tokens = tokens[0]
+                .Split('&', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .ToList();
+        }
+        if (tokens.Count == 2 && tokens.All(token => token.Contains('=')))
+        {
+            tokens = tokens.Select(token => token.Split('=', 2).Last().Trim()).ToList();
+        }
+        if (tokens.Count != 2) return false;
+        first = tokens[0];
+        second = tokens[1];
+        if (second.StartsWith("AKID", StringComparison.OrdinalIgnoreCase) &&
+            !first.StartsWith("AKID", StringComparison.OrdinalIgnoreCase))
+        {
+            (first, second) = (second, first);
+        }
+        return true;
     }
 
     private void OnAddTermClicked(object sender, RoutedEventArgs e)

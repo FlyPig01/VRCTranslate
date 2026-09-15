@@ -791,8 +791,17 @@ if ($translationCode -notmatch 'Expander' -or
 # 阿里云适配器：Scene 必须能由 Model 兜底（只存了 Model 的档案也要按所选版本调用），并做成可测方法。
 $aliyunSource = Get-Content -Raw (Join-Path $v2Root 'src\VrcTranslate.Infrastructure\Translation\TencentAliyunTranslationProviders.cs')
 if ($aliyunSource -notmatch 'internal static string ResolveScene' -or
-    $aliyunSource -notmatch '\["Scene"\] = scene') {
-    throw 'Aliyun provider must resolve the machine-translation edition from the profile (scene option or model) instead of hardcoding the general edition.'
+    $aliyunSource -notmatch 'internal static bool IsProfessional' -or
+    $aliyunSource -notmatch 'professional \? "Translate" : "TranslateGeneral"' -or
+    $aliyunSource -notmatch '\["Scene"\] = professional') {
+    throw 'Aliyun provider must resolve the edition from the profile, and the professional edition must switch BOTH the Action (Translate) and the Scene (domain) - it is not just another general-version scene.'
+}
+# 实测出来的两个必填参数（都是"少了它整条链路必然失败"级别）：
+#  · 腾讯 TMT 要求请求体带 ProjectId，否则返回 SignatureFailure（签名覆盖 body）
+#  · 阿里云 TranslateGeneral 要求 FormatType，否则 400 MissingFormatType
+if ($aliyunSource -notmatch '\["ProjectId"\] = int\.TryParse' -or
+    $aliyunSource -notmatch '\["FormatType"\] = ') {
+    throw 'Tencent must always send ProjectId and Aliyun must always send FormatType; both parameters are mandatory and their absence fails the whole call.'
 }
 $previewHandlerMatch = [regex]::Match(
     $mainWindowSource,

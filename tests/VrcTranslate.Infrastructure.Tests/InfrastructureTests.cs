@@ -272,7 +272,13 @@ public sealed class RoutedProviderTests
         Assert.Equal("你好", result.TranslatedText);
         Assert.Contains("AccessKeyId=access-id", handler.RequestBody, StringComparison.Ordinal);
         Assert.Contains("RegionId=cn-shanghai", handler.RequestBody, StringComparison.Ordinal);
-        Assert.Contains("Scene=professional", handler.RequestBody, StringComparison.Ordinal);
+        // 专业版 = Action:Translate + 领域 Scene。曾经这里断言 Scene=professional，
+        // 那是错的：实测该值会被服务端以 10004「参数出错」拒绝（见 TranslationConnectionTests）。
+        Assert.Contains("Action=Translate&", handler.RequestBody, StringComparison.Ordinal);
+        Assert.Contains("Scene=social", handler.RequestBody, StringComparison.Ordinal);
+        Assert.DoesNotContain("Scene=professional", handler.RequestBody, StringComparison.Ordinal);
+        // TranslateGeneral 把 FormatType 列为必填，缺了就是 400 MissingFormatType。
+        Assert.Contains("FormatType=text", handler.RequestBody, StringComparison.Ordinal);
         Assert.Contains("Signature=", handler.RequestBody, StringComparison.Ordinal);
         Assert.DoesNotContain("access-secret", handler.RequestBody, StringComparison.Ordinal);
     }

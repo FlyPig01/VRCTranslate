@@ -10,6 +10,16 @@ namespace VrcTranslate.Infrastructure.Translation;
 /// <summary>腾讯云机器翻译（TC3-HMAC-SHA256）适配器。</summary>
 public sealed class TencentTranslationProvider : ITranslationProvider
 {
+    /// <summary>Media type of the signed request; the signature covers it including its charset.</summary>
+    internal const string JsonMediaType = "application/json";
+
+    /// <summary>
+    /// The content-type header this adapter signs *and* sends. <c>StringContent</c> appends the
+    /// charset, and the TC3 signature covers the header's whole value, so signing "application/json"
+    /// while sending "application/json; charset=utf-8" fails with AuthFailure.SignatureFailure.
+    /// </summary>
+    internal const string SignedContentType = JsonMediaType + "; charset=utf-8";
+
     private readonly HttpClient _httpClient;
 
     public TencentTranslationProvider(HttpClient? httpClient = null) => _httpClient = httpClient ?? new HttpClient();
@@ -32,16 +42,23 @@ public sealed class TencentTranslationProvider : ITranslationProvider
         var host = request.Endpoint.IsDefaultPort ? request.Endpoint.Host : request.Endpoint.Authority;
         var timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         var date = DateTimeOffset.FromUnixTimeSeconds(timestamp).UtcDateTime.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+        // ProjectId 必须出现在请求体里——TMT 要求它（默认项目 0）。字段缺失时服务端不报"缺参数"，
+        // 而是报 AuthFailure.SignatureFailure（签名覆盖整个请求体，body 一变签名就对不上），
+        // 实测：不带 ProjectId 必然失败，带 ProjectId=0 立即成功。
         var body = new Dictionary<string, object?>
         {
             ["SourceText"] = request.Text,
             ["Source"] = MapTencentLanguage(request.SourceLanguage, true),
-            ["Target"] = MapTencentLanguage(request.TargetLanguage, false)
+            ["Target"] = MapTencentLanguage(request.TargetLanguage, false),
+            ["ProjectId"] = int.TryParse(Option(options, "project_id"), out var projectId) ? projectId : 0
         };
-        if (int.TryParse(Option(options, "project_id"), out var projectId)) body["ProjectId"] = projectId;
         var payload = JsonSerializer.Serialize(body);
         var contentHash = Sha256Hex(payload);
-        var canonicalHeaders = $"content-type:application/json\nhost:{host}\nx-tc-action:{action.ToLowerInvariant()}\nx-tc-region:{region}\nx-tc-timestamp:{timestamp}\nx-tc-version:{version}\n";
+        // 签名覆盖 content-type 头的**完整值**。StringContent 会写成 "application/json; charset=utf-8"，
+        // 所以这里必须用同一个常量，否则签的字符串与实发的请求头对不上，服务端只会回
+        // AuthFailure.SignatureFailure（它不会提示"content-type 不匹配"，这个坑很隐蔽）。
+        var contentType = SignedContentType;
+        var canonicalHeaders = $"content-type:{contentType}\nhost:{host}\nx-tc-action:{action.ToLowerInvariant()}\nx-tc-region:{region}\nx-tc-timestamp:{timestamp}\nx-tc-version:{version}\n";
         var signedHeaders = "content-type;host;x-tc-action;x-tc-region;x-tc-timestamp;x-tc-version";
         var canonicalUri = string.IsNullOrEmpty(request.Endpoint.AbsolutePath) ? "/" : request.Endpoint.AbsolutePath;
         var canonicalQuery = request.Endpoint.Query.TrimStart('?');
@@ -60,7 +77,7 @@ public sealed class TencentTranslationProvider : ITranslationProvider
         message.Headers.TryAddWithoutValidation("X-TC-Region", region);
         message.Headers.TryAddWithoutValidation("X-TC-Timestamp", timestamp.ToString(CultureInfo.InvariantCulture));
         message.Headers.TryAddWithoutValidation("Authorization", $"TC3-HMAC-SHA256 Credential={secretId}/{credentialScope}, SignedHeaders={signedHeaders}, Signature={signature}");
-        message.Content = new StringContent(payload, Encoding.UTF8, "application/json");
+        message.Content = new StringContent(payload, Encoding.UTF8, JsonMediaType);
         using var response = await _httpClient.SendAsync(message, cancellationToken).ConfigureAwait(false);
         var responsePayload = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
         if (!response.IsSuccessStatusCode) throw new HttpRequestException($"腾讯云翻译返回 {(int)response.StatusCode}：{responsePayload}");
@@ -124,11 +141,21 @@ public sealed class AliyunTranslationProvider : ITranslationProvider
             throw new InvalidOperationException("请配置阿里云 AccessKey Secret（档案的附加密钥）。");
         var options = request.Options;
         var scene = ResolveScene(request.Model, TencentTranslationProvider.Option(options, "scene"));
+        var professional = IsProfessional(scene);
         var parameters = new Dictionary<string, string>(StringComparer.Ordinal)
         {
             ["AccessKeyId"] = accessKeyId,
-            ["Action"] = TencentTranslationProvider.FirstNonEmpty(TencentTranslationProvider.Option(options, "action"), "TranslateGeneral"),
+            // 通用版与专业版是**两个不同的 Action**，不是同一个 Action 换 Scene：
+            //   TranslateGeneral + Scene=general            通用版
+            //   Translate        + Scene=title/social/...    专业版（领域场景）
+            // 实测：专业版用 TranslateGeneral 会得到 10004「参数出错」。
+            ["Action"] = TencentTranslationProvider.FirstNonEmpty(
+                TencentTranslationProvider.Option(options, "action"),
+                professional ? "Translate" : "TranslateGeneral"),
             ["Format"] = "JSON",
+            // TranslateGeneral 把 FormatType 列为必填（text = 纯文本，html = 网页格式）；
+            // 少了它服务端直接 400 MissingFormatType。
+            ["FormatType"] = TencentTranslationProvider.FirstNonEmpty(TencentTranslationProvider.Option(options, "format_type"), "text"),
             ["RegionId"] = TencentTranslationProvider.FirstNonEmpty(request.Region, TencentTranslationProvider.Option(options, "region"), "cn-hangzhou"),
             ["SignatureMethod"] = "HMAC-SHA1",
             ["SignatureNonce"] = Guid.NewGuid().ToString("N"),
@@ -138,7 +165,11 @@ public sealed class AliyunTranslationProvider : ITranslationProvider
             ["SourceLanguage"] = MapAliyunLanguage(request.SourceLanguage, true),
             ["TargetLanguage"] = MapAliyunLanguage(request.TargetLanguage, false),
             ["SourceText"] = request.Text,
-            ["Scene"] = scene
+            // 专业版只接受领域场景，不接受 "professional" 这个字面值（传了就是 10004）；
+            // 游戏内语音/聊天最接近的领域是 social。
+            ["Scene"] = professional
+                ? TencentTranslationProvider.FirstNonEmpty(TencentTranslationProvider.Option(options, "domain"), "social")
+                : "general"
         };
         var canonicalized = string.Join("&", parameters.OrderBy(item => item.Key, StringComparer.Ordinal).Select(item => $"{Encode(item.Key)}={Encode(item.Value)}"));
         var stringToSign = $"POST&%2F&{Encode(canonicalized)}";
@@ -173,6 +204,10 @@ public sealed class AliyunTranslationProvider : ITranslationProvider
             configuredScene,
             string.Equals(model?.Trim(), "professional", StringComparison.OrdinalIgnoreCase) ? "professional" : null,
             "general");
+
+    /// <summary>True when the resolved edition is the professional one (a different Action, not just a Scene).</summary>
+    internal static bool IsProfessional(string? scene) =>
+        !string.Equals(scene?.Trim() ?? "general", "general", StringComparison.OrdinalIgnoreCase);
 
     private static string MapAliyunLanguage(string? language, bool source)
     {

@@ -110,30 +110,61 @@ public sealed class TranslationConnectionTests
         Assert.Equal(expected, AliyunTranslationProvider.ResolveScene(model, configuredScene));
     }
 
-    [Fact]
-    public async Task Aliyun_request_carries_the_professional_scene_from_the_model()
+    [Theory]
+    [InlineData("general", "Action=TranslateGeneral", "Scene=general")]
+    [InlineData("professional", "Action=Translate", "Scene=social")]
+    public async Task Aliyun_request_uses_the_action_and_domain_of_the_selected_edition(
+        string model, string expectedAction, string expectedScene)
     {
         var handler = new CapturingHandler("{\"Code\":\"200\",\"Data\":{\"Translated\":\"你好\"}}");
         using var client = new HttpClient(handler);
         var provider = new AliyunTranslationProvider(client);
         var request = new Abstractions.TranslationProviderRequest(
-            "hello", "zh-CN", null, "professional", new Uri("https://example.test"), "access-id", "t", "aliyun",
+            "hello", "zh-CN", null, model, new Uri("https://example.test"), "access-id", "t", "aliyun",
             "cn-hangzhou", new Dictionary<string, string> { ["secret"] = "access-secret" });
 
         await provider.TranslateAsync(request);
 
-        // 选了专业版就必须按专业版调用，不能被写死成通用版。
-        Assert.Contains("Scene=professional", handler.LastBody, StringComparison.Ordinal);
+        // 通用版与专业版是不同的 Action；专业版的 Scene 必须是领域值（professional 会被拒 10004）。
+        Assert.Contains(expectedAction, handler.LastBody, StringComparison.Ordinal);
+        Assert.Contains(expectedScene, handler.LastBody, StringComparison.Ordinal);
+        Assert.DoesNotContain("Scene=professional", handler.LastBody, StringComparison.Ordinal);
     }
 
-    private sealed class CapturingHandler(string payload) : HttpMessageHandler
+    [Fact]
+    public async Task Tencent_signed_content_type_matches_the_sent_header()
+    {
+        // 签名覆盖 content-type 头的完整值：StringContent 会写成 "application/json; charset=utf-8"，
+        // 一旦签名只写 "application/json"，服务端只会回 AuthFailure.SignatureFailure（实测踩过）。
+        var handler = new CapturingHandler("{\"Response\":{\"TargetText\":\"你好\"}}", captureContentType: true);
+        using var client = new HttpClient(handler);
+        var provider = new TencentTranslationProvider(client);
+        var request = new Abstractions.TranslationProviderRequest(
+            "hello", "zh", "en", "TextTranslate", new Uri("https://tmt.tencentcloudapi.com"), "AKIDEXAMPLE", "t", "tencent",
+            "ap-beijing", new Dictionary<string, string> { ["secret"] = "secret-value" });
+
+        await provider.TranslateAsync(request);
+
+        // 请求体必须带 ProjectId（少了它同样是 SignatureFailure）。
+        Assert.Contains("\"ProjectId\":0", handler.LastBody, StringComparison.Ordinal);
+        // 实发的 content-type 必须与签名里用的那一个逐字相同（含 charset）。
+        Assert.Equal(TencentTranslationProvider.SignedContentType, handler.SentContentType);
+    }
+
+    private sealed class CapturingHandler(string payload, bool captureContentType = false) : HttpMessageHandler
     {
         public string LastBody { get; private set; } = string.Empty;
+        public string SentContentType { get; private set; } = string.Empty;
 
         protected override async Task<HttpResponseMessage> SendAsync(
             HttpRequestMessage request, CancellationToken cancellationToken)
         {
             LastBody = Uri.UnescapeDataString(await request.Content!.ReadAsStringAsync(cancellationToken));
+            if (captureContentType)
+            {
+                SentContentType = request.Content.Headers.ContentType?.ToString() ?? string.Empty;
+            }
+
             return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(payload) };
         }
     }

@@ -109,10 +109,23 @@ public abstract class VoiceSessionHost
     }
 
     /// <summary>
-    /// Runs the recognized sentence through translation and output. The whole
-    /// result is passed so a session can also use the speaker label.
+    /// Publishes one recognized sentence before it is queued behind an in-flight
+    /// translation, and returns the id that identifies that message for the rest
+    /// of the run. Recognition is roughly six times faster than translation, so
+    /// showing the sentence now - instead of after its translation - is what keeps
+    /// two sentences from arriving on screen in the same moment. The default
+    /// session publishes nothing.
     /// </summary>
-    protected abstract Task ProcessRecognizedAsync(SpeechRecognitionResult result);
+    protected virtual long PublishRecognized(SpeechRecognitionResult result) => 0;
+
+    /// <summary>
+    /// Runs the recognized sentence through translation and output. The whole
+    /// result is passed so a session can also use the speaker label, and
+    /// <paramref name="recognizedId"/> is the id that
+    /// <see cref="PublishRecognized"/> returned for this sentence (0 when the
+    /// session publishes nothing).
+    /// </summary>
+    protected abstract Task ProcessRecognizedAsync(SpeechRecognitionResult result, long recognizedId);
 
     protected abstract string CaptureFaultMessage { get; }
 
@@ -212,7 +225,8 @@ public abstract class VoiceSessionHost
                 cancellationToken).ConfigureAwait(false);
             if (!string.IsNullOrWhiteSpace(result.Text))
             {
-                await ProcessRecognizedAsync(result).ConfigureAwait(false);
+                var recognizedId = PublishRecognized(result);
+                await ProcessRecognizedAsync(result, recognizedId).ConfigureAwait(false);
             }
         }
         finally
@@ -224,16 +238,19 @@ public abstract class VoiceSessionHost
     private void OnResultReady(object? sender, SpeechRecognitionResult result)
     {
         if (!_running || string.IsNullOrWhiteSpace(result.Text) || _processingResult) return;
-        _ = ProcessPipelinedAsync(result);
+        // The sentence is published before the pipeline queues it: the gate only
+        // serializes translation and output, never the moment a message appears.
+        var recognizedId = PublishRecognized(result);
+        _ = ProcessPipelinedAsync(result, recognizedId);
     }
 
-    private async Task ProcessPipelinedAsync(SpeechRecognitionResult result)
+    private async Task ProcessPipelinedAsync(SpeechRecognitionResult result, long recognizedId)
     {
         await _processingGate.WaitAsync().ConfigureAwait(false);
         _processingResult = true;
         try
         {
-            await ProcessRecognizedAsync(result).ConfigureAwait(false);
+            await ProcessRecognizedAsync(result, recognizedId).ConfigureAwait(false);
             if (SuccessNotification is { } success)
             {
                 Notified?.Invoke(this, success);
@@ -270,11 +287,25 @@ public abstract class VoiceSessionHost
 public sealed class SubtitleSpeechSession : VoiceSessionHost
 {
     private readonly AppState _state;
+    private long _captionSequence;
 
     public SubtitleSpeechSession(AppState state) : base(state.LocalSpeech, state.AudioCapture)
     {
         _state = state;
         SourceLanguage = "auto";
+    }
+
+    /// <summary>
+    /// Shows the recognized line on the caption surface the moment recognition
+    /// produces it, while the translation is still being produced. The translation
+    /// fills this same message through the id returned here, so a fast speaker can
+    /// no longer deliver two captions at the same moment.
+    /// </summary>
+    protected override long PublishRecognized(SpeechRecognitionResult result)
+    {
+        var captionId = Interlocked.Increment(ref _captionSequence);
+        OverlayWindowHost.AppendRecognizedSubtitleFromAnyThread(captionId, result.Text, result.SpeakerLabel);
+        return captionId;
     }
 
     // 回环族：具体采系统混音还是 VRChat 进程音频由自适应协调器决定。
@@ -285,7 +316,7 @@ public sealed class SubtitleSpeechSession : VoiceSessionHost
     protected override SpeechNotificationEventArgs DescribeFailure(Exception exception) =>
         new(SpeechNotificationKind.Error, "翻译失败", exception.Message);
 
-    protected override async Task ProcessRecognizedAsync(SpeechRecognitionResult result)
+    protected override async Task ProcessRecognizedAsync(SpeechRecognitionResult result, long recognizedId)
     {
         var text = result.Text;
         var recognizedLanguage = result.SourceLanguage;
@@ -301,10 +332,25 @@ public sealed class SubtitleSpeechSession : VoiceSessionHost
             new LanguagePolicy(sourceMode, "zh-CN", fixedSource),
             current.InvariantPolicy,
             current.RetryPolicy);
-        var translated = await _state.Translator.TranslateAsync(
-            new TextTranslationRequest(text, voiceRoute, TextTranslationSource.SpeechRecognition,
-                sourceLanguageHint: sourceMode == SourceLanguageMode.Fixed ? recognizedLanguage : null))
-            .ConfigureAwait(false);
+        TextTranslationResult translated;
+        try
+        {
+            translated = await _state.Translator.TranslateAsync(
+                new TextTranslationRequest(text, voiceRoute, TextTranslationSource.SpeechRecognition,
+                    sourceLanguageHint: sourceMode == SourceLanguageMode.Fixed ? recognizedLanguage : null))
+                .ConfigureAwait(false);
+        }
+        catch
+        {
+            // The message that recognition already put on screen keeps its
+            // recognized line; resolving it as "no translation" stops the surface
+            // from waiting for a translation that will never come.
+            OverlayWindowHost.FillSubtitleTranslationFromAnyThread(recognizedId, null);
+            throw;
+        }
+
+        // The caption is completed as soon as the translation exists, so a failed
+        // or slow OSC send can never strand a message that waits for its text.
         // Other players' captions belong to the subtitle surface only. The shared
         // translation preview feeds the quick-input window and the own-voice page,
         // which are about what the user says - writing another player's sentence
@@ -312,12 +358,12 @@ public sealed class SubtitleSpeechSession : VoiceSessionHost
         // Other-player captions are translated to Simplified Chinese only;
         // use the shared OSC length guard without adding own-input targets
         // or the original text to this stream.
-        await _state.Osc.SendChatboxAsync(TranslationOutputFormatter.TrimForOsc(translated.TranslatedText))
-            .ConfigureAwait(false);
         // The caption message carries the speaker label as its own part; the
         // OSC chat line stays translation-only so the in-game stream keeps its
         // existing shape.
-        OverlayWindowHost.AppendSubtitleFromAnyThread(text, translated.TranslatedText, result.SpeakerLabel);
+        OverlayWindowHost.FillSubtitleTranslationFromAnyThread(recognizedId, translated.TranslatedText);
+        await _state.Osc.SendChatboxAsync(TranslationOutputFormatter.TrimForOsc(translated.TranslatedText))
+            .ConfigureAwait(false);
     }
 }
 
@@ -342,7 +388,7 @@ public sealed class SelfVoiceSpeechSession : VoiceSessionHost
     protected override SpeechNotificationEventArgs? SuccessNotification =>
         new(SpeechNotificationKind.Success, "已发送", "自身语音译文已发送到 VRChat。");
 
-    protected override async Task ProcessRecognizedAsync(SpeechRecognitionResult recognized)
+    protected override async Task ProcessRecognizedAsync(SpeechRecognitionResult recognized, long recognizedId)
     {
         var text = recognized.Text;
         var result = await _state.TranslateSelfAsync(text, TextTranslationSource.SpeechRecognition)

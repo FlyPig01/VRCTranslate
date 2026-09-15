@@ -27,21 +27,42 @@ internal static class OverlayWindowHost
     public static SubtitleOverlayWindow? Subtitle => _subtitle;
 
     /// <summary>
-    /// Appends one caption message from any thread. Recognition results are
-    /// processed by the application-scoped session host off the UI thread, so
-    /// the marshal happens here instead of at every call site.
+    /// Shows one recognized sentence on the caption surface from any thread, as
+    /// soon as recognition produced it and before its translation exists.
+    /// Recognition results are processed by the application-scoped session host
+    /// off the UI thread, so the marshal happens here instead of at every call
+    /// site. <paramref name="captionId"/> is the caller's correlation id for the
+    /// translation that fills this same message later.
     /// </summary>
-    public static void AppendSubtitleFromAnyThread(string original, string translated, string? speakerLabel = null)
+    public static void AppendRecognizedSubtitleFromAnyThread(long captionId, string original, string? speakerLabel = null)
     {
         var window = _subtitle;
         if (window is null) return;
         if (_dispatcherQueue is { } queue)
         {
-            queue.TryEnqueue(() => window.AppendCaption(original, translated, speakerLabel));
+            queue.TryEnqueue(() => window.AppendRecognizedCaption(captionId, original, speakerLabel));
         }
         else
         {
-            window.AppendCaption(original, translated, speakerLabel);
+            window.AppendRecognizedCaption(captionId, original, speakerLabel);
+        }
+    }
+
+    /// <summary>
+    /// Fills one message's translation from any thread. The message keeps its
+    /// place in the list; this never appends a second caption.
+    /// </summary>
+    public static void FillSubtitleTranslationFromAnyThread(long captionId, string? translated)
+    {
+        var window = _subtitle;
+        if (window is null) return;
+        if (_dispatcherQueue is { } queue)
+        {
+            queue.TryEnqueue(() => window.FillCaptionTranslation(captionId, translated));
+        }
+        else
+        {
+            window.FillCaptionTranslation(captionId, translated);
         }
     }
 

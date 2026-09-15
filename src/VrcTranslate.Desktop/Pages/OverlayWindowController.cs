@@ -204,6 +204,46 @@ internal sealed class OverlayWindowController : IDisposable
         return true;
     }
 
+    /// <summary>
+    /// Resizes the surface to a content-following height while keeping its bottom
+    /// edge where the reader put it: the caption strip grows and shrinks upwards,
+    /// so the newest message stays in place instead of travelling down the screen
+    /// as the messages above it get taller. Returns false when the height is
+    /// already the requested one or the native call could not be made.
+    /// </summary>
+    public bool ResizeKeepingBottom(int height)
+    {
+        if (_disposed) return false;
+        var target = Math.Clamp(height, 56, 10000);
+        var position = _appWindow.Position;
+        var size = _appWindow.Size;
+        if (size.Height == target) return false;
+
+        var top = position.Y + size.Height - target;
+        try
+        {
+            // Growing upwards must not push the surface off the top of the display.
+            top = Math.Max(top, DisplayArea.GetFromWindowId(_appWindow.Id, DisplayAreaFallback.Nearest).WorkArea.Y);
+        }
+        catch
+        {
+            // A headless or design-time host has no display area; keep the computed top.
+        }
+
+        try
+        {
+            _appWindow.MoveAndResize(new RectInt32(position.X, top, size.Width, target));
+        }
+        catch
+        {
+            // Sizing follows the content; a rejected resize must never surface as
+            // an error to the reader.
+            return false;
+        }
+
+        return true;
+    }
+
     /// <summary>Allows the real close only during application shutdown.</summary>
     public void ClosePermanently()
     {

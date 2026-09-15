@@ -383,6 +383,43 @@ if (([regex]::Matches($overlayCodeSource, 'TextAlignment\s*=\s*TextAlignment\.Ce
     $overlayCodeSource -notmatch 'HorizontalAlignment\s*=\s*HorizontalAlignment\.Stretch') {
     throw 'Caption messages must be centred: every rendered line, including the speaker label, uses TextAlignment.Center across the message width.'
 }
+# D6：字幕样式向播放器字幕靠——译文 18px（窄窗低于 420px 时降一档到 16px）、原文 13px 且更暗，
+# 两者共用同一对齐、同一左右内边距与同一行距（约 1.35），固定「译文在上、原文在下」；
+# 去掉圆角气泡，改成整块深色表面 + 消息之间的细分隔，消息间距 8~10px；
+# 窗口高度随内容收缩（底部对齐与「有新消息」提示保持不变），浮窗不得因此多出任何控件。
+if ($overlayCodeSource -notmatch 'TranslatedFontSize = 18d' -or
+    $overlayCodeSource -notmatch 'NarrowTranslatedFontSize = 16d' -or
+    $overlayCodeSource -notmatch 'NarrowSurfaceWidth = 420d' -or
+    $overlayCodeSource -notmatch 'OriginalFontSize = 13d' -or
+    $overlayCodeSource -notmatch 'LineHeightRatio = 1\.35d' -or
+    $overlayCodeSource -notmatch 'MessageSpacing = (?:8|9|10)d' -or
+    $overlayCodeSource -match 'CornerRadius' -or
+    $overlayCodeSource -notmatch 'SeparatorBrush' -or
+    $overlayCodeSource -notmatch 'LineStackingStrategy\.BlockLineHeight' -or
+    $overlayCodeSource -notmatch 'FitSurfaceHeight' -or
+    $overlayCodeSource -notmatch '\.ResizeKeepingBottom\(' -or
+    $overlayControllerSource -notmatch 'public bool ResizeKeepingBottom' -or
+    ([regex]::Matches($overlayMarkup, '<Button').Count -ne 1)) {
+    throw 'Caption styling must follow the confirmed D6 design: 18px translation with a 16px narrow step, 13px dimmer recognized line, one shared alignment/padding/line height, no rounded bubble, a hairline separator, content-following window height, and no extra control on the surface.'
+}
+# D6：渐进式字幕——识别完成即先显示原文（含说话人标签），译文到达后填进同一条消息；
+# 不新增条数、不重排、不改 OSC 行（OSC 仍是译文）。译文为空或失败时该条只剩原文，
+# 并且必须解析成「没有译文」而不是永远等待的占位。
+if ($captionBufferSource -notmatch 'SubtitleTranslationState' -or
+    $captionBufferSource -notmatch 'SubtitleTranslationState\.Pending' -or
+    $captionBufferSource -notmatch 'SubtitleTranslationState\.Unavailable' -or
+    $captionBufferSource -notmatch 'TrySetTranslation' -or
+    $overlayCodeSource -notmatch 'AppendRecognizedCaption' -or
+    $overlayCodeSource -notmatch 'FillCaptionTranslation' -or
+    $overlayCodeSource -notmatch 'MissingTranslationSuffix' -or
+    $overlayHostSource -notmatch 'AppendRecognizedSubtitleFromAnyThread' -or
+    $overlayHostSource -notmatch 'FillSubtitleTranslationFromAnyThread' -or
+    $overlayHostSource -match 'AppendSubtitleFromAnyThread' -or
+    $sessionHostSource -notmatch '(?s)protected override long PublishRecognized.*?AppendRecognizedSubtitleFromAnyThread' -or
+    $sessionHostSource -notmatch '(?s)TranslateAsync.*?FillSubtitleTranslationFromAnyThread' -or
+    $sessionHostSource -notmatch 'FillSubtitleTranslationFromAnyThread\(recognizedId, null\)') {
+    throw 'Progressive captions must show the recognized line first and fill the translation into that same message: recognition owns the message, translation only completes it, and a failed or empty translation resolves the message instead of leaving it pending.'
+}
 if ($quickInputSource -notmatch 'new\s+OverlayWindowController' -or
     $quickInputSource -notmatch 'OverlayWindowHost\.GetSavedLayout' -or
     $quickInputSource -notmatch 'OverlayWindowHost\.SaveLayout' -or

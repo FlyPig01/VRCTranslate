@@ -15,11 +15,14 @@
           HorizontalAlignment="Stretch"
           VerticalAlignment="Stretch"
           AutomationProperties.AutomationId="subtitle-caption-frame">
-      <!-- Chat-style message list: one message per recognized sentence, newest at
-           the bottom. The whole client area belongs to the messages - there is no
+      <!-- Player-style message list: one message per recognized sentence,
+           newest at the bottom, on one dark surface with a hairline between
+           messages. The whole client area belongs to the messages - there is no
            icon or status widget competing with them - and the viewer owns pointer
            and wheel scrolling so a long conversation can be read back while new
-           messages stick to the bottom for a reader who stays there. -->
+           messages stick to the bottom for a reader who stays there. The window
+           height follows the messages, so the list is not padded with empty
+           surface above the newest one. -->
       <ScrollViewer x:Name="CaptionScroll"
                     AutomationProperties.AutomationId="subtitle-text"
                     Margin="4,0"

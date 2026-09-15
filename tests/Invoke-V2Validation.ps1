@@ -236,7 +236,30 @@ if ($settingsMarkup -notmatch 'Text="他人语音"' -or
     (Get-Content -Raw $guidePage) -notmatch 'Text="开始 / 停止他人语音识别"') {
     throw 'The caption shortcut must be named 他人语音 with the 开始 / 停止他人语音识别 hint in the settings and guide pages.'
 }
-if ($settingsMarkup -notmatch 'LostFocus="OnHotkeyBoxLostFocus"' -or $settingsMarkup -notmatch 'KeyDown="OnHotkeyBoxKeyDown"' -or $settingsSource -notmatch 'ConfirmHotkeyChangeAsync' -or $settingsSource -notmatch 'ContentDialog') { throw 'Shortcut edits must require an explicit confirmation before being persisted.' }
+# D9：快捷键不再手打字符串，也不再是 TextBox（WinUI 自带清除按钮「X」看起来像文本，
+# 还会把已输入的手势清空）。三个字段改为点击后直接按键录制的捕获框：合法组合立即校验、立即落盘，
+# Esc 取消、非法/冲突组合显示红框与说明，绝不表现为默默恢复旧值。
+if ($settingsMarkup -notmatch 'Click="OnHotkeyCaptureClick"' -or
+    $settingsMarkup -notmatch 'PreviewKeyDown="OnHotkeyCapturePreviewKeyDown"' -or
+    $settingsMarkup -notmatch 'LostFocus="OnHotkeyCaptureLostFocus"' -or
+    $settingsMarkup -notmatch 'AutomationProperties\.Name="打开输入框快捷键"' -or
+    $settingsMarkup -notmatch 'AutomationProperties\.Name="他人语音快捷键"' -or
+    $settingsMarkup -notmatch 'AutomationProperties\.Name="自身语音快捷键"' -or
+    $settingsMarkup -notmatch 'x:Name="HotkeyStatus"' -or
+    $settingsSource -notmatch 'HotkeyBinding\.Normalize' -or
+    $settingsSource -notmatch 'InputKeyboardSource\.GetKeyStateForCurrentThread' -or
+    $settingsSource -notmatch 'VirtualKey\.Escape' -or
+    $settingsSource -notmatch 'VirtualKey\.Back' -or
+    $settingsSource -notmatch 'ShowHotkeyStatus' -or
+    $settingsSource -notmatch '"未设置"') {
+    throw 'Shortcut editors must capture a real chord, save it immediately, and explain rejected chords instead of silently restoring the old value.'
+}
+if ($settingsMarkup -match '<TextBox x:Name="(QuickInput|Voice|SelfVoice)HotkeyBox"' -or $settingsSource -match 'ConfirmHotkeyChangeAsync|RestoreHotkey|IsHotkeyBox') {
+    throw 'Shortcut editors must not go back to a text box with a built-in delete button and a restore-the-old-value path.'
+}
+if ($mainWindowSource -notmatch 'SettingsPage\.IsHotkeyCaptureActive' -or $mainWindowSource -notmatch 'string\.IsNullOrWhiteSpace\(gesture\)') {
+    throw 'The global poller must stand down while a shortcut is recorded and must honour a cleared (empty) shortcut instead of resurrecting the default.'
+}
 
 # The run page is an operational overview. Manual text translation belongs to
 # the dedicated quick-input flow and must not be duplicated here.
@@ -1729,40 +1752,46 @@ public static class VrcTranslateValidationNative {
                 }
             }
             if ($page -eq 'settings') {
-                # A shortcut edit must remain in the editor until the user
-                # explicitly confirms it. Use UIA to exercise the same path a
-                # manual edit takes, then cancel so the smoke run is isolated.
+                # D9：快捷键字段是"点击后按键录制"的捕获按钮，不再是可编辑 TextBox。
+                # 这里只做非破坏性检查：控件类型正确、点击后进入录制态（不写盘）、
+                # 焦点离开即取消且磁盘上的值保持原样。真正的落盘与轮询生效由
+                # 人工/交互式 UIA 证据覆盖（见 docs 记录）。
+                $userSettingsFile = Join-Path $desktopOutput 'data\v2-user-settings.json'
+                $storedBefore = if (Test-Path $userSettingsFile) { (Get-Content -Raw $userSettingsFile | ConvertFrom-Json).QuickInputHotkey } else { 'Ctrl+Alt+I' }
                 $hotkeyCondition = New-Object System.Windows.Automation.PropertyCondition(
                     [System.Windows.Automation.AutomationElement]::AutomationIdProperty, 'QuickInputHotkeyBox')
                 $hotkeyBox = $window.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $hotkeyCondition)
-                $valuePattern = $hotkeyBox.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern)
-                $originalHotkey = $valuePattern.Current.Value
-                $valuePattern.SetValue('Ctrl+Alt+J')
+                if ($hotkeyBox.Current.ControlType -ne [System.Windows.Automation.ControlType]::Button) {
+                    throw 'Shortcut fields must be capture buttons, not text boxes with a built-in delete button.'
+                }
+                $hotkeyBox.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke()
+                Start-Sleep -Milliseconds 400
+                $recordingCaps = @($hotkeyBox.FindAll(
+                    [System.Windows.Automation.TreeScope]::Descendants,
+                    [System.Windows.Automation.Condition]::TrueCondition)) |
+                    Where-Object { $_.Current.ControlType -eq [System.Windows.Automation.ControlType]::Text } |
+                    ForEach-Object { $_.Current.Name }
+                if (-not (@($recordingCaps) -join '|').Contains('请按下')) {
+                    throw "Clicking a shortcut field did not start recording: '$(@($recordingCaps) -join '|')'."
+                }
                 $settingsNav = $window.FindFirst(
                     [System.Windows.Automation.TreeScope]::Descendants,
                     (New-Object System.Windows.Automation.PropertyCondition(
                         [System.Windows.Automation.AutomationElement]::AutomationIdProperty, 'nav-run')))
                 if ($null -ne $settingsNav) { $settingsNav.SetFocus() }
-                $confirmDialog = $null
-                for ($attempt = 0; $attempt -lt 30 -and $null -eq $confirmDialog; $attempt++) {
-                    Start-Sleep -Milliseconds 100
-                    $confirmDialog = $window.FindFirst(
-                        [System.Windows.Automation.TreeScope]::Descendants,
-                        (New-Object System.Windows.Automation.PropertyCondition(
-                            [System.Windows.Automation.AutomationElement]::NameProperty, '确认快捷键')))
+                Start-Sleep -Milliseconds 400
+                $storedAfter = if (Test-Path $userSettingsFile) { (Get-Content -Raw $userSettingsFile | ConvertFrom-Json).QuickInputHotkey } else { 'Ctrl+Alt+I' }
+                if ($storedAfter -ne $storedBefore) {
+                    throw "Leaving a recording shortcut field must not write anything: '$storedBefore' -> '$storedAfter'."
                 }
-                if ($null -eq $confirmDialog) { throw 'Changing a shortcut did not open the confirmation dialog.' }
-                $cancelShortcut = $confirmDialog.FindFirst(
+                $reloadedCaps = @($hotkeyBox.FindAll(
                     [System.Windows.Automation.TreeScope]::Descendants,
-                    (New-Object System.Windows.Automation.PropertyCondition(
-                        [System.Windows.Automation.AutomationElement]::NameProperty, '取消')))
-                if ($null -eq $cancelShortcut) { throw 'Shortcut confirmation dialog has no cancel action.' }
-                $cancelShortcut.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke()
-                Start-Sleep -Milliseconds 200
-                Start-Sleep -Milliseconds 200
-                $reloadedHotkeyBox = $window.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $hotkeyCondition)
-                $reloadedValue = $reloadedHotkeyBox.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).Current.Value
-                if ($reloadedValue -ne $originalHotkey) { throw 'Cancelling a shortcut edit did not restore the saved value.' }
+                    [System.Windows.Automation.Condition]::TrueCondition)) |
+                    Where-Object { $_.Current.ControlType -eq [System.Windows.Automation.ControlType]::Text } |
+                    ForEach-Object { $_.Current.Name }
+                if ((@($reloadedCaps) -join '|').Contains('请按下')) {
+                    throw 'Leaving a recording shortcut field did not cancel the recording.'
+                }
             }
             if ($page -eq 'translation') {
                 # Profile cards move their action buttons below the labels at

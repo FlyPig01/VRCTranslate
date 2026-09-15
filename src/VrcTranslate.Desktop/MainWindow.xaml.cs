@@ -218,6 +218,11 @@ public sealed partial class MainWindow : Window
 
     private void PollGlobalHotkeys()
     {
+        // The settings page records a shortcut by pressing it for real, so the
+        // poller stands down while that happens: otherwise binding Ctrl+Alt+I
+        // would toggle the quick-input overlay from under the settings page.
+        if (SettingsPage.IsHotkeyCaptureActive) return;
+
         var settings = ReadHotkeys();
         foreach (var pair in settings)
         {
@@ -309,12 +314,13 @@ public sealed partial class MainWindow : Window
             {
                 var settings = System.Text.Json.JsonSerializer.Deserialize<HotkeySettings>(File.ReadAllText(path));
                 if (settings is not null)
-                    return new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-                    {
-                        [Normalize(settings.QuickInputHotkey, "CTRL+ALT+I")] = "input",
-                        [Normalize(settings.VoiceHotkey, "F7")] = "voice",
-                        [Normalize(settings.SelfVoiceHotkey, "CTRL+F8")] = "self-voice"
-                    };
+                {
+                    var hotkeys = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                    AddHotkey(hotkeys, settings.QuickInputHotkey, "CTRL+ALT+I", "input");
+                    AddHotkey(hotkeys, settings.VoiceHotkey, "F7", "voice");
+                    AddHotkey(hotkeys, settings.SelfVoiceHotkey, "CTRL+F8", "self-voice");
+                    return hotkeys;
+                }
             }
         }
         catch { }
@@ -322,6 +328,17 @@ public sealed partial class MainWindow : Window
         {
             ["CTRL+ALT+I"] = "input", ["F7"] = "voice", ["CTRL+F8"] = "self-voice"
         };
+    }
+
+    /// <summary>
+    /// Adds one binding. An empty gesture means the settings page cleared that
+    /// shortcut on purpose, so the action keeps no key at all; a gesture the
+    /// poller cannot read still falls back to the shipped default.
+    /// </summary>
+    private static void AddHotkey(IDictionary<string, string> hotkeys, string? gesture, string fallback, string action)
+    {
+        if (string.IsNullOrWhiteSpace(gesture)) return;
+        hotkeys[Normalize(gesture, fallback)] = action;
     }
 
     private static string Normalize(string? value, string fallback)

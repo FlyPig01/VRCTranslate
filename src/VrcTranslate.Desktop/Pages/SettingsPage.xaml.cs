@@ -1,18 +1,36 @@
 using System.Text.Json;
+using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Media;
 using VrcTranslate.Core.Settings;
 using VrcTranslate.Infrastructure.Storage;
+using Windows.System;
+using Windows.UI.Core;
 
 namespace VrcTranslate.Desktop.Pages;
 
 public sealed partial class SettingsPage : Page
 {
     private bool _loading;
-    private bool _hotkeyConfirmationOpen;
     private UserSettings _savedSettings = new();
     private readonly string _path = PortableStorage.GetPath(AppDataFiles.UserSettings);
+    private Button? _recordingEditor;
+    private Microsoft.UI.Dispatching.DispatcherQueueTimer? _captureReleaseTimer;
+    private VirtualKey _lastPressedKey = VirtualKey.None;
+    private int _captureReleaseTicks;
+
+    /// <summary>
+    /// True while the settings page owns the keyboard. The global poller reads
+    /// the raw keyboard state, so it has to stand down while the user presses
+    /// the combination they want to bind: otherwise recording "Ctrl+Alt+I"
+    /// would open the quick-input overlay behind this page. The flag also stays
+    /// set for the moment after a capture, until those keys are released:
+    /// otherwise the chord just recorded would fire the instant the field
+    /// closed, because the poller only needs the keys to still be down.
+    /// </summary>
+    public static bool IsHotkeyCaptureActive { get; private set; }
 
     public SettingsPage()
     {
@@ -20,6 +38,7 @@ public sealed partial class SettingsPage : Page
         UpdateStorageNotice();
         Loaded += (_, _) => LoadSettings();
         Loaded += (_, _) => QueueResponsiveLayout();
+        Unloaded += (_, _) => CancelHotkeyCapture(null);
         HotkeyGrid.SizeChanged += (_, _) => QueueResponsiveLayout();
         OscGrid.SizeChanged += (_, _) => QueueResponsiveLayout();
         OscHeaderGrid.SizeChanged += (_, _) => QueueResponsiveLayout();
@@ -101,7 +120,9 @@ public sealed partial class SettingsPage : Page
         if (desktop)
         {
             HotkeyGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(180) });
-            HotkeyGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(220) });
+            // Wide enough for the longest supported chord (four modifiers plus a
+            // primary key) rendered as keycaps, so nothing is clipped.
+            HotkeyGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(260) });
             HotkeyGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             HotkeyGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             HotkeyGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
@@ -121,7 +142,7 @@ public sealed partial class SettingsPage : Page
         SetHotkeyRow(SelfVoiceHotkeyLabel, SelfVoiceHotkeyBox, SelfVoiceHotkeyHint, 2, false);
     }
 
-    private static void SetHotkeyRow(TextBlock label, TextBox editor, TextBlock hint, int row, bool showHint)
+    private static void SetHotkeyRow(TextBlock label, Button editor, TextBlock hint, int row, bool showHint)
     {
         Grid.SetRow(label, row);
         Grid.SetColumn(label, 0);
@@ -179,9 +200,9 @@ public sealed partial class SettingsPage : Page
         }
         catch { }
         _savedSettings = settings;
-        QuickInputHotkeyBox.Text = settings.QuickInputHotkey;
-        VoiceHotkeyBox.Text = settings.VoiceHotkey;
-        SelfVoiceHotkeyBox.Text = settings.SelfVoiceHotkey;
+        RenderSavedHotkey(QuickInputHotkeyBox);
+        RenderSavedHotkey(VoiceHotkeyBox);
+        RenderSavedHotkey(SelfVoiceHotkeyBox);
         OscHostBox.Text = settings.OscHost;
         OscPortBox.Text = settings.OscPort.ToString();
         _loading = false;
@@ -204,147 +225,414 @@ public sealed partial class SettingsPage : Page
         };
         if (await dialog.ShowAsync() != ContentDialogResult.Primary) return;
 
-        _loading = true;
-        QuickInputHotkeyBox.Text = "Ctrl+Alt+I";
-        VoiceHotkeyBox.Text = "F7";
-        SelfVoiceHotkeyBox.Text = "Ctrl+F8";
-        _loading = false;
-        if (TryReadPendingHotkeys(out var settings, out _))
-            SaveSettingsIfValid(settings);
+        CancelHotkeyCapture(null);
+        if (!TrySaveHotkeys("Ctrl+Alt+I", "F7", "Ctrl+F8", out var error))
+        {
+            ShowHotkeyStatus(error, HotkeyStatusKind.Error);
+            ShowResult(error, InfoBarSeverity.Warning);
+            return;
+        }
+
+        RenderSavedHotkey(QuickInputHotkeyBox);
+        RenderSavedHotkey(VoiceHotkeyBox);
+        RenderSavedHotkey(SelfVoiceHotkeyBox);
+        ShowHotkeyStatus("已恢复默认快捷键：Ctrl+Alt+I / F7 / Ctrl+F8。", HotkeyStatusKind.Success);
     }
 
     private void OnSettingTextChanged(object sender, TextChangedEventArgs e)
     {
-        if (_loading || IsHotkeyBox(sender)) return;
-        SaveSettingsIfValid();
+        if (_loading) return;
+        if (!TrySave(_savedSettings, out var error)) ShowResult(error, InfoBarSeverity.Warning);
     }
 
-    private async void OnHotkeyBoxLostFocus(object sender, RoutedEventArgs e)
+    // ---- Shortcut capture -------------------------------------------------
+    //
+    // The three editors are capture fields rather than text boxes. A WinUI
+    // TextBox draws its own delete button, which looked like a stray "x" inside
+    // the field and wiped the gesture without a word; it has no public API to
+    // turn that button off. Recording the chord directly also removes the
+    // uncommitted-text window: a gesture is validated and saved the moment it
+    // is pressed, so nothing can be silently dropped when focus moves on.
+
+    private void OnHotkeyCaptureClick(object sender, RoutedEventArgs e)
     {
-        if (_loading || sender is not TextBox box) return;
-        await ConfirmHotkeyChangeAsync(box);
+        if (sender is Button editor) StartHotkeyCapture(editor);
     }
 
-    private async void OnHotkeyBoxKeyDown(object sender, KeyRoutedEventArgs e)
+    private void OnHotkeyCaptureLostFocus(object sender, RoutedEventArgs e)
     {
-        if (e.Key != Windows.System.VirtualKey.Enter || sender is not TextBox box) return;
-        e.Handled = true;
-        await ConfirmHotkeyChangeAsync(box);
+        if (sender is not Button editor || _recordingEditor != editor) return;
+        CancelHotkeyCapture($"已取消录制：“{GetHotkeyLabel(editor)}”保持原快捷键。");
     }
 
-    private async Task ConfirmHotkeyChangeAsync(TextBox changedBox)
+    private void OnHotkeyCapturePreviewKeyDown(object sender, KeyRoutedEventArgs e)
     {
-        if (_hotkeyConfirmationOpen) return;
-        var current = changedBox.Text.Trim();
-        var saved = GetSavedHotkey(changedBox);
-        if (string.Equals(current, saved, StringComparison.Ordinal)) return;
+        if (sender is not Button editor) return;
 
-        if (!TryReadPendingHotkeys(out var pending, out var validationError))
+        if (_recordingEditor != editor)
         {
-            ShowResult(validationError, InfoBarSeverity.Warning);
-            RestoreHotkey(changedBox);
+            // Tab reaches the field; Enter or space starts recording there,
+            // exactly like a click does.
+            if (e.Key is VirtualKey.Enter or VirtualKey.Space)
+            {
+                e.Handled = true;
+                StartHotkeyCapture(editor);
+            }
+
             return;
         }
 
-        var actionName = GetHotkeyLabel(changedBox);
-        var dialog = new ContentDialog
+        e.Handled = true;
+        _lastPressedKey = e.Key;
+        switch (e.Key)
         {
-            Title = "确认快捷键",
-            Content = new TextBlock
-            {
-                Text = $"将“{actionName}”设为 {current}？",
-                TextWrapping = TextWrapping.Wrap
-            },
-            PrimaryButtonText = "确认",
-            CloseButtonText = "取消",
-            DefaultButton = ContentDialogButton.Primary,
-            XamlRoot = XamlRoot
-        };
-        _hotkeyConfirmationOpen = true;
-        try
+            case VirtualKey.Escape:
+                CancelHotkeyCapture($"已取消录制：“{GetHotkeyLabel(editor)}”保持原快捷键。");
+                return;
+            case VirtualKey.Back:
+            case VirtualKey.Delete:
+                ApplyHotkey(editor, string.Empty);
+                return;
+        }
+
+        if (IsModifierKey(e.Key))
         {
-            var result = await dialog.ShowAsync();
-            if (result != ContentDialogResult.Primary)
+            // Holding only Ctrl/Alt/Shift/Win does not end the recording; the
+            // field shows what is held so far.
+            RenderHotkey(editor, string.Empty, recording: true);
+            return;
+        }
+
+        ApplyHotkey(editor, BuildGesture(e.Key));
+    }
+
+    /// <summary>
+    /// Releasing a modifier while recording redraws the intermediate state:
+    /// otherwise the field keeps claiming a key that is no longer held.
+    /// </summary>
+    private void OnHotkeyCapturePreviewKeyUp(object sender, KeyRoutedEventArgs e)
+    {
+        if (sender is not Button editor || _recordingEditor != editor) return;
+        if (!IsModifierKey(e.Key)) return;
+        e.Handled = true;
+        RenderHotkey(editor, string.Empty, recording: true);
+    }
+
+    private void StartHotkeyCapture(Button editor)
+    {
+        if (_loading || _recordingEditor == editor) return;
+        CancelHotkeyCapture(null);
+
+        _recordingEditor = editor;
+        _lastPressedKey = VirtualKey.None;
+        IsHotkeyCaptureActive = true;
+        SetFieldBorder(editor, RecordingFieldBorder);
+        RenderHotkey(editor, string.Empty, recording: true);
+        ShowHotkeyStatus($"“{GetHotkeyLabel(editor)}”：请按下新的快捷键。Esc 取消，Backspace 清除。", HotkeyStatusKind.Info);
+        editor.Focus(FocusState.Programmatic);
+    }
+
+    private void CancelHotkeyCapture(string? message)
+    {
+        var editor = _recordingEditor;
+        _recordingEditor = null;
+        if (editor is null) return;
+
+        ScheduleCaptureGateRelease();
+        RenderSavedHotkey(editor);
+        if (message is not null) ShowHotkeyStatus(message, HotkeyStatusKind.Info);
+    }
+
+    /// <summary>
+    /// Stores a captured chord. <paramref name="gesture"/> is null when the key
+    /// that was pressed can never be a shortcut primary key.
+    /// </summary>
+    private void ApplyHotkey(Button editor, string? gesture)
+    {
+        if (gesture is null)
+        {
+            RejectCapture(editor, "不支持这个按键：主键必须是字母、数字或 F1–F12。", null);
+            return;
+        }
+
+        var normalized = gesture;
+        if (gesture.Length > 0)
+        {
+            try
             {
-                RestoreHotkey(changedBox);
+                normalized = HotkeyBinding.Normalize(gesture);
+            }
+            catch (ArgumentException)
+            {
+                RejectCapture(editor, $"不支持组合“{FormatGesture(gesture)}”：修饰键不能重复，主键必须是字母、数字或 F1–F12。", gesture);
+                return;
+            }
+        }
+
+        var (quickInput, voice, selfVoice) = PendingHotkeys(editor, normalized);
+        if (!TrySaveHotkeys(quickInput, voice, selfVoice, out var error))
+        {
+            RejectCapture(editor, error, null);
+            return;
+        }
+
+        _recordingEditor = null;
+        ScheduleCaptureGateRelease();
+        SetFieldBorder(editor, IdleFieldBorder);
+        RenderHotkey(editor, normalized, recording: false);
+        ShowHotkeyStatus(
+            normalized.Length == 0
+                ? $"已清空：“{GetHotkeyLabel(editor)}”现在没有快捷键。"
+                : $"已保存：“{GetHotkeyLabel(editor)}”现在是 {FormatGesture(normalized)}。",
+            HotkeyStatusKind.Success);
+    }
+
+    /// <summary>
+    /// Keeps recording with a red frame: the offending chord stays visible and
+    /// the status line says why, so a rejected edit never looks like a silent
+    /// revert to the old value.
+    /// </summary>
+    private void RejectCapture(Button editor, string message, string? rejectedGesture)
+    {
+        SetFieldBorder(editor, ErrorFieldBorder);
+        ShowHotkeyStatus(message, HotkeyStatusKind.Error);
+        RenderHotkey(editor, rejectedGesture ?? string.Empty, recording: rejectedGesture is null);
+    }
+
+    private (string QuickInput, string Voice, string SelfVoice) PendingHotkeys(Button editor, string value) =>
+        editor == QuickInputHotkeyBox
+            ? (value, GetSavedHotkey(VoiceHotkeyBox), GetSavedHotkey(SelfVoiceHotkeyBox))
+            : editor == VoiceHotkeyBox
+                ? (GetSavedHotkey(QuickInputHotkeyBox), value, GetSavedHotkey(SelfVoiceHotkeyBox))
+                : (GetSavedHotkey(QuickInputHotkeyBox), GetSavedHotkey(VoiceHotkeyBox), value);
+
+    private static string? BuildGesture(VirtualKey key)
+    {
+        var primary = DescribePrimary(key);
+        if (primary is null) return null;
+
+        var parts = new List<string>(5);
+        if (IsKeyDown(VirtualKey.Control)) parts.Add("CTRL");
+        if (IsKeyDown(VirtualKey.Menu)) parts.Add("ALT");
+        if (IsKeyDown(VirtualKey.Shift)) parts.Add("SHIFT");
+        if (IsKeyDown(VirtualKey.LeftWindows) || IsKeyDown(VirtualKey.RightWindows)) parts.Add("WIN");
+        parts.Add(primary);
+        return string.Join('+', parts);
+    }
+
+    private static string? DescribePrimary(VirtualKey key) => key switch
+    {
+        >= VirtualKey.A and <= VirtualKey.Z => ((char)('A' + ((int)key - (int)VirtualKey.A))).ToString(),
+        >= VirtualKey.Number0 and <= VirtualKey.Number9 => ((char)('0' + ((int)key - (int)VirtualKey.Number0))).ToString(),
+        >= VirtualKey.F1 and <= VirtualKey.F12 => "F" + (((int)key - (int)VirtualKey.F1) + 1),
+        _ => null
+    };
+
+    private static bool IsModifierKey(VirtualKey key) => key is
+        VirtualKey.Control or VirtualKey.Menu or VirtualKey.Shift or
+        VirtualKey.LeftWindows or VirtualKey.RightWindows or
+        VirtualKey.LeftControl or VirtualKey.RightControl or
+        VirtualKey.LeftMenu or VirtualKey.RightMenu or
+        VirtualKey.LeftShift or VirtualKey.RightShift;
+
+    private static bool IsKeyDown(VirtualKey key) =>
+        (InputKeyboardSource.GetKeyStateForCurrentThread(key) & CoreVirtualKeyStates.Down) == CoreVirtualKeyStates.Down;
+
+    /// <summary>
+    /// Hands the keyboard back to the global poller once the keys used for the
+    /// capture are physically up again, so the freshly stored chord cannot fire
+    /// by itself. The tick limit is a safety net: a stuck gate would silently
+    /// disable every global shortcut.
+    /// </summary>
+    private void ScheduleCaptureGateRelease()
+    {
+        if (DispatcherQueue is null)
+        {
+            IsHotkeyCaptureActive = false;
+            return;
+        }
+
+        if (_captureReleaseTimer is null)
+        {
+            _captureReleaseTimer = DispatcherQueue.CreateTimer();
+            _captureReleaseTimer.Interval = TimeSpan.FromMilliseconds(60);
+            _captureReleaseTimer.IsRepeating = true;
+            _captureReleaseTimer.Tick += (_, _) =>
+            {
+                if (_recordingEditor is not null)
+                {
+                    _captureReleaseTicks = 0;
+                    return;
+                }
+
+                _captureReleaseTicks++;
+                if (_captureReleaseTicks < 50 && AnyCaptureKeyDown()) return;
+
+                _captureReleaseTicks = 0;
+                IsHotkeyCaptureActive = false;
+                _captureReleaseTimer?.Stop();
+            };
+        }
+
+        _captureReleaseTicks = 0;
+        _captureReleaseTimer.Start();
+    }
+
+    private bool AnyCaptureKeyDown() =>
+        IsKeyDown(VirtualKey.Control) || IsKeyDown(VirtualKey.Menu) || IsKeyDown(VirtualKey.Shift) ||
+        IsKeyDown(VirtualKey.LeftWindows) || IsKeyDown(VirtualKey.RightWindows) ||
+        (_lastPressedKey != VirtualKey.None && IsKeyDown(_lastPressedKey));
+
+    private void RenderSavedHotkey(Button editor)
+    {
+        SetFieldBorder(editor, IdleFieldBorder);
+        var saved = GetSavedHotkey(editor);
+        string display;
+        try { display = saved.Length == 0 ? string.Empty : HotkeyBinding.Normalize(saved); }
+        catch (ArgumentException) { display = saved; } // keep a legacy value visible so it can be replaced
+        RenderHotkey(editor, display, recording: false);
+    }
+
+    private void RenderHotkey(Button editor, string gesture, bool recording)
+    {
+        var host = KeysHost(editor);
+        host.Children.Clear();
+
+        if (recording)
+        {
+            var held = HeldModifiers();
+            if (held.Count == 0)
+            {
+                host.Children.Add(Placeholder("请按下快捷键…"));
                 return;
             }
 
-            if (!SaveSettingsIfValid(pending)) RestoreHotkey(changedBox);
+            foreach (var modifier in held) host.Children.Add(Keycap(modifier));
+            host.Children.Add(Placeholder("…"));
+            return;
         }
-        finally
+
+        if (string.IsNullOrWhiteSpace(gesture))
         {
-            _hotkeyConfirmationOpen = false;
+            host.Children.Add(Placeholder("未设置"));
+            return;
+        }
+
+        foreach (var part in gesture.Split('+', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            host.Children.Add(Keycap(FormatKey(part)));
         }
     }
 
-    private bool TryReadPendingHotkeys(out UserSettings settings, out string error)
+    private static IReadOnlyList<string> HeldModifiers()
     {
-        settings = new UserSettings
+        var held = new List<string>(4);
+        if (IsKeyDown(VirtualKey.Control)) held.Add("Ctrl");
+        if (IsKeyDown(VirtualKey.Menu)) held.Add("Alt");
+        if (IsKeyDown(VirtualKey.Shift)) held.Add("Shift");
+        if (IsKeyDown(VirtualKey.LeftWindows) || IsKeyDown(VirtualKey.RightWindows)) held.Add("Win");
+        return held;
+    }
+
+    private static string FormatKey(string part) => part.ToUpperInvariant() switch
+    {
+        "CTRL" or "CONTROL" => "Ctrl",
+        "ALT" or "MENU" => "Alt",
+        "SHIFT" => "Shift",
+        "WIN" or "WINDOWS" => "Win",
+        _ => part.ToUpperInvariant()
+    };
+
+    private static string FormatGesture(string gesture) =>
+        string.Join('+', gesture.Split('+', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Select(FormatKey));
+
+    private static Border Keycap(string text) => new()
+    {
+        Background = KeycapBackground,
+        BorderBrush = KeycapBorder,
+        BorderThickness = new Thickness(1),
+        CornerRadius = new CornerRadius(5),
+        Padding = new Thickness(9, 3, 9, 4),
+        VerticalAlignment = VerticalAlignment.Center,
+        Child = new TextBlock
         {
-            QuickInputHotkey = QuickInputHotkeyBox.Text.Trim(),
-            VoiceHotkey = VoiceHotkeyBox.Text.Trim(),
-            SelfVoiceHotkey = SelfVoiceHotkeyBox.Text.Trim(),
-            OscHost = _savedSettings.OscHost,
-            OscPort = _savedSettings.OscPort,
+            Text = text,
+            FontFamily = new FontFamily("Microsoft YaHei UI"),
+            FontSize = 13,
+            FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
+            Foreground = KeycapForeground
+        }
+    };
+
+    private static TextBlock Placeholder(string text) => new()
+    {
+        Text = text,
+        FontFamily = new FontFamily("Microsoft YaHei UI"),
+        FontSize = 14,
+        Foreground = PlaceholderForeground,
+        VerticalAlignment = VerticalAlignment.Center
+    };
+
+    private void SetFieldBorder(Button editor, Brush brush) => FieldHost(editor).BorderBrush = brush;
+
+    private void ShowHotkeyStatus(string message, HotkeyStatusKind kind)
+    {
+        if (HotkeyStatus is null) return;
+        HotkeyStatus.Text = message;
+        HotkeyStatus.Foreground = kind switch
+        {
+            HotkeyStatusKind.Error => ErrorStatusForeground,
+            HotkeyStatusKind.Success => SuccessStatusForeground,
+            _ => NeutralStatusForeground
+        };
+        HotkeyStatus.Visibility = string.IsNullOrEmpty(message) ? Visibility.Collapsed : Visibility.Visible;
+    }
+
+    /// <summary>
+    /// Writes the three shortcuts together with the OSC boxes. The shortcut
+    /// values are already canonical (or empty, which means 未设置), so the only
+    /// checks left are the accepted-key rules and conflicts between the three.
+    /// </summary>
+    private bool TrySaveHotkeys(string quickInput, string voice, string selfVoice, out string error)
+    {
+        var source = new UserSettings
+        {
+            QuickInputHotkey = quickInput,
+            VoiceHotkey = voice,
+            SelfVoiceHotkey = selfVoice,
             OscIntervalSeconds = _savedSettings.OscIntervalSeconds,
             PlaySound = _savedSettings.PlaySound,
             KeepRunning = _savedSettings.KeepRunning
         };
-
-        var normalized = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var pair in new[]
-        {
-            ("打开输入框", settings.QuickInputHotkey),
-            ("他人语音", settings.VoiceHotkey),
-            ("自身语音", settings.SelfVoiceHotkey)
-        })
-        {
-            string value;
-            try { value = HotkeyBinding.Normalize(pair.Item2); }
-            catch (ArgumentException)
-            {
-                error = $"“{pair.Item1}”需要填写有效快捷键。";
-                return false;
-            }
-
-            if (!normalized.TryAdd(value, pair.Item1))
-            {
-                error = $"“{pair.Item1}”与“{normalized[value]}”使用了相同快捷键。";
-                return false;
-            }
-        }
-
-        error = string.Empty;
-        return true;
+        return TrySave(source, out error);
     }
 
-    private bool SaveSettingsIfValid(UserSettings? hotkeys = null)
+    private bool TrySave(UserSettings hotkeySource, out string error)
     {
-        if (_loading) return false;
-        if (!int.TryParse(OscPortBox.Text, out var port) || port is < 1 or > 65535)
+        if (_loading)
         {
-            ShowResult("端口范围应为 1 到 65535。", InfoBarSeverity.Warning);
+            error = string.Empty;
             return false;
         }
 
-        var source = hotkeys ?? _savedSettings;
-        var settings = new UserSettings
+        if (!int.TryParse(OscPortBox.Text, out var port) || port is < 1 or > 65535)
         {
-            QuickInputHotkey = source.QuickInputHotkey.Trim(),
-            VoiceHotkey = source.VoiceHotkey.Trim(),
-            SelfVoiceHotkey = source.SelfVoiceHotkey.Trim(),
-            OscHost = string.IsNullOrWhiteSpace(OscHostBox.Text) ? "127.0.0.1" : OscHostBox.Text.Trim(),
-            OscPort = port,
-            OscIntervalSeconds = source.OscIntervalSeconds,
-            PlaySound = source.PlaySound,
-            KeepRunning = source.KeepRunning
-        };
-        if (!TryValidateSavedHotkeys(settings, out var hotkeyError))
-        {
-            ShowResult(hotkeyError, InfoBarSeverity.Warning);
+            error = "端口范围应为 1 到 65535。";
             return false;
         }
+
+        var settings = new UserSettings
+        {
+            QuickInputHotkey = NullSafe(hotkeySource.QuickInputHotkey),
+            VoiceHotkey = NullSafe(hotkeySource.VoiceHotkey),
+            SelfVoiceHotkey = NullSafe(hotkeySource.SelfVoiceHotkey),
+            OscHost = string.IsNullOrWhiteSpace(OscHostBox.Text) ? "127.0.0.1" : OscHostBox.Text.Trim(),
+            OscPort = port,
+            OscIntervalSeconds = hotkeySource.OscIntervalSeconds,
+            PlaySound = hotkeySource.PlaySound,
+            KeepRunning = hotkeySource.KeepRunning
+        };
+        if (!TryValidateHotkeys(settings, out error)) return false;
 
         try
         {
@@ -353,16 +641,17 @@ public sealed partial class SettingsPage : Page
             _savedSettings = settings;
             ((App)global::Microsoft.UI.Xaml.Application.Current).State.ReloadOscSettings();
             SettingsInfo.IsOpen = false;
+            error = string.Empty;
             return true;
         }
         catch (IOException exception)
         {
-            ShowResult($"设置保存失败：{exception.Message}", InfoBarSeverity.Error);
+            error = $"设置保存失败：{exception.Message}";
             return false;
         }
     }
 
-    private static bool TryValidateSavedHotkeys(UserSettings settings, out string error)
+    private static bool TryValidateHotkeys(UserSettings settings, out string error)
     {
         var normalized = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         foreach (var pair in new[]
@@ -372,6 +661,10 @@ public sealed partial class SettingsPage : Page
             ("自身语音", settings.SelfVoiceHotkey)
         })
         {
+            // An empty gesture is a deliberate 未设置 from the settings page:
+            // that action has no shortcut, so it neither normalizes nor conflicts.
+            if (string.IsNullOrWhiteSpace(pair.Item2)) continue;
+
             string value;
             try { value = HotkeyBinding.Normalize(pair.Item2); }
             catch (ArgumentException)
@@ -391,17 +684,42 @@ public sealed partial class SettingsPage : Page
         return true;
     }
 
-    private static bool IsHotkeyBox(object sender) => sender is TextBox box && box.Name is "QuickInputHotkeyBox" or "VoiceHotkeyBox" or "SelfVoiceHotkeyBox";
+    private static string NullSafe(string? value) => value?.Trim() ?? string.Empty;
 
-    private string GetSavedHotkey(TextBox box) => box == QuickInputHotkeyBox ? _savedSettings.QuickInputHotkey : box == VoiceHotkeyBox ? _savedSettings.VoiceHotkey : _savedSettings.SelfVoiceHotkey;
-
-    private string GetHotkeyLabel(TextBox box) => box == QuickInputHotkeyBox ? "打开输入框" : box == VoiceHotkeyBox ? "他人语音" : "自身语音";
-
-    private void RestoreHotkey(TextBox box)
+    private string GetSavedHotkey(Button editor)
     {
-        _loading = true;
-        box.Text = GetSavedHotkey(box);
-        _loading = false;
+        var value = editor == QuickInputHotkeyBox
+            ? _savedSettings.QuickInputHotkey
+            : editor == VoiceHotkeyBox
+                ? _savedSettings.VoiceHotkey
+                : _savedSettings.SelfVoiceHotkey;
+        return NullSafe(value);
+    }
+
+    private string GetHotkeyLabel(Button editor) => editor == QuickInputHotkeyBox ? "打开输入框" : editor == VoiceHotkeyBox ? "他人语音" : "自身语音";
+
+    private Border FieldHost(Button editor) => editor == QuickInputHotkeyBox ? QuickInputHotkeyField : editor == VoiceHotkeyBox ? VoiceHotkeyField : SelfVoiceHotkeyField;
+
+    private StackPanel KeysHost(Button editor) => editor == QuickInputHotkeyBox ? QuickInputHotkeyKeys : editor == VoiceHotkeyBox ? VoiceHotkeyKeys : SelfVoiceHotkeyKeys;
+
+    // The capture field reuses the palette the page already uses for inputs and
+    // chips, so it reads as one more field instead of a stray button.
+    private static readonly SolidColorBrush IdleFieldBorder = new(Microsoft.UI.ColorHelper.FromArgb(255, 0xD4, 0xDF, 0xEC));
+    private static readonly SolidColorBrush RecordingFieldBorder = new(Microsoft.UI.ColorHelper.FromArgb(255, 0x27, 0x74, 0xC7));
+    private static readonly SolidColorBrush ErrorFieldBorder = new(Microsoft.UI.ColorHelper.FromArgb(255, 0xC4, 0x2B, 0x1C));
+    private static readonly SolidColorBrush KeycapBackground = new(Microsoft.UI.ColorHelper.FromArgb(255, 0xEE, 0xF3, 0xF8));
+    private static readonly SolidColorBrush KeycapBorder = new(Microsoft.UI.ColorHelper.FromArgb(255, 0xD4, 0xDF, 0xEC));
+    private static readonly SolidColorBrush KeycapForeground = new(Microsoft.UI.ColorHelper.FromArgb(255, 0x16, 0x20, 0x2E));
+    private static readonly SolidColorBrush PlaceholderForeground = new(Microsoft.UI.ColorHelper.FromArgb(255, 0x5B, 0x6D, 0x82));
+    private static readonly SolidColorBrush NeutralStatusForeground = new(Microsoft.UI.ColorHelper.FromArgb(255, 0x5B, 0x6D, 0x82));
+    private static readonly SolidColorBrush SuccessStatusForeground = new(Microsoft.UI.ColorHelper.FromArgb(255, 0x16, 0x86, 0x6E));
+    private static readonly SolidColorBrush ErrorStatusForeground = new(Microsoft.UI.ColorHelper.FromArgb(255, 0xC4, 0x2B, 0x1C));
+
+    private enum HotkeyStatusKind
+    {
+        Info,
+        Success,
+        Error
     }
 
     private void ShowResult(string message, InfoBarSeverity severity)

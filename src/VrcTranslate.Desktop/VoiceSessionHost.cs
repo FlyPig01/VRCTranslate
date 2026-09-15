@@ -21,6 +21,13 @@ public sealed record SpeechNotificationEventArgs(
     string Message);
 
 /// <summary>
+/// One start's capture together with the background monitor that must run with
+/// it. Own voice has no monitor; other-player captions pair the adaptive
+/// loopback coordinator with the VRChat process watcher that steers it.
+/// </summary>
+public sealed record VoiceCapturePlan(IAudioCapture Capture, VrchatProcessWatcher? Monitor);
+
+/// <summary>
 /// Application-lifetime owner of one speech recognition session. Pages appear
 /// and disappear as the user navigates, so the capture session and the
 /// translate/OSC pipeline attached to its results must outlive any single
@@ -35,6 +42,7 @@ public abstract class VoiceSessionHost
     private readonly SemaphoreSlim _lifecycleGate = new(1, 1);
     private readonly SemaphoreSlim _processingGate = new(1, 1);
     private LocalSpeechCaptureSession? _session;
+    private VrchatProcessWatcher? _monitor;
     private volatile bool _running;
     private volatile bool _processingResult;
 
@@ -63,10 +71,25 @@ public abstract class VoiceSessionHost
 
     protected abstract AudioCaptureMode CaptureMode { get; }
 
-    /// <summary>Source request handed to the platform factory for the next start.</summary>
-    private AudioCaptureRequest CreateCaptureRequest() => CaptureMode == AudioCaptureMode.Microphone
-        ? AudioCaptureRequest.Microphone(MicrophoneId)
-        : AudioCaptureRequest.SystemLoopback();
+    /// <summary>
+    /// Capture for the next start together with the monitor that must run with
+    /// it. 自身语音直接向平台工厂要麦克风，来源类型是 Microphone；他人语音交给
+    /// 自适应回环协调器，由 VRChat 进程监视器把当前目标推给它。
+    /// </summary>
+    protected virtual VoiceCapturePlan CreateCapturePlan()
+    {
+        if (CaptureMode == AudioCaptureMode.Microphone)
+        {
+            return new VoiceCapturePlan(
+                _captures.Create(AudioCaptureRequest.Microphone(MicrophoneId)),
+                Monitor: null);
+        }
+
+        var loopback = new AdaptiveLoopbackAudioCapture(_captures);
+        return new VoiceCapturePlan(
+            loopback,
+            new VrchatProcessWatcher(new VrchatProcessResolver(), loopback.ApplyTargetAsync));
+    }
 
     /// <summary>
     /// Runs the recognized sentence through translation and output. The whole
@@ -86,8 +109,9 @@ public abstract class VoiceSessionHost
         {
             if (_running && _session?.IsStarted == true) return;
 
+            var plan = CreateCapturePlan();
             var session = new LocalSpeechCaptureSession(
-                _captures.Create(CreateCaptureRequest()),
+                plan.Capture,
                 _speech,
                 SourceLanguage,
                 // Silero VAD when its bundled model is present, adaptive
@@ -99,7 +123,10 @@ public abstract class VoiceSessionHost
             try
             {
                 await session.StartAsync().ConfigureAwait(false);
+                // 监视器在采集就绪后才开始推送目标，切换请求不会落在未启动的协调器上。
+                plan.Monitor?.Start();
                 _session = session;
+                _monitor = plan.Monitor;
                 _running = true;
                 RunningChanged?.Invoke(this, EventArgs.Empty);
             }
@@ -109,6 +136,7 @@ public abstract class VoiceSessionHost
                 session.Faulted -= OnSessionFaulted;
                 session.LevelChanged -= OnLevelChanged;
                 await session.DisposeAsync().ConfigureAwait(false);
+                if (plan.Monitor is not null) await plan.Monitor.DisposeAsync().ConfigureAwait(false);
                 throw;
             }
         }
@@ -124,6 +152,10 @@ public abstract class VoiceSessionHost
         try
         {
             _running = false;
+            var monitor = _monitor;
+            _monitor = null;
+            // 先停监视器再释放采集：循环结束后不会再有扫描任务调用协调器。
+            if (monitor is not null) await monitor.DisposeAsync().ConfigureAwait(false);
             var session = _session;
             _session = null;
             if (session is not null)
@@ -219,6 +251,7 @@ public sealed class SubtitleSpeechSession : VoiceSessionHost
         SourceLanguage = "auto";
     }
 
+    // 回环族：具体采系统混音还是 VRChat 进程音频由自适应协调器决定。
     protected override AudioCaptureMode CaptureMode => AudioCaptureMode.SystemLoopback;
 
     protected override string CaptureFaultMessage => "无法读取系统音频，请检查音频设备后重试。";

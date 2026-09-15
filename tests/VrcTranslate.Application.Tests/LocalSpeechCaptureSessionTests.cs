@@ -222,6 +222,29 @@ public sealed class LocalSpeechCaptureSessionTests
     }
 
     [Fact]
+    public async Task An_own_voice_session_reports_the_microphone_source()
+    {
+        var capture = new FakeAudioCapture(AudioCaptureRequest.Microphone("mic-1"));
+        await using var session = new LocalSpeechCaptureSession(capture, CreateSpeechService());
+        var changes = new List<AudioSourceChangedEventArgs>();
+        session.SourceChanged += (_, args) => changes.Add(args);
+
+        // 决策 1：自身语音必须报告 Microphone，不得复用回环来源值。
+        Assert.Equal(AudioCaptureSourceKind.Microphone, session.SourceState.Kind);
+
+        await session.StartAsync();
+        capture.RaiseSourceChanged(
+            new AudioSourceState(AudioCaptureSourceKind.Microphone),
+            generation: 0,
+            isBoundary: false);
+
+        Assert.Equal(AudioCaptureSourceKind.Microphone, session.SourceState.Kind);
+        var change = Assert.Single(changes);
+        Assert.Equal(AudioCaptureSourceKind.Microphone, change.State.Kind);
+        Assert.NotEqual(AudioCaptureSourceKind.SystemLoopback, session.SourceState.Kind);
+    }
+
+    [Fact]
     public async Task A_result_that_finishes_after_the_boundary_is_not_published()
     {
         var capture = new FakeAudioCapture(AudioCaptureRequest.SystemLoopback());

@@ -230,7 +230,14 @@ if ($inputSource -notmatch 'AppDataFiles\.SelfVoiceSettings' -or $inputSource -n
 if ($inputSource -match 'WindowsAudioCapture|NAudio\.|VrcTranslate\.Infrastructure\.Speech') { throw 'Self voice page must use the application audio factory instead of a platform implementation.' }
 # Recognition sessions moved to the application-scoped host so page navigation
 # no longer stops them; the wiring invariant now lives there.
-if ($sessionHostSource -notmatch 'LocalSpeechCaptureSession' -or $sessionHostSource -notmatch 'AudioCaptureMode\.Microphone' -or $sessionHostSource -notmatch 'session\.StartAsync' -or $sessionHostSource -notmatch 'session\.DisposeAsync' -or $appStateSource -notmatch 'ShutdownSpeechAsync') { throw 'Self voice must connect the microphone capture session and release it on stop/shutdown via the session host.' }
+if ($sessionHostSource -notmatch 'LocalSpeechCaptureSession' -or
+    $sessionHostSource -notmatch 'AudioCaptureMode\.Microphone' -or
+    $sessionHostSource -notmatch 'AudioCaptureRequest\.Microphone' -or
+    $sessionHostSource -notmatch 'session\.StartAsync' -or
+    $sessionHostSource -notmatch 'session\.DisposeAsync' -or
+    $appStateSource -notmatch 'ShutdownSpeechAsync') {
+    throw 'Self voice must connect the microphone capture session with a microphone source request (decision 1) and release it on stop/shutdown via the session host.'
+}
 if ($inputSource -notmatch 'TranslationPreviewChanged' -or $inputSource -notmatch 'RecentOriginal' -or $inputSource -notmatch 'RecentTranslation') { throw 'The main quick-input page must update its original/translated preview after a send.' }
 if ($inputMarkup -match 'SelfVoiceLanguageBox|Header="识别语言"' -or $inputSource -match 'SelfVoiceLanguageBox') { throw 'Own voice input must remain Simplified Chinese and must not expose a recognition-language selector.' }
 if ($inputMarkup -notmatch 'Text="第一语言"' -or $inputMarkup -notmatch 'Text="第二语言"' -or $inputMarkup -notmatch 'PrimaryTargetBox' -or $inputMarkup -notmatch 'SecondaryTargetBox' -or $inputMarkup -match 'TargetLanguageExpander' -or $inputSource -notmatch 'TranslateSelfAsync|LastSecondaryTranslatedText') { throw 'The input page must expose visible primary and optional second output-language settings with a dual preview.' }
@@ -240,7 +247,18 @@ if ($voiceMarkup -match '当前翻译方案|默认翻译方案|识别后的文�
 if ($voiceMarkup -notmatch '本地语音模型' -or $voiceMarkup -notmatch 'SenseVoice Small' -or $voiceMarkup -notmatch '管理模型' -or $voiceMarkup -notmatch 'Text="字幕窗口"' -or $voiceMarkup -notmatch 'AutomationProperties.Name="打开字幕"') { throw 'VoicePage must expose local model management and one concise subtitle-window entry.' }
 if ($voiceSource -notmatch 'State\.LocalSpeech|GetModelStatus|InstallModelAsync|RecognizeLocalSamplesAsync') { throw 'VoicePage must expose the local SenseVoice model state and use the application speech boundary.' }
 if ($voiceSource -match 'SpeechRecognizer|Windows\.Media\.SpeechRecognition') { throw 'VoicePage must not use Windows SpeechRecognizer.' }
-if ($sessionHostSource -notmatch 'LocalSpeechCaptureSession' -or $sessionHostSource -notmatch 'AudioCaptureMode\.SystemLoopback' -or $sessionHostSource -notmatch 'session\.StartAsync' -or $sessionHostSource -notmatch 'session\.DisposeAsync') { throw 'The session host must connect the system-loopback capture session and release it on stop/shutdown.' }
+# Phase 2 接线：他人语音不再固定请求系统回环，而是交给自适应回环协调器，由 VRChat
+# 进程监视器通过 ApplyTargetAsync 推送目标；停止时先释放监视器再释放采集会话。
+if ($sessionHostSource -notmatch 'LocalSpeechCaptureSession' -or
+    $sessionHostSource -notmatch 'new AdaptiveLoopbackAudioCapture' -or
+    $sessionHostSource -notmatch 'ApplyTargetAsync' -or
+    $sessionHostSource -notmatch 'VrchatProcessWatcher' -or
+    $sessionHostSource -notmatch 'monitor\.DisposeAsync' -or
+    $sessionHostSource -notmatch 'AudioCaptureMode\.SystemLoopback' -or
+    $sessionHostSource -notmatch 'session\.StartAsync' -or
+    $sessionHostSource -notmatch 'session\.DisposeAsync') {
+    throw 'The session host must connect the other-player session to the adaptive loopback coordinator, keep it steered by the VRChat process monitor, and release both on stop/shutdown.'
+}
 if ($voiceSource -match 'WindowsAudioCapture|NAudio\.|VrcTranslate\.Infrastructure\.Speech') { throw 'Voice page must use the application audio factory instead of a platform implementation.' }
 if ($voiceMarkup -match 'Windows 系统识别 · 无需密钥') { throw 'VoicePage must keep the recognition status label concise.' }
 if ([regex]::Matches($voiceMarkup, 'AutomationProperties.Name="打开字幕"').Count -ne 1) { throw 'VoicePage must expose one concise subtitle entry instead of duplicate buttons.' }

@@ -34,10 +34,15 @@ public sealed class QuickInputWindow : Window
     private const double StatusFontSize = 12;
     private const string UiFontFamily = "Microsoft YaHei UI";
     /// <summary>
-    /// 全新安装时的窗口高度（DIP）：16px 上边距 + 46px 输入区 + 1px 分隔线 +
-    /// 两行结果 + 16px 下边距。与传给控制器的默认高度保持一致。
+    /// 全新安装时的窗口高度（DIP）：标题栏 + 16px 上边距 + 46px 输入区 + 1px 分隔线 +
+    /// 状态行 + 译文行 + OSC 行 + 16px 下边距。
+    /// 原来取 150 没有算进标题栏与状态行：120% 缩放下实测窗口只有 221 物理像素，
+    /// 最后一行 OSC 文本被窗口下边缘切掉一截（用户截图报的就是这个）。
+    /// 200 DIP 在 120% 下是 240 物理像素，三行都完整；用户自己拖过、或旧版本保存
+    /// 下来的矩形不在这里补正——人为决定优先，与冒烟测试的矩形恢复契约一致。
     /// </summary>
-    private const int DefaultHeightDips = 150;
+    private const int DefaultHeightDips = 200;
+
 
     /// <summary>
     /// 全新安装时的窗口宽度（DIP）。窗口矩形是物理像素，同一串数字在不同缩放下
@@ -345,10 +350,11 @@ public sealed class QuickInputWindow : Window
                 saved,
                 layout => OverlayWindowHost.SaveLayout(OverlayWindowHost.QuickInputLayoutKey, layout),
                 _state.OverlayAppearance.Current.InputOverlayOpacity);
-            // 控制器拿到的默认尺寸是物理像素，而 1240 × 150 是"输入条 + 分隔线 +
-            // 两行结果"的 DIP 尺寸；缩放不是 100% 时同一串数字会换算出更小的一块
-            // 窗口。全新安装（没有保存过矩形）时在内容加载后按当前缩放把宽高一起
-            // 补正一次，用户保存过的矩形完全不动。
+            // 控制器拿到的默认尺寸是物理像素，而 1240 × 200 是"标题栏 + 输入条 +
+            // 分隔线 + 两行结果"的 DIP 尺寸；缩放不是 100% 时同一串数字会换算出更小
+            // 的一块窗口。全新安装（没有保存过矩形）时按当前缩放把宽高一起换算一次，
+            // 用户自己拖过、或旧版本保存下来的矩形完全不动——那个人为决定比任何自动
+            // 高度都优先（冒烟测试也按这条契约校验矩形原样恢复）。
             if (saved is null)
             {
                 // 缩放要等这块内容真的挂上 XAML 树才读得到；万一第一次布局时还读不到，
@@ -379,6 +385,7 @@ public sealed class QuickInputWindow : Window
             OverlayDisplayScale.ToPhysicalPixels(DefaultWidthDips, scale),
             OverlayDisplayScale.ToPhysicalPixels(DefaultHeightDips, scale));
     }
+
 
     private void OnSurfaceLayoutUpdated(object? sender, object e) => FitDefaultSizeToDisplayScale();
 

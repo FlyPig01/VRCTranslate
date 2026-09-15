@@ -573,7 +573,9 @@ function Resize-And-MoveOverlay {
     $workArea = [System.Windows.Forms.Screen]::FromHandle($handle).WorkingArea
     $smallWidth = [Math]::Max(420, [Math]::Min(760, $workArea.Width - 260))
     $largeWidth = [Math]::Min($workArea.Width - 80, $smallWidth + 140)
-    $smallHeight = [Math]::Max(140, [Math]::Min(180, $workArea.Height - 280))
+    # 输入条默认高度是 200 DIP，结果区（状态行 + 译文 + OSC 行）需要约 176 DIP；
+    # 小矩形取 200 DIP 高，才能在 150% 缩放下让三行结果都完整落在窗口内。
+    $smallHeight = [Math]::Max(160, [Math]::Min(200, $workArea.Height - 280))
     $largeHeight = [Math]::Min($workArea.Height - 80, $smallHeight + 90)
     if ($largeWidth -le ($smallWidth + 40) -or $largeHeight -le ($smallHeight + 30)) {
         throw "$Label smoke requires a work area of at least 640x360 pixels."

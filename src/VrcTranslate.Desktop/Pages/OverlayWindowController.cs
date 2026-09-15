@@ -74,6 +74,7 @@ internal sealed class OverlayWindowController : IDisposable
 
     public bool IsVisible => !_disposed && IsWindowVisible(_hwnd);
 
+
     public bool IsMinimized => !_disposed && IsIconic(_hwnd);
 
     public static bool IsFallbackVisible(Window window)

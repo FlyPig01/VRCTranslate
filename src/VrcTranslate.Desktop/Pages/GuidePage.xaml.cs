@@ -14,7 +14,27 @@ public sealed partial class GuidePage : Page
         // the constructor keeps the first paint correct; Loaded re-reads it in
         // case the frame ever caches the page.
         ApplyPersistedHotkeys();
+        ApplyAuthorShop();
         Loaded += (_, _) => ApplyPersistedHotkeys();
+    }
+
+    /// <summary>
+    /// 作者小店是用户自己的配置项：拿到合法链接才显示卡片，否则整张折叠。
+    /// 每次进页面都重读，用户改了 json 不必重启软件。
+    /// </summary>
+    private void ApplyAuthorShop()
+    {
+        var url = AuthorShop.ReadUrl();
+        if (url.Length == 0)
+        {
+            ShopCard.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        ShopDescription.Text = AuthorShop.Description;
+        ShopLink.Content = "在闲鱼打开作者的小店";
+        ShopLink.NavigateUri = new Uri(url);
+        ShopCard.Visibility = Visibility.Visible;
     }
 
     private void ApplyPersistedHotkeys()

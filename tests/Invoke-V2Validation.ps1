@@ -771,6 +771,16 @@ if ($guideMarkup -notmatch 'guide-comparison' -or
     $guideMarkup -match 'v4-pro') {
     throw 'Guide page comparison card must list the five recommended models with the 700 万字符/月 quota, the 推荐 line and the 价格会变动 caveat, and must never recommend the pro models that measured slower or worse.'
 }
+# 作者小店卡片：链接只能来自用户配置，XAML 里不得写死具体链接，卡片文案必须写明软件免费。
+$shopSource = Get-Content -Raw (Join-Path $v2Root 'src\VrcTranslate.Desktop\AuthorShop.cs')
+if ($guideMarkup -notmatch 'guide-shop' -or
+    $guideMarkup -notmatch '作者的小店' -or
+    $guideMarkup -match 'https?://[^"'']*goofish' -or
+    $guideMarkup -match 'https?://[^"'']*2\.taobao' -or
+    $shopSource -notmatch 'ShopUrl' -or
+    $shopSource -notmatch '软件本身免费开源') {
+    throw 'Guide page must carry the optional author-shop card: the link comes from the user settings ShopUrl field (never hard-coded in XAML) and the card must say the software itself stays free.'
+}
 if ($guideMarkup -notmatch '翻译服务配置' -or
     $guideMarkup -notmatch 'guide-tencent-console' -or
     $guideMarkup -notmatch 'guide-tencent-keys' -or

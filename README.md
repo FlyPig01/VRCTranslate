@@ -23,7 +23,7 @@ Windows 原生 VRChat 翻译工具，采用 C#、.NET 10 和 WinUI 3。不包含
 
 代码按 `Core -> Application -> Infrastructure -> Desktop` 分层，测试按相同边界放在 `tests/` 下。
 
-语音识别使用内置的 SenseVoiceSmall INT8 本地模型（sherpa-onnx + ONNX Runtime），随发布包放在程序目录 `Models\sensevoice\` 下（`model.int8.onnx` 与 `tokens.txt`），运行时优先加载该副本，不会回退到系统识别；模型缺失时仍可回退为从语音页按需下载到 `data\models\sensevoice`。说话人区分（字幕说话人标签）所需的分割与声纹嵌入模型同样内置在 `Models\speaker\`，开箱即用。模型文件本身不进入源码库，构建前用 `tests\Import-BundledSpeechModel.ps1` 一次性下载校验并导入到 `assets\models\speech\`。回环目前读取系统输出混音，VRChat 进程级过滤仍待后续完善。
+语音识别使用内置的 SenseVoiceSmall INT8 本地模型（sherpa-onnx + ONNX Runtime），随发布包放在程序目录 `Models\sensevoice\` 下（`model.int8.onnx` 与 `tokens.txt`），运行时优先加载该副本，不会回退到系统识别；模型缺失时仍可回退为从语音页按需下载到 `data\models\sensevoice`。说话人区分（字幕说话人标签）所需的分割与声纹嵌入模型同样内置在 `Models\speaker\`，开箱即用。模型文件本身不进入源码库，构建前用 `tests\Import-BundledSpeechModel.ps1` 一次性下载校验并导入到 `assets\models\speech\`。切句用的 Silero VAD 模型内置在 `Models\vad\`。他人语音回环会在检测到 VRChat 进程时自动跟随采集该进程的音频，进程退出后切回系统输出混音（语音页不提供手动进程选择）。
 
 ## 数据目录（便携式）
 

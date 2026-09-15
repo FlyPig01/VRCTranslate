@@ -157,20 +157,6 @@
                      Text="完整声明见仓库根目录的 DISCLAIMER.md。" />
         </StackPanel>
       </Border>
-
-      <!-- 作者的小店（可选）：链接来自 v2-user-settings.json 的 ShopUrl，没填就整张卡片折叠。
-           软件本身始终免费开源，卡片上必须写明这一点，避免看起来像「付费才能用」。 -->
-      <Border x:Name="ShopCard" Style="{StaticResource SurfaceBorderStyle}" Padding="18"
-              Visibility="Collapsed" AutomationProperties.AutomationId="guide-shop">
-        <StackPanel Spacing="10">
-          <StackPanel Orientation="Horizontal" Spacing="9">
-            <Border Width="32" Height="32" CornerRadius="8" Background="#FDF0E7"><FontIcon Glyph="&#xE719;" FontSize="17" Foreground="#C4622D" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
-            <TextBlock Text="作者的小店" Style="{StaticResource SectionTitleTextStyle}" />
-          </StackPanel>
-          <TextBlock x:Name="ShopDescription" Style="{StaticResource SecondaryTextStyle}" TextWrapping="Wrap" />
-          <HyperlinkButton x:Name="ShopLink" Padding="0" AutomationProperties.AutomationId="guide-shop-link" />
-        </StackPanel>
-      </Border>
     </StackPanel>
     </Grid>
   </ScrollViewer>

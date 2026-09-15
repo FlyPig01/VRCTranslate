@@ -771,16 +771,6 @@ if ($guideMarkup -notmatch 'guide-comparison' -or
     $guideMarkup -match 'v4-pro') {
     throw 'Guide page comparison card must list the five recommended models with the 700 万字符/月 quota, the 推荐 line and the 价格会变动 caveat, and must never recommend the pro models that measured slower or worse.'
 }
-# 作者小店卡片：链接只能来自用户配置，XAML 里不得写死具体链接，卡片文案必须写明软件免费。
-$shopSource = Get-Content -Raw (Join-Path $v2Root 'src\VrcTranslate.Desktop\AuthorShop.cs')
-if ($guideMarkup -notmatch 'guide-shop' -or
-    $guideMarkup -notmatch '作者的小店' -or
-    $guideMarkup -match 'https?://[^"'']*goofish' -or
-    $guideMarkup -match 'https?://[^"'']*2\.taobao' -or
-    $shopSource -notmatch 'ShopUrl' -or
-    $shopSource -notmatch '软件本身免费开源') {
-    throw 'Guide page must carry the optional author-shop card: the link comes from the user settings ShopUrl field (never hard-coded in XAML) and the card must say the software itself stays free.'
-}
 # 使用声明卡片（与仓库 DISCLAIMER.md 同义）：免责要点必须出现在指南页。
 if ($guideMarkup -notmatch 'guide-disclaimer' -or
     $guideMarkup -notmatch '使用声明' -or
@@ -788,8 +778,7 @@ if ($guideMarkup -notmatch 'guide-disclaimer' -or
     $guideMarkup -notmatch '不修改游戏' -or
     $guideMarkup -notmatch '可能出错' -or
     $guideMarkup -notmatch '费用自理' -or
-    $guideMarkup -notmatch '不外发数据' -or
-    $shopSource -notmatch '不买也能用全部功能') {
+    $guideMarkup -notmatch '不外发数据') {
     throw 'Guide page must carry the usage disclaimer (非官方 / 不修改游戏 / 可能出错 / 费用自理 / 不外发数据) and the shop card must state that everything works without buying.'
 }
 if ($guideMarkup -notmatch '翻译服务配置' -or

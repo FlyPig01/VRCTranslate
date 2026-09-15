@@ -41,6 +41,11 @@ public sealed partial class VoicePage : Page
         _audioLevelTimer = DispatcherQueue.CreateTimer();
         _audioLevelTimer.Interval = TimeSpan.FromMilliseconds(60);
         _audioLevelTimer.Tick += (_, _) => AdvanceAudioLevel();
+        // Wire the meter in the constructor: the first SizeChanged (0 → real
+        // width) fires before Loaded, so subscribing in OnLoaded left the bar
+        // count stuck at the initial 24 and the track fell short of the button.
+        _levelBars = new LevelBarRenderer(VoiceAudioLevel, barCount: 24, barWidth: 6, gap: 3);
+        VoiceAudioLevelHost.SizeChanged += (_, args) => ResizeAudioLevel(args.NewSize.Width);
         Loaded += OnLoaded;
         Unloaded += OnUnloaded;
         VoiceStatusGrid.SizeChanged += (_, _) => LayoutStatusControls(VoiceStatusGrid.ActualWidth);
@@ -53,8 +58,8 @@ public sealed partial class VoicePage : Page
             State.OverlayAppearance.Changed += OnOverlayAppearanceChanged;
         _overlayAppearanceReady = true;
         AttachSpeechEvents();
-        _levelBars ??= new LevelBarRenderer(VoiceAudioLevel, barCount: 24, barWidth: 6, gap: 3);
-        VoiceAudioLevelHost.SizeChanged += (_, args) => ResizeAudioLevel(args.NewSize.Width);
+        // Catch up in case the size settled before this load callback ran.
+        ResizeAudioLevel(VoiceAudioLevelHost.ActualWidth);
         LoadSettings();
         UpdateLocalModelStatus();
         UpdateRunningVisuals();
@@ -152,7 +157,7 @@ public sealed partial class VoicePage : Page
     {
         if (ContentColumn is null) return;
         var width = PageScrollViewer?.ActualWidth ?? e.NewSize.Width;
-        if (width > 0) ContentColumn.Width = Math.Min(760, Math.Max(1, width - 56));
+        if (width > 0) ContentColumn.Width = Math.Min(900, Math.Max(1, width - 60));
 
         LayoutStatusControls(width);
     }
@@ -174,45 +179,58 @@ public sealed partial class VoicePage : Page
         {
             VoiceStatusGrid.ColumnDefinitions.Clear();
             VoiceStatusGrid.RowDefinitions.Clear();
-            VoiceStatusGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(18) });
+            VoiceStatusGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             VoiceStatusGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            VoiceStatusGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             VoiceStatusGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             VoiceStatusGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             VoiceStatusGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             Grid.SetColumn(VoiceStatusDotHost, 0);
             Grid.SetRow(VoiceStatusDotHost, 0);
+            Grid.SetColumnSpan(VoiceStatusDotHost, 1);
+            Grid.SetRowSpan(VoiceStatusDotHost, 1);
             Grid.SetColumn(VoiceStatusActions, 0);
             Grid.SetRow(VoiceStatusActions, 1);
             Grid.SetColumnSpan(VoiceStatusActions, 2);
+            Grid.SetRowSpan(VoiceStatusActions, 1);
             Grid.SetColumn(VoiceStatusLine, 1);
             Grid.SetRow(VoiceStatusLine, 0);
-            Grid.SetColumnSpan(VoiceStatusLine, 2);
+            Grid.SetColumnSpan(VoiceStatusLine, 1);
+            Grid.SetRowSpan(VoiceStatusLine, 1);
             Grid.SetColumn(VoiceHotkeySummary, 0);
-            Grid.SetRow(VoiceHotkeySummary, 3);
+            Grid.SetRow(VoiceHotkeySummary, 2);
             Grid.SetColumnSpan(VoiceHotkeySummary, 2);
+            Grid.SetRowSpan(VoiceHotkeySummary, 1);
             VoiceHotkeySummary.HorizontalAlignment = HorizontalAlignment.Left;
         }
         else
         {
             VoiceStatusGrid.ColumnDefinitions.Clear();
             VoiceStatusGrid.RowDefinitions.Clear();
-            VoiceStatusGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(18) });
+            // Auto first column: a fixed 18px column clipped the 40px icon
+            // badge down to a sliver on the left edge of the card.
+            VoiceStatusGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             VoiceStatusGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             VoiceStatusGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             VoiceStatusGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             VoiceStatusGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            // Icon and status line span both rows so they share one centre
+            // line; the button keeps the top row with the hotkey chip below it.
             Grid.SetColumn(VoiceStatusDotHost, 0);
             Grid.SetRow(VoiceStatusDotHost, 0);
+            Grid.SetColumnSpan(VoiceStatusDotHost, 1);
+            Grid.SetRowSpan(VoiceStatusDotHost, 2);
             Grid.SetColumn(VoiceStatusActions, 2);
             Grid.SetRow(VoiceStatusActions, 0);
             Grid.SetColumnSpan(VoiceStatusActions, 1);
+            Grid.SetRowSpan(VoiceStatusActions, 1);
             Grid.SetColumn(VoiceStatusLine, 1);
             Grid.SetRow(VoiceStatusLine, 0);
             Grid.SetColumnSpan(VoiceStatusLine, 1);
+            Grid.SetRowSpan(VoiceStatusLine, 2);
             Grid.SetColumn(VoiceHotkeySummary, 2);
             Grid.SetRow(VoiceHotkeySummary, 1);
             Grid.SetColumnSpan(VoiceHotkeySummary, 1);
+            Grid.SetRowSpan(VoiceHotkeySummary, 1);
             VoiceHotkeySummary.HorizontalAlignment = HorizontalAlignment.Right;
         }
     }
@@ -432,6 +450,7 @@ public sealed partial class VoicePage : Page
     private void ResetAudioLevel()
     {
         _audioMeter.Reset();
+        // The idle floor inside the renderer keeps the bars flat, not blank.
         _levelBars?.Reset();
     }
 

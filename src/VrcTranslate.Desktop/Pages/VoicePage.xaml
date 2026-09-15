@@ -16,10 +16,10 @@
                   SizeChanged="OnViewportSizeChanged">
       <Grid HorizontalAlignment="Stretch">
         <StackPanel x:Name="ContentColumn"
-                    MaxWidth="760"
+                    MaxWidth="900"
                     HorizontalAlignment="Center"
                     Spacing="14"
-                    Margin="28,24,28,28">
+                    Margin="30,24,30,32">
           <Border x:Name="VoiceStatusPanel"
                   Background="#EAF2FF"
                   BorderBrush="#BBD3F7"
@@ -37,6 +37,7 @@
                 <RowDefinition Height="Auto" />
               </Grid.RowDefinitions>
               <Grid x:Name="VoiceStatusDotHost"
+                    Grid.RowSpan="2"
                     Width="40"
                     Height="40"
                     VerticalAlignment="Center">
@@ -58,6 +59,7 @@
                               Foreground="#2D73D5" />
               </Grid>
               <Grid Grid.Column="1"
+                    Grid.RowSpan="2"
                     x:Name="VoiceStatusLine"
                     ColumnSpacing="16"
                     VerticalAlignment="Center">
@@ -70,16 +72,12 @@
                            FontSize="16"
                            FontWeight="SemiBold"
                            VerticalAlignment="Center" />
-                <!-- The meter fills whatever the title leaves; a baseline keeps its
-                     place visible while nothing is being said. -->
+                <!-- The meter fills whatever the title leaves; idle bars keep
+                     its place visible while nothing is being said. -->
                 <Grid Grid.Column="1"
                       x:Name="VoiceAudioLevelHost"
                       MinWidth="90"
                       VerticalAlignment="Center">
-                  <Border Height="2"
-                          Background="#C8D8E8"
-                          CornerRadius="1"
-                          VerticalAlignment="Center" />
                   <StackPanel x:Name="VoiceAudioLevel"
                               Height="24"
                               VerticalAlignment="Center"

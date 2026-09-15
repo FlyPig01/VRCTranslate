@@ -24,6 +24,10 @@ public static class LocalSpeechModelCatalog
     public const string EmbeddingFileName = "embedding.onnx";
     public const string SpeakerDisplayName = "说话人区分 · 本地模型";
 
+    /// <summary>Silero VAD gate that keeps game sound out of the recognizer.</summary>
+    public const string VadDirectory = "vad";
+    public const string VadFileName = "silero_vad.onnx";
+
     /// <summary>Model folder shipped inside the publish output, relative to the executable.</summary>
     public const string BundledRelativeFolder = "Models";
 

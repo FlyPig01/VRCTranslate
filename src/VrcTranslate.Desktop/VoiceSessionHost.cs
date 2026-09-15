@@ -3,6 +3,7 @@ using VrcTranslate.Application.Speech;
 using VrcTranslate.Core.Speech;
 using VrcTranslate.Core.Translation;
 using VrcTranslate.Desktop.Pages;
+using VrcTranslate.Infrastructure.Speech;
 
 namespace VrcTranslate.Desktop;
 
@@ -83,7 +84,10 @@ public abstract class VoiceSessionHost
             var session = new LocalSpeechCaptureSession(
                 _captures.Create(CaptureMode, MicrophoneId),
                 _speech,
-                SourceLanguage);
+                SourceLanguage,
+                // Silero VAD when its bundled model is present, adaptive
+                // energy gate otherwise.
+                LocalSpeechSegmenterFactory.CreateDefault());
             session.ResultReady += OnResultReady;
             session.Faulted += OnSessionFaulted;
             session.LevelChanged += OnLevelChanged;

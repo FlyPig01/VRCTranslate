@@ -24,7 +24,7 @@ public sealed partial class SelfMessagePage : Page
     private bool _updatingOverlayAppearance;
     private bool _speechEventsAttached;
     private readonly Microsoft.UI.Dispatching.DispatcherQueueTimer _microphoneLevelTimer;
-    private readonly AudioLevelMeter _microphoneMeter = new();
+    private readonly AudioLevelMeter _microphoneMeter = new(new AudioLevelMeterOptions { BarCount = 24 });
     private LevelBarRenderer? _microphoneBars;
     private AppState State => ((App)global::Microsoft.UI.Xaml.Application.Current).State;
 
@@ -37,13 +37,15 @@ public sealed partial class SelfMessagePage : Page
         _microphoneLevelTimer = DispatcherQueue.CreateTimer();
         _microphoneLevelTimer.Interval = TimeSpan.FromMilliseconds(60);
         _microphoneLevelTimer.Tick += (_, _) => AnimateMicrophoneLevel();
-        _microphoneBars = new LevelBarRenderer(MicrophoneLevel, barCount: 16, height: 22, barWidth: 6);
+        // Same meter visual as the subtitle page: bar count follows the width
+        // the status line leaves, so the track fills instead of leaving a gap.
+        _microphoneBars = new LevelBarRenderer(MicrophoneLevel, barCount: 24, barWidth: 6, gap: 3);
+        MicrophoneLevelHost.SizeChanged += (_, args) => ResizeMicrophoneLevel(args.NewSize.Width);
         Loaded += (_, _) => LoadSettings();
         Loaded += OnPreviewLoaded;
         Unloaded += OnPreviewUnloaded;
         Loaded += (_, _) => QueueResponsiveLayout();
         SelfVoiceStatusGrid.SizeChanged += (_, _) => QueueResponsiveLayout();
-        SelfVoiceDetailGrid.SizeChanged += (_, _) => QueueResponsiveLayout();
         VoiceInputGrid.SizeChanged += (_, _) => QueueResponsiveLayout();
         TargetLanguageGrid.SizeChanged += (_, _) => QueueResponsiveLayout();
     }
@@ -62,7 +64,6 @@ public sealed partial class SelfMessagePage : Page
         DispatcherQueue.TryEnqueue(() =>
         {
             LayoutStatusPanel(SelfVoiceStatusGrid?.ActualWidth ?? 0);
-            LayoutDetailGrid(SelfVoiceDetailGrid?.ActualWidth ?? 0);
             LayoutVoiceInput(VoiceInputGrid?.ActualWidth ?? 0);
             LayoutTargetLanguages(TargetLanguageGrid?.ActualWidth ?? 0);
         });
@@ -74,82 +75,42 @@ public sealed partial class SelfMessagePage : Page
         SelfVoiceStatusGrid.ColumnDefinitions.Clear();
         SelfVoiceStatusGrid.RowDefinitions.Clear();
 
-        if (width >= 650)
-        {
-            SelfVoiceStatusGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            SelfVoiceStatusGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            SelfVoiceStatusGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            SelfVoiceStatusGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            SelfVoiceStatusGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            PlaceStatusElements(0, 1, 2, 0, 0, 0);
-            Grid.SetColumn(MicrophoneLevel, 1);
-            Grid.SetColumnSpan(MicrophoneLevel, 1);
-            Grid.SetRow(MicrophoneLevel, 1);
-            return;
-        }
-
-        // On a narrow shell, keep status text readable and place the controls
-        // below it. This prevents the circular action button from being cut
-        // off when the sidebar leaves only a small content column.
         SelfVoiceStatusGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         SelfVoiceStatusGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         SelfVoiceStatusGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+        if (width >= 650)
+        {
+            SelfVoiceStatusGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            SelfVoiceStatusGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            // Icon and status line span both rows so they share one centre
+            // line; the button keeps the top row with the hotkey chip below it.
+            PlaceStatusElement(SelfVoiceIconHost, 0, 0, 1, 2);
+            PlaceStatusElement(SelfVoiceStatusLine, 1, 0, 1, 2);
+            PlaceStatusElement(SelfVoiceStartButton, 2, 0, 1, 1);
+            PlaceStatusElement(SelfVoiceHotkeySummary, 2, 1, 1, 1);
+            SelfVoiceHotkeySummary.HorizontalAlignment = HorizontalAlignment.Right;
+            return;
+        }
+
+        // On a narrow shell, keep status text readable and stack the controls
+        // below it so the action button is never cut off by the sidebar.
         SelfVoiceStatusGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         SelfVoiceStatusGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         SelfVoiceStatusGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-        Grid.SetColumn(SelfVoiceIconHost, 0);
-        Grid.SetRow(SelfVoiceIconHost, 0);
-        Grid.SetColumnSpan(SelfVoiceIconHost, 1);
-        Grid.SetColumn(SelfVoiceTextHost, 1);
-        Grid.SetRow(SelfVoiceTextHost, 0);
-        Grid.SetColumnSpan(SelfVoiceTextHost, 2);
-        Grid.SetColumn(SelfVoiceStartButton, 2);
-        Grid.SetRow(SelfVoiceStartButton, 1);
-        Grid.SetColumn(MicrophoneLevel, 1);
-        Grid.SetColumnSpan(MicrophoneLevel, 2);
-        Grid.SetRow(MicrophoneLevel, 2);
+        PlaceStatusElement(SelfVoiceIconHost, 0, 0, 1, 1);
+        PlaceStatusElement(SelfVoiceStatusLine, 1, 0, 2, 1);
+        PlaceStatusElement(SelfVoiceStartButton, 2, 1, 1, 1);
+        PlaceStatusElement(SelfVoiceHotkeySummary, 2, 2, 1, 1);
+        SelfVoiceHotkeySummary.HorizontalAlignment = HorizontalAlignment.Right;
     }
 
-    private void PlaceStatusElements(int iconColumn, int textColumn, int buttonColumn, int iconRow, int textRow, int buttonRow)
+    private static void PlaceStatusElement(FrameworkElement element, int column, int row, int columnSpan, int rowSpan)
     {
-        Grid.SetColumn(SelfVoiceIconHost, iconColumn);
-        Grid.SetRow(SelfVoiceIconHost, iconRow);
-        Grid.SetColumnSpan(SelfVoiceIconHost, 1);
-        Grid.SetColumn(SelfVoiceTextHost, textColumn);
-        Grid.SetRow(SelfVoiceTextHost, textRow);
-        Grid.SetColumnSpan(SelfVoiceTextHost, 1);
-        Grid.SetColumn(SelfVoiceStartButton, buttonColumn);
-        Grid.SetRow(SelfVoiceStartButton, buttonRow);
-        Grid.SetColumn(MicrophoneLevel, textColumn);
-        Grid.SetColumnSpan(MicrophoneLevel, 1);
-        Grid.SetRow(MicrophoneLevel, 1);
-    }
-
-    private void LayoutDetailGrid(double width)
-    {
-        if (SelfVoiceDetailGrid is null || width <= 0) return;
-        SelfVoiceDetailGrid.ColumnDefinitions.Clear();
-        SelfVoiceDetailGrid.RowDefinitions.Clear();
-        if (width >= 680)
-        {
-            SelfVoiceDetailGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1.15, GridUnitType.Star) });
-            SelfVoiceDetailGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(0.85, GridUnitType.Star) });
-            SelfVoiceDetailGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            Grid.SetColumn((FrameworkElement)SelfVoiceDetailGrid.Children[0], 0);
-            Grid.SetRow((FrameworkElement)SelfVoiceDetailGrid.Children[0], 0);
-            Grid.SetColumn((FrameworkElement)SelfVoiceDetailGrid.Children[1], 1);
-            Grid.SetRow((FrameworkElement)SelfVoiceDetailGrid.Children[1], 0);
-        }
-        else
-        {
-            SelfVoiceDetailGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            SelfVoiceDetailGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            SelfVoiceDetailGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            Grid.SetColumn((FrameworkElement)SelfVoiceDetailGrid.Children[0], 0);
-            Grid.SetRow((FrameworkElement)SelfVoiceDetailGrid.Children[0], 0);
-            Grid.SetColumn((FrameworkElement)SelfVoiceDetailGrid.Children[1], 0);
-            Grid.SetRow((FrameworkElement)SelfVoiceDetailGrid.Children[1], 1);
-        }
+        Grid.SetColumn(element, column);
+        Grid.SetRow(element, row);
+        Grid.SetColumnSpan(element, columnSpan);
+        Grid.SetRowSpan(element, rowSpan);
     }
 
     private void LayoutVoiceInput(double width)
@@ -339,7 +300,9 @@ public sealed partial class SelfMessagePage : Page
         }
         catch { _settings = new SelfVoiceSettings(); }
 
-        SelfVoiceHotkeySummary.Text = ReadGlobalSelfVoiceHotkey();
+        var hotkey = ReadGlobalSelfVoiceHotkey();
+        SelfVoiceHotkeyValue.Text = hotkey;
+        AutomationProperties.SetName(SelfVoiceHotkeyValue, hotkey);
         PopulateMicrophoneList();
         // Own voice is always recognized as Simplified Chinese. Keep the
         // persisted field for backward compatibility, but never expose a
@@ -425,14 +388,6 @@ public sealed partial class SelfMessagePage : Page
         catch (ArgumentException)
         {
             SelectTargetControls(State.SelfTranslationTargets);
-        }
-    }
-
-    private void OnOpenSettingsClicked(object sender, RoutedEventArgs e)
-    {
-        if (Parent is Frame frame)
-        {
-            frame.Navigate(typeof(SettingsPage));
         }
     }
 
@@ -524,9 +479,21 @@ public sealed partial class SelfMessagePage : Page
             if (completed == received.Task)
             {
                 var args = await received.Task;
-                OnSelfAudioLevelChanged(this, new AudioLevelEventArgs(
-                    MeasureRms(args.Samples.Span), MeasurePeak(args.Samples.Span)));
-                ShowInfo("麦克风可用", "已收到声音。", InfoBarSeverity.Success);
+                var rms = MeasureRms(args.Samples.Span);
+                OnSelfAudioLevelChanged(this, new AudioLevelEventArgs(rms, MeasurePeak(args.Samples.Span)));
+                if (rms < 0.003f)
+                {
+                    // The device opened and delivers buffers, but they are
+                    // digital silence — usually a hardware-muted headset mic.
+                    ShowInfo(
+                        "麦克风打开了，但没有听到声音",
+                        "请对着麦克风说话再试一次；若仍然没有反应，设备可能被静音（耳机线控/麦杆静音键）或增益过低，请检查系统声音输入设置。",
+                        InfoBarSeverity.Warning);
+                }
+                else
+                {
+                    ShowInfo("麦克风可用", "已收到声音。", InfoBarSeverity.Success);
+                }
             }
             else
             {
@@ -557,27 +524,38 @@ public sealed partial class SelfMessagePage : Page
         if (!_microphoneLevelTimer.IsRunning) _microphoneLevelTimer.Start();
     }
 
+    /// <summary>
+    /// The meter spans whatever width the status line leaves, so the bar count
+    /// follows that width — identical to the subtitle page meter.
+    /// </summary>
+    private void ResizeMicrophoneLevel(double width)
+    {
+        if (_microphoneBars is null || width <= 0) return;
+        const double pitch = 9;
+        var count = (int)Math.Clamp(Math.Floor((width + 3) / pitch), 8, 64);
+        if (count == _microphoneBars.BarCount) return;
+        _microphoneBars.Resize(count, 6, 3);
+        _microphoneMeter.Resize(count);
+    }
+
     private void ResetMicrophoneLevel()
     {
         _microphoneMeter.Reset();
+        // The idle floor inside the renderer keeps the bars flat, not blank.
         _microphoneBars?.Reset();
     }
 
     private void UpdateSelfVoiceVisuals()
     {
-        var active = new SolidColorBrush(Microsoft.UI.ColorHelper.FromArgb(255, 33, 165, 116));
-        var inactive = new SolidColorBrush(Microsoft.UI.ColorHelper.FromArgb(255, 154, 168, 184));
+        // Same palette as the voice page so both status cards read as one piece.
         SelfVoiceStatusText.Text = IsRunning ? "自身语音识别中" : "自身语音已停止";
-        SelfVoiceStatusDot.Fill = IsRunning ? active : inactive;
         SelfVoiceStatusPanel.Background = new SolidColorBrush(IsRunning
             ? Microsoft.UI.ColorHelper.FromArgb(255, 235, 248, 241)
-            : Microsoft.UI.ColorHelper.FromArgb(255, 247, 249, 252));
+            : Microsoft.UI.ColorHelper.FromArgb(255, 234, 242, 255));
         SelfVoicePulse.IsActive = IsRunning;
+        SelfVoicePulse.Visibility = IsRunning ? Visibility.Visible : Visibility.Collapsed;
         SelfVoiceStartButton.Content = IsRunning ? "停止" : "开始";
         AutomationProperties.SetName(SelfVoiceStartButton, IsRunning ? "停止自身语音" : "开始自身语音");
-        SelfVoiceStartButton.Background = new SolidColorBrush(IsRunning
-            ? Microsoft.UI.ColorHelper.FromArgb(255, 118, 86, 181)
-            : Microsoft.UI.ColorHelper.FromArgb(255, 36, 122, 152));
     }
 
     private void AnimateMicrophoneLevel()

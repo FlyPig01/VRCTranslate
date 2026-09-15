@@ -20,7 +20,7 @@ public sealed class LocalSpeechCaptureSessionTests
         session.ResultReady += (_, value) => result.TrySetResult(value);
 
         await session.StartAsync();
-        capture.Emit(Enumerable.Repeat(0.2f, 1_600).ToArray());
+        capture.Emit(Enumerable.Repeat(0.2f, 4_800).ToArray());
         capture.Emit(new float[2_000]);
 
         var recognized = await result.Task.WaitAsync(TimeSpan.FromSeconds(2));
@@ -91,7 +91,7 @@ public sealed class LocalSpeechCaptureSessionTests
         session.ResultReady += (_, value) => result.TrySetResult(value);
 
         await session.StartAsync();
-        capture.Emit(Enumerable.Repeat(0.2f, 1_600).ToArray());
+        capture.Emit(Enumerable.Repeat(0.2f, 4_800).ToArray());
         capture.Emit(new float[2_000]);
 
         var recognized = await result.Task.WaitAsync(TimeSpan.FromSeconds(2));
@@ -113,7 +113,7 @@ public sealed class LocalSpeechCaptureSessionTests
         session.ResultReady += (_, value) => result.TrySetResult(value);
 
         await session.StartAsync();
-        capture.Emit(Enumerable.Repeat(0.2f, 1_600).ToArray());
+        capture.Emit(Enumerable.Repeat(0.2f, 4_800).ToArray());
         capture.Emit(new float[2_000]);
 
         var recognized = await result.Task.WaitAsync(TimeSpan.FromSeconds(2));
@@ -152,7 +152,7 @@ public sealed class LocalSpeechCaptureSessionTests
         };
 
         await session.StartAsync();
-        capture.Emit(Enumerable.Repeat(0.2f, 1_600).ToArray());
+        capture.Emit(Enumerable.Repeat(0.2f, 4_800).ToArray());
         capture.Emit(new float[2_000]);
 
         await both.Task.WaitAsync(TimeSpan.FromSeconds(2));

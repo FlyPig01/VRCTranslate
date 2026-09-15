@@ -12,7 +12,7 @@ public sealed class LocalSpeechCaptureSession : IAsyncDisposable
 {
     private readonly IAudioCapture _capture;
     private readonly LocalSpeechService _speech;
-    private readonly SpeechSegmenter _segmenter;
+    private readonly ISpeechSegmenter _segmenter;
     private readonly SemaphoreSlim _recognitionGate = new(1, 1);
     private readonly string _sourceLanguage;
     private readonly object _sync = new();
@@ -23,7 +23,7 @@ public sealed class LocalSpeechCaptureSession : IAsyncDisposable
         IAudioCapture capture,
         LocalSpeechService speech,
         string sourceLanguage = "auto",
-        SpeechSegmenter? segmenter = null)
+        ISpeechSegmenter? segmenter = null)
     {
         _capture = capture ?? throw new ArgumentNullException(nameof(capture));
         _speech = speech ?? throw new ArgumentNullException(nameof(speech));
@@ -96,10 +96,18 @@ public sealed class LocalSpeechCaptureSession : IAsyncDisposable
         }
 
         await _capture.StopAsync(cancellationToken).ConfigureAwait(false);
-        var pending = _segmenter.Flush();
-        if (!pending.IsEmpty)
+        foreach (var pending in _segmenter.Flush())
         {
             await RecognizeSegmentAsync(pending, cancellationToken).ConfigureAwait(false);
+        }
+        if (_segmenter is SpeechSegmenter energy)
+        {
+            // One line per stop so a missing-caption session can be described
+            // from a debug log without adding UI for it.
+            var d = energy.Diagnostics;
+            System.Diagnostics.Debug.WriteLine(
+                $"[speech] segments={d.CompletedSegments} droppedShort={d.DroppedShortSegments} " +
+                $"noiseFloor={d.NoiseFloor:0.0000} activeRatio={d.ActiveRatio:0.00}");
         }
     }
 
@@ -115,6 +123,7 @@ public sealed class LocalSpeechCaptureSession : IAsyncDisposable
             _disposed = true;
             _capture.SamplesReady -= OnSamplesReady;
             await _capture.DisposeAsync().ConfigureAwait(false);
+            if (_segmenter is IDisposable disposableSegmenter) disposableSegmenter.Dispose();
             _recognitionGate.Dispose();
         }
     }

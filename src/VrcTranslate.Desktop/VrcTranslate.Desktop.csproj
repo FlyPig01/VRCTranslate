@@ -30,6 +30,10 @@
     <BundledSpeakerModelDirectory>speaker</BundledSpeakerModelDirectory>
     <BundledSpeakerModelFile>embedding.onnx</BundledSpeakerModelFile>
     <BundledSpeakerModelPath>..\..\assets\models\speech\$(BundledSpeakerModelDirectory)</BundledSpeakerModelPath>
+    <!-- Silero VAD gate (~0.6 MB) that separates voice from game sound. -->
+    <BundledVadModelDirectory>vad</BundledVadModelDirectory>
+    <BundledVadModelFile>silero_vad.onnx</BundledVadModelFile>
+    <BundledVadModelPath>..\..\assets\models\speech\$(BundledVadModelDirectory)</BundledVadModelPath>
     <!-- Pinned to the version referenced by VrcTranslate.Infrastructure; the
          native engine is re-copied into the publish output after stripping. -->
     <SherpaOnnxRuntimeVersion>1.13.8</SherpaOnnxRuntimeVersion>
@@ -52,6 +56,11 @@
              Link="Models\$(BundledSpeakerModelDirectory)\%(RecursiveDir)%(Filename)%(Extension)"
              CopyToOutputDirectory="PreserveNewest"
              CopyToPublishDirectory="PreserveNewest" />
+    <Content Condition="Exists('$(BundledVadModelPath)\$(BundledVadModelFile)')"
+             Include="$(BundledVadModelPath)\**\*"
+             Link="Models\$(BundledVadModelDirectory)\%(RecursiveDir)%(Filename)%(Extension)"
+             CopyToOutputDirectory="PreserveNewest"
+             CopyToPublishDirectory="PreserveNewest" />
     <ProjectReference Include="..\VrcTranslate.Core\VrcTranslate.Core.csproj" />
     <ProjectReference Include="..\VrcTranslate.Application\VrcTranslate.Application.csproj" />
     <ProjectReference Include="..\VrcTranslate.Infrastructure\VrcTranslate.Infrastructure.csproj" />
@@ -63,6 +72,8 @@
              Text="未找到内置语音模型 $(BundledSpeechModelDirectory)\$(BundledSpeechModelFile)，本次发布将回退为运行时下载；请先运行 tests\Import-BundledSpeechModel.ps1。" />
     <Warning Condition="!Exists('$(BundledSpeakerModelPath)\$(BundledSpeakerModelFile)')"
              Text="未找到内置说话人模型 $(BundledSpeakerModelDirectory)\$(BundledSpeakerModelFile)，说话人标签无法开箱即用；请先运行 tests\Import-BundledSpeechModel.ps1。" />
+    <Warning Condition="!Exists('$(BundledVadModelPath)\$(BundledVadModelFile)')"
+             Text="未找到内置 VAD 模型 $(BundledVadModelDirectory)\$(BundledVadModelFile)，语音切句将回退为能量门限；请先运行 tests\Import-BundledSpeechModel.ps1。" />
   </Target>
 
   <!-- The self-contained Windows App SDK deployment unconditionally copies its

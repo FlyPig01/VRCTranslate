@@ -6,6 +6,8 @@
 #   speaker/     speaker separation for the caption speaker labels:
 #                  segmentation.int8.onnx  pyannote segmentation 3.0 (int8)
 #                  embedding.onnx         3D-Speaker CAM++ speaker embedding (zh+en)
+#   vad/         silero_vad.onnx — Silero VAD gate that separates voice from
+#                game sound (GitHub release asset, not on the HF mirrors)
 #
 # Usage:
 #   powershell -ExecutionPolicy Bypass -File tests/Import-BundledSpeechModel.ps1
@@ -72,6 +74,15 @@ $payload = @(
         Repo   = $embeddingRepo
         Bytes  = 28281164
         Sha256 = 'AA3CFC16963A10586A9393F5035D6D6B57E98D358B347F80C2A30BF4F00CEBA2'
+    },
+    [pscustomobject]@{
+        Name   = 'silero_vad.onnx'
+        Folder = 'vad'
+        Remote = 'silero_vad.onnx'
+        Repo   = 'k2-fsa/sherpa-onnx/releases/download/asr-models/'
+        Hosts  = @('https://github.com/')
+        Bytes  = 643854
+        Sha256 = '9E2449E1087496D8D4CABA907F23E0BD3F78D91FA552479BB9C23AC09CBB1FD6'
     }
 )
 
@@ -162,7 +173,9 @@ if ($missing.Count -eq 0) {
 }
 
 foreach ($entry in $missing) {
-    $null = Get-PayloadFile $destinationPath $entry $repositoryHosts
+    # Entries can override the mirror list; only the VAD gate lives on GitHub.
+    $hosts = if ($entry.Hosts) { $entry.Hosts } else { $repositoryHosts }
+    $null = Get-PayloadFile $destinationPath $entry $hosts
 }
 
 # Re-verify the whole payload so a partial run cannot leave a half-usable

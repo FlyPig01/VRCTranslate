@@ -24,93 +24,120 @@
         <!-- One compact status surface makes the start/stop action obvious. -->
         <Border x:Name="SelfVoiceStatusPanel"
                 AutomationProperties.AutomationId="self-voice-status-panel"
-                Background="#EDF5FF"
-                BorderBrush="#C8DCF8"
+                Background="#EAF2FF"
+                BorderBrush="#BBD3F7"
                 BorderThickness="1"
-                CornerRadius="14"
-                Padding="14,12">
-            <Grid x:Name="SelfVoiceStatusGrid" ColumnSpacing="12" RowSpacing="4">
+                CornerRadius="12"
+                Padding="16,14">
+            <Grid x:Name="SelfVoiceStatusGrid" ColumnSpacing="12" RowSpacing="6">
               <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
-            <Grid.RowDefinitions>
-              <RowDefinition Height="Auto" />
-              <RowDefinition Height="Auto" />
-            </Grid.RowDefinitions>
+              </Grid.ColumnDefinitions>
+              <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+              </Grid.RowDefinitions>
 
-            <Border x:Name="SelfVoiceIconHost"
-                    Width="40"
-                    Height="40"
-                    CornerRadius="20"
-                    Background="#D9E9FF"
+              <Border x:Name="SelfVoiceIconHost"
+                      Grid.RowSpan="2"
+                      Width="40"
+                      Height="40"
+                      CornerRadius="20"
+                      Background="#D9E9FF"
+                      VerticalAlignment="Center">
+                <Grid>
+                  <FontIcon Glyph="&#xE720;"
+                            FontSize="20"
+                            Foreground="#2D73D5"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center" />
+                  <ProgressRing x:Name="SelfVoicePulse"
+                                Width="40"
+                                Height="40"
+                                IsActive="False"
+                                Visibility="Collapsed"
+                                Foreground="#2D73D5" />
+                </Grid>
+              </Border>
+
+              <!-- Same status line as the voice page: title, then a level
+                   meter that fills whatever width the title leaves. -->
+              <Grid Grid.Column="1"
+                    Grid.RowSpan="2"
+                    x:Name="SelfVoiceStatusLine"
+                    ColumnSpacing="16"
                     VerticalAlignment="Center">
-              <Grid>
-                <FontIcon Glyph="&#xE720;"
-                          FontSize="20"
-                          Foreground="#2774C7"
-                          HorizontalAlignment="Center"
-                          VerticalAlignment="Center" />
-                <ProgressRing x:Name="SelfVoicePulse"
-                              Width="40"
-                              Height="40"
-                              IsActive="False"
-                              Visibility="Visible"
-                              Foreground="#2774C7" />
-              </Grid>
-            </Border>
-
-            <StackPanel x:Name="SelfVoiceTextHost" Grid.Column="1" Spacing="0" VerticalAlignment="Center">
-              <StackPanel Orientation="Horizontal" Spacing="8">
-                <Ellipse x:Name="SelfVoiceStatusDot"
-                         Width="9"
-                         Height="9"
-                         Fill="#93A4B8"
-                         VerticalAlignment="Center" />
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="Auto" />
+                  <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
                 <TextBlock x:Name="SelfVoiceStatusText"
-                           Text="自身语音已关闭"
-                           FontSize="17"
+                           Text="自身语音已停止"
+                           FontSize="16"
                            FontWeight="SemiBold"
-                           Foreground="#16202E" />
+                           VerticalAlignment="Center" />
+                <Grid Grid.Column="1"
+                      x:Name="MicrophoneLevelHost"
+                      MinWidth="90"
+                      VerticalAlignment="Center">
+                  <StackPanel x:Name="MicrophoneLevel"
+                              Height="24"
+                              VerticalAlignment="Center"
+                              IsHitTestVisible="False" />
+                </Grid>
+              </Grid>
+
+              <Button Grid.Column="2"
+                      x:Name="SelfVoiceStartButton"
+                      AutomationProperties.AutomationId="self-voice-start"
+                      Width="92"
+                      Height="36"
+                      MinWidth="92"
+                      Padding="10,0"
+                      Content="开始"
+                      Background="#2D73D5"
+                      Foreground="#FFFFFF"
+                      VerticalAlignment="Center"
+                      Click="OnSelfVoiceStartClicked"
+                      ToolTipService.ToolTip="开始或停止自身语音识别"
+                      AutomationProperties.Name="开始自身语音" />
+
+              <!-- Same hotkey footnote as the voice page: a compact chip under
+                   the action button instead of a separate card below. -->
+              <StackPanel x:Name="SelfVoiceHotkeySummary"
+                          Grid.Row="1"
+                          Grid.Column="2"
+                          Orientation="Horizontal"
+                          Spacing="6"
+                          HorizontalAlignment="Right"
+                          VerticalAlignment="Center"
+                          ToolTipService.ToolTip="可在设置中修改"
+                          AutomationProperties.Name="自身语音快捷键">
+                <TextBlock Text="快捷键"
+                           Style="{StaticResource SecondaryTextStyle}"
+                           VerticalAlignment="Center" />
+                <Border Background="#DCE8F7"
+                        CornerRadius="4"
+                        Padding="7,2"
+                        MinWidth="38">
+                  <TextBlock x:Name="SelfVoiceHotkeyValue"
+                             Text="Ctrl+F8"
+                             FontSize="12"
+                             FontWeight="SemiBold"
+                             Foreground="#2D73D5"
+                             TextAlignment="Center"
+                             AutomationProperties.AutomationId="self-voice-hotkey-summary"
+                             AutomationProperties.Name="Ctrl+F8" />
+                </Border>
               </StackPanel>
-            </StackPanel>
-
-            <Button Grid.Column="2"
-                    x:Name="SelfVoiceStartButton"
-                    AutomationProperties.AutomationId="self-voice-start"
-                    Width="92"
-                    Height="36"
-                    MinWidth="92"
-                    Padding="10,0"
-                    Content="开始"
-                    Background="#247A98"
-                    Foreground="#FFFFFF"
-                    Click="OnSelfVoiceStartClicked"
-                    ToolTipService.ToolTip="开始或停止自身语音识别"
-                    AutomationProperties.Name="开始自身语音" />
-
-            <StackPanel Grid.Row="1"
-                        Grid.Column="1"
-                        x:Name="MicrophoneLevel"
-                        Height="22"
-                        MaxWidth="280"
-                        HorizontalAlignment="Left"
-                        Margin="0,6,0,0"
-                        IsHitTestVisible="False" />
-          </Grid>
+            </Grid>
         </Border>
 
-        <Grid x:Name="SelfVoiceDetailGrid" ColumnSpacing="14" RowSpacing="14">
-          <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="1.15*" />
-            <ColumnDefinition Width="0.85*" />
-          </Grid.ColumnDefinitions>
-
-          <!-- Only the controls needed while speaking are shown here. -->
-          <Border Grid.Column="0"
-                  Style="{StaticResource SurfaceBorderStyle}"
-                  Padding="18">
+        <!-- Only the controls needed while speaking are shown here. -->
+        <Border Style="{StaticResource SurfaceBorderStyle}"
+                Padding="18">
             <StackPanel Spacing="12">
               <TextBlock Text="语音输入" Style="{StaticResource SectionTitleTextStyle}" />
               <Grid x:Name="VoiceInputGrid" ColumnSpacing="10" RowSpacing="8">
@@ -135,30 +162,6 @@
               </Grid>
             </StackPanel>
           </Border>
-
-          <Border Grid.Column="1"
-                  Style="{StaticResource SurfaceBorderStyle}"
-                  Padding="18">
-            <StackPanel Spacing="12">
-              <TextBlock Text="快捷键" Style="{StaticResource SectionTitleTextStyle}" />
-              <Grid ColumnSpacing="10">
-                <Grid.ColumnDefinitions>
-                  <ColumnDefinition Width="*" />
-                  <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <TextBlock x:Name="SelfVoiceHotkeySummary"
-                           Text="Ctrl+F8"
-                           FontSize="16"
-                           VerticalAlignment="Center" />
-                <Button Grid.Column="1"
-                        Content="去设置"
-                        Click="OnOpenSettingsClicked"
-                        AutomationProperties.Name="打开快捷键设置"
-                        MinWidth="72" />
-              </Grid>
-            </StackPanel>
-          </Border>
-        </Grid>
 
         <Border Style="{StaticResource SurfaceBorderStyle}"
                 Padding="18">

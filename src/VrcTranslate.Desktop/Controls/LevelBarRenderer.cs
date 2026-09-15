@@ -9,14 +9,19 @@ namespace VrcTranslate.Desktop.Controls;
 
 /// <summary>
 /// Draws the capture level as a rolling bar meter.
-/// 
-/// Every bar is a full-height rectangle carrying a green-to-red gradient that is
-/// anchored to the whole track, and the clip reveals only its lower part. Scaling
-/// a gradient with the bar instead would make a quiet bar show the red end, which
-/// is exactly backwards: the colour has to mean "how loud", not "how tall".
+///
+/// Every bar is a plain rectangle carrying a green-to-red gradient that is
+/// anchored to the whole track, and the clip reveals only its lower part.
+/// Scaling a gradient with the bar instead would make a quiet bar show the
+/// red end, which is exactly backwards: the colour has to mean "how loud",
+/// not "how tall". A small idle floor keeps a flat baseline visible whenever
+/// nothing is being said, so the track never collapses into blank space.
 /// </summary>
 public sealed class LevelBarRenderer
 {
+    /// <summary>Shared resting height for silence, idle and stopped states.</summary>
+    private const double IdleLevel = 0.14;
+
     private readonly StackPanel _host;
     private Rectangle[] _bars = [];
     private RectangleGeometry[] _clips = [];
@@ -67,8 +72,6 @@ public sealed class LevelBarRenderer
             {
                 Width = barWidth,
                 Height = _height,
-                RadiusX = barWidth / 2,
-                RadiusY = barWidth / 2,
                 Fill = fill,
                 Clip = clip,
             };
@@ -76,14 +79,17 @@ public sealed class LevelBarRenderer
             _bars[index] = bar;
             _host.Children.Add(bar);
         }
+
+        Reset();
     }
 
-    /// <summary>Draws one history frame; missing entries read as silence.</summary>
+    /// <summary>Draws one history frame; silence reads as the flat idle floor.</summary>
     public void Render(IReadOnlyList<double> levels)
     {
         for (var index = 0; index < _bars.Length; index++)
         {
-            var level = index < levels.Count ? Math.Clamp(levels[index], 0d, 1d) : 0d;
+            var observed = index < levels.Count ? Math.Clamp(levels[index], 0d, 1d) : 0d;
+            var level = Math.Max(IdleLevel, observed);
             var visible = level * _height;
             _clips[index].Rect = new Rect(0, _height - visible, _barWidth, visible);
         }

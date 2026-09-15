@@ -102,20 +102,50 @@ public sealed class TranslationService
         ArgumentNullException.ThrowIfNull(request);
         ArgumentNullException.ThrowIfNull(targets);
 
-        var results = new List<TextTranslationResult>(targets.Languages.Count);
-        foreach (var target in targets.Languages)
+        // 一次识别/输入里配置了几个目标语言，就同时向提供商发几个请求。串行时用户要等
+        // "第一段译文 + 第二段译文"两段时间，并行只等最慢的那一段；两段请求彼此独立，
+        // 各自仍走本目标的重试与超时策略。
+        var pending = new Task<TextTranslationResult>[targets.Languages.Count];
+        for (var index = 0; index < targets.Languages.Count; index++)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            var targetRequest = new TextTranslationRequest(
-                request.Text,
-                request.Route.ForTargetLanguage(target),
-                request.Source,
-                request.RequestedAt,
-                request.SourceLanguageHint,
-                request.CorrelationId);
-            results.Add(await TranslateAsync(targetRequest, cancellationToken).ConfigureAwait(false));
+            pending[index] = TranslateAsync(
+                WithTargetLanguage(request, targets.Languages[index]),
+                cancellationToken);
+        }
+
+        TextTranslationResult[] results;
+        try
+        {
+            results = await Task.WhenAll(pending).ConfigureAwait(false);
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException && pending.Length > 1)
+        {
+            // 主目标失败：整条消息就没有可用的译文，跟串行时的行为一致。
+            if (!pending[0].IsCompletedSuccessfully)
+            {
+                throw;
+            }
+
+            // 只有副目标失败：保留已经拿到的主目标译文，把这一条按"只配了一个目标"处理，
+            // 用户仍然看到并发出译文（"译文 / 原文"），而不是整句白等。
+            var degradedTargets = new TranslationTargetSet(targets.PrimaryLanguage);
+            return new TextTranslationBatchResult(request, degradedTargets, [pending[0].Result]);
         }
 
         return new TextTranslationBatchResult(request, targets, results);
     }
+
+    /// <summary>
+    /// Rebinds one batch request to a single output language. Only the route's
+    /// language policy changes, so every other part of the request - text,
+    /// correlation id, source hint - stays identical for all targets.
+    /// </summary>
+    private static TextTranslationRequest WithTargetLanguage(TextTranslationRequest request, string targetLanguage) =>
+        new(
+            request.Text,
+            request.Route.ForTargetLanguage(targetLanguage),
+            request.Source,
+            request.RequestedAt,
+            request.SourceLanguageHint,
+            request.CorrelationId);
 }

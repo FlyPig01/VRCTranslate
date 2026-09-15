@@ -688,6 +688,21 @@ if ($sessionHostSource -notmatch 'TranslationOutputFormatter\.TrimForOsc' -or
     $voiceSource -match 'CombinedText|FormattedText') {
     throw 'Subtitle OSC output must use the shared length guard while keeping its single Simplified Chinese translation.'
 }
+# 句内并行：一句多目标必须同时发请求（串行时用户要等两段译文之和），并且主/副顺序不能变。
+# 主目标失败仍然整句失败、副目标失败降级为单目标，两条语义都要在代码里看得见。
+$translationServiceSource = Get-Content -Raw (Join-Path $v2Root 'src\VrcTranslate.Application\Translation\TranslationService.cs')
+$translateManyBody = [regex]::Match(
+    $translationServiceSource,
+    '(?s)public async Task<TextTranslationBatchResult> TranslateManyAsync.*?\n    \}')
+if (-not $translateManyBody.Success -or
+    $translateManyBody.Value -notmatch 'Task\.WhenAll' -or
+    $translateManyBody.Value -match 'foreach[\s\S]{0,400}?await TranslateAsync') {
+    throw 'TranslateManyAsync must issue one request per target language concurrently; a serial foreach would make the user wait for the sum of both translations.'
+}
+if ($translateManyBody.Value -notmatch 'pending\[0\]\.IsCompletedSuccessfully' -or
+    $translateManyBody.Value -notmatch 'new TranslationTargetSet\(targets\.PrimaryLanguage\)') {
+    throw 'A failed secondary target must degrade to the primary-only result, while a failed primary must still fail the batch.'
+}
 if ($overlayMarkup -notmatch '<Grid x:Name="OverlaySurface"' -or
      $overlayMarkup -match 'x:Name="OverlaySurface"[\s\S]{0,400}(BorderBrush|BorderThickness|CornerRadius)=' -or
      $overlayMarkup -notmatch 'Background="#[0-9A-Fa-f]{6}"' -or

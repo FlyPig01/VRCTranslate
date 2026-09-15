@@ -39,6 +39,54 @@ public sealed class TranslationServiceTests
     }
 
     [Fact]
+    public async Task Translates_both_configured_targets_concurrently()
+    {
+        // 每个目标都要 300 ms；串行会 ≥600 ms，并行应当接近 300 ms。
+        var provider = new DelayedTargetEchoProvider(TimeSpan.FromMilliseconds(300));
+        var service = new TranslationService(provider, new PassThroughGuard());
+        var request = new TextTranslationRequest("你好", CreateRoute(), TextTranslationSource.ManualText, sourceLanguageHint: "zh-CN");
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+
+        var result = await service.TranslateManyAsync(request, new TranslationTargetSet("en-US", "ja-JP"));
+
+        stopwatch.Stop();
+        Assert.Equal(2, provider.StartedPeak);
+        Assert.True(
+            stopwatch.ElapsedMilliseconds < 450,
+            $"两个目标应当是并行请求的，实际耗时 {stopwatch.ElapsedMilliseconds} ms。");
+        // 并行不能改变顺序：主/副译文仍然按配置顺序。
+        Assert.Equal(["你好 -> en-US", "你好 -> ja-JP"], result.Results.Select(item => item.TranslatedText));
+        Assert.Equal("你好 -> en-US / 你好 -> ja-JP / 你好", result.FormattedText);
+    }
+
+    [Fact]
+    public async Task Keeps_the_primary_translation_when_only_the_second_target_fails()
+    {
+        var service = new TranslationService(new FailingTargetProvider("ja-JP"), new PassThroughGuard());
+        var request = new TextTranslationRequest("你好", CreateRoute(), TextTranslationSource.SpeechRecognition, sourceLanguageHint: "zh-CN");
+
+        var result = await service.TranslateManyAsync(request, new TranslationTargetSet("en-US", "ja-JP"));
+
+        // 副目标失败不再让整句失败：结果收缩成单目标，用户仍然看到并发出主译文。
+        Assert.Single(result.Results);
+        Assert.Equal("en-US", result.Targets.PrimaryLanguage);
+        Assert.Null(result.Targets.SecondaryLanguage);
+        Assert.Equal("你好 -> en-US", result.Primary.TranslatedText);
+        Assert.Equal("你好 -> en-US / 你好", result.FormattedText);
+    }
+
+    [Fact]
+    public async Task Fails_the_whole_batch_when_the_primary_target_fails()
+    {
+        var service = new TranslationService(new FailingTargetProvider("en-US"), new PassThroughGuard());
+        var request = new TextTranslationRequest("你好", CreateRoute(), TextTranslationSource.ManualText, sourceLanguageHint: "zh-CN");
+
+        // 主译文是这条消息的主体，没有它就没什么可发，必须让调用方看到失败。
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            service.TranslateManyAsync(request, new TranslationTargetSet("en-US", "ja-JP")));
+    }
+
+    [Fact]
     public async Task Formats_a_single_own_message_target_without_an_empty_second_segment()
     {
         var service = new TranslationService(new TargetEchoProvider(), new PassThroughGuard());
@@ -113,6 +161,67 @@ public sealed class TranslationServiceTests
         public Task<TranslationProviderResponse> TranslateAsync(TranslationProviderRequest request, CancellationToken cancellationToken = default)
         {
             Requests.Add(request);
+            return Task.FromResult(new TranslationProviderResponse($"{request.Text} -> {request.TargetLanguage}"));
+        }
+    }
+
+    /// <summary>每个请求都等待固定时间，并记录同时进行中的请求峰值。</summary>
+    private sealed class DelayedTargetEchoProvider : ITranslationProvider
+    {
+        private readonly TimeSpan _delay;
+        private int _active;
+        private int _peak;
+
+        public DelayedTargetEchoProvider(TimeSpan delay) => _delay = delay;
+
+        public int StartedPeak => _peak;
+        public string Id => "delayed-target-echo";
+
+        public async Task<TranslationProviderResponse> TranslateAsync(
+            TranslationProviderRequest request,
+            CancellationToken cancellationToken = default)
+        {
+            var active = Interlocked.Increment(ref _active);
+            InterlockedMax(ref _peak, active);
+            try
+            {
+                await Task.Delay(_delay, cancellationToken);
+                return new TranslationProviderResponse($"{request.Text} -> {request.TargetLanguage}");
+            }
+            finally
+            {
+                Interlocked.Decrement(ref _active);
+            }
+        }
+
+        private static void InterlockedMax(ref int target, int value)
+        {
+            int current;
+            while (value > (current = Volatile.Read(ref target)))
+            {
+                if (Interlocked.CompareExchange(ref target, value, current) == current) return;
+            }
+        }
+    }
+
+    /// <summary>只让某一个目标语言失败，用来验证"主目标失败"和"副目标失败"两种语义。</summary>
+    private sealed class FailingTargetProvider : ITranslationProvider
+    {
+        private readonly string _failingTarget;
+
+        public FailingTargetProvider(string failingTarget) => _failingTarget = failingTarget;
+
+        public string Id => "failing-target";
+
+        public Task<TranslationProviderResponse> TranslateAsync(
+            TranslationProviderRequest request,
+            CancellationToken cancellationToken = default)
+        {
+            if (string.Equals(request.TargetLanguage, _failingTarget, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException($"target {_failingTarget} is unavailable");
+            }
+
             return Task.FromResult(new TranslationProviderResponse($"{request.Text} -> {request.TargetLanguage}"));
         }
     }

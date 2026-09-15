@@ -266,6 +266,7 @@ public sealed class QuickInputWindow : Window
         state.TranslationPreviewChanged += _previewHandler;
         Closed += (_, _) =>
         {
+            _surface.LayoutUpdated -= OnSurfaceLayoutUpdated;
             _state.TranslationPreviewChanged -= _previewHandler;
         };
         EnsureWindowController();
@@ -350,7 +351,10 @@ public sealed class QuickInputWindow : Window
             // 补正一次，用户保存过的矩形完全不动。
             if (saved is null)
             {
+                // 缩放要等这块内容真的挂上 XAML 树才读得到；万一第一次布局时还读不到，
+                // 就借下一次布局再试一次（拿到就退订），别把未换算的默认矩形留在屏幕上。
                 _surface.Loaded += (_, _) => FitDefaultSizeToDisplayScale();
+                _surface.LayoutUpdated += OnSurfaceLayoutUpdated;
             }
         }
         catch
@@ -369,10 +373,14 @@ public sealed class QuickInputWindow : Window
     {
         var scale = OverlayDisplayScale.Resolve(_surface);
         if (scale <= 0d) return;
+        // 换算过一次就与本方法无关了，后面的每次布局都不该再来动窗口尺寸。
+        _surface.LayoutUpdated -= OnSurfaceLayoutUpdated;
         _windowController?.ResizeKeepingTop(
             OverlayDisplayScale.ToPhysicalPixels(DefaultWidthDips, scale),
             OverlayDisplayScale.ToPhysicalPixels(DefaultHeightDips, scale));
     }
+
+    private void OnSurfaceLayoutUpdated(object? sender, object e) => FitDefaultSizeToDisplayScale();
 
     private async void OnInputKeyDown(object sender, KeyRoutedEventArgs e)
     {

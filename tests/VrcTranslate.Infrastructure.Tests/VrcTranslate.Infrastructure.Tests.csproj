@@ -6,6 +6,13 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
+    <!-- The Application Loopback integration tests need a second process that
+         renders a known tone. Instead of adding a helper executable to the
+         solution, this test assembly provides its own entry point
+         (TonePlayerProgram) and the tests start it again through the .NET host.
+         The test runner loads the assembly as a library, so the entry point is
+         never used during a normal test run. -->
+    <GenerateProgramFile>false</GenerateProgramFile>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />

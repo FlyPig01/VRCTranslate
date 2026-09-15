@@ -245,6 +245,22 @@ public sealed class WindowsAudioCapture : IAudioCapture
 /// <summary>Windows composition-root implementation of the audio port.</summary>
 public sealed class WindowsAudioCaptureFactory : IAudioCaptureFactory
 {
+    private readonly IProcessLoopbackSupport _processLoopbackSupport;
+
+    /// <summary>Creates the factory with the real operating system build check.</summary>
+    public WindowsAudioCaptureFactory()
+        : this(WindowsProcessLoopbackSupport.Instance)
+    {
+    }
+
+    /// <summary>
+    /// Creates the factory with an injected capability decision, which is how
+    /// the "this build is too old to try" path stays testable on a machine that
+    /// is new enough.
+    /// </summary>
+    public WindowsAudioCaptureFactory(IProcessLoopbackSupport processLoopbackSupport) =>
+        _processLoopbackSupport = processLoopbackSupport ?? throw new ArgumentNullException(nameof(processLoopbackSupport));
+
     public IAudioCapture Create(AudioCaptureRequest request)
     {
         ArgumentNullException.ThrowIfNull(request);
@@ -252,14 +268,31 @@ public sealed class WindowsAudioCaptureFactory : IAudioCaptureFactory
         {
             AudioCaptureSourceKind.Microphone =>
                 new WindowsAudioCapture(AudioCaptureMode.Microphone, request.MicrophoneDeviceId),
-            // Process loopback needs the Windows Application Loopback COM
-            // surface, which this build does not have yet. Reporting it as
-            // unsupported keeps the caller on system audio instead of silently
-            // capturing every application.
-            AudioCaptureSourceKind.ProcessLoopback =>
-                throw new ProcessLoopbackNotSupportedException("当前版本尚未提供进程回环采集，请使用系统回环。"),
+            AudioCaptureSourceKind.ProcessLoopback => CreateProcessLoopback(request),
             _ => new WindowsAudioCapture(AudioCaptureMode.SystemLoopback)
         };
+    }
+
+    /// <summary>
+    /// A request for process loopback is answered before any COM object is
+    /// touched: a build below the Application Loopback floor is reported as
+    /// unsupported and the caller keeps system audio, instead of failing at an
+    /// activation that could never succeed. A supported build gets a real
+    /// capture; it is never silently downgraded to the system mix.
+    /// </summary>
+    private IAudioCapture CreateProcessLoopback(AudioCaptureRequest request)
+    {
+        if (!_processLoopbackSupport.IsSupported)
+        {
+            throw new ProcessLoopbackNotSupportedException(
+                $"进程回环采集需要 Windows 10 Build {WindowsProcessLoopbackSupport.MinimumBuild} 或更高版本，"
+                + $"当前系统 Build 为 {WindowsProcessLoopbackSupport.DescribeBuild(_processLoopbackSupport.Build)}；"
+                + "已改用系统回环。");
+        }
+
+        var target = request.TargetProcess
+            ?? throw new ArgumentException("进程回环请求缺少目标进程。", nameof(request));
+        return new ProcessLoopbackAudioCapture(target);
     }
 }
 
@@ -319,10 +352,41 @@ public static class AudioSampleConverter
 {
     public const int TargetSampleRate = 16_000;
 
+    /// <summary>
+    /// Resolves the real sample type of a WASAPI mix format. WASAPI reports the
+    /// shared mix format as <c>WAVEFORMATEXTENSIBLE</c>, which NAudio keeps as
+    /// <see cref="WaveFormatEncoding.Extensible"/> and describes through
+    /// <see cref="WaveFormatExtensible.SubFormat"/>; without this step a 32-bit
+    /// float stream would be decoded as 32-bit integer and every sample would be
+    /// wrong. Formats that are already explicit are returned unchanged.
+    /// </summary>
+    public static WaveFormat NormalizeFormat(WaveFormat format)
+    {
+        ArgumentNullException.ThrowIfNull(format);
+        return format is WaveFormatExtensible extensible && format.Encoding == WaveFormatEncoding.Extensible
+            ? extensible.ToStandardWaveFormat()
+            : format;
+    }
+
+    /// <summary>
+    /// Whether <see cref="ToMono16k"/> can decode the format. A format that
+    /// fails this check must be reported as a fault instead of being converted
+    /// into silence or noise.
+    /// </summary>
+    public static bool IsConvertible(WaveFormat format)
+    {
+        ArgumentNullException.ThrowIfNull(format);
+        format = NormalizeFormat(format);
+        if (format.Channels <= 0 || format.SampleRate <= 0) return false;
+        if (format.BitsPerSample / 8 is not (2 or 3 or 4)) return false;
+        return format.Encoding is WaveFormatEncoding.Pcm or WaveFormatEncoding.IeeeFloat;
+    }
+
     public static float[] ToMono16k(byte[] buffer, int bytesRecorded, WaveFormat format)
     {
         ArgumentNullException.ThrowIfNull(buffer);
         ArgumentNullException.ThrowIfNull(format);
+        format = NormalizeFormat(format);
         if (bytesRecorded <= 0) return [];
         bytesRecorded = Math.Min(bytesRecorded, buffer.Length);
         var bytesPerSample = Math.Max(1, format.BitsPerSample / 8);

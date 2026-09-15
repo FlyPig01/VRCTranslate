@@ -752,6 +752,24 @@ if ($hotkeyDefaultsSource -notmatch 'ResolvePersisted' -or
 # 翻译服务配置卡片（方案《翻译服务配置简化方案》A0）：只给控制台直达与额度要点，
 # 额度必须带「以官网为准」，页面不得出现任何密钥或示例密钥。
 $guideMarkup = Get-Content -Raw $guidePage
+# 模型对比卡片（实验报告-识别与翻译.md 的实测结论）：5 个模型 + 推荐 + 计费口径 + 价格会变动。
+# 模型名必须落在数据侧真值上：小米那份的 pro 版本已实测不推荐，引导页不得推荐它。
+$xiaomiModels = Get-Content -Raw (Join-Path $v2Root 'src\VrcTranslate.Infrastructure\Translation\XiaomiTranslationProvider.cs')
+if ($guideMarkup -notmatch 'guide-comparison' -or
+    $guideMarkup -notmatch '模型对比' -or
+    $guideMarkup -notmatch '阿里云 · 专业版' -or
+    $guideMarkup -notmatch '腾讯云 · 文本翻译' -or
+    $guideMarkup -notmatch '阿里云 · 通用版' -or
+    $guideMarkup -notmatch 'deepseek-flash' -or
+    $guideMarkup -notmatch '小米 MiMo v2\.5' -or
+    $guideMarkup -notmatch '700 万字符/月' -or
+    $guideMarkup -notmatch '约 600 句' -or
+    $guideMarkup -notmatch '价格会变动' -or
+    $xiaomiModels -notmatch 'mimo-v2\.5-pro' -or
+    $guideMarkup -match 'mimo-v2\.5-pro' -or
+    $guideMarkup -match 'v4-pro') {
+    throw 'Guide page comparison card must list the five recommended models with the 700 万字符/月 quota, the 推荐 line and the 价格会变动 caveat, and must never recommend the pro models that measured slower or worse.'
+}
 if ($guideMarkup -notmatch '翻译服务配置' -or
     $guideMarkup -notmatch 'guide-tencent-console' -or
     $guideMarkup -notmatch 'guide-tencent-keys' -or

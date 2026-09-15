@@ -6,6 +6,7 @@ using VrcTranslate.Infrastructure.Configuration;
 using VrcTranslate.Infrastructure.Osc;
 using VrcTranslate.Application.Speech;
 using VrcTranslate.Application.Settings;
+using VrcTranslate.Application.Subtitles;
 using VrcTranslate.Infrastructure.Speech;
 using VrcTranslate.Infrastructure.Storage;
 using ApplicationTranslationService = VrcTranslate.Application.Translation.TranslationService;
@@ -37,6 +38,10 @@ public sealed class AppState
         // place to stop them.
         SubtitleVoice = new SubtitleSpeechSession(this);
         SelfVoice = new SelfVoiceSpeechSession(this);
+        // 他人语音 → 字幕 is one feature: the shortcut and the voice page drive
+        // this single serialized switch instead of toggling the window and the
+        // recognition session separately.
+        OtherPlayerCaption = new OtherPlayerCaptionToggle(new OtherPlayerCaptionEndpoint(this));
         RouteStore = new InMemoryTranslationRouteStore();
         RouteStore.SetCurrent(CreateDefaultRoute());
         var catalog = new TranslationProviderCatalog([
@@ -87,6 +92,9 @@ public sealed class AppState
 
     /// <summary>Own-voice recognition; owns the microphone session across page navigation.</summary>
     public SelfVoiceSpeechSession SelfVoice { get; }
+
+    /// <summary>Master switch for other-player captions: recognition and its caption surface.</summary>
+    public OtherPlayerCaptionToggle OtherPlayerCaption { get; }
 
     /// <summary>Stops every recognition session; called once when the main window closes.</summary>
     public async Task ShutdownSpeechAsync()

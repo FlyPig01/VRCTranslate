@@ -15,57 +15,12 @@
           HorizontalAlignment="Stretch"
           VerticalAlignment="Stretch"
           AutomationProperties.AutomationId="subtitle-caption-frame">
-      <Grid.ColumnDefinitions>
-        <ColumnDefinition Width="34" />
-        <ColumnDefinition Width="12" />
-        <ColumnDefinition Width="*" />
-      </Grid.ColumnDefinitions>
-
-      <!-- A small icon is the only persistent affordance on the surface. -->
-      <Grid x:Name="ActivityMark"
-            Grid.Column="0"
-            Width="28"
-            Height="28"
-            HorizontalAlignment="Center"
-            VerticalAlignment="Center"
-            AutomationProperties.AutomationId="subtitle-activity-mark">
-        <Ellipse x:Name="PulseRing"
-                 Width="27"
-                 Height="27"
-                 Fill="Transparent"
-                 Stroke="#805FE1D4"
-                 StrokeThickness="1"
-                 Opacity="0.58"
-                 HorizontalAlignment="Center"
-                 VerticalAlignment="Center"
-                 IsHitTestVisible="False"
-                 RenderTransformOrigin="0.5,0.5">
-          <Ellipse.RenderTransform>
-            <ScaleTransform ScaleX="1" ScaleY="1" />
-          </Ellipse.RenderTransform>
-        </Ellipse>
-        <Ellipse Width="22"
-                 Height="22"
-                 Fill="#CC123A46"
-                 Stroke="#AA63DCD1"
-                 StrokeThickness="1"
-                 HorizontalAlignment="Center"
-                 VerticalAlignment="Center"
-                 IsHitTestVisible="False" />
-        <FontIcon Glyph="&#xE720;"
-                  FontSize="12"
-                  Foreground="#D8FFF8"
-                  HorizontalAlignment="Center"
-                  VerticalAlignment="Center"
-                  IsHitTestVisible="False" />
-      </Grid>
-
-      <!-- Chat-style column: one message per recognized sentence, newest at the
-           bottom. The viewer owns pointer and wheel scrolling so a long
-           conversation can be read back, and messages stick to the bottom while
-           the reader stays there. -->
+      <!-- Chat-style message list: one message per recognized sentence, newest at
+           the bottom. The whole client area belongs to the messages - there is no
+           icon or status widget competing with them - and the viewer owns pointer
+           and wheel scrolling so a long conversation can be read back while new
+           messages stick to the bottom for a reader who stays there. -->
       <ScrollViewer x:Name="CaptionScroll"
-                    Grid.Column="2"
                     AutomationProperties.AutomationId="subtitle-text"
                     Margin="4,0"
                     Padding="0,2"
@@ -84,7 +39,6 @@
       <!-- Offered only after the reader scrolled back; nothing moves the view
            away from an older message. -->
       <Button x:Name="NewCaptionHint"
-              Grid.Column="2"
               Content="有新消息"
               Visibility="Collapsed"
               HorizontalAlignment="Right"

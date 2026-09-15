@@ -533,6 +533,33 @@ function Assert-MinimizeAndHotkeyRestore {
     }
 }
 
+function Assert-SubtitleMinimizeAndHotkeyRestore {
+    param(
+        [System.Windows.Automation.AutomationElement]$Window,
+        [string]$Hotkey
+    )
+
+    $handle = [IntPtr]$Window.Current.NativeWindowHandle
+    $windowPattern = $Window.GetCurrentPattern([System.Windows.Automation.WindowPattern]::Pattern)
+    $windowPattern.SetWindowVisualState([System.Windows.Automation.WindowVisualState]::Minimized)
+    Wait-NativeState -Failure 'Subtitle overlay did not enter the minimized state.' -Predicate {
+        [VrcTranslateOverlaySmokeNative]::IsIconic($handle)
+    }
+
+    # D3：「他人语音」是整条功能的总开关。关掉它的那次按键同时停止识别并隐藏最小化的
+    # 浮窗，再按一次把同一个窗口从最小化恢复出来，而不是新建一个窗口。
+    [VrcTranslateOverlaySmokeNative]::TapGesture($Hotkey)
+    Wait-NativeState -Failure 'Turning other-player captions off did not take the minimized subtitle overlay off screen.' -Predicate {
+        [VrcTranslateOverlaySmokeNative]::IsWindow($handle) -and
+        -not [VrcTranslateOverlaySmokeNative]::IsWindowVisible($handle)
+    }
+    [VrcTranslateOverlaySmokeNative]::TapGesture($Hotkey)
+    Wait-NativeState -Failure 'The subtitle shortcut did not restore the minimized overlay.' -Predicate {
+        [VrcTranslateOverlaySmokeNative]::IsWindowVisible($handle) -and
+        -not [VrcTranslateOverlaySmokeNative]::IsIconic($handle)
+    }
+}
+
 function Resize-And-MoveOverlay {
     param(
         [System.Windows.Automation.AutomationElement]$Window,
@@ -635,6 +662,9 @@ try {
     $firstProcess = Start-Process -FilePath $Executable -WorkingDirectory $packageDirectory -PassThru
     $main = Wait-MainWindow $firstProcess.Id
     $input = Wait-OverlayWindow $firstProcess.Id '输入' 'quick-input-text'
+    # D3：字幕浮窗没有独立入口，它随他人语音识别一起出现；一次总开关把两者带上来。
+    $subtitleHotkey = Get-ConfiguredHotkey 'VoiceHotkey' 'F7'
+    [VrcTranslateOverlaySmokeNative]::TapGesture($subtitleHotkey)
     $subtitle = Wait-OverlayWindow $firstProcess.Id '字幕' 'subtitle-text'
 
     $inputContract = Assert-OverlayContract $input '输入' 0.90
@@ -659,12 +689,11 @@ try {
     $subtitleBounds = Resize-And-MoveOverlay $subtitle $subtitleContract 'Subtitle overlay' 1
 
     $inputHotkey = Get-ConfiguredHotkey 'QuickInputHotkey' 'Ctrl+Alt+I'
-    $subtitleHotkey = Get-ConfiguredHotkey 'VoiceHotkey' 'F7'
     Assert-SystemCloseAndHotkeyReuse $input $firstProcess.Id '输入' 'quick-input-text' $inputHotkey
     Assert-SystemCloseAndHotkeyReuse $subtitle $firstProcess.Id '字幕' 'subtitle-text' $subtitleHotkey
     Assert-SubtitleShortcutKeepsForeground $subtitle $main $subtitleHotkey
     Assert-MinimizeAndHotkeyRestore $input '输入' $inputHotkey
-    Assert-MinimizeAndHotkeyRestore $subtitle '字幕' $subtitleHotkey
+    Assert-SubtitleMinimizeAndHotkeyRestore $subtitle $subtitleHotkey
     Write-Host '  Close hides, shortcuts reuse HWNDs, subtitles keep focus, and one shortcut restores a minimized overlay.' -ForegroundColor Green
 
     $firstInputHandle = [IntPtr]$inputContract.Handle
@@ -685,6 +714,8 @@ try {
     $secondProcess = Start-Process -FilePath $Executable -WorkingDirectory $packageDirectory -PassThru
     $secondMain = Wait-MainWindow $secondProcess.Id
     $restoredInput = Wait-OverlayWindow $secondProcess.Id '输入' 'quick-input-text'
+    # 重启后字幕浮窗同样是关着的，直到总开关把它和识别一起打开。
+    [VrcTranslateOverlaySmokeNative]::TapGesture($subtitleHotkey)
     $restoredSubtitle = Wait-OverlayWindow $secondProcess.Id '字幕' 'subtitle-text'
     $restoredInputContract = Assert-OverlayContract $restoredInput '输入' 0.70
     $restoredSubtitleContract = Assert-OverlayContract $restoredSubtitle '字幕' 0.80

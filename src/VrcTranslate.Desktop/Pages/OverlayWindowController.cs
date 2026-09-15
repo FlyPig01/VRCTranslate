@@ -26,6 +26,7 @@ internal sealed class OverlayWindowController : IDisposable
     private readonly AppWindow _appWindow;
     private readonly IntPtr _hwnd;
     private readonly Action<OverlayWindowLayout>? _layoutChanged;
+    private readonly Action? _userCloseRequested;
     private bool _closingPermanently;
     private bool _disposed;
 
@@ -36,13 +37,15 @@ internal sealed class OverlayWindowController : IDisposable
         int defaultHeight,
         OverlayWindowLayout? initialLayout,
         Action<OverlayWindowLayout>? layoutChanged,
-        double opacity)
+        double opacity,
+        Action? userCloseRequested = null)
     {
         ArgumentNullException.ThrowIfNull(window);
         ArgumentException.ThrowIfNullOrWhiteSpace(title);
 
         _window = window;
         _layoutChanged = layoutChanged;
+        _userCloseRequested = userCloseRequested;
         _window.Title = title;
         _window.ExtendsContentIntoTitleBar = false;
 
@@ -361,6 +364,15 @@ internal sealed class OverlayWindowController : IDisposable
         if (_closingPermanently) return;
 
         args.Cancel = true;
+        if (_userCloseRequested is not null)
+        {
+            // The owner decides what closing this window means. The caption
+            // surface treats it as turning the whole feature off, so the window
+            // may stay up for the moment that serialized transition takes.
+            _userCloseRequested();
+            return;
+        }
+
         Hide();
     }
 

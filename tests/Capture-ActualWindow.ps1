@@ -84,7 +84,18 @@ try {
     }
     if ($null -eq $window) { throw 'VRCTranslate window was not found.' }
     if ($Target -ne 'main') {
-        $targetName = if ($Target -eq 'subtitle') { '打开语音' } else { '打开输入框' }
+        # 字幕浮窗没有独立入口：它随他人语音识别出现，所以先导航到语音页，再点开始识别
+        # （和 F7 走的是同一个总开关）。输入浮窗仍然从主页面直接打开。
+        if ($Target -eq 'subtitle') {
+            $voiceNav = $window.FindFirst(
+                [System.Windows.Automation.TreeScope]::Descendants,
+                (New-Object System.Windows.Automation.PropertyCondition(
+                    [System.Windows.Automation.AutomationElement]::AutomationIdProperty, 'nav-voice')))
+            if ($null -eq $voiceNav) { throw "The shell does not expose the 'nav-voice' entry." }
+            $voiceNav.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke()
+            Start-Sleep -Milliseconds 500
+        }
+        $targetName = if ($Target -eq 'subtitle') { '开始识别' } else { '打开输入框' }
         $openCondition = New-Object System.Windows.Automation.PropertyCondition(
             [System.Windows.Automation.AutomationElement]::NameProperty, $targetName)
         $openButton = $window.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $openCondition)

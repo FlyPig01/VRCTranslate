@@ -9,10 +9,13 @@ namespace VrcTranslate.Desktop.Pages;
 
 /// <summary>
 /// Compact caption surface for other players' voices. The output language is
-/// fixed to Simplified Chinese and the surface has no visible configuration.
-/// Recognized sentences accumulate as chat-style messages that exist for this
-/// run only: nothing is written to disk and there is no clear action. Stopping
-/// recognition pauses the stream without clearing what is already shown.
+/// fixed to Simplified Chinese and the surface has no visible configuration and
+/// no activity indicator: activity shows up as the messages that arrive, while
+/// the level meter on the voice page owns input feedback. Recognized sentences
+/// accumulate as chat-style messages that exist for this run only - nothing is
+/// written to disk and there is no clear action. Stopping recognition takes the
+/// surface off screen, and the next run continues below the messages already
+/// shown.
 /// </summary>
 public sealed partial class SubtitleOverlayWindow : Window
 {
@@ -34,17 +37,21 @@ public sealed partial class SubtitleOverlayWindow : Window
     private readonly SubtitleCaptionBuffer _captions;
     private readonly List<CaptionBubble> _bubbles = [];
     private readonly Microsoft.UI.Dispatching.DispatcherQueue? _dispatcher;
-    private readonly Microsoft.UI.Dispatching.DispatcherQueueTimer? _visualTimer;
-    private readonly ScaleTransform _pulseTransform;
     private readonly double _initialOpacity;
     private OverlayWindowController? _windowController;
-    private double _visualPhase;
-    private bool _hasCaption;
     private bool _followLatest = true;
 
 #pragma warning disable CS0067 // Kept for binary/source compatibility with the pre-V2 overlay host.
     public event EventHandler<SubtitleLanguageChangedEventArgs>? LanguageChanged;
 #pragma warning restore CS0067
+
+    /// <summary>
+    /// Raised when the user closes the caption window. Closing it is the same
+    /// decision as turning other-player captions off, so the host routes the
+    /// request through the serialized master switch instead of hiding the surface
+    /// on its own.
+    /// </summary>
+    internal event EventHandler? SurfaceCloseRequested;
 
     public SubtitleOverlayWindow(double initialOpacity = 0.90)
     {
@@ -55,23 +62,10 @@ public sealed partial class SubtitleOverlayWindow : Window
         _initialOpacity = Math.Clamp(initialOpacity, 0.60, 1.00);
         ExtendsContentIntoTitleBar = false;
         Title = "字幕";
-        PulseRing.Opacity = 0.34;
-        _pulseTransform = PulseRing.RenderTransform as ScaleTransform ?? new ScaleTransform();
-        if (PulseRing.RenderTransform is not ScaleTransform)
-        {
-            PulseRing.RenderTransform = _pulseTransform;
-        }
 
         CaptionScroll.ViewChanged += OnCaptionViewChanged;
         NewCaptionHint.Click += OnNewCaptionHintClicked;
         _dispatcher = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread();
-        if (_dispatcher is not null)
-        {
-            _visualTimer = _dispatcher.CreateTimer();
-            _visualTimer.Interval = TimeSpan.FromMilliseconds(90);
-            _visualTimer.Tick += OnVisualTimerTick;
-            _visualTimer.Start();
-        }
 
         EnsureWindowController();
         Closed += OnClosed;
@@ -89,13 +83,30 @@ public sealed partial class SubtitleOverlayWindow : Window
                 180,
                 OverlayWindowHost.GetSavedLayout(OverlayWindowHost.SubtitleLayoutKey),
                 layout => OverlayWindowHost.SaveLayout(OverlayWindowHost.SubtitleLayoutKey, layout),
-                _initialOpacity);
+                _initialOpacity,
+                OnSurfaceCloseRequested);
         }
         catch
         {
             // The caption surface remains usable if a platform window API is
             // unavailable (for example, under a UI test host).
         }
+    }
+
+    /// <summary>
+    /// The owner of this surface decides what closing it means; without one the
+    /// window still hides itself so it can never become unclosable.
+    /// </summary>
+    private void OnSurfaceCloseRequested()
+    {
+        var handler = SurfaceCloseRequested;
+        if (handler is null)
+        {
+            HideOverlay();
+            return;
+        }
+
+        handler(this, EventArgs.Empty);
     }
 
     internal bool IsOverlayVisible =>
@@ -167,8 +178,6 @@ public sealed partial class SubtitleOverlayWindow : Window
         var bubble = CreateBubble(caption);
         _bubbles.Add(bubble);
         CaptionMessages.Children.Add(bubble.Container);
-        _hasCaption = true;
-        PulseRing.Opacity = 0.58;
         AnimateMessage(bubble.Container);
         if (follow)
         {
@@ -240,6 +249,8 @@ public sealed partial class SubtitleOverlayWindow : Window
     /// <summary>
     /// Renders the lines of one message from the shared projection, so the
     /// "仅译文 / 译文 + 原文" choice stays one rule for the model and the surface.
+    /// Every line - speaker label, translation and original - is centred across
+    /// the full width of the message strip.
     /// </summary>
     private void RenderBody(CaptionBubble bubble)
     {
@@ -252,6 +263,8 @@ public sealed partial class SubtitleOverlayWindow : Window
                 FontSize = 12,
                 FontWeight = FontWeights.SemiBold,
                 Foreground = SpeakerTextBrush,
+                TextAlignment = TextAlignment.Center,
+                HorizontalAlignment = HorizontalAlignment.Stretch,
                 TextTrimming = TextTrimming.CharacterEllipsis,
                 TextWrapping = TextWrapping.NoWrap
             });
@@ -266,6 +279,7 @@ public sealed partial class SubtitleOverlayWindow : Window
                 FontWeight = line.IsOriginal ? FontWeights.Normal : FontWeights.SemiBold,
                 Foreground = line.IsOriginal ? OriginalTextBrush : TranslatedTextBrush,
                 TextWrapping = TextWrapping.Wrap,
+                TextAlignment = TextAlignment.Center,
                 HorizontalAlignment = HorizontalAlignment.Stretch
             });
         }
@@ -332,28 +346,8 @@ public sealed partial class SubtitleOverlayWindow : Window
         }
     }
 
-    private void OnVisualTimerTick(Microsoft.UI.Dispatching.DispatcherQueueTimer sender, object args)
-    {
-        _visualPhase += _hasCaption ? 0.34 : 0.18;
-        // The ring breathes instead of flashing, which remains readable over a
-        // moving game scene without adding a second status widget.
-        var ringOpacity = (_hasCaption ? 0.42 : 0.25) +
-                          (_hasCaption ? 0.18 : 0.08) * (0.5 + 0.5 * Math.Sin(_visualPhase * 0.7));
-        PulseRing.Opacity = ringOpacity;
-        var pulseAmplitude = _hasCaption ? 0.08 : 0.05;
-        var pulseScale = 1.0 + pulseAmplitude * (0.5 + 0.5 * Math.Sin(_visualPhase));
-        _pulseTransform.ScaleX = pulseScale;
-        _pulseTransform.ScaleY = pulseScale;
-    }
-
     private void OnClosed(object sender, WindowEventArgs args)
     {
-        if (_visualTimer is not null)
-        {
-            _visualTimer.Stop();
-            _visualTimer.Tick -= OnVisualTimerTick;
-        }
-
         CaptionScroll.ViewChanged -= OnCaptionViewChanged;
         NewCaptionHint.Click -= OnNewCaptionHintClicked;
         Closed -= OnClosed;

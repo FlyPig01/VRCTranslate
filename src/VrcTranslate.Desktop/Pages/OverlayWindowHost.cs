@@ -61,13 +61,22 @@ internal static class OverlayWindowHost
     }
 
     /// <summary>
-    /// Mirrors the recognition session onto the caption stream: stopping
-    /// recognition pauses appending and keeps every message already shown.
+    /// Mirrors the recognition session onto the caption surface: stopping
+    /// recognition pauses appending and keeps every message already shown, and
+    /// the window appears and disappears with the session. Every start/stop path
+    /// (shortcut, voice page, shell shutdown) ends here, so recognition can never
+    /// keep running behind a hidden window.
     /// </summary>
     private static void OnSubtitleSessionRunningChanged(object? sender, EventArgs e)
     {
-        var paused = _state?.SubtitleVoice.IsRunning != true;
-        void Apply() => _subtitle?.SetStreamPaused(paused);
+        var running = _state?.SubtitleVoice.IsRunning == true;
+        void Apply()
+        {
+            _subtitle?.SetStreamPaused(!running);
+            if (running) ShowSubtitle();
+            else HideSubtitle();
+        }
+
         if (_dispatcherQueue is null || _dispatcherQueue.HasThreadAccess) Apply();
         else _dispatcherQueue.TryEnqueue(Apply);
     }
@@ -100,8 +109,9 @@ internal static class OverlayWindowHost
     public static void ShowAtStartup(AppState state)
     {
         Initialize(state);
+        // 只有输入浮窗在启动时出现。字幕浮窗属于「他人语音 → 字幕」这一个开关，
+        // 识别没跑的时候它不留在桌面上（D3）。
         ShowWindow(EnsureQuickInput(state), activate: false);
-        ShowWindow(EnsureSubtitle(), activate: false);
     }
 
     public static QuickInputWindow EnsureQuickInput(AppState? state = null)
@@ -138,6 +148,9 @@ internal static class OverlayWindowHost
         var window = new SubtitleOverlayWindow(resolvedState.OverlayAppearance.Current.SubtitleOverlayOpacity);
         // Recognition may already be running when the surface is first created.
         window.SetStreamPaused(!resolvedState.SubtitleVoice.IsRunning);
+        window.SurfaceCloseRequested += (_, _) => DisableCaptionFromUser();
+        // 浮窗只在识别运行时出现：新建出来的窗口先藏起来，等识别启动再显示。
+        if (!resolvedState.SubtitleVoice.IsRunning) window.HideOverlay();
         window.Closed += (_, _) =>
         {
             SaveCurrentLayout(window, SubtitleLayoutKey);
@@ -163,22 +176,69 @@ internal static class OverlayWindowHost
         ShowWindow(window, activate: true);
     }
 
+    /// <summary>Whether the caption surface is currently on screen.</summary>
+    public static bool IsSubtitleVisible => _subtitle?.IsOverlayVisible == true;
+
+    /// <summary>
+    /// Shows the caption surface. The master switch can call this from a worker
+    /// thread once recognition started, so the native call is marshalled here.
+    /// </summary>
     public static void ShowSubtitle()
     {
-        ShowWindow(EnsureSubtitle(), activate: false);
+        if (_shutdownRequested) return;
+        void Apply()
+        {
+            try
+            {
+                ShowWindow(EnsureSubtitle(), activate: false);
+            }
+            catch
+            {
+                // An overlay is optional UI: a failed native show must not stop
+                // the recognition session that is already running.
+            }
+        }
+
+        if (_dispatcherQueue is null || _dispatcherQueue.HasThreadAccess) Apply();
+        else _dispatcherQueue.TryEnqueue(Apply);
     }
 
-    /// <summary>Shows or hides the subtitle overlay without changing recognition state.</summary>
-    public static void ToggleSubtitle()
+    /// <summary>Hides the caption surface; the next run reuses the same window.</summary>
+    public static void HideSubtitle()
     {
-        var window = EnsureSubtitle();
-        if (window.IsOverlayVisible && !window.IsOverlayMinimized)
+        void Apply() => _subtitle?.HideOverlay();
+        if (_dispatcherQueue is null || _dispatcherQueue.HasThreadAccess) Apply();
+        else _dispatcherQueue.TryEnqueue(Apply);
+    }
+
+    /// <summary>
+    /// The standard Windows close command on the caption window means "stop the
+    /// other-player captions", not "hide the window and keep capturing": the
+    /// request goes through the same serialized switch as the shortcut.
+    /// </summary>
+    private static void DisableCaptionFromUser()
+    {
+        var state = _state;
+        if (state is null)
         {
-            window.HideOverlay();
+            HideSubtitle();
             return;
         }
 
-        ShowWindow(window, activate: false);
+        _ = DisableCaptionFromUserAsync(state);
+    }
+
+    private static async Task DisableCaptionFromUserAsync(AppState state)
+    {
+        try
+        {
+            await state.OtherPlayerCaption.SetEnabledAsync(false);
+        }
+        catch
+        {
+            // A stop that reports a failure still has to take the surface down.
+            HideSubtitle();
+        }
     }
 
     public static void HideAll()

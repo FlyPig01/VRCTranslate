@@ -296,7 +296,7 @@ public sealed partial class SettingsPage : Page
         foreach (var pair in new[]
         {
             ("打开输入框", settings.QuickInputHotkey),
-            ("字幕", settings.VoiceHotkey),
+            ("他人语音", settings.VoiceHotkey),
             ("自身语音", settings.SelfVoiceHotkey)
         })
         {
@@ -368,7 +368,7 @@ public sealed partial class SettingsPage : Page
         foreach (var pair in new[]
         {
             ("打开输入框", settings.QuickInputHotkey),
-            ("字幕", settings.VoiceHotkey),
+            ("他人语音", settings.VoiceHotkey),
             ("自身语音", settings.SelfVoiceHotkey)
         })
         {
@@ -395,7 +395,7 @@ public sealed partial class SettingsPage : Page
 
     private string GetSavedHotkey(TextBox box) => box == QuickInputHotkeyBox ? _savedSettings.QuickInputHotkey : box == VoiceHotkeyBox ? _savedSettings.VoiceHotkey : _savedSettings.SelfVoiceHotkey;
 
-    private string GetHotkeyLabel(TextBox box) => box == QuickInputHotkeyBox ? "打开输入框" : box == VoiceHotkeyBox ? "字幕" : "自身语音";
+    private string GetHotkeyLabel(TextBox box) => box == QuickInputHotkeyBox ? "打开输入框" : box == VoiceHotkeyBox ? "他人语音" : "自身语音";
 
     private void RestoreHotkey(TextBox box)
     {

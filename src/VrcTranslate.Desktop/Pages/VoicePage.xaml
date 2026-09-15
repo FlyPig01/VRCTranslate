@@ -126,8 +126,8 @@
                           Spacing="6"
                           HorizontalAlignment="Right"
                           VerticalAlignment="Center"
-                          AutomationProperties.Name="字幕快捷键">
-                <TextBlock Text="快捷键"
+                          AutomationProperties.Name="他人语音快捷键">
+                <TextBlock Text="他人语音"
                            Style="{StaticResource SecondaryTextStyle}"
                            VerticalAlignment="Center" />
                 <Border Background="#DCE8F7"
@@ -143,26 +143,22 @@
                              AutomationProperties.AutomationId="voice-hotkey-summary"
                              AutomationProperties.Name="F7" />
                 </Border>
+                <TextBlock Text="开始 / 停止他人语音识别"
+                           Style="{StaticResource SecondaryTextStyle}"
+                           VerticalAlignment="Center" />
               </StackPanel>
             </Grid>
           </Border>
 
           <Border Style="{StaticResource SurfaceBorderStyle}" Padding="18,16">
             <StackPanel Spacing="12">
-              <Grid ColumnSpacing="12">
-                <Grid.ColumnDefinitions>
-                  <ColumnDefinition Width="*" />
-                  <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
+              <!-- 浮窗没有独立开关：它随他人语音识别一起出现和消失（D3）。 -->
+              <StackPanel Spacing="3">
                 <TextBlock Text="字幕窗口"
-                           Style="{StaticResource SectionTitleTextStyle}"
-                           VerticalAlignment="Center" />
-                <Button Grid.Column="1"
-                        Content="打开"
-                        MinWidth="78"
-                        Click="OnOpenOverlayClicked"
-                        AutomationProperties.Name="打开字幕" />
-              </Grid>
+                           Style="{StaticResource SectionTitleTextStyle}" />
+                <TextBlock Text="跟随他人语音识别自动显示 / 隐藏"
+                           Style="{StaticResource SecondaryTextStyle}" />
+              </StackPanel>
               <Grid ColumnSpacing="12">
                 <Grid.ColumnDefinitions>
                   <ColumnDefinition Width="Auto" />

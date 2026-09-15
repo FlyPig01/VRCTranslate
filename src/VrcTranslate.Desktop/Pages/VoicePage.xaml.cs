@@ -291,11 +291,6 @@ public sealed partial class VoicePage : Page
         }
     }
 
-    private void OnOpenOverlayClicked(object sender, RoutedEventArgs e)
-    {
-        OverlayWindowHost.ShowSubtitle();
-    }
-
     private static string NormalizeSourceTag(string? value)
     {
         if (string.IsNullOrWhiteSpace(value) || value.Equals("auto", StringComparison.OrdinalIgnoreCase)) return "auto";
@@ -414,58 +409,49 @@ public sealed partial class VoicePage : Page
         };
     }
 
-    private async void OnStartClicked(object sender, RoutedEventArgs e)
-    {
-        if (IsRunning) await StopRecognitionAsync();
-        else await StartRecognitionAsync();
-    }
+    private async void OnStartClicked(object sender, RoutedEventArgs e) =>
+        await SetRecognitionAsync(!IsRunning);
 
-    /// <summary>Toggles the subtitle surface from the global shortcut.</summary>
-    public void ToggleSubtitleFromHotkey() => OverlayWindowHost.ToggleSubtitle();
-
-    // Keep the old page entry point source-compatible with earlier V2 builds.
-    // The shortcut now controls window visibility; recognition remains tied to
-    // the explicit start/stop button on this page.
-    public void ToggleRecognitionFromHotkey() => ToggleSubtitleFromHotkey();
-
-    private async Task StartRecognitionAsync()
+    /// <summary>
+    /// Turns other-player recognition and its caption surface on or off through
+    /// the one serialized master switch that the global shortcut also drives, so
+    /// this button can never leave the window and the session disagreeing.
+    /// </summary>
+    private async Task SetRecognitionAsync(bool enabled)
     {
         try
         {
-            var status = State.LocalSpeech.GetModelStatus();
-            if (status.State != LocalSpeechModelState.Ready)
-            {
-                ShowInfo("请先安装本地模型", InfoBarSeverity.Warning);
-                UpdateLocalModelStatus();
-                return;
-            }
-
             // VRChat audio is received through the Windows loopback adapter;
             // segmentation, SenseVoice inference, translation and OSC output
             // stay in the application-scoped session host.
-            await State.SubtitleVoice.StartAsync();
-            UpdateRunningVisuals();
+            var outcome = await State.OtherPlayerCaption.SetEnabledAsync(enabled);
+            if (outcome == OtherPlayerCaptionToggleOutcome.ModelNotReady) ShowModelNotReadyHint();
         }
         catch (Exception exception)
         {
-            UpdateRunningVisuals();
             ShowInfo("无法读取系统音频，请检查音频设备后重试。", InfoBarSeverity.Warning);
             _ = exception;
         }
-    }
-
-    private async Task StopRecognitionAsync()
-    {
-        try
-        {
-            await State.SubtitleVoice.StopAsync();
-        }
         finally
         {
-            _audioLevelTimer.Stop();
-            ResetAudioLevel();
+            if (!IsRunning)
+            {
+                _audioLevelTimer.Stop();
+                ResetAudioLevel();
+            }
+
             UpdateRunningVisuals();
         }
+    }
+
+    /// <summary>
+    /// The one explicit notice a refused start earns, shared by the shortcut and
+    /// this page: without it the model requirement looks like a dead key.
+    /// </summary>
+    public void ShowModelNotReadyHint()
+    {
+        ShowInfo("本地语音模型尚未就绪，请先安装模型", InfoBarSeverity.Warning);
+        UpdateLocalModelStatus();
     }
 
     private void OnAudioLevelChanged(object? sender, AudioLevelEventArgs args)

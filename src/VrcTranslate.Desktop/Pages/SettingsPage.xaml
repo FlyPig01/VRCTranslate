@@ -21,9 +21,9 @@
               <TextBlock x:Name="QuickInputHotkeyLabel" Text="打开输入框" FontWeight="SemiBold" VerticalAlignment="Center" />
               <TextBox x:Name="QuickInputHotkeyBox" Grid.Column="1" PlaceholderText="例如 Ctrl+Alt+I" TextChanged="OnSettingTextChanged" LostFocus="OnHotkeyBoxLostFocus" KeyDown="OnHotkeyBoxKeyDown" />
               <TextBlock x:Name="QuickInputHotkeyHint" Grid.Column="2" Text="打开 / 关闭输入框" Style="{StaticResource SecondaryTextStyle}" VerticalAlignment="Center" />
-              <TextBlock x:Name="VoiceHotkeyLabel" Grid.Row="1" Text="字幕" FontWeight="SemiBold" VerticalAlignment="Center" />
+              <TextBlock x:Name="VoiceHotkeyLabel" Grid.Row="1" Text="他人语音" FontWeight="SemiBold" VerticalAlignment="Center" />
               <TextBox x:Name="VoiceHotkeyBox" Grid.Row="1" Grid.Column="1" PlaceholderText="例如 F7" TextChanged="OnSettingTextChanged" LostFocus="OnHotkeyBoxLostFocus" KeyDown="OnHotkeyBoxKeyDown" />
-              <TextBlock x:Name="VoiceHotkeyHint" Grid.Row="1" Grid.Column="2" Text="打开 / 关闭字幕" Style="{StaticResource SecondaryTextStyle}" VerticalAlignment="Center" />
+              <TextBlock x:Name="VoiceHotkeyHint" Grid.Row="1" Grid.Column="2" Text="开始 / 停止他人语音识别" Style="{StaticResource SecondaryTextStyle}" VerticalAlignment="Center" />
               <TextBlock x:Name="SelfVoiceHotkeyLabel" Grid.Row="2" Text="自身语音" VerticalAlignment="Center" />
               <TextBox x:Name="SelfVoiceHotkeyBox" Grid.Row="2" Grid.Column="1" PlaceholderText="例如 Ctrl+F8" TextChanged="OnSettingTextChanged" LostFocus="OnHotkeyBoxLostFocus" KeyDown="OnHotkeyBoxKeyDown" />
               <TextBlock x:Name="SelfVoiceHotkeyHint" Grid.Row="2" Grid.Column="2" Text="打开 / 关闭自身语音" Style="{StaticResource SecondaryTextStyle}" VerticalAlignment="Center" />

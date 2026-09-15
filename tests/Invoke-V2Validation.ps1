@@ -209,6 +209,15 @@ if ($translationMarkup -notmatch '(?s)<Grid ColumnSpacing="12" MinWidth="0">\s*<
 if ($translationCode -notmatch 'LayoutCard' -or $translationCode -notmatch 'grid\.ActualWidth' -or $translationCode -notmatch 'HorizontalScrollBarVisibility = ScrollBarVisibility\.Disabled') { throw 'Translation profile cards and dialogs must adapt to compact widths without horizontal clipping.' }
 if (($translationCode -notmatch 'CreateProviderPlaceholders|IsConfiguredProfile' -and $appStateSource -notmatch 'CreateProviderPlaceholders|IsConfiguredProfile') -or $appStateSource -notmatch 'Only this offline profile' -or $appStateSource -notmatch 'IsConfiguredRoute') { throw 'Translation profiles must hide unconfigured provider placeholders and keep only the local test profile by default.' }
 if ($settingsMarkup -notmatch 'Text="打开输入框"' -or $settingsMarkup -match 'Text="自身输入"') { throw 'Shortcut settings must name the quick-input action as 打开输入框.' }
+# D3：这条快捷键现在同时开关他人语音识别与字幕浮窗，必须统一改名为「他人语音」，
+# 提示语为「开始 / 停止他人语音识别」；设置页三行为「打开输入框 / 他人语音 / 自身语音」。
+if ($settingsMarkup -notmatch 'Text="他人语音"' -or
+    $settingsMarkup -notmatch 'Text="开始 / 停止他人语音识别"' -or
+    $settingsMarkup -match 'Text="字幕"' -or
+    (Get-Content -Raw $guidePage) -notmatch 'Text="他人语音"' -or
+    (Get-Content -Raw $guidePage) -notmatch 'Text="开始 / 停止他人语音识别"') {
+    throw 'The caption shortcut must be named 他人语音 with the 开始 / 停止他人语音识别 hint in the settings and guide pages.'
+}
 if ($settingsMarkup -notmatch 'LostFocus="OnHotkeyBoxLostFocus"' -or $settingsMarkup -notmatch 'KeyDown="OnHotkeyBoxKeyDown"' -or $settingsSource -notmatch 'ConfirmHotkeyChangeAsync' -or $settingsSource -notmatch 'ContentDialog') { throw 'Shortcut edits must require an explicit confirmation before being persisted.' }
 
 # The run page is an operational overview. Manual text translation belongs to
@@ -261,7 +270,10 @@ if ($inputMarkup -notmatch 'Text="第一语言"' -or $inputMarkup -notmatch 'Tex
 if ($appStateSource -notmatch 'TranslationTargetSet|SelfTranslationTargets|TranslateSelfAsync|LastSecondaryTranslatedText') { throw 'AppState must persist and route the own-message target language pair.' }
 if ($voiceMarkup -match '目标进程|刷新进程|显示字幕覆盖层|VRChat\.exe' -or $voiceMarkup -match '<ComboBox[^>]*(识别语言|目标语言)|Header="(识别语言|目标语言)"' -or $voiceMarkup -match 'ComboBoxItem Content="当前系统输出"') { throw 'VoicePage must keep process and subtitle-language controls out of the main page.' }
 if ($voiceMarkup -match '当前翻译方案|默认翻译方案|识别后的文字会使用默认翻译服务') { throw 'VoicePage must not present translation-route details in the speech-recognition workflow.' }
-if ($voiceMarkup -notmatch '本地语音模型' -or $voiceMarkup -notmatch 'SenseVoice Small' -or $voiceMarkup -notmatch '管理模型' -or $voiceMarkup -notmatch 'Text="字幕窗口"' -or $voiceMarkup -notmatch 'AutomationProperties.Name="打开字幕"') { throw 'VoicePage must expose local model management and one concise subtitle-window entry.' }
+if ($voiceMarkup -notmatch '本地语音模型' -or $voiceMarkup -notmatch 'SenseVoice Small' -or $voiceMarkup -notmatch '管理模型' -or $voiceMarkup -notmatch 'Text="字幕窗口"') { throw 'VoicePage must expose local model management and one concise subtitle-window section.' }
+# D3：字幕浮窗不再有独立入口，它只随他人语音识别出现与消失；页面上原来那个
+# 「打开字幕」按钮必须保持删除状态。
+if ($voiceMarkup -match 'AutomationProperties.Name="打开字幕"|Content="打开字幕"') { throw 'VoicePage must not keep a window-only subtitle entry; the caption surface follows the other-player recognition switch.' }
 if ($voiceSource -notmatch 'State\.LocalSpeech|GetModelStatus|InstallModelAsync|RecognizeLocalSamplesAsync') { throw 'VoicePage must expose the local SenseVoice model state and use the application speech boundary.' }
 if ($voiceSource -match 'SpeechRecognizer|Windows\.Media\.SpeechRecognition') { throw 'VoicePage must not use Windows SpeechRecognizer.' }
 # Phase 2 接线：他人语音不再固定请求系统回环，而是交给自适应回环协调器，由 VRChat
@@ -308,9 +320,13 @@ if ([regex]::Matches($voiceMarkup, '<ComboBox[\s>]').Count -ne 1) {
     throw 'VoicePage must keep exactly one selector (the local model box); no capture-source or process picker may be added.'
 }
 if ($voiceMarkup -match 'Windows 系统识别 · 无需密钥') { throw 'VoicePage must keep the recognition status label concise.' }
-if ([regex]::Matches($voiceMarkup, 'AutomationProperties.Name="打开字幕"').Count -ne 1) { throw 'VoicePage must expose one concise subtitle entry instead of duplicate buttons.' }
+if ([regex]::Matches($voiceMarkup, 'AutomationProperties.Name="打开字幕"').Count -ne 0) { throw 'The window-only subtitle entry must stay deleted so the caption surface cannot be toggled apart from recognition.' }
+if ($voiceSource -notmatch 'State\.OtherPlayerCaption\.SetEnabledAsync' -or
+    ([regex]::Matches($voiceMarkup, 'Click="OnStartClicked"').Count -ne 1)) {
+    throw 'VoicePage must drive other-player recognition through the one serialized master switch that also owns the caption surface.'
+}
 if ($voiceMarkup -notmatch 'ProgressRing|EntranceThemeTransition' -or $voiceMarkup -notmatch 'VoiceAudioLevel' -or $voiceSource -notmatch 'VoicePulse\.IsActive' -or $voiceSource -notmatch 'LevelChanged|OnAudioLevelChanged') { throw 'VoicePage must provide a compact animated recognition state and measured audio activity.' }
-if ($voiceSource -notmatch 'ContentDialog' -or $voiceSource -notmatch 'OverlayWindowHost|ShowSubtitle' -or $voiceSource -notmatch 'InstallModelAsync' -or $voiceSource -notmatch 'RemoveModelAsync') { throw 'VoicePage must provide a local model management dialog and expose a real subtitle preview window.' }
+if ($voiceSource -notmatch 'ContentDialog' -or $voiceSource -notmatch 'OtherPlayerCaption' -or $voiceSource -notmatch 'InstallModelAsync' -or $voiceSource -notmatch 'RemoveModelAsync') { throw 'VoicePage must provide a local model management dialog and start captions through the shared master switch.' }
 if ($voiceMarkup -match '1\s+音频来源|2\s+识别服务|3\s+字幕窗口') { throw 'VoicePage must not use numbered explanatory cards.' }
 if ($overlayMarkup -match '识别语言|目标语言|显示(?:内容)?|他人语音字幕|等待') { throw 'Subtitle overlay must stay minimal: automatic recognition and fixed Simplified Chinese output have no visible labels or selectors.' }
 if ($overlayMarkup -match 'SourceLanguageBox|TargetLanguageBox|DisplayModeBox|OverlayStatusText|OverlayStatusDot|Content="他人语音字幕"') { throw 'Subtitle overlay must not render redundant names, language selectors, display selectors, or status widgets.' }
@@ -320,9 +336,10 @@ if ($overlayMarkup -notmatch 'AutomationProperties.AutomationId="subtitle-text"'
     $overlayCodeSource -notmatch 'new\s+OverlayWindowController') {
      throw 'Subtitle overlay must expose one compact surface, keep automatic recognition and Simplified Chinese output, and use the shared native-window controller.'
  }
- if ($overlayMarkup -match '(?i)waveform|wave-bar|wavebar|right-decoration|audio-bars' -or
-     ([regex]::Matches($overlayMarkup, 'subtitle-activity-mark').Count -ne 1)) {
-     throw 'Subtitle overlay must keep only the left activity mark; the removed irregular right-side decoration must not return.'
+ # D4：左侧那个看起来像麦克风的圆形活动标识已删除（它让人误会软件在用麦克风收音），
+ # 活动反馈由语音页的电平表承担；右侧那些早先被删掉的装饰同样不得回来。
+ if ($overlayMarkup -match '(?i)waveform|wave-bar|wavebar|right-decoration|audio-bars|subtitle-activity-mark|PulseRing|Ellipse|FontIcon|Glyph=') {
+     throw 'The caption surface must stay text-only: no activity mark, icon or decorative indicator may return.'
  }
 # D1：长对话改成消息条滚动列表。消息只在本次运行期间存在（不写盘、没有清空入口），
 # 停止识别只暂停追加而不改变已有消息，用户上翻时不得被强制拉回底部。
@@ -360,6 +377,11 @@ if ($voiceMarkup -notmatch 'subtitle-content-toggle' -or
     $voiceSource -notmatch 'OverlayWindowHost\.ApplySubtitleContentMode' -or
     $voiceSource -notmatch 'SubtitleContent') {
     throw 'VoicePage must offer the caption content option next to the subtitle opacity and persist it in the voice settings document.'
+}
+# D4：字幕消息水平居中——译文、原文和说话人标签行都按整条消息的宽度居中。
+if (([regex]::Matches($overlayCodeSource, 'TextAlignment\s*=\s*TextAlignment\.Center').Count -lt 2) -or
+    $overlayCodeSource -notmatch 'HorizontalAlignment\s*=\s*HorizontalAlignment\.Stretch') {
+    throw 'Caption messages must be centred: every rendered line, including the speaker label, uses TextAlignment.Center across the message width.'
 }
 if ($quickInputSource -notmatch 'new\s+OverlayWindowController' -or
     $quickInputSource -notmatch 'OverlayWindowHost\.GetSavedLayout' -or
@@ -459,12 +481,10 @@ if ($sessionHostSource -notmatch 'TranslationOutputFormatter\.TrimForOsc' -or
 if ($overlayMarkup -notmatch '<Grid x:Name="OverlaySurface"' -or
      $overlayMarkup -match 'x:Name="OverlaySurface"[\s\S]{0,400}(BorderBrush|BorderThickness|CornerRadius)=' -or
      $overlayMarkup -notmatch 'Background="#[0-9A-Fa-f]{6}"' -or
-     $overlayMarkup -notmatch 'subtitle-activity-mark' -or
-     $overlayMarkup -notmatch 'x:Name="PulseRing"' -or
+     $overlayMarkup -notmatch 'x:Name="CaptionScroll"' -or
      $overlayCodeSource -notmatch 'ExtendsContentIntoTitleBar\s*=\s*false' -or
-     $overlayCodeSource -notmatch 'OnVisualTimerTick' -or
-     $overlayCodeSource -notmatch 'PulseRing\.Opacity') {
-     throw 'Subtitle overlay must fill the native client area with one dark Grid, a compact activity mark, and a visible animation.'
+     $overlayCodeSource -match 'PulseRing|OnVisualTimerTick|_visualPhase') {
+     throw 'Subtitle overlay must fill the native client area with one dark Grid and the caption list, without the removed activity indicator or its animation.'
  }
 if ($overlayControllerSource -notmatch '_window\.ExtendsContentIntoTitleBar\s*=\s*false' -or
     $overlayControllerSource -notmatch 'SetBorderAndTitleBar\(hasBorder:\s*true,\s*hasTitleBar:\s*true\)' -or
@@ -477,8 +497,8 @@ if ($overlayControllerSource -notmatch '_window\.ExtendsContentIntoTitleBar\s*=\
 }
 if ($overlayMarkup -match 'Shadow' -or $quickInputSource -match 'Shadow') { throw 'Game overlays must not add shadows over the game view.' }
 if ($voiceSource -notmatch 'SpeechRecognitionRequest|State\.LocalSpeech' -or ($voiceSource -notmatch '"zh-CN"' -and $sessionHostSource -notmatch '"zh-CN"')) { throw 'VoicePage must use the local recognition boundary and keep translation output fixed to Simplified Chinese.' }
-if ($voiceMarkup -notmatch 'voice-hotkey-summary|快捷键' -or $voiceSource -notmatch 'ReadGlobalVoiceHotkey') { throw 'VoicePage must display the configured subtitle shortcut.' }
-if ($mainWindowSource -notmatch 'ToggleSubtitle') { throw 'The global subtitle shortcut must toggle the subtitle overlay visibility.' }
+if ($voiceMarkup -notmatch 'voice-hotkey-summary' -or $voiceMarkup -notmatch '他人语音' -or $voiceMarkup -notmatch '开始 / 停止他人语音识别' -or $voiceSource -notmatch 'ReadGlobalVoiceHotkey') { throw 'VoicePage must display the configured 他人语音 shortcut with its 开始 / 停止他人语音识别 hint.' }
+if ($mainWindowSource -notmatch 'OtherPlayerCaption\s*\.\s*ToggleAsync' -or $mainWindowSource -notmatch 'ModelNotReady') { throw 'The global 他人语音 shortcut must switch recognition and the caption surface together and report a missing model instead of staying silent.' }
 if ($hotkeyContractsSource -notmatch 'NormalizeModifier' -or $hotkeyContractsSource -notmatch 'IsSupportedPrimary' -or $hotkeyContractsSource -notmatch 'functionKey\s+is\s+>=\s+1\s+and\s+<=\s+12') { throw 'Core hotkey normalization must define the same supported modifier and primary-key set as the desktop poller.' }
 if ($settingsValidationSource -notmatch 'HotkeyBinding\.Normalize\(gesture\)' -or $settingsValidationSource -notmatch 'gestures\[normalized\]') { throw 'Workspace settings validation must use canonical hotkey normalization for conflicts and unsupported keys.' }
 if ($mainWindowSource -notmatch 'HotkeyBinding\.Normalize' -or $mainWindowSource -notmatch 'return HotkeyBinding\.Normalize\(fallback\)') { throw 'Desktop global hotkeys must use the core canonical normalization and safely fall back for invalid persisted values.' }
@@ -959,14 +979,13 @@ function Invoke-VoiceUiSmoke {
         }
         if ($null -eq $window) { throw 'Voice UI smoke could not find the VRCTranslate window.' }
 
-        $overlayButtonCondition = New-Object System.Windows.Automation.PropertyCondition(
-            [System.Windows.Automation.AutomationElement]::NameProperty, '打开字幕')
-        $overlayButton = $null
-        for ($attempt = 0; $attempt -lt 30 -and $null -eq $overlayButton; $attempt++) {
-            Start-Sleep -Milliseconds 200
-            $overlayButton = $window.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $overlayButtonCondition)
-        }
-        if ($null -eq $overlayButton) { throw 'Voice page does not expose the subtitle window entry.' }
+        # D3：语音页不再有「打开字幕」按钮——浮窗只随他人语音识别出现与消失，
+        # 页面上只保留这一个开始 / 停止动作。
+        $windowOnlyEntry = $window.FindFirst(
+            [System.Windows.Automation.TreeScope]::Descendants,
+            (New-Object System.Windows.Automation.PropertyCondition(
+                [System.Windows.Automation.AutomationElement]::NameProperty, '打开字幕')))
+        if ($null -ne $windowOnlyEntry) { throw 'Voice page still exposes the retired 打开字幕 button.' }
         $startButton = $window.FindFirst(
             [System.Windows.Automation.TreeScope]::Descendants,
             (New-Object System.Windows.Automation.PropertyCondition(
@@ -980,18 +999,12 @@ function Invoke-VoiceUiSmoke {
                     '开始识别')))
         }
         if ($null -eq $startButton) { throw 'Voice page does not expose the recognition action.' }
-        $overlayButtonRect = $overlayButton.Current.BoundingRectangle
         $startButtonRect = $startButton.Current.BoundingRectangle
         $mainRect = $window.Current.BoundingRectangle
-        foreach ($entry in @(
-            @{ Name = 'subtitle-window'; Rect = $overlayButtonRect },
-            @{ Name = 'recognition'; Rect = $startButtonRect })) {
-            $rect = $entry.Rect
-            if ($rect.Width -lt 60 -or $rect.Height -lt 24 -or
-                $rect.Left -lt ($mainRect.Left - 2) -or $rect.Right -gt ($mainRect.Right + 2) -or
-                $rect.Top -lt ($mainRect.Top - 2) -or $rect.Bottom -gt ($mainRect.Bottom + 2)) {
-                throw "Voice page $($entry.Name) action is clipped or unusable."
-            }
+        if ($startButtonRect.Width -lt 60 -or $startButtonRect.Height -lt 24 -or
+            $startButtonRect.Left -lt ($mainRect.Left - 2) -or $startButtonRect.Right -gt ($mainRect.Right + 2) -or
+            $startButtonRect.Top -lt ($mainRect.Top - 2) -or $startButtonRect.Bottom -gt ($mainRect.Bottom + 2)) {
+            throw 'Voice page recognition action is clipped or unusable.'
         }
         $hotkeySummaryCondition = New-Object System.Windows.Automation.PropertyCondition(
             [System.Windows.Automation.AutomationElement]::AutomationIdProperty, 'voice-hotkey-summary')
@@ -1002,28 +1015,74 @@ function Invoke-VoiceUiSmoke {
                 (New-Object System.Windows.Automation.PropertyCondition(
                     [System.Windows.Automation.AutomationElement]::NameProperty, 'F7')))
         }
-        if ($null -eq $hotkeySummary) { throw 'Voice page does not display the configured subtitle shortcut.' }
-        $overlayButton.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke()
+        if ($null -eq $hotkeySummary) { throw 'Voice page does not display the configured 他人语音 shortcut.' }
+        if ($null -eq ('VrcTranslateValidationNative' -as [type])) {
+            Add-Type @'
+using System;
+using System.Runtime.InteropServices;
+public static class VrcTranslateValidationNative {
+    [DllImport("user32.dll")]
+    public static extern bool SetWindowPos(IntPtr hWnd, IntPtr hInsertAfter, int x, int y, int cx, int cy, uint flags);
+    [DllImport("user32.dll", EntryPoint = "GetWindowLongPtrW")]
+    public static extern IntPtr GetWindowLongPtr(IntPtr hWnd, int index);
+    [DllImport("user32.dll")]
+    public static extern bool IsWindowVisible(IntPtr hWnd);
+    [DllImport("user32.dll", EntryPoint = "keybd_event")]
+    public static extern void KeybdEvent(byte virtualKey, byte scanCode, uint flags, UIntPtr extraInfo);
+}
+'@
+        }
 
-        $overlay = $null
-        for ($attempt = 0; $attempt -lt 30 -and $null -eq $overlay; $attempt++) {
-            Start-Sleep -Milliseconds 200
-            $windows = @($root.FindAll(
+        function Find-CaptionWindow {
+            $candidateWindows = @($root.FindAll(
                 [System.Windows.Automation.TreeScope]::Children,
                 (New-Object System.Windows.Automation.PropertyCondition(
                     [System.Windows.Automation.AutomationElement]::ControlTypeProperty,
                     [System.Windows.Automation.ControlType]::Window))))
-            $overlay = $windows | Where-Object {
+            return $candidateWindows | Where-Object {
                 $_.Current.ProcessId -eq $process.Id -and
                 $_.Current.NativeWindowHandle -ne $window.Current.NativeWindowHandle -and
-                    $null -ne $_.FindFirst(
-                        [System.Windows.Automation.TreeScope]::Descendants,
-                        (New-Object System.Windows.Automation.PropertyCondition(
-                            [System.Windows.Automation.AutomationElement]::AutomationIdProperty,
-                            'subtitle-text')))
+                $null -ne $_.FindFirst(
+                    [System.Windows.Automation.TreeScope]::Descendants,
+                    (New-Object System.Windows.Automation.PropertyCondition(
+                        [System.Windows.Automation.AutomationElement]::AutomationIdProperty,
+                        'subtitle-text')))
             } | Select-Object -First 1
         }
-        if ($null -eq $overlay) { throw 'Opening the subtitle window did not create a visible window.' }
+
+        function Get-VoiceStatusName {
+            $statusElement = $window.FindFirst(
+                [System.Windows.Automation.TreeScope]::Descendants,
+                (New-Object System.Windows.Automation.PropertyCondition(
+                    [System.Windows.Automation.AutomationElement]::AutomationIdProperty,
+                    'VoiceStatusText')))
+            if ($null -eq $statusElement) { return '' }
+            return $statusElement.Current.Name
+        }
+
+        # Read the same persisted shortcut the application reads. This keeps the
+        # smoke test valid after a user changes the global binding.
+        $configuredVoiceHotkey = Get-ConfiguredGlobalHotkey 'VoiceHotkey' 'F7'
+
+        # 识别没跑的时候浮窗不该留在屏幕上——这正是「浮窗只随识别状态出现与消失」。
+        $preRunOverlay = Find-CaptionWindow
+        if ($null -ne $preRunOverlay -and
+            [VrcTranslateValidationNative]::IsWindowVisible([IntPtr]$preRunOverlay.Current.NativeWindowHandle)) {
+            throw 'The caption surface must not be on screen before other-player recognition starts.'
+        }
+
+        # 一次「他人语音」＝开始识别 + 显示浮窗。
+        Invoke-TestHotkey $configuredVoiceHotkey
+        $overlay = $null
+        for ($attempt = 0; $attempt -lt 60 -and $null -eq $overlay; $attempt++) {
+            Start-Sleep -Milliseconds 200
+            $candidate = Find-CaptionWindow
+            if ($null -ne $candidate -and
+                [VrcTranslateValidationNative]::IsWindowVisible([IntPtr]$candidate.Current.NativeWindowHandle)) {
+                $overlay = $candidate
+            }
+        }
+        if ($null -eq $overlay) { throw 'The 他人语音 shortcut did not start recognition and show the caption surface.' }
         $overlayControls = @($overlay.FindAll(
             [System.Windows.Automation.TreeScope]::Descendants,
             [System.Windows.Automation.Condition]::TrueCondition))
@@ -1031,10 +1090,10 @@ function Invoke-VoiceUiSmoke {
             throw 'The subtitle overlay still exposes redundant title, language, display, or status controls.'
         }
         $subtitleText = $overlayControls | Where-Object { $_.Current.AutomationId -eq 'subtitle-text' } | Select-Object -First 1
-        # The frame is visible at startup so users can find and resize it; the
-        # text itself must remain empty until the first recognized sentence.
+        # The surface carries messages only: it opens empty and fills up as
+        # sentences arrive, because recognition just started.
         if ($null -ne $subtitleText -and -not [string]::IsNullOrEmpty($subtitleText.Current.Name)) {
-            throw "The subtitle overlay must start empty; received '$($subtitleText.Current.Name)'."
+            throw "The caption surface must open empty; received '$($subtitleText.Current.Name)'."
         }
         $overlayRect = $overlay.Current.BoundingRectangle
         Assert-OverlayBounds -Bounds $overlayRect -ConfiguredSize $subtitleOverlayDefaultSize -Label 'Subtitle'
@@ -1048,20 +1107,40 @@ function Invoke-VoiceUiSmoke {
         }
         $overlayHandle = [IntPtr]$overlay.Current.NativeWindowHandle
         if (-not [VrcTranslateValidationNative]::IsWindowVisible($overlayHandle)) {
-            throw 'The subtitle overlay must be visible before testing its global shortcut.'
+            throw 'The caption surface must be visible while recognition is running.'
         }
-        # Read the same persisted shortcut the application reads. This keeps
-        # the smoke test valid after a user changes the global binding.
-        $configuredVoiceHotkey = Get-ConfiguredGlobalHotkey 'VoiceHotkey' 'F7'
+        # 浮窗在屏幕上时识别必须真的在跑：窗口状态和识别状态来自同一个串行化开关。
+        $runningStatus = Get-VoiceStatusName
+        if ($runningStatus -notmatch '识别中') {
+            throw "The caption surface is visible while the voice page reports '$runningStatus'."
+        }
+
+        # 再按一次＝停止识别 + 隐藏浮窗，两个状态必须一起翻转。
         Invoke-TestHotkey $configuredVoiceHotkey
-        Start-Sleep -Milliseconds 300
+        for ($attempt = 0; $attempt -lt 60; $attempt++) {
+            Start-Sleep -Milliseconds 200
+            if (-not [VrcTranslateValidationNative]::IsWindowVisible($overlayHandle) -and (Get-VoiceStatusName) -match '停止') { break }
+        }
         if ([VrcTranslateValidationNative]::IsWindowVisible($overlayHandle)) {
-            throw 'The subtitle shortcut did not hide the overlay.'
+            throw 'The 他人语音 shortcut did not hide the caption surface on its second press.'
         }
+        $stoppedStatus = Get-VoiceStatusName
+        if ($stoppedStatus -notmatch '停止') {
+            throw "The caption surface was hidden while the voice page still reports '$stoppedStatus'."
+        }
+
+        # 第三次＝重新开始识别并显示浮窗，总开关可以反复切换。
         Invoke-TestHotkey $configuredVoiceHotkey
-        Start-Sleep -Milliseconds 300
+        for ($attempt = 0; $attempt -lt 60; $attempt++) {
+            Start-Sleep -Milliseconds 200
+            if ([VrcTranslateValidationNative]::IsWindowVisible($overlayHandle) -and (Get-VoiceStatusName) -match '识别中') { break }
+        }
         if (-not [VrcTranslateValidationNative]::IsWindowVisible($overlayHandle)) {
-            throw 'The subtitle shortcut did not show the overlay again.'
+            throw 'The 他人语音 shortcut did not show the caption surface again.'
+        }
+        $restartedStatus = Get-VoiceStatusName
+        if ($restartedStatus -notmatch '识别中') {
+            throw "The caption surface reappeared while the voice page reports '$restartedStatus'."
         }
         # D1：字幕内容选项（仅译文 / 译文 + 原文）持久化在 v2-voice-settings.json。
         # 切换后必须立刻写入，重新进入语音页时必须从文件读回，切回原值也要落盘。
@@ -1113,8 +1192,22 @@ function Invoke-VoiceUiSmoke {
             [string]$document.SubtitleContent -eq $restoredTag
         }
 
-        try { $overlay.GetCurrentPattern([System.Windows.Automation.WindowPattern]::Pattern).Close() } catch { }
-        Write-Host '  Voice subtitle-window interaction smoke passed.'
+        # 关闭字幕窗口＝关掉整个他人语音：窗口消失时识别不能还在跑（D3.5）。
+        $closableOverlay = Find-CaptionWindow
+        if ($null -eq $closableOverlay) { throw 'The caption surface is not on screen to close.' }
+        $closableOverlay.GetCurrentPattern([System.Windows.Automation.WindowPattern]::Pattern).Close()
+        for ($attempt = 0; $attempt -lt 60; $attempt++) {
+            Start-Sleep -Milliseconds 200
+            if (-not [VrcTranslateValidationNative]::IsWindowVisible($overlayHandle) -and (Get-VoiceStatusName) -match '停止') { break }
+        }
+        if ([VrcTranslateValidationNative]::IsWindowVisible($overlayHandle)) {
+            throw 'Closing the caption window did not hide it.'
+        }
+        $closedStatus = Get-VoiceStatusName
+        if ($closedStatus -notmatch '停止') {
+            throw "Closing the caption window left the recognition session running ('$closedStatus')."
+        }
+        Write-Host '  Voice caption master-switch interaction smoke passed.'
     }
     finally {
         if ($null -ne $process -and -not $process.HasExited) { Stop-Process -Id $process.Id -Force }
@@ -1231,10 +1324,13 @@ function Invoke-QuickInputUiSmoke {
 
 function Invoke-SubtitleVisualSmoke {
     <#
-    The subtitle surface used to regress to a plain block even when the XAML
-    still contained the decoration markup. Exercise the real window so the
-    smoke test checks the rendered microphone ring animation, not only source
-    text. The assertion follows the current activity-mark layout.
+    The caption surface used to be checked through its left activity mark. That
+    mark is gone - it looked like a microphone and implied the app records the
+    user - so this smoke checks what the surface really is now: one dark client
+    area that is actually drawn, a message strip that starts at the surface edge
+    instead of behind the deleted indicator column, and no leftover accent pixels
+    or markup from that indicator. Captions themselves appear only after real
+    speech is recognized, which this smoke deliberately does not wait for.
     #>
     Add-Type -AssemblyName UIAutomationClient
     Add-Type -AssemblyName UIAutomationTypes
@@ -1309,16 +1405,25 @@ public static class VrcTranslateSubtitleVisualNative {
         }
         if ($null -eq $mainWindow) { throw 'Subtitle visual smoke could not find the shell window.' }
 
-        $openCondition = New-Object System.Windows.Automation.PropertyCondition(
-            [System.Windows.Automation.AutomationElement]::NameProperty, '打开语音')
-        $openButton = $mainWindow.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $openCondition)
-        if ($null -eq $openButton) { throw 'Subtitle visual smoke could not find the 打开字幕 action.' }
-        $openButton.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke()
+        if ($null -eq ('VrcTranslateValidationNative' -as [type])) {
+            Add-Type @'
+using System;
+using System.Runtime.InteropServices;
+public static class VrcTranslateValidationNative {
+    [DllImport("user32.dll")]
+    public static extern bool IsWindowVisible(IntPtr hWnd);
+}
+'@
+        }
+
+        # D3：浮窗没有独立入口，它随他人语音识别一起出现。一次总开关＝开始识别 + 显示浮窗。
+        $configuredVoiceHotkey = Get-ConfiguredGlobalHotkey 'VoiceHotkey' 'F7'
+        Invoke-TestHotkey $configuredVoiceHotkey
 
         $subtitleWindow = $null
         $subtitleId = New-Object System.Windows.Automation.PropertyCondition(
             [System.Windows.Automation.AutomationElement]::AutomationIdProperty, 'subtitle-text')
-        for ($attempt = 0; $attempt -lt 40 -and $null -eq $subtitleWindow; $attempt++) {
+        for ($attempt = 0; $attempt -lt 60 -and $null -eq $subtitleWindow; $attempt++) {
             Start-Sleep -Milliseconds 200
             $windows = @($root.FindAll(
                 [System.Windows.Automation.TreeScope]::Children,
@@ -1329,10 +1434,11 @@ public static class VrcTranslateSubtitleVisualNative {
                 Where-Object {
                     $_.Current.ProcessId -eq $process.Id -and
                     $_.Current.NativeWindowHandle -ne $mainWindow.Current.NativeWindowHandle -and
+                    [VrcTranslateValidationNative]::IsWindowVisible([IntPtr]$_.Current.NativeWindowHandle) -and
                     $null -ne $_.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $subtitleId)
                 } | Select-Object -First 1
         }
-        if ($null -eq $subtitleWindow) { throw 'Subtitle visual smoke could not find the subtitle overlay.' }
+        if ($null -eq $subtitleWindow) { throw 'The 他人语音 shortcut did not show the caption surface.' }
 
         $windowRect = [VrcTranslateSubtitleVisualNative]::GetRectValue([IntPtr]$subtitleWindow.Current.NativeWindowHandle)
         $windowWidth = $windowRect.Right - $windowRect.Left
@@ -1340,83 +1446,70 @@ public static class VrcTranslateSubtitleVisualNative {
         Assert-OverlayBounds -Bounds ([pscustomobject]@{ Width = $windowWidth; Height = $windowHeight }) `
             -ConfiguredSize $subtitleOverlayDefaultSize -Label 'Subtitle visual'
 
-        # Border/Grid elements do not always publish UIA peers in WinUI 3.
-        # Use the stable text peer when available, then inspect the activity
-        # mark zone on the left. This keeps the assertion about rendered pixels
-        # independent of UIA virtualization and the exact window dimensions.
+        # Border/Grid elements do not always publish UIA peers in WinUI 3, so the
+        # stable text peer is measured. With the microphone-looking mark gone the
+        # message strip must start at the surface edge instead of behind the 46px
+        # indicator column it used to sit next to.
         $textCondition = New-Object System.Windows.Automation.PropertyCondition(
             [System.Windows.Automation.AutomationElement]::AutomationIdProperty, 'subtitle-text')
         $textElement = $subtitleWindow.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $textCondition)
-        if ($null -eq $textElement) { throw 'Subtitle visual smoke could not find the subtitle text peer.' }
+        if ($null -eq $textElement) { throw 'Subtitle visual smoke could not find the caption text peer.' }
         $textRect = $textElement.Current.BoundingRectangle
         if ([double]::IsInfinity($textRect.Width) -or [double]::IsInfinity($textRect.Height) -or
             $textRect.Width -lt 80 -or $textRect.Height -lt 20) {
-            throw "Subtitle text has an unusable layout: $($textRect.Width)x$($textRect.Height)."
+            throw "Caption text has an unusable layout: $($textRect.Width)x$($textRect.Height)."
+        }
+        # 消息条必须在浮窗里水平居中：删除左侧标识列后左右留白应当对称（旧布局的
+        # 34px 标识列 + 12px 间距会让左侧多出 46px）。
+        $leftInset = [int][Math]::Round($textRect.Left - $windowRect.Left)
+        $rightInset = [int][Math]::Round($windowRect.Right - $textRect.Right)
+        if ($leftInset -gt 64 -or [Math]::Abs($leftInset - $rightInset) -gt 20) {
+            throw "The caption message strip must be centred across the whole surface: left inset $leftInset, right inset $rightInset."
         }
 
+        $markCondition = New-Object System.Windows.Automation.PropertyCondition(
+            [System.Windows.Automation.AutomationElement]::AutomationIdProperty, 'subtitle-activity-mark')
+        if ($null -ne $subtitleWindow.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $markCondition)) {
+            throw 'The removed activity mark is still exposed on the caption surface.'
+        }
+
+        # Capture the real window: the client area must actually be painted, and
+        # no accent pixel of the deleted indicator ring may survive anywhere in
+        # the caption region (the native title bar is excluded from the scan).
         $handle = [IntPtr]$subtitleWindow.Current.NativeWindowHandle
         [VrcTranslateSubtitleVisualNative]::Capture($handle, $firstCapture)
         $firstBitmap = [System.Drawing.Bitmap]::new($firstCapture)
-        $activityCondition = New-Object System.Windows.Automation.PropertyCondition(
-            [System.Windows.Automation.AutomationElement]::AutomationIdProperty, 'subtitle-activity-mark')
-        $activityElement = $subtitleWindow.FindFirst(
-            [System.Windows.Automation.TreeScope]::Descendants,
-            $activityCondition)
-        if ($null -ne $activityElement) {
-            $activityRect = $activityElement.Current.BoundingRectangle
-            $localLeft = [Math]::Max(0, [int][Math]::Floor($activityRect.Left - $windowRect.Left) - 10)
-            $localTop = [Math]::Max(0, [int][Math]::Floor($activityRect.Top - $windowRect.Top) - 10)
-            $localRight = [Math]::Min($firstBitmap.Width, [int][Math]::Ceiling($activityRect.Right - $windowRect.Left) + 10)
-            $localBottom = [Math]::Min($firstBitmap.Height, [int][Math]::Ceiling($activityRect.Bottom - $windowRect.Top) + 10)
-        }
-        else {
-            # Fallback for WinUI builds that omit Grid peers from UIA.
-            $localLeft = 0
-            $localTop = [Math]::Max(0, [int][Math]::Floor(($firstBitmap.Height - 64) / 2))
-            $localRight = [Math]::Min($firstBitmap.Width, 84)
-            $localBottom = [Math]::Min($firstBitmap.Height, $localTop + 64)
-        }
-        $activityPixels = 0
-        for ($y = $localTop; $y -lt $localBottom; $y++) {
-            for ($x = $localLeft; $x -lt $localRight; $x++) {
-                $before = $firstBitmap.GetPixel($x, $y)
-                if ($before.G -gt 58 -and ($before.G - $before.R) -gt 14 -and ($before.B - $before.R) -gt 10) {
-                    $activityPixels++
+        $regionTop = [Math]::Max(0, [int][Math]::Floor($textRect.Top - $windowRect.Top) - 6)
+        $surfacePixels = 0
+        $accentPixels = 0
+        for ($y = $regionTop; $y -lt $firstBitmap.Height; $y += 4) {
+            for ($x = 0; $x -lt $firstBitmap.Width; $x += 4) {
+                $pixel = $firstBitmap.GetPixel($x, $y)
+                if ([Math]::Abs($pixel.R - 11) -le 14 -and [Math]::Abs($pixel.G - 23) -le 14 -and [Math]::Abs($pixel.B - 38) -le 14) {
+                    $surfacePixels++
+                }
+                elseif ($pixel.G -gt 58 -and ($pixel.G - $pixel.R) -gt 14 -and ($pixel.B - $pixel.R) -gt 10) {
+                    $accentPixels++
                 }
             }
         }
-        if ($activityPixels -lt 6) {
-            throw "Subtitle activity mark is not visibly rendered (accent pixels: $activityPixels)."
+        if ($surfacePixels -lt 200) {
+            throw "The caption surface is not visibly rendered (dark surface pixels: $surfacePixels)."
         }
+        if ($accentPixels -gt 0) {
+            throw "The caption surface still renders activity-indicator accent pixels ($accentPixels)."
+        }
+        Write-Host "  Subtitle surface render smoke passed ($surfacePixels surface pixels, no activity mark)." -ForegroundColor Green
 
-        # A two-frame comparison can land on equal rounded sine values and
-        # falsely report a stopped animation. Sample several non-harmonic
-        # offsets and accept the strongest visual delta from the baseline.
-        $animatedPixels = 0
-        for ($sample = 0; $sample -lt 5 -and $animatedPixels -lt 2; $sample++) {
-            Start-Sleep -Milliseconds 173
-            [VrcTranslateSubtitleVisualNative]::Capture($handle, $secondCapture)
-            $secondBitmap = [System.Drawing.Bitmap]::new($secondCapture)
-            $sampleChangedPixels = 0
-            for ($y = $localTop; $y -lt $localBottom; $y++) {
-                for ($x = $localLeft; $x -lt $localRight; $x++) {
-                    $before = $firstBitmap.GetPixel($x, $y)
-                    $after = $secondBitmap.GetPixel($x, $y)
-                    if ([Math]::Abs($before.R - $after.R) +
-                        [Math]::Abs($before.G - $after.G) +
-                        [Math]::Abs($before.B - $after.B) -gt 8) {
-                        $sampleChangedPixels++
-                    }
-                }
-            }
-            $animatedPixels = [Math]::Max($animatedPixels, $sampleChangedPixels)
-            $secondBitmap.Dispose()
-            $secondBitmap = $null
+        # 浮窗随识别停止而消失：再按一次总开关，识别和窗口必须一起关掉。
+        Invoke-TestHotkey $configuredVoiceHotkey
+        for ($attempt = 0; $attempt -lt 60; $attempt++) {
+            Start-Sleep -Milliseconds 200
+            if (-not [VrcTranslateValidationNative]::IsWindowVisible($handle)) { break }
         }
-        if ($animatedPixels -lt 2) {
-            throw "Subtitle activity mark did not animate across six captures (changed pixels: $animatedPixels)."
+        if ([VrcTranslateValidationNative]::IsWindowVisible($handle)) {
+            throw 'The 他人语音 shortcut did not hide the caption surface after this smoke.'
         }
-        Write-Host "  Subtitle activity mark render and animation smoke passed ($activityPixels accent, $animatedPixels changed pixels)." -ForegroundColor Green
     }
     finally {
         if ($null -ne $firstBitmap) { $firstBitmap.Dispose() }

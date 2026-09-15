@@ -4,6 +4,7 @@ using Microsoft.UI;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml.Input;
 using WinRT.Interop;
+using VrcTranslate.Application.Subtitles;
 using VrcTranslate.Core.Settings;
 using VrcTranslate.Infrastructure.Storage;
 using VrcTranslate.Desktop.Pages;
@@ -213,10 +214,24 @@ public sealed partial class MainWindow : Window
                 OverlayWindowHost.ToggleQuickInput(state);
                 break;
             case "voice":
-                // The voice shortcut controls the subtitle surface itself.
-                // Recognition remains an explicit start/stop action on the
-                // subtitle page, so a window toggle never interrupts capture.
-                OverlayWindowHost.ToggleSubtitle();
+                // 「他人语音」is the whole other-player feature: one press turns
+                // recognition and the caption surface on, the next turns both
+                // off, and both effects run on the one serialized switch.
+                var captionState = ((App)Microsoft.UI.Xaml.Application.Current).State;
+                var captionOutcome = await captionState.OtherPlayerCaption.ToggleAsync();
+                if (captionOutcome == OtherPlayerCaptionToggleOutcome.ModelNotReady)
+                {
+                    // A refused shortcut must say why instead of doing nothing
+                    // visible: bring the voice page forward and use its notice.
+                    if (ContentFrame.Content is not VoicePage)
+                    {
+                        SetSelected(VoiceNavButton);
+                        PageHeader.Text = "语音";
+                        ContentFrame.Navigate(typeof(VoicePage));
+                        await Task.Yield();
+                    }
+                    if (ContentFrame.Content is VoicePage voicePage) voicePage.ShowModelNotReadyHint();
+                }
                 break;
             case "self-voice":
                 if (ContentFrame.Content is not SelfMessagePage)

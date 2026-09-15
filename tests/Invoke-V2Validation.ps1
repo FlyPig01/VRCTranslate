@@ -596,6 +596,28 @@ if ($mainWindowSource -notmatch 'OtherPlayerCaption\s*\.\s*ToggleAsync' -or $mai
 if ($hotkeyContractsSource -notmatch 'NormalizeModifier' -or $hotkeyContractsSource -notmatch 'IsSupportedPrimary' -or $hotkeyContractsSource -notmatch 'functionKey\s+is\s+>=\s+1\s+and\s+<=\s+12') { throw 'Core hotkey normalization must define the same supported modifier and primary-key set as the desktop poller.' }
 if ($settingsValidationSource -notmatch 'HotkeyBinding\.Normalize\(gesture\)' -or $settingsValidationSource -notmatch 'gestures\[normalized\]') { throw 'Workspace settings validation must use canonical hotkey normalization for conflicts and unsupported keys.' }
 if ($mainWindowSource -notmatch 'HotkeyBinding\.Normalize' -or $mainWindowSource -notmatch 'return HotkeyBinding\.Normalize\(fallback\)') { throw 'Desktop global hotkeys must use the core canonical normalization and safely fall back for invalid persisted values.' }
+# D9 后续：显示快捷键的地方必须与轮询同义——空字符串是用户主动清空（一律显示「未设置」，
+# 绝不回落默认值），只有设置缺失 / 文件不可读 / 值非法才回落默认。Core 的 HotkeyDefaults
+# 定义这条规则，语音页、自身语音页与指南页共用 Pages\HotkeyDisplay.cs 这一个读取器；
+# 指南页的值必须来自设置，不能再把出厂默认值写死在 XAML 里。
+$hotkeyDefaultsSource = Get-Content -Raw (Join-Path $coreSource 'Settings\HotkeyDefaults.cs')
+$hotkeyDisplaySource = Get-Content -Raw (Join-Path $desktopSource 'Pages\HotkeyDisplay.cs')
+$guideSource = Get-Content -Raw $guidePage.Replace('.xaml', '.xaml.cs')
+if ($hotkeyDefaultsSource -notmatch 'ResolvePersisted' -or
+    $hotkeyDefaultsSource -notmatch 'IsNullOrWhiteSpace\(stored\)' -or
+    $hotkeyDefaultsSource -notmatch 'return HotkeyBinding\.Normalize\(fallback\)' -or
+    $hotkeyDisplaySource -notmatch 'HotkeyDefaults\.ResolvePersisted' -or
+    $hotkeyDisplaySource -notmatch '"未设置"' -or
+    $hotkeyDisplaySource -notmatch 'ReadOtherPlayerVoice' -or
+    $hotkeyDisplaySource -notmatch 'ReadSelfVoice' -or
+    $voiceSource -notmatch 'HotkeyDisplay\.ReadOtherPlayerVoice' -or
+    $inputSource -notmatch 'HotkeyDisplay\.ReadSelfVoice' -or
+    $guideSource -notmatch 'HotkeyDisplay\.ReadOtherPlayerVoice' -or
+    $voiceMarkup -match 'Text="F7"' -or
+    $inputMarkup -match 'Text="Ctrl\+F8"' -or
+    (Get-Content -Raw $guidePage) -match 'Text="(F7|Ctrl\+F8|Ctrl\+Alt\+I)"') {
+    throw 'Every shortcut readout must share the poller semantics: a cleared shortcut stays 未设置 everywhere and only a missing, unreadable or unsupported value falls back to the default.'
+}
 $previewHandlerMatch = [regex]::Match(
     $mainWindowSource,
     '(?s)private\s+void\s+OnTranslationPreviewChanged\s*\([^)]*\)\s*\{(?<body>.*?)(?=\r?\n\s*private\s+)')

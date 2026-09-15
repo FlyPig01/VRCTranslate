@@ -300,9 +300,7 @@ public sealed partial class SelfMessagePage : Page
         }
         catch { _settings = new SelfVoiceSettings(); }
 
-        var hotkey = ReadGlobalSelfVoiceHotkey();
-        SelfVoiceHotkeyValue.Text = hotkey;
-        AutomationProperties.SetName(SelfVoiceHotkeyValue, hotkey);
+        HotkeyDisplay.Apply(SelfVoiceHotkeyValue, ReadGlobalSelfVoiceHotkey());
         PopulateMicrophoneList();
         // Own voice is always recognized as Simplified Chinese. Keep the
         // persisted field for backward compatibility, but never expose a
@@ -643,20 +641,12 @@ public sealed partial class SelfMessagePage : Page
         _ => string.IsNullOrWhiteSpace(language) ? "译文 2" : language
     };
 
-    private static string ReadGlobalSelfVoiceHotkey()
-    {
-        var path = PortableStorage.GetPath(AppDataFiles.UserSettings);
-        try
-        {
-            if (File.Exists(path))
-            {
-                var settings = JsonSerializer.Deserialize<GlobalHotkeySettings>(File.ReadAllText(path));
-                if (!string.IsNullOrWhiteSpace(settings?.SelfVoiceHotkey)) return settings.SelfVoiceHotkey.Trim();
-            }
-        }
-        catch { }
-        return "Ctrl+F8";
-    }
+    /// <summary>
+    /// The 自身语音 shortcut as the global poller will answer it: an empty value
+    /// is a deliberate 未设置, so the hint must not resurrect the default, while
+    /// a missing, unreadable or unsupported value keeps the shipped default.
+    /// </summary>
+    private static string ReadGlobalSelfVoiceHotkey() => HotkeyDisplay.ReadSelfVoice();
 
     private static void SelectByTag(ComboBox box, string value)
     {
@@ -670,10 +660,5 @@ public sealed partial class SelfMessagePage : Page
         public string MicrophoneId { get; set; } = "default";
         public string SourceLanguage { get; set; } = "zh-CN";
         public string ToggleHotkey { get; set; } = "Ctrl+F8";
-    }
-
-    private sealed class GlobalHotkeySettings
-    {
-        public string SelfVoiceHotkey { get; set; } = "Ctrl+F8";
     }
 }

@@ -122,14 +122,14 @@
                         CornerRadius="4"
                         Padding="7,2"
                         MinWidth="38">
+                  <!-- Filled from the persisted setting on load (未设置 when the
+                       user cleared it), never from a shipped default here. -->
                   <TextBlock x:Name="SelfVoiceHotkeyValue"
-                             Text="Ctrl+F8"
                              FontSize="12"
                              FontWeight="SemiBold"
                              Foreground="#2D73D5"
                              TextAlignment="Center"
-                             AutomationProperties.AutomationId="self-voice-hotkey-summary"
-                             AutomationProperties.Name="Ctrl+F8" />
+                             AutomationProperties.AutomationId="self-voice-hotkey-summary" />
                 </Border>
               </StackPanel>
             </Grid>

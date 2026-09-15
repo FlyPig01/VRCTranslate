@@ -542,8 +542,7 @@ public sealed partial class VoicePage : Page
         State.LocalSpeech.SpeakerLabelsEnabled = _settings.SpeakerLabels;
         ApplySubtitleContentSetting();
         SpeechModelBox.SelectedIndex = 0;
-        VoiceHotkeyValue.Text = ReadGlobalVoiceHotkey();
-        AutomationProperties.SetName(VoiceHotkeyValue, VoiceHotkeyValue.Text);
+        HotkeyDisplay.Apply(VoiceHotkeyValue, ReadGlobalVoiceHotkey());
         UpdateSpeakerPanel();
     }
 
@@ -572,25 +571,12 @@ public sealed partial class VoicePage : Page
         VoiceInfo.IsOpen = true;
     }
 
-    private static string ReadGlobalVoiceHotkey()
-    {
-        var path = PortableStorage.GetPath(AppDataFiles.UserSettings);
-        try
-        {
-            if (File.Exists(path))
-            {
-                var settings = JsonSerializer.Deserialize<GlobalHotkeySettings>(File.ReadAllText(path));
-                if (!string.IsNullOrWhiteSpace(settings?.VoiceHotkey)) return settings.VoiceHotkey.Trim();
-            }
-        }
-        catch
-        {
-            // A partially edited settings file should leave the visible default
-            // shortcut intact.
-        }
-
-        return "F7";
-    }
+    /// <summary>
+    /// The 他人语音 shortcut as the global poller will answer it: an empty value
+    /// is a deliberate 未设置, so the hint must not resurrect the default, while
+    /// a missing, unreadable or unsupported value keeps the shipped default.
+    /// </summary>
+    private static string ReadGlobalVoiceHotkey() => HotkeyDisplay.ReadOtherPlayerVoice();
 
     /// <summary>
     /// Mirrors the persisted caption option into the switch and into the open
@@ -765,10 +751,5 @@ public sealed partial class VoicePage : Page
         /// </summary>
         [JsonPropertyName(SubtitleCaptionSettings.ContentPropertyName)]
         public string SubtitleContent { get; set; } = SubtitleCaptionSettings.TranslatedWithOriginalTag;
-    }
-
-    private sealed class GlobalHotkeySettings
-    {
-        public string VoiceHotkey { get; set; } = "F7";
     }
 }

@@ -9,6 +9,7 @@ using Microsoft.UI.Xaml.Media;
 using VrcTranslate.Infrastructure.Storage;
 using Microsoft.UI.Text;
 using VrcTranslate.Application.Abstractions;
+using VrcTranslate.Core.Translation;
 using VrcTranslate.Infrastructure.Configuration;
 using VrcTranslate.Infrastructure.Translation;
 
@@ -95,14 +96,19 @@ public sealed partial class TranslationPage : Page
         ProfilesPanel.Children.Clear();
         var profiles = State.TranslationProfiles ?? [];
         if (profiles.Count == 0 && State.DefaultProfile is not null) profiles = [State.DefaultProfile];
-        foreach (var profile in profiles) ProfilesPanel.Children.Add(CreateProfileCard(profile));
+        // Resolved once for the whole list: "which card is in use" is a property of
+        // the list, not of a single card, otherwise two identical profiles both
+        // claim it (see ResolveCurrentProfile).
+        var currentProfile = ResolveCurrentProfile();
+        foreach (var profile in profiles) ProfilesPanel.Children.Add(CreateProfileCard(profile, currentProfile));
         if (ProfilesPanel.Children.Count == 0)
             ProfilesPanel.Children.Add(new TextBlock { Text = "暂无服务", Style = (Style)Microsoft.UI.Xaml.Application.Current.Resources["SecondaryTextStyle"] });
     }
 
-    private Border CreateProfileCard(TranslationProfileRecord profile)
+    private Border CreateProfileCard(TranslationProfileRecord profile, TranslationProfileRecord? currentProfile)
     {
-        var current = IsCurrentProfile(profile);
+        var current = currentProfile is not null &&
+                      string.Equals(currentProfile.Id, profile.Id, StringComparison.OrdinalIgnoreCase);
         var title = ProviderNames.TryGetValue(profile.Provider, out var providerName) ? providerName : profile.Provider;
         var model = string.IsNullOrWhiteSpace(profile.Model) ? "默认模型" : profile.Model;
         var details = $"{title} · {model}" + (current ? " · 当前使用" : string.Empty);
@@ -169,25 +175,40 @@ public sealed partial class TranslationPage : Page
         return card;
     }
 
-    private bool IsCurrentProfile(TranslationProfileRecord profile)
+    /// <summary>
+    /// The card highlighted as the service in use.
+    /// <para>
+    /// The route's profile id is the authority, because a user may keep several
+    /// profiles of the same service (for example two 阿里云 editions) that share
+    /// provider, model and endpoint. Only when the route names an id no card
+    /// carries - an imported legacy route - does the highlight fall back to the
+    /// concrete route fields, and then to <em>one</em> card: every card with
+    /// those fields matching would light up together and claim to be in use.
+    /// </para>
+    /// </summary>
+    private TranslationProfileRecord? ResolveCurrentProfile()
     {
+        var profiles = State.TranslationProfiles ?? [];
         var routeProfile = State.CurrentRoute.Profile;
-        if (string.Equals(routeProfile.ProfileId, profile.Id, StringComparison.OrdinalIgnoreCase)) return true;
+        foreach (var profile in profiles)
+        {
+            if (string.Equals(routeProfile.ProfileId, profile.Id, StringComparison.OrdinalIgnoreCase)) return profile;
+        }
 
-        // Restored legacy routes can use the synthetic "default-profile" id.
-        // Match their concrete route fields before falling back to the first
-        // profile, so the highlight still identifies the service in use.
-        bool MatchesConcreteRoute(TranslationProfileRecord candidate) =>
-            string.Equals(routeProfile.Provider, candidate.Provider, StringComparison.OrdinalIgnoreCase) &&
-            string.Equals(routeProfile.Model, candidate.Model, StringComparison.OrdinalIgnoreCase) &&
-            string.Equals(routeProfile.Endpoint.ToString().TrimEnd('/'), candidate.Endpoint.TrimEnd('/'), StringComparison.OrdinalIgnoreCase);
+        foreach (var profile in profiles)
+        {
+            if (MatchesConcreteRoute(profile, routeProfile)) return profile;
+        }
 
-        if (MatchesConcreteRoute(profile)) return true;
-        // If an imported route has no corresponding card at all, retain a
-        // single fallback highlight instead of leaving the page ambiguous.
-        var hasConcreteMatch = State.TranslationProfiles.Any(MatchesConcreteRoute);
-        return !hasConcreteMatch && string.Equals(State.DefaultProfile?.Id, profile.Id, StringComparison.OrdinalIgnoreCase);
+        // A route that matches no card at all keeps one fallback highlight rather
+        // than leaving the page ambiguous.
+        return State.DefaultProfile;
     }
+
+    private static bool MatchesConcreteRoute(TranslationProfileRecord candidate, TranslationProfile routeProfile) =>
+        string.Equals(routeProfile.Provider, candidate.Provider, StringComparison.OrdinalIgnoreCase) &&
+        string.Equals(routeProfile.Model, candidate.Model, StringComparison.OrdinalIgnoreCase) &&
+        string.Equals(routeProfile.Endpoint.ToString().TrimEnd('/'), candidate.Endpoint.TrimEnd('/'), StringComparison.OrdinalIgnoreCase);
 
     private async void OnNewServiceClicked(object sender, RoutedEventArgs e) => await ShowProfileDialogAsync(null);
 

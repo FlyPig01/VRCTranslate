@@ -1,8 +1,6 @@
 using System.Runtime.InteropServices;
 using NAudio.CoreAudioApi;
-using NAudio.CoreAudioApi.Interfaces;
 using NAudio.Wave;
-using NAudio.Wasapi.CoreAudioApi.Interfaces;
 using VrcTranslate.Application.Abstractions;
 
 namespace VrcTranslate.Infrastructure.Speech;
@@ -45,10 +43,35 @@ internal interface IProcessLoopbackSession : IDisposable
     bool WaitForPacket(TimeSpan timeout);
 }
 
-/// <summary>Opens one activated process loopback client for a target process.</summary>
+/// <summary>
+/// Opens one activated process loopback client for a target process. The
+/// apartment is part of the call because the wait for the completion callback
+/// has to keep an STA served, and because a retry runs in the other apartment.
+/// </summary>
 internal interface IProcessLoopbackSessionFactory
 {
-    IProcessLoopbackSession Open(ProcessIdentity target, CancellationToken cancellationToken);
+    IProcessLoopbackSession Open(
+        ProcessIdentity target,
+        ProcessLoopbackApartment apartment,
+        CancellationToken cancellationToken);
+}
+
+/// <summary>The seams of one process loopback capture.</summary>
+/// <remarks>
+/// All three are injected so the robustness behaviour the brief asks for - the
+/// one apartment retry, the session-wide fuse - is testable on a machine whose
+/// COM environment simply works.
+/// </remarks>
+internal sealed record ProcessLoopbackCaptureDependencies(
+    IProcessLoopbackSessionFactory SessionFactory,
+    IProcessLoopbackApartmentHost Apartments,
+    IProcessLoopbackCircuitBreaker Breaker)
+{
+    /// <summary>Real dependencies for the default constructor.</summary>
+    public static ProcessLoopbackCaptureDependencies CreateDefault() => new(
+        new ProcessLoopbackSessionFactory(),
+        ComApartmentHost.Instance,
+        new ProcessLoopbackCircuitBreaker());
 }
 
 /// <summary>
@@ -60,13 +83,16 @@ internal interface IProcessLoopbackSessionFactory
 /// <c>PROCESS_LOOPBACK_MODE_INCLUDE_TARGET_PROCESS_TREE</c> → target process id.
 /// </summary>
 /// <remarks>
-/// Everything happens on one dedicated MTA thread: COM is entered there, the
-/// activation is started and awaited there, the completion callback arrives on
-/// an MTA worker thread, and the capture loop pairs every <c>GetBuffer</c> with
-/// its <c>ReleaseBuffer</c> on that same thread. The public start call therefore
-/// never blocks a UI thread and never waits on COM. Samples leave the capture as
-/// mono 16 kHz floats through <see cref="AudioSampleConverter"/>; no NAudio or
-/// COM type crosses the application boundary.
+/// Everything happens on one dedicated thread per attempt: COM is entered
+/// there, the activation is started and awaited there, the completion callback
+/// arrives on an MTA worker thread, and the capture loop pairs every
+/// <c>GetBuffer</c> with its <c>ReleaseBuffer</c> on that same thread. The
+/// public start call therefore never blocks a UI thread and never waits on COM.
+/// If the COM environment refuses the preferred apartment, exactly one retry
+/// runs on a fresh thread in the other apartment; a second failure marks process
+/// loopback unsupported for the session instead of retrying forever. Samples
+/// leave the capture as mono 16 kHz floats through <see cref="AudioSampleConverter"/>;
+/// no NAudio or COM type crosses the application boundary.
 /// </remarks>
 public sealed class ProcessLoopbackAudioCapture : IAudioCapture
 {
@@ -74,7 +100,7 @@ public sealed class ProcessLoopbackAudioCapture : IAudioCapture
     private static readonly TimeSpan StopJoinTimeout = TimeSpan.FromSeconds(5);
 
     private readonly ProcessIdentity _target;
-    private readonly IProcessLoopbackSessionFactory _sessionFactory;
+    private readonly ProcessLoopbackCaptureDependencies _dependencies;
     private readonly object _sync = new();
     private CancellationTokenSource? _lifetime;
     private Thread? _pump;
@@ -84,14 +110,24 @@ public sealed class ProcessLoopbackAudioCapture : IAudioCapture
     private volatile bool _activated;
 
     public ProcessLoopbackAudioCapture(ProcessIdentity target)
-        : this(target, new ProcessLoopbackSessionFactory())
+        : this(target, ProcessLoopbackCaptureDependencies.CreateDefault())
     {
     }
 
     internal ProcessLoopbackAudioCapture(ProcessIdentity target, IProcessLoopbackSessionFactory sessionFactory)
+        : this(
+            target,
+            new ProcessLoopbackCaptureDependencies(
+                sessionFactory,
+                ComApartmentHost.Instance,
+                new ProcessLoopbackCircuitBreaker()))
+    {
+    }
+
+    internal ProcessLoopbackAudioCapture(ProcessIdentity target, ProcessLoopbackCaptureDependencies dependencies)
     {
         _target = target ?? throw new ArgumentNullException(nameof(target));
-        _sessionFactory = sessionFactory ?? throw new ArgumentNullException(nameof(sessionFactory));
+        _dependencies = dependencies ?? throw new ArgumentNullException(nameof(dependencies));
     }
 
     /// <summary>Legacy mode of the capture boundary; <see cref="SourceKind"/> is the precise value.</summary>
@@ -202,42 +238,103 @@ public sealed class ProcessLoopbackAudioCapture : IAudioCapture
         await StopAsync().ConfigureAwait(false);
     }
 
+    /// <summary>
+    /// Runs the capture on this thread and turns every exit path into exactly one
+    /// published outcome. The whole body is guarded: an unexpected exception on a
+    /// capture thread would end the process, so even a defect here has to become
+    /// a fault event and a fallback to system audio.
+    /// </summary>
     private void Pump(CancellationTokenSource lifetime, TaskCompletionSource<Exception?> completion)
     {
         var token = lifetime.Token;
-        IProcessLoopbackSession? session = null;
-        Exception? fault = null;
-        Exception? startFailure = null;
-        var activated = false;
-        var comEntered = false;
         try
         {
-            ComApartment.EnterMultithreaded();
-            comEntered = true;
-            session = _sessionFactory.Open(_target, token);
+            var preferred = _dependencies.Apartments.Preferred;
+            var outcome = RunAttempt(preferred, retried: false, token, completion);
+            if (outcome.Kind == ProcessLoopbackAttemptKind.RetryInOtherApartment)
+            {
+                outcome = RunAttemptOnAlternateThread(preferred, token, completion);
+            }
+
+            Publish(outcome, token, completion);
+        }
+        catch (Exception exception)
+        {
+            // Last line of defence: report, never throw out of the thread.
+            completion.TrySetResult(exception);
+            RaiseFaulted(exception);
+        }
+    }
+
+    private void Publish(
+        AttemptOutcome outcome,
+        CancellationToken token,
+        TaskCompletionSource<Exception?> completion)
+    {
+        switch (outcome.Kind)
+        {
+            case ProcessLoopbackAttemptKind.Stopped:
+                completion.TrySetResult(null);
+                PublishStopped(exception: null);
+                break;
+            case ProcessLoopbackAttemptKind.Cancelled:
+                completion.TrySetResult(new OperationCanceledException(token));
+                break;
+            case ProcessLoopbackAttemptKind.StartFailed:
+                completion.TrySetResult(outcome.Failure!);
+                RaiseFaulted(outcome.Failure!);
+                break;
+            case ProcessLoopbackAttemptKind.Faulted:
+                completion.TrySetResult(null);
+                RaiseFaulted(outcome.Failure!);
+                PublishStopped(outcome.Failure);
+                break;
+            default:
+                completion.TrySetResult(new InvalidOperationException($"未处理的采集结果：{outcome.Kind}。"));
+                break;
+        }
+    }
+
+    /// <summary>
+    /// One attempt in one apartment: enter COM, activate, start, drain, release -
+    /// all on the calling thread, which is the thread the capture was created for.
+    /// </summary>
+    private AttemptOutcome RunAttempt(
+        ProcessLoopbackApartment apartment,
+        bool retried,
+        CancellationToken token,
+        TaskCompletionSource<Exception?> completion)
+    {
+        var apartments = _dependencies.Apartments;
+        IProcessLoopbackSession? session = null;
+        var entered = false;
+        var activated = false;
+        try
+        {
+            apartments.Enter(apartment);
+            entered = true;
+            session = _dependencies.SessionFactory.Open(_target, apartment, token);
             session.Start();
             activated = true;
             _activated = true;
             completion.TrySetResult(null);
             Drain(session, token);
+            return AttemptOutcome.Stopped;
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested)
         {
             // A stop the caller asked for is not a fault.
+            return AttemptOutcome.Cancelled;
         }
         catch (Exception exception)
         {
-            if (activated)
+            if (activated) return AttemptOutcome.Faulted(exception);
+            if (!retried && ProcessLoopbackFault.Classify(exception) == ProcessLoopbackFaultKind.ApartmentEnvironment)
             {
-                fault = exception;
+                return AttemptOutcome.RetryInOtherApartment;
             }
-            else
-            {
-                // The start call observes this through the activation task; the
-                // fault event reports the HRESULT to anyone already listening.
-                startFailure = exception;
-                completion.TrySetResult(exception);
-            }
+
+            return AttemptOutcome.StartFailed(MakeStartFailure(exception, retried));
         }
         finally
         {
@@ -247,21 +344,70 @@ public sealed class ProcessLoopbackAudioCapture : IAudioCapture
                 try { session.Dispose(); } catch (Exception) { }
             }
 
-            if (comEntered) ComApartment.Leave();
-
-            // A start that never produced a session reports its failure through
-            // the activation task and the fault event, never through Stopped.
-            completion.TrySetResult(new OperationCanceledException(token));
-            var reported = fault ?? startFailure;
-            if (reported is not null) RaiseFaulted(reported);
-            if (activated) PublishStopped(fault);
+            if (entered)
+            {
+                try { apartments.Leave(); } catch (Exception) { }
+            }
         }
     }
 
     /// <summary>
+    /// The one allowed retry: a fresh thread in the other apartment. An apartment
+    /// is a property of a thread, so this cannot be done on the failed one.
+    /// The retry thread is joined here, which keeps the "no thread outlives the
+    /// capture" rule: StopAsync joins this thread and therefore the retry too.
+    /// </summary>
+    private AttemptOutcome RunAttemptOnAlternateThread(
+        ProcessLoopbackApartment preferred,
+        CancellationToken token,
+        TaskCompletionSource<Exception?> completion)
+    {
+        var apartment = _dependencies.Apartments.AlternateTo(preferred);
+        AttemptOutcome? outcome = null;
+        var thread = new Thread(() => outcome = RunAttempt(apartment, retried: true, token, completion))
+        {
+            IsBackground = true,
+            Name = $"VRCTranslate process loopback ({_dependencies.Apartments.Describe(apartment)})"
+        };
+        thread.Start();
+        thread.Join();
+        return outcome ?? AttemptOutcome.Cancelled;
+    }
+
+    /// <summary>
+    /// The failure the caller and the coordinator see. A failure that cannot
+    /// succeed on a later attempt becomes <see cref="ProcessLoopbackNotSupportedException"/>
+    /// - the signal that makes the coordinator stop trying for the rest of the
+    /// session - and opens the fuse so a later session start answers without
+    /// touching COM.
+    /// </summary>
+    private Exception MakeStartFailure(Exception exception, bool afterApartmentRetry)
+    {
+        // "The retry failed too" is enough: the one allowed second chance is the
+        // last one, whatever the second attempt answered with. Retrying a machine
+        // whose COM environment already refused the activation is what produces
+        // the 3-second-interval nagging the fuse exists to prevent.
+        var kind = ProcessLoopbackFault.Classify(exception);
+        var permanent = kind == ProcessLoopbackFaultKind.Permanent || afterApartmentRetry;
+        if (!permanent) return exception;
+
+        _dependencies.Breaker.Trip(ProcessLoopbackFault.CodeOf(exception) ?? exception.GetType().Name);
+        return exception is COMException com
+            ? new ProcessLoopbackNotSupportedException(
+                $"本机进程回环不可用（{ProcessLoopbackFault.Describe(com.HResult)}，HRESULT 0x{com.HResult:X8}），"
+                + "本会话不再尝试，继续使用系统回环。",
+                com.HResult)
+            : new ProcessLoopbackNotSupportedException(
+                $"本机进程回环不可用（{exception.Message}），本会话不再尝试，继续使用系统回环。",
+                exception);
+    }
+
+    /// <summary>
     /// Event driven drain loop. Every acquired packet is released on this same
-    /// thread, silent packets never become recognizer input, and a discontinuity
-    /// packet is still delivered because it carries real audio with a gap.
+    /// thread, silent packets never become recognizer input. An empty packet -
+    /// <c>AUDCLNT_S_BUFFER_EMPTY</c>, a success code - carries no buffer at all
+    /// and must not be released; skipping that rule once exhausts the buffer and
+    /// the stream goes silent without any error.
     /// </summary>
     private void Drain(IProcessLoopbackSession session, CancellationToken token)
     {
@@ -278,9 +424,6 @@ public sealed class ProcessLoopbackAudioCapture : IAudioCapture
                 var packet = session.Acquire();
                 try
                 {
-                    // AUDCLNT_S_BUFFER_EMPTY can win the race against the size
-                    // query; such a packet carries no buffer and must not be
-                    // released. A silent packet is not audio and is dropped.
                     if (packet.FrameCount <= 0) break;
                     if ((packet.Flags & AudioClientBufferFlags.Silent) != 0) continue;
                     Deliver(packet, format, ref buffer);
@@ -329,7 +472,7 @@ public sealed class ProcessLoopbackAudioCapture : IAudioCapture
             Faulted?.Invoke(this, new AudioCaptureFaultedEventArgs(
                 SourceKind,
                 exception,
-                exception is COMException com ? ProcessLoopbackFault.Describe(com.HResult) : null,
+                ProcessLoopbackFault.CodeOf(exception),
                 _target));
         }
         catch (Exception) { }
@@ -351,239 +494,49 @@ public sealed class ProcessLoopbackAudioCapture : IAudioCapture
     {
         if (_disposed) throw new ObjectDisposedException(nameof(ProcessLoopbackAudioCapture));
     }
-}
 
-/// <summary>
-/// Activates and owns one Windows process loopback client. This is the only
-/// place that builds the activation PROPVARIANT and drives the asynchronous
-/// activation, and it runs on the capture's own MTA thread.
-/// </summary>
-internal sealed class ProcessLoopbackSessionFactory : IProcessLoopbackSessionFactory
-{
-    private static readonly TimeSpan ActivationTimeout = TimeSpan.FromSeconds(5);
-    private static readonly TimeSpan ActivationPollInterval = TimeSpan.FromMilliseconds(50);
-
-    /// <summary>Requested buffer duration in 100 ns units: 20 ms, as in the Windows sample.</summary>
-    private const long BufferDurationHns = 200_000;
-
-    public IProcessLoopbackSession Open(ProcessIdentity target, CancellationToken cancellationToken)
+    private enum ProcessLoopbackAttemptKind
     {
-        ArgumentNullException.ThrowIfNull(target);
-        var handler = new ProcessLoopbackActivationHandler();
-        var activationParams = new ProcessLoopbackActivationParams(target.ProcessId);
-        IActivateAudioInterfaceAsyncOperation? operation = null;
-        try
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            // The immediate HRESULT and the asynchronous result are both
-            // checked: a failure here means no callback will ever arrive.
-            var immediate = ProcessLoopbackInterop.Activate(activationParams.Pointer, handler, out operation);
-            if (immediate < 0)
-            {
-                throw ProcessLoopbackFault.Create("进程回环激活调用失败", immediate);
-            }
-
-            var waited = TimeSpan.Zero;
-            while (!handler.Wait(ActivationPollInterval))
-            {
-                waited += ActivationPollInterval;
-                if (cancellationToken.IsCancellationRequested)
-                {
-                    // Windows may still be reading the blob, so ownership goes
-                    // to the callback instead of being freed here.
-                    handler.TakeOwnership(activationParams.Detach());
-                    throw new OperationCanceledException(cancellationToken);
-                }
-
-                if (waited >= ActivationTimeout)
-                {
-                    handler.TakeOwnership(activationParams.Detach());
-                    throw new TimeoutException(
-                        $"进程回环激活在 {ActivationTimeout.TotalSeconds:0} 秒内没有完成。");
-                }
-            }
-
-            if (handler.Failure is not null) throw handler.Failure;
-            if (handler.ActivateResult < 0)
-            {
-                throw ProcessLoopbackFault.Create("进程回环激活失败", handler.ActivateResult);
-            }
-
-            var activated = handler.ActivatedInterface
-                ?? throw new InvalidOperationException("进程回环激活没有返回音频客户端。");
-            return CreateSession(activated);
-        }
-        finally
-        {
-            activationParams.Dispose();
-            // Releasing the operation is what lets Windows drop its reference to
-            // the completion handler. The whole class only ever runs on Windows,
-            // but the project targets a platform-neutral framework.
-            if (operation is not null && OperatingSystem.IsWindows()) Marshal.ReleaseComObject(operation);
-            handler.Close();
-        }
+        Stopped,
+        Cancelled,
+        StartFailed,
+        Faulted,
+        RetryInOtherApartment
     }
 
-    private static IProcessLoopbackSession CreateSession(object activatedInterface)
+    private readonly record struct AttemptOutcome(ProcessLoopbackAttemptKind Kind, Exception? Failure)
     {
-        if (activatedInterface is not IAudioClient audioClientInterface)
-        {
-            throw new InvalidCastException("进程回环激活结果没有提供 IAudioClient 接口。");
-        }
+        public static AttemptOutcome Stopped { get; } = new(ProcessLoopbackAttemptKind.Stopped, null);
 
-        // NAudio wraps the activated client instead of declaring IAudioClient,
-        // IAudioCaptureClient and AUDCLNT_* again.
-        var audioClient = new AudioClient(audioClientInterface);
-        try
-        {
-            // A process loopback client is not backed by a device, so
-            // GetMixFormat - like GetDevicePeriod and GetStreamLatency - answers
-            // E_NOTIMPL (0x80004001) instead of a format. The stream is therefore
-            // initialized with the current default render endpoint's mix format,
-            // which is what the captured process audio is mixed for; the engine
-            // converts whatever the target actually renders. The raw value goes
-            // back to Initialize unchanged, and only the sample converter sees
-            // the normalized sample type (WAVE_FORMAT_EXTENSIBLE carries the real
-            // type in its sub-format).
-            var mixFormat = ReadDefaultRenderMixFormat();
-            var captureFormat = AudioSampleConverter.NormalizeFormat(mixFormat);
-            if (!AudioSampleConverter.IsConvertible(captureFormat))
-            {
-                throw new NotSupportedException($"进程回环需要使用不支持的音频格式：{captureFormat}。");
-            }
+        public static AttemptOutcome Cancelled { get; } = new(ProcessLoopbackAttemptKind.Cancelled, null);
 
-            var dataEvent = new AutoResetEvent(false);
-            try
-            {
-                audioClient.Initialize(
-                    AudioClientShareMode.Shared,
-                    AudioClientStreamFlags.Loopback | AudioClientStreamFlags.EventCallback,
-                    BufferDurationHns,
-                    0,
-                    mixFormat,
-                    Guid.Empty);
-                audioClient.SetEventHandle(dataEvent.SafeWaitHandle.DangerousGetHandle());
-                return new WasapiProcessLoopbackSession(audioClient, captureFormat, audioClient.BufferSize, dataEvent);
-            }
-            catch
-            {
-                dataEvent.Dispose();
-                throw;
-            }
-        }
-        catch
-        {
-            audioClient.Dispose();
-            throw;
-        }
-    }
+        public static AttemptOutcome RetryInOtherApartment { get; } =
+            new(ProcessLoopbackAttemptKind.RetryInOtherApartment, null);
 
-    /// <summary>
-    /// Mix format of the current default render endpoint. A process loopback
-    /// stream has no format of its own, so this is the format it is asked for.
-    /// </summary>
-    private static WaveFormat ReadDefaultRenderMixFormat()
-    {
-        try
-        {
-            using var enumerator = new MMDeviceEnumerator();
-            using var device = enumerator.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
-            using var client = device.AudioClient;
-            return client.MixFormat;
-        }
-        catch (COMException exception)
-        {
-            throw new InvalidOperationException(
-                "系统没有可用的默认播放端点，无法确定进程回环的音频格式。", exception);
-        }
-    }
+        public static AttemptOutcome StartFailed(Exception failure) =>
+            new(ProcessLoopbackAttemptKind.StartFailed, failure);
 
-    /// <summary>
-    /// The activated WASAPI client. Stop and release happen in the documented
-    /// order - stop the stream, release the client, then close the event handle.
-    /// </summary>
-    private sealed class WasapiProcessLoopbackSession : IProcessLoopbackSession
-    {
-        private readonly AudioClient _audioClient;
-        private readonly AudioCaptureClient _captureClient;
-        private readonly AutoResetEvent _dataEvent;
-        private bool _started;
-        private bool _disposed;
-
-        public WasapiProcessLoopbackSession(
-            AudioClient audioClient,
-            WaveFormat format,
-            int bufferSize,
-            AutoResetEvent dataEvent)
-        {
-            _audioClient = audioClient;
-            _dataEvent = dataEvent;
-            Format = format;
-            BufferSize = Math.Max(1, bufferSize);
-            _captureClient = audioClient.AudioCaptureClient;
-        }
-
-        public WaveFormat Format { get; }
-
-        public int BufferSize { get; }
-
-        public int PendingFrames => _captureClient.GetNextPacketSize();
-
-        public void Start()
-        {
-            ThrowIfDisposed();
-            if (_started) return;
-            _audioClient.Start();
-            _started = true;
-        }
-
-        public void Stop()
-        {
-            if (!_started) return;
-            _started = false;
-            _audioClient.Stop();
-        }
-
-        public ProcessLoopbackPacket Acquire()
-        {
-            var data = _captureClient.GetBuffer(out var frames, out var flags, out _, out _);
-            return new ProcessLoopbackPacket(data, frames, flags);
-        }
-
-        public void Release(int frameCount)
-        {
-            if (frameCount > 0) _captureClient.ReleaseBuffer(frameCount);
-        }
-
-        public bool WaitForPacket(TimeSpan timeout) => _dataEvent.WaitOne(timeout);
-
-        public void Dispose()
-        {
-            if (_disposed) return;
-            _disposed = true;
-            try { Stop(); } catch (Exception) { }
-            _audioClient.Dispose();
-            _dataEvent.Dispose();
-        }
-
-        private void ThrowIfDisposed()
-        {
-            if (_disposed) throw new ObjectDisposedException(nameof(WasapiProcessLoopbackSession));
-        }
+        public static AttemptOutcome Faulted(Exception failure) =>
+            new(ProcessLoopbackAttemptKind.Faulted, failure);
     }
 }
 
 /// <summary>
-/// Initializes COM on the capture thread. Windows calls the activation
-/// completion handler from a worker thread in the multi-threaded apartment, so
-/// the thread that starts the activation has to live in that same apartment;
-/// the capture owns a dedicated thread and never borrows the UI thread.
+/// Initializes COM on a capture thread. Windows calls the activation completion
+/// handler from a worker thread in the multi-threaded apartment, so the thread
+/// that starts the activation has to live in that same apartment; the capture
+/// owns dedicated threads and never borrows the UI thread. The single-threaded
+/// apartment is supported only as the one retry for machines that refuse the
+/// MTA, and then the wait has to keep its message queue served.
 /// </summary>
 internal static class ComApartment
 {
     private const uint CoInitMultithreaded = 0x0;
-    private const int RpcChangedMode = unchecked((int)0x80010106);
+    private const uint CoInitApartmentThreaded = 0x2;
+
+    // COWAIT_DISPATCH_CALLS | COWAIT_DISPATCH_WINDOW_MESSAGES
+    private const uint CoWaitDispatchCalls = 0x8;
+    private const uint CoWaitDispatchWindowMessages = 0x10;
 
     [DllImport("ole32.dll", ExactSpelling = true)]
     private static extern int CoInitializeEx(IntPtr reserved, uint coInit);
@@ -591,24 +544,55 @@ internal static class ComApartment
     [DllImport("ole32.dll", ExactSpelling = true)]
     private static extern void CoUninitialize();
 
-    /// <summary>Enters the MTA; throws when the thread is already in an STA.</summary>
-    public static void EnterMultithreaded()
+    [DllImport("ole32.dll", ExactSpelling = true)]
+    private static extern int CoWaitForMultipleHandles(
+        uint flags,
+        uint timeout,
+        uint handleCount,
+        IntPtr[] handles,
+        out uint index);
+
+    /// <summary>Enters the requested apartment; throws when the thread refuses it.</summary>
+    public static void Enter(ProcessLoopbackApartment apartment)
     {
-        var hresult = CoInitializeEx(IntPtr.Zero, CoInitMultithreaded);
-        if (hresult == RpcChangedMode)
+        var hresult = CoInitializeEx(
+            IntPtr.Zero,
+            apartment == ProcessLoopbackApartment.Multithreaded ? CoInitMultithreaded : CoInitApartmentThreaded);
+        if (hresult == ProcessLoopbackFault.ChangedMode)
         {
-            throw new COMException("进程回环采集线程不能运行在 STA 单元中。", hresult);
+            throw new COMException($"进程回环采集线程不能运行在现有的 COM 单元中（{apartment}）。", hresult);
         }
 
-        // S_OK and S_FALSE are both success: the thread is in the MTA and the
-        // matching CoUninitialize is required.
+        // S_OK and S_FALSE are both success: the thread is in the apartment and
+        // the matching CoUninitialize is required.
         Marshal.ThrowExceptionForHR(hresult);
     }
 
-    /// <summary>Leaves the apartment entered by <see cref="EnterMultithreaded"/>.</summary>
+    /// <summary>Leaves the apartment entered by <see cref="Enter"/>.</summary>
     public static void Leave()
     {
         try { CoUninitialize(); }
         catch (Exception) { }
+    }
+
+    /// <summary>
+    /// Waits for one completion slice in an apartment-compatible way. In the MTA
+    /// the event is simply waited on; in an STA the COM callback is delivered
+    /// through the message queue, so blocking outright would never see it.
+    /// </summary>
+    public static bool WaitForCompletion(ProcessLoopbackApartment apartment, WaitHandle completion, TimeSpan timeout)
+    {
+        ArgumentNullException.ThrowIfNull(completion);
+        if (apartment == ProcessLoopbackApartment.Multithreaded) return completion.WaitOne(timeout);
+
+        var milliseconds = (uint)Math.Clamp(timeout.TotalMilliseconds, 0, int.MaxValue);
+        var handles = new[] { completion.SafeWaitHandle.DangerousGetHandle() };
+        var hresult = CoWaitForMultipleHandles(
+            CoWaitDispatchCalls | CoWaitDispatchWindowMessages,
+            milliseconds,
+            1,
+            handles,
+            out _);
+        return hresult >= 0;
     }
 }

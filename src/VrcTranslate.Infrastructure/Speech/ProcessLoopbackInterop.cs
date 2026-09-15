@@ -1,6 +1,7 @@
 using System.Runtime.InteropServices;
 using NAudio.CoreAudioApi.Interfaces;
 using NAudio.Wasapi.CoreAudioApi.Interfaces;
+using VrcTranslate.Application.Abstractions;
 
 namespace VrcTranslate.Infrastructure.Speech;
 
@@ -236,8 +237,12 @@ internal sealed class ProcessLoopbackActivationHandler : IActivateAudioInterface
         }
     }
 
-    /// <summary>Waits for the callback; false when it did not arrive within the timeout.</summary>
-    public bool Wait(TimeSpan timeout) => _completed.Wait(timeout);
+    /// <summary>
+    /// The completion event. It is a handle rather than a blocking wait because
+    /// an STA attempt has to keep its message queue served while it waits for
+    /// the callback.
+    /// </summary>
+    public WaitHandle CompletionHandle => _completed.WaitHandle;
 
     /// <summary>
     /// Takes over an activation blob the caller abandons. Windows may still be
@@ -263,9 +268,62 @@ internal sealed class ProcessLoopbackActivationHandler : IActivateAudioInterface
     }
 }
 
+/// <summary>
+/// What a failed activation means for the next attempt. Only three answers
+/// matter: the COM environment of this machine refused the apartment (retry
+/// once in the other one), the failure cannot ever succeed here (fuse process
+/// loopback for the session), or the situation can change (let the coordinator's
+/// backoff own the retry).
+/// </summary>
+internal enum ProcessLoopbackFaultKind
+{
+    /// <summary>A device or timing failure: retry under the coordinator's backoff.</summary>
+    Transient,
+
+    /// <summary>The apartment itself was refused: retry once in the other one.</summary>
+    ApartmentEnvironment,
+
+    /// <summary>Retrying cannot help: mark process loopback unsupported for this session.</summary>
+    Permanent
+}
+
 /// <summary>Builds the exceptions a failed activation is reported with.</summary>
 internal static class ProcessLoopbackFault
 {
+    /// <summary><c>E_NOTIMPL</c>: the virtual client answers this for device-only members.</summary>
+    public const int NotImplemented = unchecked((int)0x80004001);
+
+    /// <summary><c>E_NOINTERFACE</c>: the activation did not return the requested client.</summary>
+    public const int NoInterface = unchecked((int)0x80004002);
+
+    /// <summary><c>REGDB_E_CLASSNOTREG</c>: the application loopback server is not registered.</summary>
+    public const int ClassNotRegistered = unchecked((int)0x80040154);
+
+    /// <summary><c>CO_E_NOTINITIALIZED</c>: COM was never initialized on this thread.</summary>
+    public const int NotInitialized = unchecked((int)0x800401F0);
+
+    /// <summary><c>RPC_E_WRONG_THREAD</c>; the brief calls it E_ILLEGAL_METHOD_CALL.</summary>
+    public const int WrongThread = unchecked((int)0x8001010E);
+
+    /// <summary><c>RPC_E_CHANGED_MODE</c>: the thread already lives in another apartment.</summary>
+    public const int ChangedMode = unchecked((int)0x80010106);
+
+    /// <summary><c>E_ILLEGAL_METHOD_CALL</c>.</summary>
+    public const int IllegalMethodCall = unchecked((int)0x8000000E);
+
+    /// <summary><c>E_ACCESSDENIED</c>: policy or a device ACL refused the capture.</summary>
+    public const int AccessDenied = unchecked((int)0x80070005);
+
+    /// <summary><c>HRESULT_FROM_WIN32(ERROR_NOT_SUPPORTED)</c>.</summary>
+    public const int NotSupportedByPlatform = unchecked((int)0x80070032);
+
+    /// <summary><c>HRESULT_FROM_WIN32(ERROR_OLD_WIN_VERSION)</c>: this Windows version cannot do it.</summary>
+    public const int OldWindowsVersion = unchecked((int)0x8007047E);
+
+    /// <summary>The HRESULT range <c>RPC_E_*</c> lives in.</summary>
+    private const int RpcErrorMask = unchecked((int)0xFFFFFF00);
+    private const int RpcErrorBase = unchecked((int)0x80010100);
+
     /// <summary>
     /// Names the HRESULT so a log line says <c>DeviceInvalidated</c> instead of
     /// an opaque number. NAudio publishes the codes as constants rather than as
@@ -296,4 +354,62 @@ internal static class ProcessLoopbackFault
     /// <summary>An activation or capture failure carrying the failing HRESULT.</summary>
     public static COMException Create(string message, int hresult) =>
         new($"{message}（{Describe(hresult)}，HRESULT 0x{hresult:X8}）。", hresult);
+
+    /// <summary>
+    /// The apartment refused the activation or COM was not usable on this
+    /// thread. These are the only HRESULTs that get a retry in the other
+    /// apartment; anything else is either permanent or a device situation.
+    /// </summary>
+    public static bool IsApartmentEnvironment(int hresult) =>
+        hresult is WrongThread or IllegalMethodCall or NotInitialized or AccessDenied or ChangedMode
+        || (hresult & RpcErrorMask) == RpcErrorBase;
+
+    /// <summary>
+    /// HRESULTs that cannot succeed on a later attempt. E_ACCESSDENIED is listed
+    /// here as well as in <see cref="IsApartmentEnvironment"/>: it earns one
+    /// apartment retry, and if it comes back the machine is treated as unable to
+    /// capture process audio at all.
+    /// </summary>
+    public static bool IsPermanent(int hresult) =>
+        hresult is NotImplemented or NoInterface or ClassNotRegistered or AccessDenied
+            or NotSupportedByPlatform or OldWindowsVersion;
+
+    /// <summary>What a failed HRESULT means for the next attempt.</summary>
+    public static ProcessLoopbackFaultKind ClassifyHResult(int hresult) =>
+        IsApartmentEnvironment(hresult) ? ProcessLoopbackFaultKind.ApartmentEnvironment
+        : IsPermanent(hresult) ? ProcessLoopbackFaultKind.Permanent
+        : ProcessLoopbackFaultKind.Transient;
+
+    /// <summary>What a failed attempt means for the next attempt.</summary>
+    public static ProcessLoopbackFaultKind Classify(Exception exception)
+    {
+        ArgumentNullException.ThrowIfNull(exception);
+        return exception switch
+        {
+            // A timeout says nothing about the machine's ability: the coordinator
+            // backs off and retries instead of fusing process loopback.
+            ProcessLoopbackActivationTimeoutException => ProcessLoopbackFaultKind.Transient,
+            ProcessLoopbackNotSupportedException => ProcessLoopbackFaultKind.Permanent,
+            COMException com => ClassifyHResult(com.HResult),
+            _ => ProcessLoopbackFaultKind.Transient
+        };
+    }
+
+    /// <summary>
+    /// The stable code published through <c>AudioCaptureFaultedEventArgs</c> and
+    /// written to the diagnostics log. A named HRESULT (DeviceInvalidated) is
+    /// used when one exists so the log line is readable.
+    /// </summary>
+    public static string? CodeOf(Exception exception)
+    {
+        ArgumentNullException.ThrowIfNull(exception);
+        return exception switch
+        {
+            ProcessLoopbackActivationTimeoutException => ProcessLoopbackActivationTimeoutException.ActivationTimeoutCode,
+            OperationCanceledException => "Cancelled",
+            ProcessLoopbackNotSupportedException => "NotSupported",
+            COMException com => Describe(com.HResult),
+            _ => null
+        };
+    }
 }

@@ -19,6 +19,13 @@ public static class AppDataFiles
     /// <summary>Crash log written next to the settings; kept out of <see cref="All"/> so it is never migrated.</summary>
     public const string StartupErrorLog = "startup-error.log";
 
+    /// <summary>
+    /// Bounded, overwritten log of the last process loopback activations. It
+    /// holds technical values only (build, formats, HRESULTs) and is likewise
+    /// kept out of <see cref="All"/> so a migration never carries it.
+    /// </summary>
+    public const string CaptureDiagnostics = "capture-diagnostics.log";
+
     /// <summary>Every settings document the pre-portable user-profile layout may hold.</summary>
     public static IReadOnlyList<string> All { get; } =
     [

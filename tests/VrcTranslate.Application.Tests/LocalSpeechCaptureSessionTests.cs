@@ -245,6 +245,43 @@ public sealed class LocalSpeechCaptureSessionTests
     }
 
     [Fact]
+    public async Task The_fallback_notice_is_owed_once_per_fallback_episode()
+    {
+        var capture = new FakeAudioCapture(AudioCaptureRequest.SystemLoopback());
+        await using var session = new LocalSpeechCaptureSession(capture, CreateSpeechService());
+        await session.StartAsync();
+
+        // Nothing to announce while the system mix is simply the system mix.
+        Assert.False(session.ConsumeFallbackNotice());
+
+        capture.RaiseSourceChanged(
+            new AudioSourceState(AudioCaptureSourceKind.SystemLoopbackFallback),
+            generation: 1,
+            isBoundary: false);
+        Assert.True(session.ConsumeFallbackNotice());
+
+        // 后续重试失败不再提示：同一段降级只承担一次提示。
+        capture.RaiseSourceChanged(
+            new AudioSourceState(AudioCaptureSourceKind.SystemLoopbackFallback),
+            generation: 2,
+            isBoundary: false);
+        Assert.False(session.ConsumeFallbackNotice());
+
+        // 恢复后重新武装，下一次真正降级仍然只提示一次。
+        capture.RaiseSourceChanged(
+            new AudioSourceState(AudioCaptureSourceKind.ProcessLoopback, new ProcessIdentity(7)),
+            generation: 3,
+            isBoundary: true);
+        Assert.False(session.ConsumeFallbackNotice());
+        capture.RaiseSourceChanged(
+            new AudioSourceState(AudioCaptureSourceKind.SystemLoopbackFallback),
+            generation: 4,
+            isBoundary: false);
+        Assert.True(session.ConsumeFallbackNotice());
+        Assert.False(session.ConsumeFallbackNotice());
+    }
+
+    [Fact]
     public async Task A_result_that_finishes_after_the_boundary_is_not_published()
     {
         var capture = new FakeAudioCapture(AudioCaptureRequest.SystemLoopback());

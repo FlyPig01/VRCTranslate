@@ -246,6 +246,8 @@ public sealed class WindowsAudioCapture : IAudioCapture
 public sealed class WindowsAudioCaptureFactory : IAudioCaptureFactory
 {
     private readonly IProcessLoopbackSupport _processLoopbackSupport;
+    private readonly IProcessLoopbackCircuitBreaker _circuitBreaker;
+    private readonly ProcessLoopbackCaptureDependencies _processLoopbackDependencies;
 
     /// <summary>Creates the factory with the real operating system build check.</summary>
     public WindowsAudioCaptureFactory()
@@ -258,8 +260,42 @@ public sealed class WindowsAudioCaptureFactory : IAudioCaptureFactory
     /// the "this build is too old to try" path stays testable on a machine that
     /// is new enough.
     /// </summary>
-    public WindowsAudioCaptureFactory(IProcessLoopbackSupport processLoopbackSupport) =>
+    public WindowsAudioCaptureFactory(IProcessLoopbackSupport processLoopbackSupport)
+        : this(
+            processLoopbackSupport,
+            ProcessLoopbackActivationOptions.Default,
+            FileProcessLoopbackDiagnostics.Shared,
+            new ProcessLoopbackCircuitBreaker())
+    {
+    }
+
+    /// <summary>
+    /// Full composition. The activation policy is injectable so the timeout, the
+    /// candidate ladder, the diagnostics sink and the fuse can be scripted by
+    /// tests; production uses <see cref="FileProcessLoopbackDiagnostics.Shared"/>
+    /// and one breaker per factory, which is the application session.
+    /// </summary>
+    internal WindowsAudioCaptureFactory(
+        IProcessLoopbackSupport processLoopbackSupport,
+        ProcessLoopbackActivationOptions activationOptions,
+        IProcessLoopbackDiagnostics diagnostics,
+        IProcessLoopbackCircuitBreaker circuitBreaker)
+    {
         _processLoopbackSupport = processLoopbackSupport ?? throw new ArgumentNullException(nameof(processLoopbackSupport));
+        _circuitBreaker = circuitBreaker ?? throw new ArgumentNullException(nameof(circuitBreaker));
+        ArgumentNullException.ThrowIfNull(activationOptions);
+        ArgumentNullException.ThrowIfNull(diagnostics);
+        _processLoopbackDependencies = new ProcessLoopbackCaptureDependencies(
+            new ProcessLoopbackSessionFactory(new ProcessLoopbackSessionFactoryDependencies(
+                _processLoopbackSupport,
+                new WasapiProcessLoopbackActivator(ComApartmentHost.Instance, new WasapiProcessLoopbackActivationCall()),
+                WasapiProcessLoopbackClientFactory.Instance,
+                WasapiDefaultRenderFormatProvider.Instance,
+                activationOptions,
+                diagnostics)),
+            ComApartmentHost.Instance,
+            _circuitBreaker);
+    }
 
     public IAudioCapture Create(AudioCaptureRequest request)
     {
@@ -275,10 +311,11 @@ public sealed class WindowsAudioCaptureFactory : IAudioCaptureFactory
 
     /// <summary>
     /// A request for process loopback is answered before any COM object is
-    /// touched: a build below the Application Loopback floor is reported as
-    /// unsupported and the caller keeps system audio, instead of failing at an
-    /// activation that could never succeed. A supported build gets a real
-    /// capture; it is never silently downgraded to the system mix.
+    /// touched: a build below the Application Loopback floor, or a machine whose
+    /// fuse opened earlier in this session, is reported as unsupported and the
+    /// caller keeps system audio, instead of failing at an activation that could
+    /// never succeed. A supported build gets a real capture; it is never
+    /// silently downgraded to the system mix.
     /// </summary>
     private IAudioCapture CreateProcessLoopback(AudioCaptureRequest request)
     {
@@ -290,9 +327,15 @@ public sealed class WindowsAudioCaptureFactory : IAudioCaptureFactory
                 + "已改用系统回环。");
         }
 
+        if (_circuitBreaker.IsOpen)
+        {
+            throw new ProcessLoopbackNotSupportedException(
+                $"本会话已确认本机进程回环不可用（{_circuitBreaker.Reason}），不再尝试；继续使用系统回环。");
+        }
+
         var target = request.TargetProcess
             ?? throw new ArgumentException("进程回环请求缺少目标进程。", nameof(request));
-        return new ProcessLoopbackAudioCapture(target);
+        return new ProcessLoopbackAudioCapture(target, _processLoopbackDependencies);
     }
 }
 

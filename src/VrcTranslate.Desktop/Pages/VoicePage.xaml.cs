@@ -16,6 +16,13 @@ namespace VrcTranslate.Desktop.Pages;
 /// <summary>Controls the VRChat voice-caption workflow.</summary>
 public sealed partial class VoicePage : Page
 {
+    /// <summary>
+    /// The one short notice a fallback earns. Shown once per fallback episode -
+    /// repeats are suppressed by the session's latch - and withdrawn as soon as
+    /// process audio works again.
+    /// </summary>
+    private const string FallbackNoticeText = "无法只采集 VRChat 声音，已改用系统声音";
+
     private readonly string _settingsPath = PortableStorage.GetPath(AppDataFiles.VoiceSettings);
     private readonly AppState _state;
     private VoiceSettings _settings = new();
@@ -28,6 +35,7 @@ public sealed partial class VoicePage : Page
     private LevelBarRenderer? _levelBars;
     private IReadOnlyList<SpeakerIdentity> _speakers = [];
     private bool _updatingSpeakerToggle;
+    private bool _fallbackNoticeActive;
 
     private AppState State => _state;
 
@@ -77,6 +85,7 @@ public sealed partial class VoicePage : Page
         State.SubtitleVoice.RunningChanged += OnSessionRunningChanged;
         State.SubtitleVoice.Notified += OnSessionNotified;
         State.SubtitleVoice.LevelChanged += OnAudioLevelChanged;
+        State.SubtitleVoice.SourceChanged += OnCaptureSourceChanged;
     }
 
     private void DetachSpeechEvents()
@@ -86,10 +95,55 @@ public sealed partial class VoicePage : Page
         State.SubtitleVoice.RunningChanged -= OnSessionRunningChanged;
         State.SubtitleVoice.Notified -= OnSessionNotified;
         State.SubtitleVoice.LevelChanged -= OnAudioLevelChanged;
+        State.SubtitleVoice.SourceChanged -= OnCaptureSourceChanged;
     }
 
     private void OnSessionRunningChanged(object? sender, EventArgs e) =>
         DispatcherQueue.TryEnqueue(UpdateRunningVisuals);
+
+    /// <summary>
+    /// Capture source changes arrive on a capture thread, so the badge is only
+    /// ever touched through the dispatcher - never from the callback itself.
+    /// </summary>
+    private void OnCaptureSourceChanged(object? sender, AudioSourceChangedEventArgs args) =>
+        DispatcherQueue.TryEnqueue(() => UpdateCaptureSource(args.State, announceFallback: true));
+
+    /// <summary>
+    /// Mirrors the source the recognizer is fed from into the compact badge, and
+    /// turns the first fallback of a run into exactly one short notice.
+    /// </summary>
+    private void UpdateCaptureSource(AudioSourceState state, bool announceFallback)
+    {
+        if (VoiceCaptureSourceBadge is null || VoiceCaptureSourceText is null) return;
+        VoiceCaptureSourceText.Text = DescribeCaptureSource(state);
+        VoiceCaptureSourceBadge.Visibility = IsRunning ? Visibility.Visible : Visibility.Collapsed;
+        AutomationProperties.SetName(VoiceCaptureSourceBadge, $"当前采集来源：{VoiceCaptureSourceText.Text}");
+        if (!announceFallback) return;
+
+        if (state.IsCompatibilityMode)
+        {
+            // 首次激活失败只提示一次；后续重试失败不再打扰用户（采集侧会熔断）。
+            if (!State.SubtitleVoice.ConsumeCaptureFallbackNotice()) return;
+            ShowInfo(FallbackNoticeText, InfoBarSeverity.Warning);
+            return;
+        }
+
+        // 恢复后提示自动消失。
+        if (!_fallbackNoticeActive) return;
+        _fallbackNoticeActive = false;
+        if (VoiceInfo.IsOpen && string.Equals(VoiceInfo.Title, FallbackNoticeText, StringComparison.Ordinal))
+        {
+            VoiceInfo.IsOpen = false;
+        }
+    }
+
+    /// <summary>The badge only ever shows these three labels; the model is the source state.</summary>
+    private static string DescribeCaptureSource(AudioSourceState state) => state.Kind switch
+    {
+        AudioCaptureSourceKind.ProcessLoopback => "VRChat 音频",
+        AudioCaptureSourceKind.SystemLoopbackFallback => "系统声音（兼容模式）",
+        _ => "系统声音"
+    };
 
     private void OnSessionNotified(object? sender, SpeechNotificationEventArgs notification) =>
         DispatcherQueue.TryEnqueue(() =>
@@ -474,6 +528,9 @@ public sealed partial class VoicePage : Page
             : new SolidColorBrush(Microsoft.UI.ColorHelper.FromArgb(255, 217, 233, 255));
         VoicePulse.IsActive = IsRunning;
         VoicePulse.Visibility = IsRunning ? Visibility.Visible : Visibility.Collapsed;
+        // The badge names the source of the running capture; while stopped there
+        // is nothing being captured, so it stays out of the way.
+        UpdateCaptureSource(State.SubtitleVoice.SourceState, announceFallback: true);
         VoiceStatusPanel.Background = new SolidColorBrush(IsRunning
             ? Microsoft.UI.ColorHelper.FromArgb(255, 235, 248, 241)
             : Microsoft.UI.ColorHelper.FromArgb(255, 234, 242, 255));
@@ -517,6 +574,9 @@ public sealed partial class VoicePage : Page
 
     private void ShowInfo(string message, InfoBarSeverity severity)
     {
+        // Any other notice replaces the fallback hint, so a later recovery must
+        // not close a message the user still needs to read.
+        _fallbackNoticeActive = string.Equals(message, FallbackNoticeText, StringComparison.Ordinal);
         VoiceInfo.Title = message;
         VoiceInfo.Message = string.Empty;
         VoiceInfo.Severity = severity;

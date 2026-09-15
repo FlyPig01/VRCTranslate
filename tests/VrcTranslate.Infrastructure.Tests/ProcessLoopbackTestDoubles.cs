@@ -112,16 +112,18 @@ internal sealed class ScriptedProcessLoopbackSession : IProcessLoopbackSession
 /// <summary>Hands out scripted sessions, or fails the way a real activation would.</summary>
 internal sealed class ScriptedProcessLoopbackSessionFactory : IProcessLoopbackSessionFactory
 {
-    private readonly Func<ProcessIdentity, CancellationToken, IProcessLoopbackSession> _open;
+    private readonly Func<ProcessIdentity, ProcessLoopbackApartment, CancellationToken, IProcessLoopbackSession> _open;
     private readonly Queue<IProcessLoopbackSession>? _sessions;
+    private readonly List<ProcessLoopbackApartment> _apartments = [];
 
-    public ScriptedProcessLoopbackSessionFactory(Func<ProcessIdentity, CancellationToken, IProcessLoopbackSession> open) =>
+    public ScriptedProcessLoopbackSessionFactory(
+        Func<ProcessIdentity, ProcessLoopbackApartment, CancellationToken, IProcessLoopbackSession> open) =>
         _open = open;
 
     public ScriptedProcessLoopbackSessionFactory(params IProcessLoopbackSession[] sessions)
     {
         _sessions = new Queue<IProcessLoopbackSession>(sessions);
-        _open = (_, _) => _sessions.Count > 0
+        _open = (_, _, _) => _sessions.Count > 0
             ? _sessions.Dequeue()
             : throw new InvalidOperationException("没有更多脚本化采集会话。");
     }
@@ -130,12 +132,75 @@ internal sealed class ScriptedProcessLoopbackSessionFactory : IProcessLoopbackSe
 
     public ProcessIdentity? LastTarget { get; private set; }
 
-    public IProcessLoopbackSession Open(ProcessIdentity target, CancellationToken cancellationToken)
+    /// <summary>Apartments the opens ran in, in order; the retry policy is pinned with this.</summary>
+    public IReadOnlyList<ProcessLoopbackApartment> Apartments
+    {
+        get { lock (_apartments) return [.. _apartments]; }
+    }
+
+    public IProcessLoopbackSession Open(
+        ProcessIdentity target,
+        ProcessLoopbackApartment apartment,
+        CancellationToken cancellationToken)
     {
         OpenCount++;
         LastTarget = target;
-        return _open(target, cancellationToken);
+        lock (_apartments) _apartments.Add(apartment);
+        return _open(target, apartment, cancellationToken);
     }
+}
+
+/// <summary>
+/// An apartment host that records the apartments it was asked for and can refuse
+/// the ones a test wants refused, which is how the one-retry rule is proven
+/// without a machine whose COM environment actually misbehaves.
+/// </summary>
+internal sealed class ScriptedApartmentHost : IProcessLoopbackApartmentHost
+{
+    private readonly Func<ProcessLoopbackApartment, Exception?>? _enterFailure;
+    private readonly List<ProcessLoopbackApartment> _entered = [];
+
+    public ScriptedApartmentHost(ProcessLoopbackApartment preferred = ProcessLoopbackApartment.Multithreaded)
+        : this(preferred, enterFailure: null)
+    {
+    }
+
+    public ScriptedApartmentHost(
+        ProcessLoopbackApartment preferred,
+        Func<ProcessLoopbackApartment, Exception?>? enterFailure)
+    {
+        Preferred = preferred;
+        _enterFailure = enterFailure;
+    }
+
+    public ProcessLoopbackApartment Preferred { get; }
+
+    /// <summary>Apartments Enter was called for, in order.</summary>
+    public IReadOnlyList<ProcessLoopbackApartment> Entered
+    {
+        get { lock (_entered) return [.. _entered]; }
+    }
+
+    public int LeaveCount { get; private set; }
+
+    public ProcessLoopbackApartment AlternateTo(ProcessLoopbackApartment apartment) =>
+        apartment == ProcessLoopbackApartment.Multithreaded
+            ? ProcessLoopbackApartment.SingleThreaded
+            : ProcessLoopbackApartment.Multithreaded;
+
+    public string Describe(ProcessLoopbackApartment apartment) =>
+        ProcessLoopbackApartmentName.Describe(apartment);
+
+    public void Enter(ProcessLoopbackApartment apartment)
+    {
+        lock (_entered) _entered.Add(apartment);
+        if (_enterFailure?.Invoke(apartment) is { } failure) throw failure;
+    }
+
+    public void Leave() => LeaveCount++;
+
+    public bool WaitForCompletion(ProcessLoopbackApartment apartment, WaitHandle completion, TimeSpan slice) =>
+        completion.WaitOne(slice);
 }
 
 /// <summary>Unmanaged test audio in the format WASAPI would deliver.</summary>

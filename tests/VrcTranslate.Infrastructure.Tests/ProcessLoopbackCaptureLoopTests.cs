@@ -161,7 +161,7 @@ public sealed class ProcessLoopbackCaptureLoopTests
     public async Task Activation_failure_is_reported_without_a_stop_event()
     {
         var failed = new COMException("设备已移除", unchecked((int)0x88890026));
-        var factory = new ScriptedProcessLoopbackSessionFactory((_, _) => throw failed);
+        var factory = new ScriptedProcessLoopbackSessionFactory((_, _, _) => throw failed);
         var faults = new List<AudioCaptureFaultedEventArgs>();
         var stops = new List<AudioCaptureStoppedEventArgs>();
         await using var capture = new ProcessLoopbackAudioCapture(Target, factory);
@@ -180,7 +180,7 @@ public sealed class ProcessLoopbackCaptureLoopTests
     public async Task Cancellation_during_activation_reports_neither_fault_nor_stop()
     {
         var opened = new ManualResetEventSlim(false);
-        var factory = new ScriptedProcessLoopbackSessionFactory((_, token) =>
+        var factory = new ScriptedProcessLoopbackSessionFactory((_, _, token) =>
         {
             opened.Set();
             token.WaitHandle.WaitOne(TimeSpan.FromSeconds(10));
@@ -222,7 +222,7 @@ public sealed class ProcessLoopbackCaptureLoopTests
     }
 
     private static ProcessLoopbackAudioCapture CreateCapture(IProcessLoopbackSession session) =>
-        new(Target, new ScriptedProcessLoopbackSessionFactory((_, _) => session));
+        new(Target, new ScriptedProcessLoopbackSessionFactory((_, _, _) => session));
 
     private static async Task WaitUntilAsync(Func<bool> condition, string because)
     {

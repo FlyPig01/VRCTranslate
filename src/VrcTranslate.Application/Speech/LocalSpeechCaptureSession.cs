@@ -21,6 +21,7 @@ public sealed class LocalSpeechCaptureSession : IAsyncDisposable
     private long _sourceGeneration;
     private bool _started;
     private bool _disposed;
+    private bool _fallbackNoticeConsumed;
 
     public LocalSpeechCaptureSession(
         IAudioCapture capture,
@@ -60,6 +61,30 @@ public sealed class LocalSpeechCaptureSession : IAsyncDisposable
     public AudioSourceState SourceState
     {
         get { lock (_sync) return _sourceState; }
+    }
+
+    /// <summary>
+    /// Whether this run still owes the user its one short "only the system mix
+    /// is captured" notice. True the first time the compatibility source is
+    /// seen and false for every repeat, until a source other than the fallback
+    /// is seen again - which is what keeps a failing activation from producing a
+    /// stream of identical hints, while a genuine recovery followed by a new
+    /// fallback is announced again.
+    /// </summary>
+    public bool ConsumeFallbackNotice()
+    {
+        lock (_sync)
+        {
+            if (!_sourceState.IsCompatibilityMode)
+            {
+                _fallbackNoticeConsumed = false;
+                return false;
+            }
+
+            if (_fallbackNoticeConsumed) return false;
+            _fallbackNoticeConsumed = true;
+            return true;
+        }
     }
 
     /// <summary>

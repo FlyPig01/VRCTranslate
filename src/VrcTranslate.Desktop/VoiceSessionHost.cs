@@ -63,6 +63,23 @@ public abstract class VoiceSessionHost
     /// <summary>Raised with a toast-worthy pipeline outcome; may arrive from a worker thread.</summary>
     public event EventHandler<SpeechNotificationEventArgs>? Notified;
 
+    /// <summary>
+    /// Raised when the capture source changes, so a visible page can label where
+    /// the audio comes from. May arrive from a capture thread; subscribers must
+    /// marshal to the UI thread.
+    /// </summary>
+    public event EventHandler<AudioSourceChangedEventArgs>? SourceChanged;
+
+    /// <summary>Source the running session is fed from; system loopback while stopped.</summary>
+    public AudioSourceState SourceState => _session?.SourceState ?? AudioSourceState.SystemLoopback;
+
+    /// <summary>
+    /// True when a visible page should show its one short compatibility notice
+    /// for this run. The latch lives in the session, so navigating away and back
+    /// cannot repeat the hint.
+    /// </summary>
+    public bool ConsumeCaptureFallbackNotice() => _session?.ConsumeFallbackNotice() ?? false;
+
     /// <summary>Microphone device id for the next start; ignored by loopback sessions.</summary>
     public string? MicrophoneId { get; set; }
 
@@ -120,14 +137,18 @@ public abstract class VoiceSessionHost
             session.ResultReady += OnResultReady;
             session.Faulted += OnSessionFaulted;
             session.LevelChanged += OnLevelChanged;
+            session.SourceChanged += OnSessionSourceChanged;
             try
             {
                 await session.StartAsync().ConfigureAwait(false);
-                // 监视器在采集就绪后才开始推送目标，切换请求不会落在未启动的协调器上。
-                plan.Monitor?.Start();
+                // The session is published before the monitor starts pushing
+                // targets, so a source change that immediately falls back to the
+                // compatibility mode already finds the page's data source.
                 _session = session;
                 _monitor = plan.Monitor;
                 _running = true;
+                // 监视器在采集就绪后才开始推送目标，切换请求不会落在未启动的协调器上。
+                plan.Monitor?.Start();
                 RunningChanged?.Invoke(this, EventArgs.Empty);
             }
             catch
@@ -135,6 +156,7 @@ public abstract class VoiceSessionHost
                 session.ResultReady -= OnResultReady;
                 session.Faulted -= OnSessionFaulted;
                 session.LevelChanged -= OnLevelChanged;
+                session.SourceChanged -= OnSessionSourceChanged;
                 await session.DisposeAsync().ConfigureAwait(false);
                 if (plan.Monitor is not null) await plan.Monitor.DisposeAsync().ConfigureAwait(false);
                 throw;
@@ -163,6 +185,7 @@ public abstract class VoiceSessionHost
                 session.ResultReady -= OnResultReady;
                 session.Faulted -= OnSessionFaulted;
                 session.LevelChanged -= OnLevelChanged;
+                session.SourceChanged -= OnSessionSourceChanged;
                 await session.DisposeAsync().ConfigureAwait(false);
             }
 
@@ -238,6 +261,9 @@ public abstract class VoiceSessionHost
 
     private void OnLevelChanged(object? sender, AudioLevelEventArgs args) =>
         LevelChanged?.Invoke(this, args);
+
+    private void OnSessionSourceChanged(object? sender, AudioSourceChangedEventArgs args) =>
+        SourceChanged?.Invoke(this, args);
 }
 
 /// <summary>Other-player caption session: VRChat loopback audio to subtitle output.</summary>

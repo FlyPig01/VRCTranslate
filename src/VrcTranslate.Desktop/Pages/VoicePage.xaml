@@ -67,11 +67,31 @@
                   <ColumnDefinition Width="Auto" />
                   <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
-                <TextBlock x:Name="VoiceStatusText"
-                           Text="他人语音识别停止"
-                           FontSize="16"
-                           FontWeight="SemiBold"
-                           VerticalAlignment="Center" />
+                <StackPanel Grid.Column="0"
+                            Orientation="Vertical"
+                            Spacing="3"
+                            VerticalAlignment="Center">
+                  <TextBlock x:Name="VoiceStatusText"
+                             Text="他人语音识别停止"
+                             FontSize="16"
+                             FontWeight="SemiBold" />
+                  <!-- 紧凑采集来源徽标：只显示当前来源，不新增卡片、下拉或配置项。 -->
+                  <Border x:Name="VoiceCaptureSourceBadge"
+                          HorizontalAlignment="Left"
+                          Background="#E3EEFF"
+                          BorderBrush="#BBD3F7"
+                          BorderThickness="1"
+                          CornerRadius="8"
+                          Padding="8,1"
+                          Visibility="Collapsed"
+                          AutomationProperties.AutomationId="voice-capture-source"
+                          AutomationProperties.Name="当前采集来源">
+                    <TextBlock x:Name="VoiceCaptureSourceText"
+                               Text="系统声音"
+                               FontSize="12"
+                               Foreground="#2D73D5" />
+                  </Border>
+                </StackPanel>
                 <!-- The meter fills whatever the title leaves; idle bars keep
                      its place visible while nothing is being said. -->
                 <Grid Grid.Column="1"

@@ -260,6 +260,36 @@ if ($sessionHostSource -notmatch 'LocalSpeechCaptureSession' -or
     throw 'The session host must connect the other-player session to the adaptive loopback coordinator, keep it steered by the VRChat process monitor, and release both on stop/shutdown.'
 }
 if ($voiceSource -match 'WindowsAudioCapture|NAudio\.|VrcTranslate\.Infrastructure\.Speech') { throw 'Voice page must use the application audio factory instead of a platform implementation.' }
+# Phase 4 接线：状态卡内一个紧凑来源徽标（VRChat 音频 / 系统声音 / 系统声音（兼容模式）），
+# 数据来自 LocalSpeechCaptureSession 的 SourceState / SourceChanged；首次降级只提示一次，
+# 恢复后提示自动消失；不新增进程选择、音频源下拉或白名单。
+if ($sessionHostSource -notmatch 'SourceChanged' -or
+    $sessionHostSource -notmatch 'SourceState' -or
+    $sessionHostSource -notmatch 'ConsumeCaptureFallbackNotice') {
+    throw 'The session host must expose the capture source state and the one-time fallback notice to the page.'
+}
+if ($voiceMarkup -notmatch 'VoiceCaptureSourceBadge' -or
+    $voiceMarkup -notmatch 'x:Name="VoiceCaptureSourceText"' -or
+    $voiceMarkup -notmatch 'voice-capture-source') {
+    throw 'VoicePage must show one compact capture-source badge inside the status card.'
+}
+if ($voiceSource -notmatch 'AudioCaptureSourceKind\.ProcessLoopback' -or
+    $voiceSource -notmatch 'VRChat 音频' -or
+    $voiceSource -notmatch 'AudioCaptureSourceKind\.SystemLoopbackFallback' -or
+    $voiceSource -notmatch '系统声音（兼容模式）' -or
+    $voiceSource -notmatch '系统声音"') {
+    throw 'The capture-source badge must name VRChat audio, system audio and the compatibility fallback.'
+}
+if ($voiceSource -notmatch 'SourceChanged' -or
+    $voiceSource -notmatch 'DispatcherQueue\.TryEnqueue' -or
+    $voiceSource -notmatch 'ConsumeCaptureFallbackNotice' -or
+    $voiceSource -notmatch '无法只采集 VRChat 声音，已改用系统声音' -or
+    $voiceSource -notmatch 'VoiceInfo\.IsOpen = false') {
+    throw 'The badge must follow the session source events on the UI thread, hint once on the first fallback, and withdraw the hint after recovery.'
+}
+if ([regex]::Matches($voiceMarkup, '<ComboBox[\s>]').Count -ne 1) {
+    throw 'VoicePage must keep exactly one selector (the local model box); no capture-source or process picker may be added.'
+}
 if ($voiceMarkup -match 'Windows 系统识别 · 无需密钥') { throw 'VoicePage must keep the recognition status label concise.' }
 if ([regex]::Matches($voiceMarkup, 'AutomationProperties.Name="打开字幕"').Count -ne 1) { throw 'VoicePage must expose one concise subtitle entry instead of duplicate buttons.' }
 if ($voiceMarkup -notmatch 'ProgressRing|EntranceThemeTransition' -or $voiceMarkup -notmatch 'VoiceAudioLevel' -or $voiceSource -notmatch 'VoicePulse\.IsActive' -or $voiceSource -notmatch 'LevelChanged|OnAudioLevelChanged') { throw 'VoicePage must provide a compact animated recognition state and measured audio activity.' }

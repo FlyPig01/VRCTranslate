@@ -221,6 +221,16 @@ public sealed class ProcessLoopbackNotSupportedException : Exception
         : base(message, innerException)
     {
     }
+
+    /// <summary>
+    /// "Unsupported" reported by an HRESULT rather than by the capability gate:
+    /// a device that answers E_NOTIMPL, refuses the interface or denies access
+    /// will answer the same way on every retry, so the coordinator must treat it
+    /// exactly like a build below the floor. The HRESULT is kept for the
+    /// diagnostics log.
+    /// </summary>
+    public ProcessLoopbackNotSupportedException(string message, int hresult)
+        : base(message) => HResult = hresult;
 }
 
 /// <summary>

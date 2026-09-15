@@ -51,6 +51,12 @@ public sealed class QuickInputWindow : Window
     /// </summary>
     private const int DefaultWidthDips = 1240;
 
+    /// <summary>
+    /// 结果区自动补高的上限（DIP）：长译文 + 144 单位的 OSC 实发行最多占三四行，
+    /// 超过这个高度就不再长——输入条不该变成一块占满屏幕的面板。
+    /// </summary>
+    private const int MaximumHeightDips = 420;
+
     private readonly AppState _state;
     private readonly TimeSpan _translationTimeout;
     private readonly TextBox _input;
@@ -63,6 +69,7 @@ public sealed class QuickInputWindow : Window
     private readonly Grid _focusUnderline;
     private readonly Grid _previewDivider;
     private readonly Grid _surface;
+    private readonly Grid _body;
     private readonly EventHandler _previewHandler;
     private readonly Microsoft.UI.Dispatching.DispatcherQueue? _dispatcherQueue;
     private OverlayWindowController? _windowController;
@@ -151,8 +158,10 @@ public sealed class QuickInputWindow : Window
             FontSize = OscFontSize,
             FontFamily = new FontFamily(UiFontFamily),
             Foreground = Brush(OscTextColor),
-            TextTrimming = TextTrimming.CharacterEllipsis,
-            TextWrapping = TextWrapping.NoWrap,
+            // VRChat Chatbox 的载荷最多 144 个 UTF-16 单位，一行放不下；这里换行显示
+            // 全文，窗口高度不够时由 EnsureResultAreaVisible 在「翻译/发送完成」后补正，
+            // 不再用省略号把发送内容截掉（用户看不到自己实际发出去的是什么）。
+            TextWrapping = TextWrapping.Wrap,
             VerticalAlignment = VerticalAlignment.Center,
             Visibility = Visibility.Collapsed
         };
@@ -163,8 +172,7 @@ public sealed class QuickInputWindow : Window
             FontSize = StatusFontSize,
             FontFamily = new FontFamily(UiFontFamily),
             Foreground = Brush(ErrorColor),
-            TextTrimming = TextTrimming.CharacterEllipsis,
-            TextWrapping = TextWrapping.NoWrap,
+            TextWrapping = TextWrapping.Wrap,
             VerticalAlignment = VerticalAlignment.Center
         };
 
@@ -219,6 +227,7 @@ public sealed class QuickInputWindow : Window
             HorizontalAlignment = HorizontalAlignment.Stretch,
             VerticalAlignment = VerticalAlignment.Stretch
         };
+        _body = body;
         body.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         body.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         body.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
@@ -285,11 +294,9 @@ public sealed class QuickInputWindow : Window
             FontFamily = new FontFamily(UiFontFamily),
             FontWeight = bold ? Microsoft.UI.Text.FontWeights.SemiBold : Microsoft.UI.Text.FontWeights.Normal,
             Foreground = Brush("#FFFFFF"),
-            // 结果区高度固定：主行只占一行，超长译文用省略号收起，完整文本仍在
-            // 下面的 OSC 实发行和真正发出去的聊天框文本里。
-            TextTrimming = TextTrimming.CharacterEllipsis,
-            TextWrapping = TextWrapping.NoWrap,
-            MaxLines = 1,
+            // 译文行与下面的 OSC 实发行都可以换行：结果一出来，EnsureResultAreaVisible
+            // 会在内容装不下时把窗口补高，所以这里不需要再用省略号把文字藏起来。
+            TextWrapping = TextWrapping.Wrap,
             VerticalAlignment = VerticalAlignment.Center
         };
     }
@@ -552,6 +559,48 @@ public sealed class QuickInputWindow : Window
             : Visibility.Visible;
         // 译文出现时状态文案让位：结果区一次只有一条内容。
         HideStatus();
+        // 文本换行以后需要的行数只有在布局完一轮之后才知道，所以放到下一帧再量。
+        QueueResultAreaFit();
+    }
+
+    /// <summary>
+    /// 内容（长译文 + 144 单位的 OSC 实发行）换行后可能比当前窗口高；这里只做
+    /// 「加高」：装得下就什么都不做，装不下就把窗口补到刚好容纳，最多
+    /// <see cref="MaximumHeightDips"/>。不缩回、不改位置、不动宽度，所以用户自己
+    /// 拖过的高度只会被加高，不会被软件擅自压扁。
+    /// </summary>
+    private void QueueResultAreaFit()
+    {
+        // 文本换行后行数要等这一帧布局走完才知道：现在量到的 ActualHeight 还是旧的。
+        // 借一次 LayoutUpdated 在布局之后量，量完就退订，避免每帧都跑。
+        _body.LayoutUpdated += OnBodyLayoutUpdatedForFit;
+    }
+
+    private void OnBodyLayoutUpdatedForFit(object? sender, object e)
+    {
+        _body.LayoutUpdated -= OnBodyLayoutUpdatedForFit;
+        _dispatcherQueue?.TryEnqueue(FitResultArea);
+    }
+
+    private void FitResultArea()
+    {
+        if (_windowController is not { } controller) return;
+        if (_sending || _statusRow.Visibility == Visibility.Visible) return;
+
+        var scale = OverlayDisplayScale.Resolve(_surface);
+        if (scale <= 0d) scale = 1d;
+
+        // 需要的高度 = 输入区(46) + 分隔线 + 结果区 + 上下 16px 内边距。
+        var wanted = 46d + _previewDivider.ActualHeight + _resultArea.ActualHeight + 32d;
+        var bodyHeight = _body.ActualHeight;
+        if (bodyHeight <= 0d || wanted <= bodyHeight + 0.5d) return;
+
+        // 窗口矩形含标题栏，客户区高度由控制器给出：两者之差就是非客户区高度，
+        // 直接加回去，避免把标题栏算进内容里。
+        var nonClient = Math.Max(0, controller.WindowHeightPixels - controller.ClientAreaHeightPixels);
+        var target = OverlayDisplayScale.ToPhysicalPixels(wanted, scale) + nonClient + 2;
+        var limit = OverlayDisplayScale.ToPhysicalPixels(MaximumHeightDips, scale);
+        controller.ResizeKeepingTop((int)Math.Ceiling((double)Math.Min(target, limit)));
     }
 
     private void ShowStatus(string message, string color)

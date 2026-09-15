@@ -74,6 +74,35 @@ internal sealed class OverlayWindowController : IDisposable
 
     public bool IsVisible => !_disposed && IsWindowVisible(_hwnd);
 
+    /// <summary>
+    /// 窗口矩形高度（物理像素，含标题栏）。输入条用它换算「内容需要多高」：
+    /// 内容高度是客户区 DIP，窗口矩形还多一圈非客户区，两者不能直接比。
+    /// </summary>
+    public int WindowHeightPixels => ReadSize().Height;
+
+    /// <summary>客户区高度（物理像素），标题栏与边框不计入。</summary>
+    public int ClientAreaHeightPixels
+    {
+        get
+        {
+            var client = _appWindow.ClientSize;
+            return client.Height > 0 ? client.Height : ReadSize().Height;
+        }
+    }
+
+    private Windows.Graphics.SizeInt32 ReadSize()
+    {
+        if (_disposed) return default;
+        try
+        {
+            return _appWindow.Size;
+        }
+        catch
+        {
+            return default;
+        }
+    }
+
 
     public bool IsMinimized => !_disposed && IsIconic(_hwnd);
 

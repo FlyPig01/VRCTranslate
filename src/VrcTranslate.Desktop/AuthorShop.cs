@@ -13,10 +13,14 @@ internal static class AuthorShop
     /// <summary>属性名，位于 <c>v2-user-settings.json</c>。</summary>
     public const string UrlPropertyName = "ShopUrl";
 
-    /// <summary>链接下面那句说明，写死在这里以免界面文案散落。</summary>
+    /// <summary>
+    /// 链接下面那段说明，写死在这里以免界面文案散落。两句都是刻意写的：
+    /// 「不买也能用全部功能」正面回答社区最敏感的「开源外壳 + 功能收费」，
+    /// 「与这个翻译工具无关」把店铺纠纷挡在软件仓库之外。
+    /// </summary>
     public const string Description =
-        "软件本身免费开源、功能不收费。作者在闲鱼出售 VRChat 模型、工程文件与素材，" +
-        "感兴趣可以看看；不看也不影响使用。";
+        "软件本身免费开源，功能不收费。小店里卖的是作者自己的 VRChat 模型、工程文件与素材，" +
+        "与这个翻译工具无关；不买也能用全部功能，没有隐藏付费项，交易与售后由作者在小店内处理。";
 
     /// <summary>
     /// 读到的链接；没有配置、字段为空、文件损坏或不是 http(s) 一律返回空字符串，

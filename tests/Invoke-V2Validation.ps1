@@ -781,6 +781,17 @@ if ($guideMarkup -notmatch 'guide-shop' -or
     $shopSource -notmatch '软件本身免费开源') {
     throw 'Guide page must carry the optional author-shop card: the link comes from the user settings ShopUrl field (never hard-coded in XAML) and the card must say the software itself stays free.'
 }
+# 使用声明卡片（与仓库 DISCLAIMER.md 同义）：免责要点必须出现在指南页。
+if ($guideMarkup -notmatch 'guide-disclaimer' -or
+    $guideMarkup -notmatch '使用声明' -or
+    $guideMarkup -notmatch '非官方' -or
+    $guideMarkup -notmatch '不修改游戏' -or
+    $guideMarkup -notmatch '可能出错' -or
+    $guideMarkup -notmatch '费用自理' -or
+    $guideMarkup -notmatch '不外发数据' -or
+    $shopSource -notmatch '不买也能用全部功能') {
+    throw 'Guide page must carry the usage disclaimer (非官方 / 不修改游戏 / 可能出错 / 费用自理 / 不外发数据) and the shop card must state that everything works without buying.'
+}
 if ($guideMarkup -notmatch '翻译服务配置' -or
     $guideMarkup -notmatch 'guide-tencent-console' -or
     $guideMarkup -notmatch 'guide-tencent-keys' -or

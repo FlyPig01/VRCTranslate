@@ -761,6 +761,17 @@ if ($guideMarkup -notmatch '翻译服务配置' -or
     $guideMarkup -match 'AKID|LTAI|sk-[A-Za-z0-9]{10,}') {
     throw 'Guide page must carry the translation-service card: four console links with AutomationIds, quota hints marked 以官网为准, and no key or example key material.'
 }
+# 配置简化 A：档案对话框提供自愿的「测试连接」（含错误码中文映射），
+# 保存永远不被测试结果门禁（对话框不得出现“测试通过才能保存”类逻辑）。
+$connectionTesterCode = Get-Content -Raw (Join-Path $v2Root 'src\VrcTranslate.Infrastructure\Translation\TranslationConnectionTester.cs')
+if ($translationCode -notmatch '测试连接' -or
+    $translationCode -notmatch '指南 → 翻译服务配置' -or
+    $translationCode -match '测试[^。]*才能保存' -or
+    $connectionTesterCode -notmatch 'AuthFailure\.SecretIdNotFound' -or
+    $connectionTesterCode -notmatch 'InvalidAccessKeyId\.NotFound' -or
+    $connectionTesterCode -notmatch '网络不通') {
+    throw 'Profile dialog must offer an opt-in 测试连接 with provider error hints; saving must never depend on the test outcome.'
+}
 $previewHandlerMatch = [regex]::Match(
     $mainWindowSource,
     '(?s)private\s+void\s+OnTranslationPreviewChanged\s*\([^)]*\)\s*\{(?<body>.*?)(?=\r?\n\s*private\s+)')

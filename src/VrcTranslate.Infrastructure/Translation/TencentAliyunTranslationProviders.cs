@@ -149,7 +149,12 @@ public sealed class AliyunTranslationProvider : ITranslationProvider
         if (!response.IsSuccessStatusCode) throw new HttpRequestException($"阿里云翻译返回 {(int)response.StatusCode}：{responsePayload}");
         using var json = JsonDocument.Parse(responsePayload);
         if (json.RootElement.TryGetProperty("Code", out var code) && !string.Equals(code.GetString(), "200", StringComparison.OrdinalIgnoreCase) && !string.Equals(code.GetString(), "OK", StringComparison.OrdinalIgnoreCase))
-            throw new InvalidOperationException($"阿里云翻译失败：{(json.RootElement.TryGetProperty("Message", out var msg) ? msg.GetString() : code.GetString())}");
+        {
+            // The machine-readable code must ride along: the connection-test
+            // hints match on it, and the raw message alone is often too vague.
+            var errorMessage = json.RootElement.TryGetProperty("Message", out var msg) ? msg.GetString() : null;
+            throw new InvalidOperationException($"阿里云翻译失败：[{code.GetString()}] {errorMessage}".Trim());
+        }
         var translated = json.RootElement.TryGetProperty("Data", out var data) && data.TryGetProperty("Translated", out var translatedElement)
             ? translatedElement.GetString() : null;
         if (string.IsNullOrWhiteSpace(translated)) throw new InvalidOperationException("阿里云翻译返回了空结果。");

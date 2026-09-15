@@ -8,6 +8,7 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using VrcTranslate.Infrastructure.Storage;
 using Microsoft.UI.Text;
+using VrcTranslate.Application.Abstractions;
 using VrcTranslate.Infrastructure.Configuration;
 using VrcTranslate.Infrastructure.Translation;
 
@@ -297,7 +298,137 @@ public sealed partial class TranslationPage : Page
             RefreshProviderFields();
         };
         RefreshProviderFields();
-        var stack = new StackPanel { Spacing = 12, HorizontalAlignment = HorizontalAlignment.Stretch, Children = { nameBox, providerBox, modelBox, endpointBox, credentialBox, secretBox, regionBox } };
+        // 密钥获取引导只留一句指向指南页：控制台直达与额度要点都在那里。
+        var guideHint = new TextBlock
+        {
+            Text = "需要密钥？见「指南 → 翻译服务配置」。",
+            FontSize = 12,
+            Foreground = new SolidColorBrush(Microsoft.UI.ColorHelper.FromArgb(255, 96, 112, 131)),
+            TextWrapping = TextWrapping.Wrap
+        };
+        var testButton = new Button { Content = "测试连接", MinWidth = 104 };
+        AutomationProperties.SetName(testButton, "测试连接");
+        var testNote = new TextBlock
+        {
+            Text = "测试会向该服务发一句测试文本（会计入你的用量）；不测试也能保存。",
+            Style = (Style)global::Microsoft.UI.Xaml.Application.Current.Resources["SecondaryTextStyle"],
+            TextWrapping = TextWrapping.Wrap
+        };
+        var testStatus = new TextBlock
+        {
+            TextWrapping = TextWrapping.Wrap,
+            FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
+            Visibility = Visibility.Collapsed
+        };
+        void ShowTestResult(string text, bool? outcome = null)
+        {
+            testStatus.Text = text;
+            testStatus.Foreground = new SolidColorBrush(outcome switch
+            {
+                true => Microsoft.UI.ColorHelper.FromArgb(255, 33, 134, 96),
+                false => Microsoft.UI.ColorHelper.FromArgb(255, 197, 84, 48),
+                _ => Microsoft.UI.ColorHelper.FromArgb(255, 96, 112, 131)
+            });
+            testStatus.Visibility = Visibility.Visible;
+        }
+        testButton.Click += async (_, _) =>
+        {
+            var id = (providerBox.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                ShowTestResult("请先选择服务类型。");
+                return;
+            }
+
+            // 留空的密钥框表示沿用已保存凭据，与保存路径同义。
+            var credential = !string.IsNullOrWhiteSpace(credentialBox.Password)
+                ? credentialBox.Password.Trim()
+                : existing?.CredentialReference is { Length: > 0 } saved &&
+                  saved != "本地配置" &&
+                  !saved.StartsWith("vault:", StringComparison.OrdinalIgnoreCase) &&
+                  !saved.StartsWith("legacy:", StringComparison.OrdinalIgnoreCase)
+                    ? saved
+                    : null;
+            var secret = !string.IsNullOrWhiteSpace(secretBox.Password)
+                ? secretBox.Password.Trim()
+                : existing?.Options?.GetValueOrDefault("secret");
+            if (id != "echo" && credential is null)
+            {
+                ShowTestResult("请先填写密钥再测试。");
+                return;
+            }
+            if (id is "tencent" or "aliyun" && string.IsNullOrWhiteSpace(secret))
+            {
+                ShowTestResult("请先填写 SecretKey / AccessKey Secret 再测试。");
+                return;
+            }
+
+            var endpointText = string.IsNullOrWhiteSpace(endpointBox.Text)
+                ? PresetEndpoints.GetValueOrDefault(id) ?? endpointBox.Text.Trim()
+                : endpointBox.Text.Trim();
+            if (!Uri.TryCreate(endpointText, UriKind.Absolute, out var endpoint))
+            {
+                ShowTestResult("接口地址无效，请检查后重试。");
+                return;
+            }
+
+            testButton.IsEnabled = false;
+            testStatus.Foreground = new SolidColorBrush(Microsoft.UI.ColorHelper.FromArgb(255, 96, 112, 131));
+            testStatus.Text = "正在测试…";
+            testStatus.Visibility = Visibility.Visible;
+            try
+            {
+                var model = string.IsNullOrWhiteSpace(modelBox.Text)
+                    ? id switch
+                    {
+                        "deepseek" => "deepseek-flash",
+                        "xiaomi" => "mimo-v2.5",
+                        "tencent" => "TextTranslate",
+                        "aliyun" => "general",
+                        _ => "本地回显"
+                    }
+                    : modelBox.Text.Trim();
+                var options = new Dictionary<string, string>();
+                if (!string.IsNullOrWhiteSpace(secret)) options["secret"] = secret;
+                var request = new TranslationProviderRequest(
+                    "你好", "en", "zh-CN", model, endpoint, credential ?? "本地配置",
+                    Guid.NewGuid().ToString("N"), id, regionBox.Text.Trim(), options);
+                var resolved = TranslationProviderRegistry.TryResolveId(id) ?? id;
+                var provider = TranslationProviderRegistry
+                    .CreateShippedProviders()
+                    .FirstOrDefault(candidate => string.Equals(candidate.Id, resolved, StringComparison.Ordinal));
+                if (provider is null)
+                {
+                    ShowTestResult("找不到该服务的适配器。");
+                    return;
+                }
+
+                var result = await TranslationConnectionTester.TestAsync(provider, request);
+                if (result.Succeeded)
+                {
+                    ShowTestResult($"✓ 连接正常，翻译服务可用（返回：{result.Translation}）。", true);
+                }
+                else
+                {
+                    ShowTestResult($"{result.Hint ?? "测试失败。"}\n{result.Detail}", false);
+                }
+            }
+            finally
+            {
+                testButton.IsEnabled = true;
+            }
+        };
+        var stack = new StackPanel
+        {
+            Spacing = 12,
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            Children =
+            {
+                nameBox, providerBox, modelBox, endpointBox, credentialBox, secretBox, regionBox,
+                guideHint,
+                new StackPanel { Spacing = 6, Children = { testButton, testNote, testStatus } }
+            }
+        };
         var dialog = new ContentDialog
         {
             Title = isNew ? "新增翻译服务档案" : "编辑翻译服务档案",

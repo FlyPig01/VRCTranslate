@@ -9,6 +9,7 @@ using Microsoft.UI.Xaml.Media;
 using VrcTranslate.Infrastructure.Storage;
 using Microsoft.UI.Text;
 using VrcTranslate.Infrastructure.Configuration;
+using VrcTranslate.Infrastructure.Translation;
 
 namespace VrcTranslate.Desktop.Pages;
 
@@ -24,9 +25,6 @@ public sealed partial class TranslationPage : Page
     {
         ["echo"] = "本地测试",
         ["deepseek"] = "DeepSeek",
-        ["deepl"] = "DeepL",
-        ["google-free"] = "Google 翻译（免费）",
-        ["google-cloud"] = "Google Cloud Translation",
         ["tencent"] = "腾讯云翻译",
         ["aliyun"] = "阿里云机器翻译"
     };
@@ -100,7 +98,7 @@ public sealed partial class TranslationPage : Page
             ProfilesPanel.Children.Add(new TextBlock { Text = "暂无服务", Style = (Style)Microsoft.UI.Xaml.Application.Current.Resources["SecondaryTextStyle"] });
     }
 
-    private Border CreateProfileCard(VrcTranslate.Desktop.TranslationProfileRecord profile)
+    private Border CreateProfileCard(TranslationProfileRecord profile)
     {
         var current = IsCurrentProfile(profile);
         var title = ProviderNames.TryGetValue(profile.Provider, out var providerName) ? providerName : profile.Provider;
@@ -169,7 +167,7 @@ public sealed partial class TranslationPage : Page
         return card;
     }
 
-    private bool IsCurrentProfile(VrcTranslate.Desktop.TranslationProfileRecord profile)
+    private bool IsCurrentProfile(TranslationProfileRecord profile)
     {
         var routeProfile = State.CurrentRoute.Profile;
         if (string.Equals(routeProfile.ProfileId, profile.Id, StringComparison.OrdinalIgnoreCase)) return true;
@@ -218,7 +216,7 @@ public sealed partial class TranslationPage : Page
         await Task.CompletedTask;
     }
 
-    private async Task ShowProfileDialogAsync(VrcTranslate.Desktop.TranslationProfileRecord? existing)
+    private async Task ShowProfileDialogAsync(TranslationProfileRecord? existing)
     {
         var isNew = existing is null;
         var nameBox = new TextBox { Header = "档案名称", Text = existing?.DisplayName ?? "新的翻译服务", PlaceholderText = "例如：日常中文翻译" };
@@ -238,14 +236,11 @@ public sealed partial class TranslationPage : Page
             {
                 "echo" => ("本地回显", "https://localhost/echo", "无需密钥"),
                 "deepseek" => ("deepseek-flash", "https://api.deepseek.com", "DeepSeek API Key"),
-                "deepl" => ("v2", "https://api-free.deepl.com/v2/translate", "DeepL Auth Key"),
-                "google-free" => ("translate", "https://translate.googleapis.com", "无需密钥"),
-                "google-cloud" => ("v3", "https://translation.googleapis.com", "Google Cloud API Key"),
                 "tencent" => ("TextTranslate", "https://tmt.tencentcloudapi.com", "腾讯云 SecretId"),
                 "aliyun" => ("general", "https://mt.cn-hangzhou.aliyuncs.com", "阿里云 AccessKey ID"),
                 _ => ("deepseek-flash", "https://api.deepseek.com", "DeepSeek API Key")
             };
-            modelBox.Header = id is "echo" or "deepl" or "google-free" or "google-cloud" or "tencent" or "aliyun" ? "接口版本" : "模型名称";
+            modelBox.Header = id is "echo" or "tencent" or "aliyun" ? "接口版本" : "模型名称";
             modelBox.PlaceholderText = defaults.Item1;
             endpointBox.PlaceholderText = defaults.Item2;
             credentialBox.Header = defaults.Item3;
@@ -253,7 +248,7 @@ public sealed partial class TranslationPage : Page
             if (string.IsNullOrWhiteSpace(modelBox.Text)) modelBox.Text = defaults.Item1;
             if (string.IsNullOrWhiteSpace(endpointBox.Text)) endpointBox.Text = defaults.Item2;
             secretBox.Visibility = id is "tencent" or "aliyun" ? Visibility.Visible : Visibility.Collapsed;
-            regionBox.Visibility = id is "tencent" or "aliyun" or "google-cloud" ? Visibility.Visible : Visibility.Collapsed;
+            regionBox.Visibility = id is "tencent" or "aliyun" ? Visibility.Visible : Visibility.Collapsed;
             secretBox.Header = id switch
             {
                 "tencent" => "腾讯云 SecretKey",
@@ -266,8 +261,8 @@ public sealed partial class TranslationPage : Page
             var selectedProvider = (providerBox.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? string.Empty;
             if (!string.Equals(selectedProvider, lastProvider, StringComparison.OrdinalIgnoreCase))
             {
-                if (string.IsNullOrWhiteSpace(modelBox.Text) || modelBox.Text is "gpt-4.1-mini" or "deepseek-chat" or "deepseek-flash" or "本地回显" or "v2" or "translate" or "v3" or "TextTranslate" or "general") modelBox.Text = string.Empty;
-                if (endpointBox.Text is "https://api.deepseek.com" or "https://api.openai.com/v1" or "https://localhost/echo" or "https://api-free.deepl.com/v2/translate" or "https://translate.googleapis.com" or "https://translation.googleapis.com" or "https://tmt.tencentcloudapi.com" or "https://mt.cn-hangzhou.aliyuncs.com") endpointBox.Text = string.Empty;
+                if (string.IsNullOrWhiteSpace(modelBox.Text) || modelBox.Text is "gpt-4.1-mini" or "deepseek-chat" or "deepseek-flash" or "本地回显" or "TextTranslate" or "general") modelBox.Text = string.Empty;
+                if (endpointBox.Text is "https://api.deepseek.com" or "https://api.openai.com/v1" or "https://localhost/echo" or "https://tmt.tencentcloudapi.com" or "https://mt.cn-hangzhou.aliyuncs.com") endpointBox.Text = string.Empty;
                 lastProvider = selectedProvider;
             }
             RefreshProviderFields();

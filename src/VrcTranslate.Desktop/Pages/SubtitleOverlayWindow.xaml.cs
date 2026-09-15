@@ -465,10 +465,11 @@ public sealed partial class SubtitleOverlayWindow : Window
 
     /// <summary>
     /// Keeps the native window as tall as the messages need and no taller, so a
-    /// single caption never sits under a large empty surface. The bottom edge
-    /// stays where the reader put it - the newest message must not drift across
-    /// the screen while the strip grows - and the reader's own height stays the
-    /// ceiling, which is also the height that is persisted.
+    /// single caption never sits under a large empty surface. The top edge stays
+    /// where the reader put it and the strip grows downwards - the same direction
+    /// the top-aligned messages grow - so the captions already on screen keep
+    /// their place while a new one arrives below them. The reader's own height
+    /// stays the ceiling, which is also the height that is persisted.
     /// </summary>
     private void FitSurfaceHeight()
     {
@@ -495,7 +496,7 @@ public sealed partial class SubtitleOverlayWindow : Window
             // raises has to recognize this height as the surface's own instead of
             // mistaking it for a resize by the reader.
             _appliedHeight = target;
-            if (!controller.ResizeKeepingBottom(target)) _appliedHeight = previous;
+            if (!controller.ResizeKeepingTop(target)) _appliedHeight = previous;
         }
         catch
         {
@@ -529,20 +530,17 @@ public sealed partial class SubtitleOverlayWindow : Window
     /// <summary>
     /// The content-following height is a runtime presentation detail: persisting
     /// it would cap every later run at whatever the messages happened to measure
-    /// when the window closed. The reader's own height is stored instead, with the
-    /// bottom edge where the surface currently is.
+    /// when the window closed. The reader's own height is stored instead, anchored
+    /// at the top edge where the surface currently is.
     /// </summary>
     private OverlayWindowLayout ToStoredLayout(OverlayWindowLayout live)
     {
         if (_appliedHeight > 0 && Math.Abs(live.Height - _appliedHeight) <= LayoutTolerance)
         {
             // The content-following height is a runtime detail: persist the height
-            // the reader chose, with the bottom edge where the surface is now.
-            return live with
-            {
-                Y = live.Y - (_preferredHeight - live.Height),
-                Height = _preferredHeight
-            };
+            // the reader chose. Following the content keeps the top edge, so the
+            // current position is already the reader's own anchor.
+            return live with { Height = _preferredHeight };
         }
 
         // Any other height is the reader's. It becomes the ceiling, and it is final

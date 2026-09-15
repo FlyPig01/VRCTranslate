@@ -44,15 +44,11 @@ public sealed class AppState
         OtherPlayerCaption = new OtherPlayerCaptionToggle(new OtherPlayerCaptionEndpoint(this));
         RouteStore = new InMemoryTranslationRouteStore();
         RouteStore.SetCurrent(CreateDefaultRoute());
-        var catalog = new TranslationProviderCatalog([
-            new EchoTranslationProvider(),
-            new DeepSeekTranslationProvider(),
-            new DeepLTranslationProvider(),
-            new GoogleFreeTranslationProvider(),
-            new GoogleCloudTranslationProvider(),
-            new TencentTranslationProvider(),
-            new AliyunTranslationProvider()
-        ]);
+        // The shipped adapters come from the shared registry, so "which services
+        // this build offers" cannot drift between the shell and its tests. DeepL
+        // and Google are no longer part of it; a profile or route that still
+        // names them is handled by the fallbacks below.
+        var catalog = new TranslationProviderCatalog(TranslationProviderRegistry.CreateShippedProviders());
         TranslationProviderIds = catalog.Ids;
         _profiles = CreateDefaultProfiles();
         Translator = new ApplicationTranslationService(new RoutedTranslationProvider(catalog), new PassThroughInvariantGuard());
@@ -281,18 +277,41 @@ public sealed class AppState
     public bool SetDefaultProfile(string profileId)
     {
         var profile = _profiles.FirstOrDefault(item => string.Equals(item.Id, profileId, StringComparison.OrdinalIgnoreCase));
-        if (profile is null || !Uri.TryCreate(profile.Endpoint, UriKind.Absolute, out var endpoint)) return false;
-        var sourceMode = string.IsNullOrWhiteSpace(profile.SourceLanguage) || profile.SourceLanguage.Equals("auto", StringComparison.OrdinalIgnoreCase)
-            ? SourceLanguageMode.AutoDetect : SourceLanguageMode.Fixed;
+        if (profile is null || !TryCreateRouteFromProfile(profile, out var route) || route is null) return false;
         try
         {
-            SetRoute(new TranslationRoute("default", profile.DisplayName,
-                new TranslationProfile(profile.Id, profile.DisplayName, profile.Provider, profile.Model, endpoint,
-                    profile.CredentialReference, options: profile.Options, region: profile.Region),
-                new LanguagePolicy(sourceMode, profile.TargetLanguage, sourceMode == SourceLanguageMode.Fixed ? profile.SourceLanguage : null)));
+            SetRoute(route);
             return true;
         }
         catch (ArgumentException) { return false; }
+    }
+
+    /// <summary>
+    /// Route used when the saved one names a provider this build no longer ships
+    /// - or was never configured: the first profile that can still be served, so
+    /// an old DeepL / Google selection degrades to whatever service the user has
+    /// left instead of leaving the shell without a working route. A build whose
+    /// only profile is the offline test service uses that one.
+    /// </summary>
+    private TranslationRoute CreateFallbackRoute() =>
+        TranslationProfileResolver.SelectFallback(_profiles, TranslationProviderIds) is { } profile &&
+        TryCreateRouteFromProfile(profile, out var route) &&
+        route is not null
+            ? route
+            : CreateDefaultRoute();
+
+    private static bool TryCreateRouteFromProfile(TranslationProfileRecord profile, out TranslationRoute? route)
+    {
+        route = null;
+        if (!Uri.TryCreate(profile.Endpoint, UriKind.Absolute, out var endpoint)) return false;
+        var provider = NormalizeProvider(profile.Provider) ?? profile.Provider.Trim();
+        var sourceMode = string.IsNullOrWhiteSpace(profile.SourceLanguage) || profile.SourceLanguage.Equals("auto", StringComparison.OrdinalIgnoreCase)
+            ? SourceLanguageMode.AutoDetect : SourceLanguageMode.Fixed;
+        route = new TranslationRoute("default", profile.DisplayName,
+            new TranslationProfile(profile.Id, profile.DisplayName, provider, profile.Model, endpoint,
+                profile.CredentialReference, options: profile.Options, region: profile.Region),
+            new LanguagePolicy(sourceMode, profile.TargetLanguage, sourceMode == SourceLanguageMode.Fixed ? profile.SourceLanguage : null));
+        return true;
     }
 
     private async Task RestoreAsync()
@@ -306,7 +325,7 @@ public sealed class AppState
             // snapshot and must remain the active route.
             if (!TryBuildRoute(settings, out var route) || route is null || !IsConfiguredRoute(route))
             {
-                var fallback = CreateDefaultRoute();
+                var fallback = CreateFallbackRoute();
                 lock (_routeSync)
                 {
                     if (_routeRevision != 0) return;
@@ -396,11 +415,11 @@ public sealed class AppState
     private void RestoreProfiles(ProfileDocument document)
     {
         if (document?.Profiles is null || document.Profiles.Count == 0) return;
-        var restored = document.Profiles.Where(profile =>
-            !string.IsNullOrWhiteSpace(profile.Id) &&
-            !string.IsNullOrWhiteSpace(profile.Provider) &&
-            TranslationProviderIds.Contains(profile.Provider, StringComparer.OrdinalIgnoreCase) &&
-            Uri.TryCreate(profile.Endpoint, UriKind.Absolute, out var endpoint) && IsHttpEndpoint(endpoint))
+        // A profile saved while DeepL or Google were still shipped cannot be
+        // served any more, so it is dropped here instead of appearing as a
+        // broken card; every other saved profile is kept exactly as it was.
+        var restored = TranslationProfileResolver
+            .RetainServable(document.Profiles, TranslationProviderIds)
             .Select(profile => profile with
             {
                 Model = string.IsNullOrWhiteSpace(profile.Model) ? DefaultModelForProvider(profile.Provider) : profile.Model.Trim(),
@@ -442,9 +461,6 @@ public sealed class AppState
     private static List<TranslationProfileRecord> CreateProviderPlaceholders() =>
     [
         new("deepseek", "DeepSeek", "deepseek", "deepseek-flash", "https://api.deepseek.com", "本地配置", "auto", "zh-CN", "", new Dictionary<string, string>()),
-        new("deepl", "DeepL", "deepl", "deepl", "https://api-free.deepl.com/v2/translate", "本地配置", "auto", "zh-CN", "", new Dictionary<string, string>()),
-        new("google-free", "Google 翻译（免费接口）", "google-free", "default", "https://translate.googleapis.com", "本地配置", "auto", "zh-CN", "", new Dictionary<string, string>()),
-        new("google-cloud", "Google Cloud 翻译", "google-cloud", "v3", "https://translation.googleapis.com", "本地配置", "auto", "zh-CN", "", new Dictionary<string, string>()),
         new("tencent", "腾讯云翻译", "tencent", "TextTranslate", "https://tmt.tencentcloudapi.com", "本地配置", "auto", "zh-CN", "ap-beijing", new Dictionary<string, string>()),
         new("aliyun", "阿里云机器翻译", "aliyun", "general", "https://mt.cn-hangzhou.aliyuncs.com", "本地配置", "auto", "zh-CN", "cn-hangzhou", new Dictionary<string, string>())
     ];
@@ -532,28 +548,18 @@ public sealed class AppState
         route.InvariantPolicy,
         route.RetryPolicy);
 
-    private static string? NormalizeProvider(string? provider) => provider?.Trim().ToLowerInvariant() switch
-    {
-        "echo" => "echo",
-        // Profiles saved by earlier builds talked to DeepSeek through the
-        // generic OpenAI-compatible mode; migrate them to the dedicated
-        // provider so existing keys and endpoints keep working.
-        "deepseek" or "openai_compatible" or "openai-compatible" or "multimodal_openai" or "multimodal-openai" => "deepseek",
-        "deepl" or "deep-l" => "deepl",
-        "google_free" or "google-free" => "google-free",
-        "google_cloud" or "google-cloud" => "google-cloud",
-        "tencent" => "tencent",
-        "aliyun" or "aliyun_nls" => "aliyun",
-        _ => null
-    };
+    /// <summary>
+    /// Stable id for a saved provider spelling. The registry owns the aliases of
+    /// earlier builds; the ids of the removed DeepL / Google providers resolve to
+    /// nothing here, which is what sends a route down the fallback path instead
+    /// of dispatching it to a service this build no longer has.
+    /// </summary>
+    private static string? NormalizeProvider(string? provider) => TranslationProviderRegistry.TryResolveId(provider);
 
     private static string DefaultModelForProvider(string? provider) => provider?.Trim().ToLowerInvariant() switch
     {
         "echo" => "本地回显",
         "deepseek" => "deepseek-flash",
-        "deepl" => "v2",
-        "google-free" => "translate",
-        "google-cloud" => "v3",
         "tencent" => "TextTranslate",
         "aliyun" => "general",
         _ => "deepseek-flash"
@@ -650,15 +656,3 @@ public sealed class AppState
         public string? SecondaryLanguage { get; set; } = "ja-JP";
     }
 }
-
-public sealed record TranslationProfileRecord(
-    string Id,
-    string DisplayName,
-    string Provider,
-    string Model,
-    string Endpoint,
-    string CredentialReference,
-    string SourceLanguage,
-    string TargetLanguage,
-    string Region,
-    IReadOnlyDictionary<string, string> Options);

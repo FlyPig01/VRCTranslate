@@ -103,19 +103,21 @@ public sealed class TranslationProviderCatalogTests
     [Fact]
     public void Reports_only_registered_provider_adapters()
     {
-        var catalog = new TranslationProviderCatalog([
-            new EchoTranslationProvider(),
-            new DeepSeekTranslationProvider(),
-            new DeepLTranslationProvider()
-        ]);
+        var catalog = new TranslationProviderCatalog(TranslationProviderRegistry.CreateShippedProviders());
 
+        // The shipped set is the whole catalog: the removal of DeepL and Google
+        // is asserted here, from the same factory the desktop shell composes.
+        Assert.Equal(
+            TranslationProviderRegistry.ShippedProviderIds.OrderBy(id => id, StringComparer.Ordinal),
+            catalog.Ids.OrderBy(id => id, StringComparer.Ordinal));
         Assert.True(catalog.IsRegistered("echo"));
         Assert.True(catalog.IsRegistered("deepseek"));
-        Assert.True(catalog.IsRegistered("deepl"));
+        Assert.True(catalog.IsRegistered("tencent"));
+        Assert.True(catalog.IsRegistered("aliyun"));
         Assert.False(catalog.IsRegistered("openai-compatible"));
+        Assert.False(catalog.IsRegistered("deepl"));
+        Assert.False(catalog.IsRegistered("google-free"));
         Assert.False(catalog.IsRegistered("google-cloud"));
-        Assert.False(catalog.IsRegistered("tencent"));
-        Assert.False(catalog.IsRegistered("aliyun"));
     }
 
     [Fact]
@@ -137,6 +139,101 @@ public sealed class TranslationProviderCatalogTests
 
         Assert.Throws<KeyNotFoundException>(() => catalog.Get("missing"));
         Assert.False(catalog.TryGet("missing", out _));
+    }
+}
+
+/// <summary>
+/// D8: DeepL, the free Google endpoint and Google Cloud were removed. A profile
+/// or route saved while they were still shipped has to degrade to a provider this
+/// build can serve - it must never throw and never leave the translation page
+/// without a usable service.
+/// </summary>
+public sealed class RemovedTranslationProviderTests
+{
+    private static IReadOnlyCollection<string> ShippedIds =>
+        new TranslationProviderCatalog(TranslationProviderRegistry.CreateShippedProviders()).Ids;
+
+    private static TranslationProfileRecord SavedProfile(
+        string id,
+        string provider,
+        string endpoint = "https://saved.example.test/translate") =>
+        new(id, id, provider, "saved-model", endpoint, "本地配置", "auto", "zh-CN", "", new Dictionary<string, string>());
+
+    private static TranslationProfileRecord LocalTestProfile() =>
+        new("local-test", "本地测试", "echo", "echo", "https://localhost/echo", "本地配置", "auto", "zh-CN", "", new Dictionary<string, string>());
+
+    [Fact]
+    public void Removed_providers_are_not_registered_and_every_spelling_is_retired()
+    {
+        var catalog = new TranslationProviderCatalog(TranslationProviderRegistry.CreateShippedProviders());
+
+        foreach (var retired in TranslationProviderRegistry.RetiredProviderIds)
+        {
+            Assert.False(catalog.IsRegistered(retired), $"'{retired}' must not be registered any more.");
+        }
+
+        Assert.Equal(["deepl", "google-free", "google-cloud"], TranslationProviderRegistry.RetiredProviderIds);
+        Assert.True(TranslationProviderRegistry.IsRetired("DeepL"));
+        Assert.True(TranslationProviderRegistry.IsRetired("deep-l"));
+        Assert.True(TranslationProviderRegistry.IsRetired("google_free"));
+        Assert.True(TranslationProviderRegistry.IsRetired("google_cloud"));
+        Assert.Null(TranslationProviderRegistry.TryResolveId("deepl"));
+        Assert.Null(TranslationProviderRegistry.TryResolveId("google-free"));
+        Assert.Null(TranslationProviderRegistry.TryResolveId("google-cloud"));
+        Assert.Equal(TranslationProviderRegistry.DefaultProviderId, TranslationProviderRegistry.ResolveForRouting("deepl"));
+    }
+
+    [Fact]
+    public void Profiles_of_removed_providers_are_dropped_and_the_rest_stay_intact()
+    {
+        var saved = new[]
+        {
+            SavedProfile("deepseek-1", "deepseek"),
+            SavedProfile("deepl-1", "deepl"),
+            SavedProfile("deepl-legacy-1", "deep-l"),
+            SavedProfile("google-free-1", "google-free"),
+            SavedProfile("google-cloud-1", "google-cloud"),
+            SavedProfile("broken-1", "deepseek", endpoint: "not-a-url")
+        };
+
+        // Loading must not throw, and a profile of a removed provider must not be
+        // offered as a service that cannot translate anything.
+        var retained = TranslationProfileResolver.RetainServable(saved, ShippedIds);
+
+        Assert.Equal(new[] { "deepseek-1" }, retained.Select(profile => profile.Id));
+        Assert.Equal("https://saved.example.test/translate", retained[0].Endpoint);
+    }
+
+    [Fact]
+    public void Route_falls_back_to_a_servable_profile_when_the_saved_one_was_removed()
+    {
+        var saved = new[]
+        {
+            LocalTestProfile(),
+            SavedProfile("deepl-1", "deepl"),
+            SavedProfile("deepseek-1", "deepseek")
+        };
+
+        var fallback = TranslationProfileResolver.SelectFallback(saved, ShippedIds);
+
+        // The offline echo profile is a diagnostic; a configured service wins.
+        Assert.NotNull(fallback);
+        Assert.Equal("deepseek-1", fallback!.Id);
+        Assert.Equal(TranslationProviderRegistry.DefaultProviderId, fallback.Provider);
+    }
+
+    [Fact]
+    public void Route_falls_back_to_the_local_test_profile_when_nothing_else_is_left()
+    {
+        var fallback = TranslationProfileResolver.SelectFallback(
+            [LocalTestProfile(), SavedProfile("deepl-1", "deepl")], ShippedIds);
+
+        Assert.NotNull(fallback);
+        Assert.Equal("local-test", fallback!.Id);
+
+        // Nothing servable at all: the shell uses its built-in default profile.
+        Assert.Null(TranslationProfileResolver.SelectFallback([SavedProfile("deepl-1", "deepl")], ShippedIds));
+        Assert.Empty(TranslationProfileResolver.RetainServable(null, ShippedIds));
     }
 }
 
@@ -257,31 +354,50 @@ public sealed class RoutedProviderTests
     }
 
     [Fact]
-    public async Task Parses_deepl_response_without_network()
+    public async Task Dispatches_a_retired_provider_id_to_the_default_provider()
     {
-        var handler = new StubHandler("{\"translations\":[{\"text\":\"你好\"}]}");
+        // A route saved while DeepL was still shipped must not fail the catalog
+        // lookup after the removal: it degrades to the default provider.
+        var handler = new StubHandler("{\"choices\":[{\"message\":{\"content\":\"你好\"}}]}");
         using var client = new HttpClient(handler);
-        var provider = new DeepLTranslationProvider(client);
-        var result = await provider.TranslateAsync(new TranslationProviderRequest(
-            "hello", "zh-CN", "en", "demo", new Uri("https://example.test/v2/translate"), "secret", "test", "deepl"));
+        var routed = new RoutedTranslationProvider(new TranslationProviderCatalog([
+            new DeepSeekTranslationProvider(client)
+        ]));
+
+        var result = await routed.TranslateAsync(new TranslationProviderRequest(
+            "hello", "zh-CN", "en", "deepseek-flash", new Uri("https://api.deepseek.com"), "secret", "test", "deepl"));
 
         Assert.Equal("你好", result.TranslatedText);
-        Assert.Equal("/v2/translate", handler.RequestUri!.AbsolutePath);
-        Assert.Contains("ZH", handler.RequestBody, StringComparison.Ordinal);
+        Assert.Contains("/chat/completions", handler.RequestUri!.ToString(), StringComparison.Ordinal);
     }
 
     [Fact]
-    public async Task DeepL_appends_translate_path_and_maps_plain_english_language()
+    public async Task Retired_spellings_of_removed_providers_resolve_to_the_default_provider()
     {
-        var handler = new StubHandler("{\"translations\":[{\"text\":\"hello\"}]}");
+        var handler = new StubHandler("{\"choices\":[{\"message\":{\"content\":\"你好\"}}]}");
         using var client = new HttpClient(handler);
-        var provider = new DeepLTranslationProvider(client);
+        var routed = new RoutedTranslationProvider(new TranslationProviderCatalog([
+            new DeepSeekTranslationProvider(client)
+        ]));
 
-        await provider.TranslateAsync(new TranslationProviderRequest(
-            "你好", "en", "zh", "demo", new Uri("https://example.test/v2"), "secret", "test", "deepl"));
+        foreach (var retired in new[] { "deep-l", "google_free", "google_cloud" })
+        {
+            var result = await routed.TranslateAsync(new TranslationProviderRequest(
+                "hello", "zh-CN", "en", "deepseek-flash", new Uri("https://api.deepseek.com"), "secret", "test", retired));
+            Assert.Equal("你好", result.TranslatedText);
+        }
+    }
 
-        Assert.Equal("/v2/translate", handler.RequestUri!.AbsolutePath);
-        Assert.Contains("EN", handler.RequestBody, StringComparison.Ordinal);
+    [Fact]
+    public async Task An_unknown_provider_id_still_fails_the_lookup()
+    {
+        // Degrading must not swallow a typo: only the retired ids fall back.
+        var routed = new RoutedTranslationProvider(new TranslationProviderCatalog([
+            new EchoTranslationProvider()
+        ]));
+
+        await Assert.ThrowsAsync<KeyNotFoundException>(() => routed.TranslateAsync(new TranslationProviderRequest(
+            "hello", "zh-CN", "en", "demo", new Uri("https://localhost"), "local", "test", "not-a-provider")));
     }
 
     private sealed class StubHandler(string response) : HttpMessageHandler

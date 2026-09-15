@@ -185,7 +185,25 @@ if ($translationMarkup -notmatch 'MaxWidth="960"') { throw 'TranslationPage must
 if ($translationMarkup -notmatch 'ColumnDefinition Width="2\*"') { throw 'TranslationPage profile and glossary grids must use shared flexible columns.' }
 if ($translationMarkup -notmatch 'HorizontalContentAlignment="Stretch"') { throw 'TranslationPage rows must stretch to the bounded content column.' }
 if ($translationCode -notmatch 'CreateProfileCard|ShowProfileDialogAsync|ContentDialog|SetDefaultProfile|DeleteProfile') { throw 'Translation profiles must support selectable cards and dialog-based add/edit/delete actions.' }
-if ($translationCode -notmatch 'google-free|google-cloud|tencent|aliyun') { throw 'The translation profile catalog must retain the legacy service types.' }
+# D8：DeepL、Google（免费接口）与 Google Cloud 已从产品删除。这里既要求保留的服务仍可选，
+# 也要求被删掉的服务不再以任何形式回到翻译页或外壳的注册 / 默认值 / 迁移表里（反向断言）。
+if ($translationCode -notmatch 'deepseek|tencent|aliyun') { throw 'The translation page must keep offering the shipped services (DeepSeek / 腾讯云 / 阿里云).' }
+if ($translationCode -match '(?i)deepl|google') { throw 'The removed DeepL and Google services must not be selectable on the translation page any more.' }
+if ($appStateSource -match '"deepl"|"deep-l"|"google-free"|"google_free"|"google-cloud"|"google_cloud"') { throw 'The removed DeepL and Google providers must not be registered, preset or migrated by the shell any more.' }
+if (Test-Path -LiteralPath (Join-Path $v2Root 'src\VrcTranslate.Infrastructure\Translation\GoogleTranslationProviders.cs')) { throw 'The Google translation adapters must stay deleted.' }
+# 删除不等于忘记：老配置里可能还写着这些 id，提供商目录必须仍认得它们才能优雅降级
+# （单元测试 RemovedTranslationProviderTests 覆盖具体行为）。
+$providerRegistrySource = Get-Content -Raw (Join-Path $v2Root 'src\VrcTranslate.Infrastructure\Translation\TranslationProviderRegistry.cs')
+if ($providerRegistrySource -notmatch 'RetiredProviderIds' -or
+    $providerRegistrySource -notmatch '"deepl", "google-free", "google-cloud"') {
+    throw 'The removed provider ids must stay known as retired, otherwise a saved profile or route cannot degrade to a servable provider.'
+}
+if ($appStateSource -notmatch 'TranslationProviderRegistry\.CreateShippedProviders' -or
+    $appStateSource -notmatch 'TranslationProfileResolver' -or
+    $appStateSource -notmatch 'RetainServable' -or
+    $appStateSource -notmatch 'CreateFallbackRoute') {
+    throw 'A configuration saved while DeepL or Google were still shipped must degrade: profiles are filtered against the shipped services and the route falls back to a profile that can still be served.'
+}
 if ($translationCode -match 'Header = "原文语言"|Header = "翻译为"|existing\.SourceLanguage|existing\.TargetLanguage') { throw 'Translation profile dialogs must not expose source or target language settings.' }
 if ($appStateSource -notmatch 'deepseek".*, "deepseek-flash"' -or $appStateSource -notmatch 'DefaultModelForProvider' -or $appStateSource -notmatch 'new\("tencent".*"auto".*"zh-CN"' -or $translationCode -notmatch '腾讯云 SecretKey' -or $translationCode -notmatch '阿里云 AccessKey Secret') { throw 'Translation profile defaults and provider-specific credential labels must be explicit.' }
 if ($infrastructureSource -notmatch 'DeepSeekTranslationProvider' -or $infrastructureSource -notmatch '"type"\]\s*=\s*"disabled"' -or $infrastructureSource -match 'OpenAiCompatibleTranslationProvider') { throw 'DeepSeek must be a dedicated provider that disables thinking mode by default; the generic OpenAI-compatible adapter is retired.' }
@@ -386,7 +404,7 @@ if (([regex]::Matches($overlayCodeSource, 'TextAlignment\s*=\s*TextAlignment\.Ce
 # D6：字幕样式向播放器字幕靠——译文 18px（窄窗低于 420px 时降一档到 16px）、原文 13px 且更暗，
 # 两者共用同一对齐、同一左右内边距与同一行距（约 1.35），固定「译文在上、原文在下」；
 # 去掉圆角气泡，改成整块深色表面 + 消息之间的细分隔，消息间距 8~10px；
-# 窗口高度随内容收缩（底部对齐与「有新消息」提示保持不变），浮窗不得因此多出任何控件。
+# 窗口高度随内容收缩（「有新消息」提示保持不变），浮窗不得因此多出任何控件。
 if ($overlayCodeSource -notmatch 'TranslatedFontSize = 18d' -or
     $overlayCodeSource -notmatch 'NarrowTranslatedFontSize = 16d' -or
     $overlayCodeSource -notmatch 'NarrowSurfaceWidth = 420d' -or
@@ -397,10 +415,26 @@ if ($overlayCodeSource -notmatch 'TranslatedFontSize = 18d' -or
     $overlayCodeSource -notmatch 'SeparatorBrush' -or
     $overlayCodeSource -notmatch 'LineStackingStrategy\.BlockLineHeight' -or
     $overlayCodeSource -notmatch 'FitSurfaceHeight' -or
-    $overlayCodeSource -notmatch '\.ResizeKeepingBottom\(' -or
-    $overlayControllerSource -notmatch 'public bool ResizeKeepingBottom' -or
+    $overlayCodeSource -notmatch '\.ResizeKeepingTop\(' -or
+    $overlayControllerSource -notmatch 'public bool ResizeKeepingTop' -or
     ([regex]::Matches($overlayMarkup, '<Button').Count -ne 1)) {
     throw 'Caption styling must follow the confirmed D6 design: 18px translation with a 16px narrow step, 13px dimmer recognized line, one shared alignment/padding/line height, no rounded bubble, a hairline separator, content-following window height, and no extra control on the surface.'
+}
+# D7：消息列表顶部对齐。用户把浮窗拉大后，内容必须出现在上半部分，而不是像旧布局那样
+# 贴在底边、上方留一大片空白；高度跟随内容时窗口顶边固定（向下生长），与消息的生长方向一致，
+# 已经显示的句子不会被新消息推着往上跳。窗口顶边固定必须仍然保留 D6 的「用户改过高度就不再自动改」。
+if ($overlayMarkup -notmatch '(?s)<StackPanel x:Name="CaptionMessages"\s+HorizontalAlignment="Stretch"\s+VerticalAlignment="Top"') {
+    throw 'The caption message list must be anchored to the top, so an enlarged surface shows its messages in the upper part instead of against the bottom edge.'
+}
+if ($overlayMarkup -match 'VerticalContentAlignment="Bottom"') {
+    throw 'The bottom-anchored caption scroll viewer must stay removed: it is what pushed the messages against the bottom edge of an enlarged surface.'
+}
+if ($overlayCodeSource -match 'ResizeKeepingBottom' -or $overlayControllerSource -match 'ResizeKeepingBottom') {
+    throw 'The caption strip must grow downwards from its top edge; growing upwards belonged to the removed bottom-anchored list.'
+}
+if ($overlayControllerSource -notmatch 'RectInt32\(position\.X, position\.Y, size\.Width, target\)' -or
+    $overlayCodeSource -notmatch '_readerOwnsHeight') {
+    throw 'Following the content must keep the top edge and must keep the reader''s own height final for the session.'
 }
 # D6：渐进式字幕——识别完成即先显示原文（含说话人标签），译文到达后填进同一条消息；
 # 不新增条数、不重排、不改 OSC 行（OSC 仍是译文）。译文为空或失败时该条只剩原文，
@@ -1366,8 +1400,10 @@ function Invoke-SubtitleVisualSmoke {
     user - so this smoke checks what the surface really is now: one dark client
     area that is actually drawn, a message strip that starts at the surface edge
     instead of behind the deleted indicator column, and no leftover accent pixels
-    or markup from that indicator. Captions themselves appear only after real
-    speech is recognized, which this smoke deliberately does not wait for.
+    or markup from that indicator. Real captions appear only after speech is
+    recognized, which this smoke deliberately does not wait for; one deterministic
+    probe caption is seeded instead (VRC_TRANSLATE_SMOKE_CAPTION), so the check of
+    where the message list sits inside the surface can run (D7).
     #>
     Add-Type -AssemblyName UIAutomationClient
     Add-Type -AssemblyName UIAutomationTypes
@@ -1394,6 +1430,9 @@ public static class VrcTranslateSubtitleVisualNative {
 
     [DllImport("user32.dll")]
     public static extern bool PrintWindow(IntPtr hwnd, IntPtr hdc, uint flags);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    public static extern bool MoveWindow(IntPtr hwnd, int x, int y, int width, int height, bool repaint);
 
     public static RECT GetRectValue(IntPtr hwnd) {
         RECT rect;
@@ -1425,6 +1464,9 @@ public static class VrcTranslateSubtitleVisualNative {
     $secondCapture = Join-Path $env:TEMP 'v2-validation-subtitle-visual-2.png'
     Remove-Item $firstCapture, $secondCapture -Force -ErrorAction SilentlyContinue
     $env:VRC_TRANSLATE_SMOKE_PAGE = 'run'
+    # D7：字幕只有在真实识别之后才出现，而这个冒烟不等语音；用一个确定性的字幕探针
+    # 才能在浮窗里核对消息列表的位置（顶部对齐 vs 旧的贴底）。
+    $env:VRC_TRANSLATE_SMOKE_CAPTION = '1'
     $process = $null
     $firstBitmap = $null
     $secondBitmap = $null
@@ -1513,6 +1555,7 @@ public static class VrcTranslateValidationNative {
         # Capture the real window: the client area must actually be painted, and
         # no accent pixel of the deleted indicator ring may survive anywhere in
         # the caption region (the native title bar is excluded from the scan).
+        # D7：这一份冒烟字幕是"仅译文"的白色文字，因此下面这套强调色启发式不需要改写。
         $handle = [IntPtr]$subtitleWindow.Current.NativeWindowHandle
         [VrcTranslateSubtitleVisualNative]::Capture($handle, $firstCapture)
         $firstBitmap = [System.Drawing.Bitmap]::new($firstCapture)
@@ -1538,6 +1581,65 @@ public static class VrcTranslateValidationNative {
         }
         Write-Host "  Subtitle surface render smoke passed ($surfacePixels surface pixels, no activity mark)." -ForegroundColor Green
 
+        # D7：把浮窗拉高到远高于内容，字幕必须留在客户区上半部分。旧的底部对齐会把这唯一
+        # 一条消息压到客户区最下边，因此这条断言正是用户反馈的那个现象的反向验证。
+        $tallHeight = 520
+        if (-not [VrcTranslateSubtitleVisualNative]::MoveWindow($handle, $windowRect.Left, $windowRect.Top, $windowWidth, $tallHeight, $true)) {
+            throw 'The caption surface could not be enlarged for the top-alignment check.'
+        }
+        for ($attempt = 0; $attempt -lt 20; $attempt++) {
+            Start-Sleep -Milliseconds 100
+            $enlargedRect = [VrcTranslateSubtitleVisualNative]::GetRectValue($handle)
+            if (($enlargedRect.Bottom - $enlargedRect.Top) -ge ($tallHeight - 8)) { break }
+        }
+        Start-Sleep -Milliseconds 400
+        $enlargedRect = [VrcTranslateSubtitleVisualNative]::GetRectValue($handle)
+        $enlargedHeight = $enlargedRect.Bottom - $enlargedRect.Top
+        if ($enlargedHeight -lt ($tallHeight - 8)) {
+            throw "The caption surface did not accept the enlarged size: $enlargedHeight px."
+        }
+        $enlargedText = $subtitleWindow.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $textCondition)
+        if ($null -eq $enlargedText) { throw 'Subtitle visual smoke lost the caption text peer after enlarging the surface.' }
+        $enlargedTextRect = $enlargedText.Current.BoundingRectangle
+        $clientTop = [int][Math]::Round($enlargedTextRect.Top - $enlargedRect.Top)
+        $clientHeight = [int][Math]::Round($enlargedTextRect.Height)
+        if ($clientHeight -lt 200) { throw "The enlarged caption client area is unusable: $clientHeight px." }
+
+        [VrcTranslateSubtitleVisualNative]::Capture($handle, $secondCapture)
+        $secondBitmap = [System.Drawing.Bitmap]::new($secondCapture)
+        $firstTextRow = -1
+        $enlargedSurfacePixels = 0
+        $enlargedAccentPixels = 0
+        for ($y = $clientTop; $y -lt [Math]::Min($clientTop + $clientHeight, $secondBitmap.Height); $y += 4) {
+            for ($x = 0; $x -lt $secondBitmap.Width; $x += 4) {
+                $pixel = $secondBitmap.GetPixel($x, $y)
+                if ([Math]::Abs($pixel.R - 11) -le 14 -and [Math]::Abs($pixel.G - 23) -le 14 -and [Math]::Abs($pixel.B - 38) -le 14) {
+                    $enlargedSurfacePixels++
+                }
+                elseif ($pixel.G -gt 58 -and ($pixel.G - $pixel.R) -gt 14 -and ($pixel.B - $pixel.R) -gt 10) {
+                    $enlargedAccentPixels++
+                }
+                elseif ($firstTextRow -lt 0 -and $pixel.R -gt 90 -and $pixel.G -gt 90 -and $pixel.B -gt 90) {
+                    $firstTextRow = $y
+                }
+            }
+        }
+        if ($firstTextRow -lt 0) {
+            throw 'The caption surface did not render the smoke caption.'
+        }
+        $textOffset = $firstTextRow - $clientTop
+        if ($textOffset -gt [int]($clientHeight / 2)) {
+            throw "The caption messages must start in the upper half of the surface: first text row at $textOffset of $clientHeight px."
+        }
+        # 放大后的表面扫描面积比收缩时更大：空出来的那一片同样不得出现强调色像素。
+        if ($enlargedSurfacePixels -lt 200) {
+            throw "The enlarged caption surface is not visibly rendered (dark surface pixels: $enlargedSurfacePixels)."
+        }
+        if ($enlargedAccentPixels -gt 0) {
+            throw "The enlarged caption surface renders activity-indicator accent pixels ($enlargedAccentPixels)."
+        }
+        Write-Host "  Subtitle top-alignment smoke passed (first text row at $textOffset of $clientHeight px, $enlargedSurfacePixels surface pixels)." -ForegroundColor Green
+
         # 浮窗随识别停止而消失：再按一次总开关，识别和窗口必须一起关掉。
         Invoke-TestHotkey $configuredVoiceHotkey
         for ($attempt = 0; $attempt -lt 60; $attempt++) {
@@ -1553,6 +1655,7 @@ public static class VrcTranslateValidationNative {
         if ($null -ne $secondBitmap) { $secondBitmap.Dispose() }
         if ($null -ne $process -and -not $process.HasExited) { Stop-Process -Id $process.Id -Force }
         Remove-Item Env:VRC_TRANSLATE_SMOKE_PAGE -ErrorAction SilentlyContinue
+        Remove-Item Env:VRC_TRANSLATE_SMOKE_CAPTION -ErrorAction SilentlyContinue
         Remove-Item $firstCapture, $secondCapture -Force -ErrorAction SilentlyContinue
         Start-Sleep -Seconds 2
     }

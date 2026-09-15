@@ -42,7 +42,35 @@ public sealed partial class MainWindow : Window
         var state = ((App)Microsoft.UI.Xaml.Application.Current).State;
         state.TranslationPreviewChanged += OnTranslationPreviewChanged;
         OverlayWindowHost.Initialize(state);
+        ApplySmokeCaption();
         StartGlobalHotkeys();
+    }
+
+    /// <summary>
+    /// Seeds one deterministic caption for the render smoke. Captions normally
+    /// appear only after real speech is recognized, which the validation script
+    /// deliberately does not wait for, so the check of where the message list sits
+    /// inside the surface needs this one fixed message. Only the validation script
+    /// sets the variable; a normal launch never does.
+    /// <para>
+    /// The probe is seeded in the "translation only" presentation: the recognized
+    /// line's light blue cannot be told apart from the accent colour the same smoke
+    /// keeps looking for, while the white translation can. The presentation of this
+    /// surface is read from the saved settings again on the next launch.
+    /// </para>
+    /// </summary>
+    private static void ApplySmokeCaption()
+    {
+        if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("VRC_TRANSLATE_SMOKE_CAPTION"))) return;
+        var subtitle = OverlayWindowHost.Subtitle;
+        if (subtitle is null) return;
+        subtitle.ApplyContentMode(SubtitleContentMode.TranslatedOnly);
+        // Recognition is not running yet, so the surface starts paused and would drop
+        // this probe. The pause is restored immediately: it only gates appending, and
+        // the probe is the one message the render smoke needs.
+        subtitle.SetStreamPaused(false);
+        subtitle.AppendCaption("Smoke caption original line", "冒烟字幕译文");
+        subtitle.SetStreamPaused(true);
     }
 
     private void OnWindowClosed(object sender, WindowEventArgs args)

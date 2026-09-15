@@ -205,13 +205,15 @@ internal sealed class OverlayWindowController : IDisposable
     }
 
     /// <summary>
-    /// Resizes the surface to a content-following height while keeping its bottom
-    /// edge where the reader put it: the caption strip grows and shrinks upwards,
-    /// so the newest message stays in place instead of travelling down the screen
-    /// as the messages above it get taller. Returns false when the height is
-    /// already the requested one or the native call could not be made.
+    /// Resizes the surface to a content-following height while keeping its top
+    /// edge where the reader put it: the caption strip grows and shrinks
+    /// downwards, the same direction its top-aligned messages grow, so the
+    /// captions already on screen stay in place instead of travelling up as a
+    /// message below them arrives. Returns false when the height is already the
+    /// requested one, when growing to it would leave the display, or when the
+    /// native call could not be made.
     /// </summary>
-    public bool ResizeKeepingBottom(int height)
+    public bool ResizeKeepingTop(int height)
     {
         if (_disposed) return false;
         var target = Math.Clamp(height, 56, 10000);
@@ -219,20 +221,23 @@ internal sealed class OverlayWindowController : IDisposable
         var size = _appWindow.Size;
         if (size.Height == target) return false;
 
-        var top = position.Y + size.Height - target;
         try
         {
-            // Growing upwards must not push the surface off the top of the display.
-            top = Math.Max(top, DisplayArea.GetFromWindowId(_appWindow.Id, DisplayAreaFallback.Nearest).WorkArea.Y);
+            // Growing downwards must not push the caption strip off the bottom of
+            // the display. When the space below the top edge is not enough, the
+            // surface keeps the height it has and the newest message stays
+            // reachable by scrolling, exactly as it is before the first fit.
+            var workArea = DisplayArea.GetFromWindowId(_appWindow.Id, DisplayAreaFallback.Nearest).WorkArea;
+            if (position.Y + target > workArea.Y + workArea.Height) return false;
         }
         catch
         {
-            // A headless or design-time host has no display area; keep the computed top.
+            // A headless or design-time host has no display area; apply the height.
         }
 
         try
         {
-            _appWindow.MoveAndResize(new RectInt32(position.X, top, size.Width, target));
+            _appWindow.MoveAndResize(new RectInt32(position.X, position.Y, size.Width, target));
         }
         catch
         {

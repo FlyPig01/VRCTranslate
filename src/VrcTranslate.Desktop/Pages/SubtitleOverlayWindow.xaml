@@ -20,9 +20,13 @@
            messages. The whole client area belongs to the messages - there is no
            icon or status widget competing with them - and the viewer owns pointer
            and wheel scrolling so a long conversation can be read back while new
-           messages stick to the bottom for a reader who stays there. The window
-           height follows the messages, so the list is not padded with empty
-           surface above the newest one. -->
+           messages stick to the bottom for a reader who stays there.
+           The list itself is anchored to the top: the first message starts just
+           under the title bar and the messages grow downwards, so a surface the
+           reader enlarged keeps its captions in the upper part instead of
+           stacking them against the bottom edge under a large empty area. Once
+           the messages are taller than the surface, the newest one is reached by
+           scrolling, exactly as before. -->
       <ScrollViewer x:Name="CaptionScroll"
                     AutomationProperties.AutomationId="subtitle-text"
                     Margin="4,0"
@@ -33,10 +37,10 @@
                     HorizontalScrollMode="Disabled"
                     VerticalScrollBarVisibility="Auto"
                     VerticalScrollMode="Auto"
-                    VerticalContentAlignment="Bottom">
+                    VerticalContentAlignment="Top">
         <StackPanel x:Name="CaptionMessages"
                     HorizontalAlignment="Stretch"
-                    VerticalAlignment="Bottom" />
+                    VerticalAlignment="Top" />
       </ScrollViewer>
 
       <!-- Offered only after the reader scrolled back; nothing moves the view

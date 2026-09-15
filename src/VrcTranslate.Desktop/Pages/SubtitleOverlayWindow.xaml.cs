@@ -482,7 +482,9 @@ public sealed partial class SubtitleOverlayWindow : Window
         {
             var controller = _windowController;
             if (controller is null || _preferredHeight <= 0) return;
-            var scale = OverlaySurface.XamlRoot?.RasterizationScale ?? 0d;
+            // One shared conversion with the input overlay: the native rectangle
+            // is physical pixels while every length on this surface is DIP.
+            var scale = OverlayDisplayScale.Resolve(OverlaySurface);
             if (scale <= 0d) return;
             if (!controller.TryGetLayout(out var current) || !current.IsUsable) return;
 

@@ -213,31 +213,49 @@ internal sealed class OverlayWindowController : IDisposable
     /// requested one, when growing to it would leave the display, or when the
     /// native call could not be made.
     /// </summary>
-    public bool ResizeKeepingTop(int height)
+    public bool ResizeKeepingTop(int height) => ResizeKeepingTop(0, height);
+
+    /// <summary>
+    /// Same resize with an explicit physical width; zero keeps the current one.
+    /// A fresh install uses it to turn the default DIP size into the window's own
+    /// pixels for the present display scale, so the editor strip measures the same
+    /// on a high-DPI screen as it does at 100%.
+    /// </summary>
+    public bool ResizeKeepingTop(int width, int height)
     {
         if (_disposed) return false;
-        var target = Math.Clamp(height, 56, 10000);
+        var targetWidth = width > 0 ? Math.Clamp(width, 240, 10000) : 0;
+        var targetHeight = Math.Clamp(height, 56, 10000);
         var position = _appWindow.Position;
         var size = _appWindow.Size;
-        if (size.Height == target) return false;
+        if (size.Height == targetHeight && (targetWidth == 0 || size.Width == targetWidth)) return false;
 
         try
         {
+            var workArea = DisplayArea.GetFromWindowId(_appWindow.Id, DisplayAreaFallback.Nearest).WorkArea;
             // Growing downwards must not push the caption strip off the bottom of
             // the display. When the space below the top edge is not enough, the
             // surface keeps the height it has and the newest message stays
             // reachable by scrolling, exactly as it is before the first fit.
-            var workArea = DisplayArea.GetFromWindowId(_appWindow.Id, DisplayAreaFallback.Nearest).WorkArea;
-            if (position.Y + target > workArea.Y + workArea.Height) return false;
+            if (position.Y + targetHeight > workArea.Y + workArea.Height) return false;
+            // The same rule sideways: a default wider than the display keeps a
+            // rectangle the reader can still reach. Only the fresh-install path
+            // passes a width, so this clamp can never fight the reader's own
+            // resize - that one goes straight to the window.
+            targetWidth = targetWidth > 0 ? Math.Min(targetWidth, Math.Max(240, workArea.Width - 24)) : 0;
         }
         catch
         {
-            // A headless or design-time host has no display area; apply the height.
+            // A headless or design-time host has no display area; apply the size.
         }
 
         try
         {
-            _appWindow.MoveAndResize(new RectInt32(position.X, position.Y, size.Width, target));
+            _appWindow.MoveAndResize(new RectInt32(
+                position.X,
+                position.Y,
+                targetWidth > 0 ? targetWidth : size.Width,
+                targetHeight));
         }
         catch
         {

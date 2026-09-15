@@ -39,6 +39,13 @@ public sealed class QuickInputWindow : Window
     /// </summary>
     private const int DefaultHeightDips = 150;
 
+    /// <summary>
+    /// 全新安装时的窗口宽度（DIP）。窗口矩形是物理像素，同一串数字在不同缩放下
+    /// 量出来的宽度并不一样；全新安装按当前缩放换算一次，让输入条在任何 DPI 下
+    /// 都是同一个视觉宽度（用户自己拖过的宽度不动）。
+    /// </summary>
+    private const int DefaultWidthDips = 1240;
+
     private readonly AppState _state;
     private readonly TimeSpan _translationTimeout;
     private readonly TextBox _input;
@@ -332,18 +339,18 @@ public sealed class QuickInputWindow : Window
             _windowController = new OverlayWindowController(
                 this,
                 "输入",
-                1240,
-                150,
+                DefaultWidthDips,
+                DefaultHeightDips,
                 saved,
                 layout => OverlayWindowHost.SaveLayout(OverlayWindowHost.QuickInputLayoutKey, layout),
                 _state.OverlayAppearance.Current.InputOverlayOpacity);
-            // 控制器拿到的默认尺寸是物理像素，而 150 是"输入行 + 分隔线 + 两行结果"
-            // 的 DIP 高度；缩放不是 100% 时同一个数字会换算出更矮的窗口。全新安装
-            // （没有保存过矩形）时在内容加载后按当前缩放补正一次，用户保存过的尺寸
-            // 完全不动。
+            // 控制器拿到的默认尺寸是物理像素，而 1240 × 150 是"输入条 + 分隔线 +
+            // 两行结果"的 DIP 尺寸；缩放不是 100% 时同一串数字会换算出更小的一块
+            // 窗口。全新安装（没有保存过矩形）时在内容加载后按当前缩放把宽高一起
+            // 补正一次，用户保存过的矩形完全不动。
             if (saved is null)
             {
-                _surface.Loaded += (_, _) => FitDefaultHeightToDisplayScale();
+                _surface.Loaded += (_, _) => FitDefaultSizeToDisplayScale();
             }
         }
         catch
@@ -354,18 +361,17 @@ public sealed class QuickInputWindow : Window
     }
 
     /// <summary>
-    /// 把全新安装的默认高度换算成当前显示缩放下的物理像素，保证 150 DIP 的内容
-    /// （输入行、分隔线、两行结果）在高 DPI 屏幕上同样完整可见。
+    /// 把全新安装的默认宽高一起换算成当前显示缩放下的物理像素：150 DIP 的内容
+    /// （输入行、分隔线、两行结果）在高 DPI 屏幕上同样完整可见，输入条的视觉宽度
+    /// 也和 100% 时一致。缩放读不到时保持控制器给出的矩形。
     /// </summary>
-    private void FitDefaultHeightToDisplayScale()
+    private void FitDefaultSizeToDisplayScale()
     {
-        var scale = _surface.XamlRoot?.RasterizationScale ?? 0;
-        if (scale <= 0 || double.IsNaN(scale) || double.IsInfinity(scale))
-        {
-            return;
-        }
-
-        _windowController?.ResizeKeepingTop((int)Math.Ceiling(DefaultHeightDips * scale));
+        var scale = OverlayDisplayScale.Resolve(_surface);
+        if (scale <= 0d) return;
+        _windowController?.ResizeKeepingTop(
+            OverlayDisplayScale.ToPhysicalPixels(DefaultWidthDips, scale),
+            OverlayDisplayScale.ToPhysicalPixels(DefaultHeightDips, scale));
     }
 
     private async void OnInputKeyDown(object sender, KeyRoutedEventArgs e)

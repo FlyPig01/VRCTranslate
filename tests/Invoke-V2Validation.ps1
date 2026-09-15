@@ -85,6 +85,29 @@ $overlayLayoutStore = Get-Content -Raw (Join-Path $v2Root 'src\VrcTranslate.Infr
 $captionBufferSource = Get-Content -Raw (Join-Path $v2Root 'src\VrcTranslate.Application\Subtitles\SubtitleCaptionBuffer.cs')
 $captionSettingsSource = Get-Content -Raw (Join-Path $desktopSource 'SubtitleCaptionSettings.cs')
 
+function Resolve-OverlayDefaultDimension {
+    param(
+        [Parameter(Mandatory)]
+        [string] $Source,
+        [Parameter(Mandatory)]
+        [string] $Token,
+        [Parameter(Mandatory)]
+        [string] $Label,
+        [Parameter(Mandatory)]
+        [string] $Role
+    )
+
+    if ($Token -match '^\d+$') { return [int]$Token }
+    $field = [regex]::Match(
+        $Source,
+        ('(?m)^\s*(?:private|internal|public)?\s*const\s+int\s+{0}\s*=\s*(?<value>\d+)\s*;' -f [regex]::Escape($Token)))
+    if (-not $field.Success) {
+        throw "$Label overlay $Role must be a literal size or a const int declared in the same file (got '$Token')."
+    }
+
+    return [int]$field.Groups['value'].Value
+}
+
 function Get-ConfiguredOverlaySize {
     param(
         [Parameter(Mandatory)]
@@ -93,15 +116,17 @@ function Get-ConfiguredOverlaySize {
         [string] $Label
     )
 
+    # D10：默认宽高可以写成同一文件里的 const int（宽度必须能和高度一样按 DPI 换算），
+    # 也可以仍是字面量；两种写法都要求给出一个具体的默认尺寸。
     $match = [regex]::Match(
         $Source,
-        '(?s)new\s+OverlayWindowController\s*\(\s*this\s*,\s*"[^"]+"\s*,\s*(?<width>\d+)\s*,\s*(?<height>\d+)\s*,')
+        '(?s)new\s+OverlayWindowController\s*\(\s*this\s*,\s*"[^"]+"\s*,\s*(?<width>[A-Za-z_][A-Za-z0-9_]*|\d+)\s*,\s*(?<height>[A-Za-z_][A-Za-z0-9_]*|\d+)\s*,')
     if (-not $match.Success) {
         throw "$Label overlay does not pass a concrete default size to the shared native-window controller."
     }
 
-    $width = [int]$match.Groups['width'].Value
-    $height = [int]$match.Groups['height'].Value
+    $width = Resolve-OverlayDefaultDimension -Source $Source -Token $match.Groups['width'].Value -Label $Label -Role 'width'
+    $height = Resolve-OverlayDefaultDimension -Source $Source -Token $match.Groups['height'].Value -Label $Label -Role 'height'
     if ($width -lt 240 -or $height -lt 56 -or $width -gt 10000 -or $height -gt 10000) {
         throw "$Label overlay has an invalid configured size: ${width}x${height}."
     }
@@ -116,6 +141,27 @@ $subtitleOverlayDefaultSize = Get-ConfiguredOverlaySize -Source $overlayCodeSour
 # legacy widths; saved layouts remain user-controlled after first launch.
 if ($quickOverlayDefaultSize.Width -lt 1200) {
     throw "Quick-input default width regressed below the enlarged baseline: $($quickOverlayDefaultSize.Width)px."
+}
+
+# D10：窗口矩形是物理像素，而 1240x150 描述的是内容（DIP）。全新安装的默认尺寸
+# 必须在内容加载后按当前缩放换算一次宽高，否则高 DPI 下同一串数字会得到更小的一块
+# 浮窗（曾出现宽度只剩 2/3）。断言"默认尺寸仍被使用"和"宽高都经过换算"。
+if ($quickInputSource -notmatch 'new\s+OverlayWindowController\s*\(\s*this\s*,\s*"[^"]+"\s*,\s*DefaultWidthDips\s*,\s*DefaultHeightDips\s*,') {
+    throw 'The quick-input default size must be passed through the named DIP constants instead of raw numbers.'
+}
+if ($quickInputSource -notmatch 'OverlayDisplayScale\.Resolve|OverlayDisplayScale\.ToPhysicalPixels') {
+    throw 'The quick-input default size must be converted from DIP to physical pixels at the current display scale.'
+}
+$quickDefaultFit = [regex]::Match(
+    $quickInputSource,
+    '(?s)private void FitDefaultSizeToDisplayScale\(\).*?\r?\n    \}')
+if (-not $quickDefaultFit.Success -or
+    $quickDefaultFit.Value -notmatch 'ToPhysicalPixels\(DefaultWidthDips' -or
+    $quickDefaultFit.Value -notmatch 'ToPhysicalPixels\(DefaultHeightDips') {
+    throw 'The quick-input fresh-install fit must scale the default width and height together.'
+}
+if ($quickInputSource -match '_surface\.XamlRoot\?\.RasterizationScale') {
+    throw 'Overlay display-scale reading must go through OverlayDisplayScale so both overlays share one conversion.'
 }
 if ($subtitleOverlayDefaultSize.Width -lt 1400) {
     throw "Subtitle default width regressed below the enlarged baseline: $($subtitleOverlayDefaultSize.Width)px."
@@ -455,9 +501,27 @@ if ($overlayMarkup -match 'VerticalContentAlignment="Bottom"') {
 if ($overlayCodeSource -match 'ResizeKeepingBottom' -or $overlayControllerSource -match 'ResizeKeepingBottom') {
     throw 'The caption strip must grow downwards from its top edge; growing upwards belonged to the removed bottom-anchored list.'
 }
-if ($overlayControllerSource -notmatch 'RectInt32\(position\.X, position\.Y, size\.Width, target\)' -or
-    $overlayCodeSource -notmatch '_readerOwnsHeight') {
-    throw 'Following the content must keep the top edge and must keep the reader''s own height final for the session.'
+# D10：同一个方法现在也带一个显式宽度（全新安装按缩放换算宽高），所以这里断言的是
+# 「顶边取自当前位置、宽度不来自读者实时矩形（尺寸只由本方法决定）」，而不是某个字面调用。
+# 精确取「带宽度的那个重载」的方法体：表达式体的单参重载会先命中，所以不能只用 .*? 放宽。
+$followResizeStart = $overlayControllerSource.IndexOf(
+    'public bool ResizeKeepingTop(int width, int height)',
+    [StringComparison]::Ordinal)
+if ($followResizeStart -lt 0) {
+    throw 'The native-window controller must expose a width-aware ResizeKeepingTop overload for the DIP default size.'
+}
+# 注意：方法上方的 XML 注释里就出现过 MoveAndResize 这个词，所以要匹配真正的那次调用
+# （它后面紧跟着换行和 RectInt32 实参），不能只匹配到单词本身。
+$followResize = [regex]::Match(
+    $overlayControllerSource.Substring($followResizeStart),
+    '(?s)^.*?MoveAndResize\(\s*\r?\n')
+if (-not $followResize.Success -or
+    $followResize.Value -notmatch 'RectInt32\(\s*\n?\s*position\.X,\s*\n?\s*position\.Y,' -or
+    $followResize.Value -notmatch 'targetWidth\s*>\s*0\s*\?\s*targetWidth') {
+    throw 'Following the content must keep the top edge and must size the surface from this method rather than from the window''s live rectangle.'
+}
+if ($overlayCodeSource -notmatch '_readerOwnsHeight') {
+    throw 'Following the content must keep the reader''s own height final for the session.'
 }
 # D6：渐进式字幕——识别完成即先显示原文（含说话人标签），译文到达后填进同一条消息；
 # 不新增条数、不重排、不改 OSC 行（OSC 仍是译文）。译文为空或失败时该条只剩原文，

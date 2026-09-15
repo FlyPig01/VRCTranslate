@@ -85,7 +85,7 @@
       </Border>
 
       <!-- 各家模型对比（实验报告-识别与翻译.md 的实测结论）：
-           价格是用户 2026-02 从官网/控制台核对的，会变动；延迟是本机 108 次调用中位数。
+           价格是用户 2026-09-16 从官网/控制台核对的，会变动；延迟是本机 108 次调用中位数。
            这里是纯静态文案：不绑数据、不新增 x:Name，代码后置文件不需要改。 -->
       <Border Style="{StaticResource SurfaceBorderStyle}" Padding="18"
               AutomationProperties.AutomationId="guide-comparison">
@@ -127,7 +127,7 @@
           <TextBlock Style="{StaticResource SecondaryTextStyle}" TextWrapping="Wrap"
                      Text="推荐：不确定就先用「阿里云 专业版」；讲粤语、或觉得日语译得别扭，再换「deepseek-flash」。" />
           <TextBlock Style="{StaticResource SecondaryTextStyle}" TextWrapping="Wrap"
-                     Text="机翻免费额度合计 700 万字符/月（腾讯 500 万 + 阿里 100 万），重度使用也用不完。计费单位＝说 1 小时（约 600 句，每句 20 字），本机 2026-02 实测；价格会变动，请以官网为准。" />
+                     Text="机翻免费额度合计 700 万字符/月（腾讯 500 万 + 阿里 100 万），重度使用也用不完。计费单位＝说 1 小时（约 600 句，每句 20 字），本机 2026-09-16 实测；价格会变动，请以官网为准。" />
         </StackPanel>
       </Border>
     </StackPanel>

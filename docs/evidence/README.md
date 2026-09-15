@@ -8,6 +8,8 @@
 | `quality-dataset.json` | 27 条评测集：原文 + 人工中文参考译文 + 分类 | 27 条 | `id / lang / source / gold / category` |
 | `xlate-auto.jsonl` | 实验 A：中文照常送翻译 | 540 | `round / provider / item / ms / output / error` |
 | `xlate-skipzh.jsonl` | 实验 B：中文跳过（`skipped=true` 表示未调用服务，直接复用原文） | 540 | 同上 + `skipped` |
+| `xlate-deepseek-v4pro.jsonl` | `deepseek-v4-pro` 模型（对照 `deepseek-flash`） | 108 | 同上 |
+| `xlate-mimo-v25pro.jsonl` | `mimo-v2.5-pro` 模型（对照 `mimo-v2.5`） | 108 | 同上 |
 | `asr-matrix.jsonl` | 识别层：10 段音频 × 5 语言模式 × 10 次 | 50 | `file / mode / detected / text / ms_min / ms_median / ms_p90 / ms_max` |
 
 ## 复现步骤
@@ -24,6 +26,13 @@ python artifacts\mix_audio.py
 # 3. 翻译层 A / B（各约 8 分钟，需要 data\v2-profiles.json 里有五家真实密钥）
 pwsh -NoProfile -File artifacts\bench-translate.ps1 -Modes auto -Rounds 4 -Out artifacts\xlate-auto.json
 pwsh -NoProfile -File artifacts\bench-translate.ps1 -Modes auto -Rounds 4 -SkipChinese true -Out artifacts\xlate-skipzh.json
+
+# 3b. 两个 pro 模型（同一评测集、同一轮数，可与标准版逐条对比）
+pwsh -NoProfile -File artifacts\bench-translate.ps1 -Modes auto -Rounds 4 -Provider deepseek -Model deepseek-v4-pro -Out artifacts\xlate-v4pro.json
+pwsh -NoProfile -File artifacts\bench-translate.ps1 -Modes auto -Rounds 4 -Provider xiaomi -Model mimo-v2.5-pro -Out artifacts\xlate-mimopro.json
+
+# 3c. 计费换算所需的 token 实测（10 个采样点）
+pwsh -NoProfile -File artifacts\measure-tokens.ps1 -Profile deepseek -Model deepseek-flash   # 或 xiaomi / mimo-v2.5-pro
 
 # 4. 打分（chrF2 / BLEU-4，与 sacrebleu 2.6 交叉验证）与显著性检验
 python artifacts\score-translation.py   # 生成 artifacts\quality-report.md

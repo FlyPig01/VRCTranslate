@@ -1,0 +1,108 @@
+{"error": "", "item": "zh-1", "ms": 1072.9, "output": "用餐时间为上午9点至下午5点。", "provider": "xiaomi", "round": 1, "skipped": false}
+{"error": "", "item": "zh-2", "ms": 697.6, "output": "你那边网络是不是卡了？我看你一直在原地转圈。", "provider": "xiaomi", "round": 1, "skipped": false}
+{"error": "", "item": "zh-3", "ms": 957.7, "output": "这张图好像有人掉线了，我们等一下吧。", "provider": "xiaomi", "round": 1, "skipped": false}
+{"error": "", "item": "yue-1", "ms": 1786.1, "output": "请帮我看看他是不是站在门口。", "provider": "xiaomi", "round": 1, "skipped": false}
+{"error": "", "item": "yue-2", "ms": 794.8, "output": "我今天没空，明天吧。", "provider": "xiaomi", "round": 1, "skipped": false}
+{"error": "", "item": "en-1", "ms": 756.3, "output": "嘿，现在能听到我说话了吗？我刚修好了我的麦克风。", "provider": "xiaomi", "round": 1, "skipped": false}
+{"error": "", "item": "en-2", "ms": 958.5, "output": "听起来不错，我今晚下班后会上线。", "provider": "xiaomi", "round": 1, "skipped": false}
+{"error": "", "item": "en-3", "ms": 792.4, "output": "抱歉，我的麦克风刚才断了一下，你说了什么？", "provider": "xiaomi", "round": 1, "skipped": false}
+{"error": "", "item": "en-4", "ms": 2988.9, "output": "你能告诉我你从哪里找到那个头像的吗？我一直在找类似的。", "provider": "xiaomi", "round": 1, "skipped": false}
+{"error": "", "item": "en-5", "ms": 1104.7, "output": "现在延迟真的很严重，我觉得服务器有点吃不消了。", "provider": "xiaomi", "round": 1, "skipped": false}
+{"error": "", "item": "ja-1", "ms": 1195.6, "output": "我们中学是自带便当制，如果不带的话，可以买学校卖的50日元的面包。", "provider": "xiaomi", "round": 1, "skipped": false}
+{"error": "", "item": "ja-2", "ms": 516.9, "output": "等一下，我现在正在准备。", "provider": "xiaomi", "round": 1, "skipped": false}
+{"error": "", "item": "ja-3", "ms": 512.5, "output": "这个世界，我好像以前来过。", "provider": "xiaomi", "round": 1, "skipped": false}
+{"error": "", "item": "ja-4", "ms": 679.9, "output": "抱歉，我的麦克风可能有点问题，你可能听不清。", "provider": "xiaomi", "round": 1, "skipped": false}
+{"error": "", "item": "ja-5", "ms": 685.7, "output": "我还没能汇合，你先在世界里转转吧。", "provider": "xiaomi", "round": 1, "skipped": false}
+{"error": "", "item": "ko-1", "ms": 730.2, "output": "麦克风听不清，能再说一遍吗？", "provider": "xiaomi", "round": 1, "skipped": false}
+{"error": "", "item": "ko-2", "ms": 725.3, "output": "这个世界真美，你是在哪里看到的？", "provider": "xiaomi", "round": 1, "skipped": false}
+{"error": "", "item": "ko-3", "ms": 666.9, "output": "我现在卡得动不了了。", "provider": "xiaomi", "round": 1, "skipped": false}
+{"error": "", "item": "ko-4", "ms": 769.4, "output": "等一下，我去换个头像就来。", "provider": "xiaomi", "round": 1, "skipped": false}
+{"error": "", "item": "cs-1", "ms": 762.3, "output": "这个世界我昨天逛过了，挺有意思的。", "provider": "xiaomi", "round": 1, "skipped": false}
+{"error": "", "item": "cs-2", "ms": 455.5, "output": "等一下，我换个头像就来。", "provider": "xiaomi", "round": 1, "skipped": false}
+{"error": "", "item": "cs-3", "ms": 474.2, "output": "好的，我先下线了，明天见。", "provider": "xiaomi", "round": 1, "skipped": false}
+{"error": "", "item": "cs-4", "ms": 567.4, "output": "这是从韩国来的吗？看着像国内的模型。", "provider": "xiaomi", "round": 1, "skipped": false}
+{"error": "", "item": "cs-5", "ms": 1226.5, "output": "好的，我现在去换衣服，等我一下。", "provider": "xiaomi", "round": 1, "skipped": false}
+{"error": "", "item": "2sp-1", "ms": 1730.5, "output": "A: 你好，初次见面。  \nB: 嗨！很高兴认识你，我来自加拿大。", "provider": "xiaomi", "round": 1, "skipped": false}
+{"error": "", "item": "2sp-2", "ms": 866.1, "output": "A: 这个怎么打开？  \nB: 按一下那边的按钮就行了。", "provider": "xiaomi", "round": 1, "skipped": false}
+{"error": "", "item": "2sp-3", "ms": 1597.0, "output": "A: 你今晚会参加活动吗？\nB: 应该会去，你要一起吗？", "provider": "xiaomi", "round": 1, "skipped": false}
+{"error": "", "item": "zh-1", "ms": 878.2, "output": "用餐时间为上午9点至下午5点。", "provider": "xiaomi", "round": 2, "skipped": false}
+{"error": "", "item": "zh-2", "ms": 1123.0, "output": "你那边网络是不是卡了？我看你一直在原地转圈。", "provider": "xiaomi", "round": 2, "skipped": false}
+{"error": "", "item": "zh-3", "ms": 743.7, "output": "这张图好像有人掉线了，我们等一下吧。", "provider": "xiaomi", "round": 2, "skipped": false}
+{"error": "", "item": "yue-1", "ms": 475.0, "output": "请帮我看看他是不是站在门口。", "provider": "xiaomi", "round": 2, "skipped": false}
+{"error": "", "item": "yue-2", "ms": 655.1, "output": "我今天没空，明天再说吧。", "provider": "xiaomi", "round": 2, "skipped": false}
+{"error": "", "item": "en-1", "ms": 584.8, "output": "嘿，现在能听到我说话了吗？我刚修好了我的麦克风。", "provider": "xiaomi", "round": 2, "skipped": false}
+{"error": "", "item": "en-2", "ms": 584.6, "output": "听起来不错，我今晚下班后就上线。", "provider": "xiaomi", "round": 2, "skipped": false}
+{"error": "", "item": "en-3", "ms": 522.0, "output": "抱歉，我的麦克风刚才断了一下，你说了什么？", "provider": "xiaomi", "round": 2, "skipped": false}
+{"error": "", "item": "en-4", "ms": 913.6, "output": "你能告诉我你从哪里找到那个头像的吗？我一直在找类似的。", "provider": "xiaomi", "round": 2, "skipped": false}
+{"error": "", "item": "en-5", "ms": 1283.4, "output": "现在延迟真的很严重，我觉得服务器有点撑不住了。", "provider": "xiaomi", "round": 2, "skipped": false}
+{"error": "", "item": "ja-1", "ms": 2005.4, "output": "我们中学是自带便当制，如果不带的话，可以买学校卖的50日元的面包。", "provider": "xiaomi", "round": 2, "skipped": false}
+{"error": "", "item": "ja-2", "ms": 571.4, "output": "等一下，我正在准备。", "provider": "xiaomi", "round": 2, "skipped": false}
+{"error": "", "item": "ja-3", "ms": 1356.7, "output": "这个世界，我总觉得以前来过。", "provider": "xiaomi", "round": 2, "skipped": false}
+{"error": "", "item": "ja-4", "ms": 1201.2, "output": "抱歉，我的麦克风现在可能有点问题，你可能听不到我说话。", "provider": "xiaomi", "round": 2, "skipped": false}
+{"error": "", "item": "ja-5", "ms": 1295.5, "output": "还没汇合呢，你先在世界里转转吧。", "provider": "xiaomi", "round": 2, "skipped": false}
+{"error": "", "item": "ko-1", "ms": 1225.4, "output": "麦克风听不清，能再说一遍吗？", "provider": "xiaomi", "round": 2, "skipped": false}
+{"error": "", "item": "ko-2", "ms": 688.1, "output": "这个世界真漂亮，你在哪里看到的？", "provider": "xiaomi", "round": 2, "skipped": false}
+{"error": "", "item": "ko-3", "ms": 712.1, "output": "我现在卡得动不了了。", "provider": "xiaomi", "round": 2, "skipped": false}
+{"error": "", "item": "ko-4", "ms": 600.8, "output": "等一下，我去换个头像就来。", "provider": "xiaomi", "round": 2, "skipped": false}
+{"error": "", "item": "cs-1", "ms": 583.3, "output": "这个世界我昨天逛过了，挺有意思的。", "provider": "xiaomi", "round": 2, "skipped": false}
+{"error": "", "item": "cs-2", "ms": 630.0, "output": "等一下，我换个头像就来。", "provider": "xiaomi", "round": 2, "skipped": false}
+{"error": "", "item": "cs-3", "ms": 633.1, "output": "好的各位，我先下线了，明天见。", "provider": "xiaomi", "round": 2, "skipped": false}
+{"error": "", "item": "cs-4", "ms": 679.4, "output": "这是从韩国来的吗？看着像国内的模型。", "provider": "xiaomi", "round": 2, "skipped": false}
+{"error": "", "item": "cs-5", "ms": 870.8, "output": "好的，我现在去换衣服，等我一下。", "provider": "xiaomi", "round": 2, "skipped": false}
+{"error": "", "item": "2sp-1", "ms": 786.7, "output": "A: 你好，初次见面。  \nB: 嗨！很高兴认识你，我来自加拿大。", "provider": "xiaomi", "round": 2, "skipped": false}
+{"error": "", "item": "2sp-2", "ms": 786.4, "output": "A: 这个怎么打开？\nB: 按一下那边的按钮就行了。", "provider": "xiaomi", "round": 2, "skipped": false}
+{"error": "", "item": "2sp-3", "ms": 581.9, "output": "A: 你今晚会参加活动吗？\nB: 应该会去，你要一起吗？", "provider": "xiaomi", "round": 2, "skipped": false}
+{"error": "", "item": "zh-1", "ms": 532.8, "output": "用餐时间为上午9点至下午5点。", "provider": "xiaomi", "round": 3, "skipped": false}
+{"error": "", "item": "zh-2", "ms": 750.3, "output": "你那边网络是不是卡了？我看你一直在原地转圈。", "provider": "xiaomi", "round": 3, "skipped": false}
+{"error": "", "item": "zh-3", "ms": 925.7, "output": "这张图好像有人掉线了，我们等一下吧。", "provider": "xiaomi", "round": 3, "skipped": false}
+{"error": "", "item": "yue-1", "ms": 604.6, "output": "请帮我看看他是不是站在门口。", "provider": "xiaomi", "round": 3, "skipped": false}
+{"error": "", "item": "yue-2", "ms": 725.1, "output": "我今天没空，明天再说吧。", "provider": "xiaomi", "round": 3, "skipped": false}
+{"error": "", "item": "en-1", "ms": 572.2, "output": "嘿，现在能听到我说话了吗？我刚修好了我的麦克风。", "provider": "xiaomi", "round": 3, "skipped": false}
+{"error": "", "item": "en-2", "ms": 688.0, "output": "听起来不错，我今晚下班后就上线。", "provider": "xiaomi", "round": 3, "skipped": false}
+{"error": "", "item": "en-3", "ms": 712.0, "output": "抱歉，我的麦克风刚才断了一下，你说了什么？", "provider": "xiaomi", "round": 3, "skipped": false}
+{"error": "", "item": "en-4", "ms": 824.4, "output": "你能告诉我你从哪里找到那个头像的吗？我一直在找类似的。", "provider": "xiaomi", "round": 3, "skipped": false}
+{"error": "", "item": "en-5", "ms": 1183.9, "output": "现在延迟真的很严重，我觉得服务器有点撑不住了。", "provider": "xiaomi", "round": 3, "skipped": false}
+{"error": "", "item": "ja-1", "ms": 994.1, "output": "我们中学是自带便当制，如果没带的话，就买学校卖的50日元面包。", "provider": "xiaomi", "round": 3, "skipped": false}
+{"error": "", "item": "ja-2", "ms": 466.5, "output": "等一下，我正在准备。", "provider": "xiaomi", "round": 3, "skipped": false}
+{"error": "", "item": "ja-3", "ms": 505.6, "output": "这个世界，我好像以前来过。", "provider": "xiaomi", "round": 3, "skipped": false}
+{"error": "", "item": "ja-4", "ms": 667.1, "output": "抱歉，我的麦克风可能有点问题，你可能听不到我说话。", "provider": "xiaomi", "round": 3, "skipped": false}
+{"error": "", "item": "ja-5", "ms": 1010.4, "output": "我还没能汇合，你先在世界里转转吧。", "provider": "xiaomi", "round": 3, "skipped": false}
+{"error": "", "item": "ko-1", "ms": 747.3, "output": "麦克风听不清，能麻烦您再说一遍吗？", "provider": "xiaomi", "round": 3, "skipped": false}
+{"error": "", "item": "ko-2", "ms": 578.6, "output": "这个世界真美，你是在哪里看到的？", "provider": "xiaomi", "round": 3, "skipped": false}
+{"error": "", "item": "ko-3", "ms": 488.6, "output": "我现在卡得动不了了。", "provider": "xiaomi", "round": 3, "skipped": false}
+{"error": "", "item": "ko-4", "ms": 514.5, "output": "等一下，我去换个头像就来。", "provider": "xiaomi", "round": 3, "skipped": false}
+{"error": "", "item": "cs-1", "ms": 473.0, "output": "这个世界我昨天逛过了，挺有意思的。", "provider": "xiaomi", "round": 3, "skipped": false}
+{"error": "", "item": "cs-2", "ms": 723.7, "output": "稍等，我换个头像就来。", "provider": "xiaomi", "round": 3, "skipped": false}
+{"error": "", "item": "cs-3", "ms": 727.6, "output": "好的各位，我先下线了，明天见。", "provider": "xiaomi", "round": 3, "skipped": false}
+{"error": "", "item": "cs-4", "ms": 564.5, "output": "这是从韩国来的吗？看着像国内的模型。", "provider": "xiaomi", "round": 3, "skipped": false}
+{"error": "", "item": "cs-5", "ms": 533.0, "output": "好的，我现在去换衣服，等我一下。", "provider": "xiaomi", "round": 3, "skipped": false}
+{"error": "", "item": "2sp-1", "ms": 560.4, "output": "A: 你好，初次见面。  \nB: 嗨！很高兴认识你，我来自加拿大。", "provider": "xiaomi", "round": 3, "skipped": false}
+{"error": "", "item": "2sp-2", "ms": 695.3, "output": "A: 这个怎么打开？\nB: 按一下那边的按钮就行了。", "provider": "xiaomi", "round": 3, "skipped": false}
+{"error": "", "item": "2sp-3", "ms": 569.7, "output": "A: 你今晚会参加活动吗？\nB: 应该会去，你要一起吗？", "provider": "xiaomi", "round": 3, "skipped": false}
+{"error": "", "item": "zh-1", "ms": 740.3, "output": "用餐时间为上午9点至下午5点。", "provider": "xiaomi", "round": 4, "skipped": false}
+{"error": "", "item": "zh-2", "ms": 615.8, "output": "你那边网络是不是卡了？我看你一直在原地转圈。", "provider": "xiaomi", "round": 4, "skipped": false}
+{"error": "", "item": "zh-3", "ms": 611.7, "output": "这局好像有人掉线了，我们稍等一下吧。", "provider": "xiaomi", "round": 4, "skipped": false}
+{"error": "", "item": "yue-1", "ms": 675.1, "output": "麻烦你帮我看看他是不是站在门口。", "provider": "xiaomi", "round": 4, "skipped": false}
+{"error": "", "item": "yue-2", "ms": 451.6, "output": "我今天没空，明天再说吧。", "provider": "xiaomi", "round": 4, "skipped": false}
+{"error": "", "item": "en-1", "ms": 1154.3, "output": "嘿，现在能听到我说话了吗？我刚修好了我的麦克风。", "provider": "xiaomi", "round": 4, "skipped": false}
+{"error": "", "item": "en-2", "ms": 611.4, "output": "听起来不错，我今晚下班后会上线。", "provider": "xiaomi", "round": 4, "skipped": false}
+{"error": "", "item": "en-3", "ms": 532.1, "output": "抱歉，我的麦克风刚才断了一下，你说了什么？", "provider": "xiaomi", "round": 4, "skipped": false}
+{"error": "", "item": "en-4", "ms": 999.0, "output": "你能告诉我你那个头像是从哪里找到的吗？我一直在找类似的。", "provider": "xiaomi", "round": 4, "skipped": false}
+{"error": "", "item": "en-5", "ms": 597.4, "output": "现在延迟真的很严重，我觉得服务器有点吃不消了。", "provider": "xiaomi", "round": 4, "skipped": false}
+{"error": "", "item": "ja-1", "ms": 1498.8, "output": "我们中学是自带便当制，如果不带的话，可以买学校卖的50日元的面包。", "provider": "xiaomi", "round": 4, "skipped": false}
+{"error": "", "item": "ja-2", "ms": 474.7, "output": "等一下，我正在准备。", "provider": "xiaomi", "round": 4, "skipped": false}
+{"error": "", "item": "ja-3", "ms": 472.2, "output": "这个世界，我好像以前来过。", "provider": "xiaomi", "round": 4, "skipped": false}
+{"error": "", "item": "ja-4", "ms": 9461.9, "output": "抱歉，我的麦克风现在可能有点问题，你可能听不到我说话。", "provider": "xiaomi", "round": 4, "skipped": false}
+{"error": "", "item": "ja-5", "ms": 585.4, "output": "我还没能汇合，你先在世界里转转吧。", "provider": "xiaomi", "round": 4, "skipped": false}
+{"error": "", "item": "ko-1", "ms": 1521.9, "output": "麦克风听不清，能麻烦您再说一遍吗？", "provider": "xiaomi", "round": 4, "skipped": false}
+{"error": "", "item": "ko-2", "ms": 1354.2, "output": "这个世界真漂亮，你在哪里看到的？", "provider": "xiaomi", "round": 4, "skipped": false}
+{"error": "", "item": "ko-3", "ms": 1275.3, "output": "我现在卡得动不了了。", "provider": "xiaomi", "round": 4, "skipped": false}
+{"error": "", "item": "ko-4", "ms": 534.0, "output": "等一下，我去换个头像就来。", "provider": "xiaomi", "round": 4, "skipped": false}
+{"error": "", "item": "cs-1", "ms": 615.3, "output": "这个世界我昨天逛过了，挺有意思的。", "provider": "xiaomi", "round": 4, "skipped": false}
+{"error": "", "item": "cs-2", "ms": 519.2, "output": "等一下，我换个头像就来。", "provider": "xiaomi", "round": 4, "skipped": false}
+{"error": "", "item": "cs-3", "ms": 614.6, "output": "好的各位，我先下线了，明天见。", "provider": "xiaomi", "round": 4, "skipped": false}
+{"error": "", "item": "cs-4", "ms": 459.7, "output": "这个是从韩国来的吗？看着像国内的模型。", "provider": "xiaomi", "round": 4, "skipped": false}
+{"error": "", "item": "cs-5", "ms": 862.4, "output": "好的，我现在去换衣服，等我一下。", "provider": "xiaomi", "round": 4, "skipped": false}
+{"error": "", "item": "2sp-1", "ms": 1407.9, "output": "A: 你好，初次见面。  \nB: 嗨！很高兴见到你，我来自加拿大。", "provider": "xiaomi", "round": 4, "skipped": false}
+{"error": "", "item": "2sp-2", "ms": 741.8, "output": "A: 这个怎么打开？  \nB: 按一下那边的按钮就行了。", "provider": "xiaomi", "round": 4, "skipped": false}
+{"error": "", "item": "2sp-3", "ms": 839.6, "output": "A: 你今晚会参加活动吗？\nB: 应该会去，你要一起吗？", "provider": "xiaomi", "round": 4, "skipped": false}

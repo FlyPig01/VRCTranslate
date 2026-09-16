@@ -184,9 +184,13 @@ internal sealed class WatcherHarness : IAsyncDisposable
 /// <summary>Polling helper for state a background loop changes asynchronously.</summary>
 internal static class ProcessTestWait
 {
-    public static async Task UntilAsync(Func<bool> condition, string message)
+    /// <summary>
+    /// The default deadline covers ordinary scheduling; the switching tests pass
+    /// a wider one because only a fully parallel run starves the thread pool.
+    /// </summary>
+    public static async Task UntilAsync(Func<bool> condition, string message, TimeSpan? timeout = null)
     {
-        var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(5);
+        var deadline = DateTime.UtcNow + (timeout ?? TimeSpan.FromSeconds(5));
         while (DateTime.UtcNow < deadline)
         {
             if (condition()) return;
@@ -200,6 +204,13 @@ internal static class ProcessTestWait
 /// <summary>Capture whose start result is scripted; no audio device is touched.</summary>
 internal sealed class FakeLoopbackCapture : IAudioCapture
 {
+    // The counters are written from the coordinator's threads and polled from
+    // the test thread by the wait conditions, so every access is atomic.
+    private int _startCount;
+    private int _stopCount;
+    private int _disposeCount;
+    private volatile bool _isStarted;
+
     public FakeLoopbackCapture(AudioCaptureRequest request, Exception? startFailure = null)
     {
         Request = request;
@@ -216,13 +227,13 @@ internal sealed class FakeLoopbackCapture : IAudioCapture
 
     public int SampleRate => 16_000;
 
-    public int StartCount { get; private set; }
+    public int StartCount => Volatile.Read(ref _startCount);
 
-    public int StopCount { get; private set; }
+    public int StopCount => Volatile.Read(ref _stopCount);
 
-    public int DisposeCount { get; private set; }
+    public int DisposeCount => Volatile.Read(ref _disposeCount);
 
-    public bool IsStarted { get; private set; }
+    public bool IsStarted => _isStarted;
 
 #pragma warning disable CS0067 // The fake only has to satisfy the capture contract; it never delivers audio.
     public event EventHandler<AudioSamplesEventArgs>? SamplesReady;
@@ -236,23 +247,23 @@ internal sealed class FakeLoopbackCapture : IAudioCapture
 
     public Task StartAsync(CancellationToken cancellationToken = default)
     {
-        StartCount++;
+        Interlocked.Increment(ref _startCount);
         if (StartFailure is not null) throw StartFailure;
-        IsStarted = true;
+        _isStarted = true;
         return Task.CompletedTask;
     }
 
     public Task StopAsync(CancellationToken cancellationToken = default)
     {
-        StopCount++;
-        IsStarted = false;
+        Interlocked.Increment(ref _stopCount);
+        _isStarted = false;
         return Task.CompletedTask;
     }
 
     public ValueTask DisposeAsync()
     {
-        DisposeCount++;
-        IsStarted = false;
+        Interlocked.Increment(ref _disposeCount);
+        _isStarted = false;
         return ValueTask.CompletedTask;
     }
 }

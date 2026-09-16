@@ -40,8 +40,9 @@ public sealed class VrchatProcessSwitchingTests
         await harness.ReleasePollAsync();
         await harness.ReleaseConfirmationAsync();
         await ProcessTestWait.UntilAsync(
-            () => coordinator.SourceKind == AudioCaptureSourceKind.ProcessLoopback,
-            "协调器未切换到 VRChat 进程音频");
+            () => coordinator.SourceKind == AudioCaptureSourceKind.ProcessLoopback && InstallSettled(factory),
+            "协调器未切换到 VRChat 进程音频",
+            TimeSpan.FromSeconds(10));
 
         Assert.Equal(Vrchat, coordinator.Target);
         Assert.Equal(Vrchat, coordinator.State.ProcessIdentity);
@@ -49,13 +50,16 @@ public sealed class VrchatProcessSwitchingTests
         Assert.Equal(Vrchat, factory.Created[^1].Request.TargetProcess);
         Assert.Equal(1, factory.Created[0].StopCount);
         Assert.Equal(1, factory.Created[0].DisposeCount);
-        Assert.True(changes[^1].IsBoundary);
+        AudioSourceChangedEventArgs boundary;
+        lock (changes) boundary = changes[^1];
+        Assert.True(boundary.IsBoundary);
 
         await harness.ReleasePollAsync();
         await harness.ReleaseConfirmationAsync();
         await ProcessTestWait.UntilAsync(
-            () => coordinator.SourceKind == AudioCaptureSourceKind.SystemLoopback,
-            "VRChat 退出后未切回系统混音");
+            () => coordinator.SourceKind == AudioCaptureSourceKind.SystemLoopback && InstallSettled(factory),
+            "VRChat 退出后未切回系统混音",
+            TimeSpan.FromSeconds(10));
 
         Assert.Null(coordinator.Target);
         Assert.Null(coordinator.State.ProcessIdentity);
@@ -68,7 +72,9 @@ public sealed class VrchatProcessSwitchingTests
             },
             factory.Created.Select(capture => capture.Request.SourceKind));
         // 每次换流都是边界，旧采集实例全部释放，只剩当前这一条在跑。
-        Assert.All(changes, change => Assert.True(change.IsBoundary));
+        AudioSourceChangedEventArgs[] changesSnapshot;
+        lock (changes) changesSnapshot = [.. changes];
+        Assert.All(changesSnapshot, change => Assert.True(change.IsBoundary));
         Assert.All(factory.Created.SkipLast(1), capture => Assert.Equal(1, capture.DisposeCount));
         Assert.Equal(0, factory.Created[^1].DisposeCount);
         Assert.True(factory.Created[^1].IsStarted);
@@ -110,4 +116,17 @@ public sealed class VrchatProcessSwitchingTests
         new(
             [.. identities.Select(identity => new VrchatProcessCandidate(identity, CurrentSession, HasForegroundWindow: false))],
             CurrentSession);
+
+    /// <summary>
+    /// The install transition only counts as finished when the new capture runs
+    /// and every retired one is disposed: SourceKind flips in the middle of the
+    /// transition, before the old capture's stop/dispose has run.
+    /// </summary>
+    private static bool InstallSettled(FakeLoopbackCaptureFactory factory)
+    {
+        var created = factory.Created;
+        return created.Count > 0 &&
+               created[^1].IsStarted &&
+               created.SkipLast(1).All(capture => capture.DisposeCount == 1);
+    }
 }

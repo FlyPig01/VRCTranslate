@@ -43,31 +43,6 @@ public static class PortableStorage
         return Path.Combine(all);
     }
 
-    /// <summary>
-    /// Copies settings written by the pre-portable layout, which always used the
-    /// user profile, into the portable folder. Runs once, keeps the originals and
-    /// skips downloads because those are reproducible.
-    /// </summary>
-    public static void MigrateLegacyData()
-    {
-        if (Current.Value.UsesUserProfile || Current.Value.IsOverridden) return;
-        var legacy = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "VRCTranslate");
-        foreach (var name in AppDataFiles.All)
-        {
-            try
-            {
-                var source = Path.Combine(legacy, name);
-                var destination = GetPath(name);
-                if (File.Exists(source) && !File.Exists(destination)) File.Copy(source, destination);
-            }
-            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-            {
-                // A migration failure must never stop the application from starting.
-            }
-        }
-    }
-
     /// <summary>Pure candidate selection, shared with tests: the first writable candidate wins.</summary>
     public static Resolution Select(
         string? configuredDirectory,

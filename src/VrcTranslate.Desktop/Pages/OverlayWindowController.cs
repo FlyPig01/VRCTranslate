@@ -21,6 +21,11 @@ internal sealed class OverlayWindowController : IDisposable
     private const uint LwaAlpha = 0x00000002;
     private const int SwHide = 0;
     private const int SwShowNoActivate = 4;
+    private const uint SwpNoMove = 0x0002;
+    private const uint SwpNoSize = 0x0001;
+    private const uint SwpNoActivate = 0x0010;
+    private const uint SwpShowWindow = 0x0040;
+    private static readonly IntPtr HwndTopmost = new(-1);
 
     private readonly Window _window;
     private readonly AppWindow _appWindow;
@@ -141,10 +146,16 @@ internal sealed class OverlayWindowController : IDisposable
         try
         {
             var hwnd = WindowNative.GetWindowHandle(window);
-            if (hwnd == IntPtr.Zero || !ShowWindow(hwnd, SwShowNoActivate))
+            if (hwnd == IntPtr.Zero)
             {
                 window.Activate();
+                return;
             }
+
+            // ShowWindow returns the previous visibility state, not success.
+            // A hidden window therefore legitimately returns false here.
+            _ = ShowWindow(hwnd, SwShowNoActivate);
+            BringToTopWithoutActivation(hwnd);
         }
         catch
         {
@@ -167,7 +178,11 @@ internal sealed class OverlayWindowController : IDisposable
         }
     }
 
-    /// <summary>Shows the existing HWND, optionally giving the editor focus.</summary>
+    /// <summary>
+    /// Shows the existing HWND. A non-activating show still raises the overlay to
+    /// the topmost band, so the game keeps keyboard focus while the user can see
+    /// the subtitle immediately.
+    /// </summary>
     public void Show(bool activate)
     {
         if (_disposed) return;
@@ -189,12 +204,32 @@ internal sealed class OverlayWindowController : IDisposable
                 // HWND iconic. SW_SHOWNOACTIVATE restores its last rectangle
                 // without taking focus from the game/current foreground app.
                 _ = ShowWindow(_hwnd, SwShowNoActivate);
+                BringToTopWithoutActivation();
             }
 
             return;
         }
 
         _appWindow.Show(activate);
+        if (!activate) BringToTopWithoutActivation();
+    }
+
+    private void BringToTopWithoutActivation()
+    {
+        if (_disposed || _hwnd == IntPtr.Zero) return;
+        BringToTopWithoutActivation(_hwnd);
+    }
+
+    private static void BringToTopWithoutActivation(IntPtr hwnd)
+    {
+        _ = SetWindowPos(
+            hwnd,
+            HwndTopmost,
+            0,
+            0,
+            0,
+            0,
+            SwpNoMove | SwpNoSize | SwpNoActivate | SwpShowWindow);
     }
 
     /// <summary>Hides the existing HWND so the next shortcut reuses it.</summary>
@@ -519,6 +554,17 @@ internal sealed class OverlayWindowController : IDisposable
     [DllImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static extern bool IsWindowVisible(IntPtr hWnd);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool SetWindowPos(
+        IntPtr hWnd,
+        IntPtr hWndInsertAfter,
+        int x,
+        int y,
+        int width,
+        int height,
+        uint flags);
 
     [DllImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]

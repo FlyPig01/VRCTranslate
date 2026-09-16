@@ -49,8 +49,13 @@ public static class VrcTranslateOverlaySmokeNative
     public const long WsCaption = 0x00C00000L;
     public const long WsThickFrame = 0x00040000L;
     public const long WsSysMenu = 0x00080000L;
+    public const long WsExTopmost = 0x00000008L;
     public const long WsExLayered = 0x00080000L;
     public const uint LwaAlpha = 0x00000002;
+    private static readonly IntPtr HwndNotTopmost = new IntPtr(-2);
+    private const uint SwpNoSize = 0x0001;
+    private const uint SwpNoMove = 0x0002;
+    private const uint SwpNoActivate = 0x0010;
 
     [StructLayout(LayoutKind.Sequential)]
     public struct RECT
@@ -120,6 +125,23 @@ public static class VrcTranslateOverlaySmokeNative
     [DllImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static extern bool ShowWindow(IntPtr hwnd, int command);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool SetWindowPos(
+        IntPtr hwnd,
+        IntPtr insertAfter,
+        int x,
+        int y,
+        int width,
+        int height,
+        uint flags);
+
+    public static void RemoveTopmost(IntPtr hwnd)
+    {
+        if (!SetWindowPos(hwnd, HwndNotTopmost, 0, 0, 0, 0, SwpNoMove | SwpNoSize | SwpNoActivate))
+            throw new Win32Exception(Marshal.GetLastWin32Error(), "SetWindowPos(HWND_NOTOPMOST) failed.");
+    }
 
     [DllImport("user32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
@@ -384,6 +406,9 @@ function Assert-OverlayContract {
     if (($exStyle -band [VrcTranslateOverlaySmokeNative]::WsExLayered) -eq 0) {
         throw "$Title overlay is missing WS_EX_LAYERED."
     }
+    if (($exStyle -band [VrcTranslateOverlaySmokeNative]::WsExTopmost) -eq 0) {
+        throw "$Title overlay is missing WS_EX_TOPMOST."
+    }
     Assert-Alpha $handle $Opacity $Title
 
     try {
@@ -493,6 +518,12 @@ function Assert-SubtitleShortcutKeepsForeground {
         [VrcTranslateOverlaySmokeNative]::IsWindow($handle) -and
         -not [VrcTranslateOverlaySmokeNative]::IsWindowVisible($handle)
     }
+    [VrcTranslateOverlaySmokeNative]::RemoveTopmost($handle)
+    Wait-NativeState -Failure 'Could not remove WS_EX_TOPMOST before testing shortcut restoration.' -Predicate {
+        $style = [VrcTranslateOverlaySmokeNative]::GetWindowLongValue(
+            $handle, [VrcTranslateOverlaySmokeNative]::GwlExStyle)
+        ($style -band [VrcTranslateOverlaySmokeNative]::WsExTopmost) -eq 0
+    }
     [VrcTranslateOverlaySmokeNative]::ShowWindow($mainHandle, 5) | Out-Null
     try { $MainWindow.SetFocus() } catch { }
     [VrcTranslateOverlaySmokeNative]::BringWindowToTop($mainHandle) | Out-Null
@@ -504,6 +535,11 @@ function Assert-SubtitleShortcutKeepsForeground {
     [VrcTranslateOverlaySmokeNative]::TapGesture($Hotkey)
     Wait-NativeState -Failure 'Subtitle shortcut did not show the hidden window.' -Predicate {
         [VrcTranslateOverlaySmokeNative]::IsWindowVisible($handle)
+    }
+    $exStyle = [VrcTranslateOverlaySmokeNative]::GetWindowLongValue(
+        $handle, [VrcTranslateOverlaySmokeNative]::GwlExStyle)
+    if (($exStyle -band [VrcTranslateOverlaySmokeNative]::WsExTopmost) -eq 0) {
+        throw 'Subtitle shortcut reopened the window without restoring WS_EX_TOPMOST.'
     }
     Start-Sleep -Milliseconds 250
     $foreground = [VrcTranslateOverlaySmokeNative]::GetForegroundWindow()

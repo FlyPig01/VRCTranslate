@@ -1,4 +1,4 @@
-# V2 测试目录
+# 测试目录
 
 测试按层放置，便于单独运行：
 
@@ -6,13 +6,13 @@
 - `VrcTranslate.Application.Tests`：文字与语音共用翻译服务、双目标翻译、取消/重试、语音分段和采集会话。
 - `VrcTranslate.Infrastructure.Tests`：JSON 配置、Provider 回显、Provider Catalog、音频转换和本地模型契约。
 
-在 `v2` 目录执行：
+在项目根目录执行：
 
 ```powershell
 dotnet test VrcTranslate.sln -c Debug -p:Platform=x64
 ```
 
-当前分层测试共 313 项（Core 63、Application 106、Infrastructure 144）。内置 ONNX 模型存在时，Infrastructure 层会真实加载 SenseVoice 并跑一次识别；模型缺失时该用例自动跳过。
+测试总数随功能持续增加，以验证脚本的实际输出为准。内置 ONNX 模型存在时，Infrastructure 层会真实加载 SenseVoice 并跑一次识别；模型缺失时该用例自动跳过。
 
 只运行某一层时，直接把解决方案替换为对应的 `.csproj` 路径即可。
 

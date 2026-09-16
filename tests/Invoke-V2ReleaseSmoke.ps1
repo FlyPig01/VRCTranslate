@@ -1,17 +1,27 @@
 param(
-    [string] $Executable = (Join-Path $PSScriptRoot '..\artifacts\manual-test\VrcTranslate.exe')
+    [string] $Executable = (Join-Path $PSScriptRoot '..\artifacts\manual-test\VrcTranslate.exe'),
+    [string] $ExpectedVersion = '1.0.0'
 )
 
 $ErrorActionPreference = 'Stop'
 $Executable = (Resolve-Path -LiteralPath $Executable).Path
 $OutputDirectory = Split-Path -Parent $Executable
-# The app keeps its state (and its crash log) in the portable data folder beside the executable.
-$StartupLog = Join-Path $OutputDirectory 'data\startup-error.log'
+$SmokeDataDirectory = Join-Path ([System.IO.Path]::GetTempPath()) (
+    'VRCTranslate-release-smoke-' + [Guid]::NewGuid().ToString('N'))
+$StartupLog = Join-Path $SmokeDataDirectory 'startup-error.log'
+$PreviousDataDirectory = [Environment]::GetEnvironmentVariable('VRC_TRANSLATE_DATA_DIR', 'Process')
 $IconPath = Join-Path $OutputDirectory 'app.ico'
 
 if (-not (Test-Path -LiteralPath $IconPath)) { throw "Release icon is missing: $IconPath" }
 if ((Get-Item -LiteralPath $IconPath).Length -lt 4000) { throw 'Release icon is unexpectedly small.' }
 if ((Get-Item -LiteralPath $Executable).Length -lt 100000) { throw 'Release executable is unexpectedly small.' }
+$VersionInfo = (Get-Item -LiteralPath $Executable).VersionInfo
+if ($VersionInfo.FileVersion -ne "$ExpectedVersion.0") {
+    throw "Release FileVersion is '$($VersionInfo.FileVersion)'; expected '$ExpectedVersion.0'."
+}
+if ($VersionInfo.ProductVersion -ne $ExpectedVersion) {
+    throw "Release ProductVersion is '$($VersionInfo.ProductVersion)'; expected '$ExpectedVersion'."
+}
 
 $existing = @()
 for ($attempt = 0; $attempt -lt 40; $attempt++) {
@@ -41,8 +51,10 @@ function Find-DescendantById($root, [string] $automationId) {
     return $root.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $condition)
 }
 
-Remove-Item -LiteralPath $StartupLog -ErrorAction SilentlyContinue
+New-Item -ItemType Directory -Path $SmokeDataDirectory -Force | Out-Null
+[Environment]::SetEnvironmentVariable('VRC_TRANSLATE_DATA_DIR', $SmokeDataDirectory, 'Process')
 $process = $null
+$startupFailure = $null
 try {
     $process = Start-Process -FilePath $Executable -WorkingDirectory $OutputDirectory -PassThru
     $root = [System.Windows.Automation.AutomationElement]::RootElement
@@ -131,17 +143,21 @@ try {
     if (-not $exited) {
         throw 'Closing the main window left VrcTranslate.exe running; overlay shutdown did not complete.'
     }
-    Write-Host 'V2 Release smoke passed, including main-window overlay shutdown.' -ForegroundColor Green
 }
 finally {
     if ($null -ne $process -and -not $process.HasExited) {
         Stop-Process -Id $process.Id -Force
     }
     Start-Sleep -Seconds 2
+    if (Test-Path -LiteralPath $StartupLog) {
+        $startupFailure = Get-Content -LiteralPath $StartupLog -Raw
+    }
+    [Environment]::SetEnvironmentVariable('VRC_TRANSLATE_DATA_DIR', $PreviousDataDirectory, 'Process')
+    Remove-Item -LiteralPath $SmokeDataDirectory -Recurse -Force -ErrorAction SilentlyContinue
 }
 
-if (Test-Path -LiteralPath $StartupLog) {
-    throw "Release smoke wrote a startup failure log:`n$(Get-Content -LiteralPath $StartupLog -Raw)"
+if ($null -ne $startupFailure) {
+    throw "Release smoke wrote a startup failure log:`n$startupFailure"
 }
 
 # The functional smoke above validates navigation and the profile dialog. Run
@@ -153,3 +169,4 @@ $visualSmoke = Join-Path $PSScriptRoot 'Invoke-ReleaseOverlayVisualSmoke.ps1'
 if ($LASTEXITCODE -ne 0) {
     throw "Release overlay visual smoke failed with exit code $LASTEXITCODE."
 }
+Write-Host 'Release smoke passed, including main-window overlay shutdown.' -ForegroundColor Green

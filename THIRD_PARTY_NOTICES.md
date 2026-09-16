@@ -1,6 +1,6 @@
 # Third-party notices
 
-VRCTranslate (V2 native desktop app) uses the following third-party components.
+VRCTranslate (native desktop app) uses the following third-party components.
 
 ## SenseVoiceSmall model (bundled)
 
@@ -10,7 +10,7 @@ VRCTranslate (V2 native desktop app) uses the following third-party components.
 - ONNX export used here: <https://huggingface.co/csukuangfj/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17>
 - Project and license (MIT License, Copyright (c) 2025 FunASR): <https://github.com/FunAudioLLM/SenseVoice/blob/main/LICENSE>
 
-The desktop release ships this payload inside the application package under `Models/sensevoice/`. SenseVoice is MIT-licensed, which permits redistribution; this notice provides the required attribution.
+The desktop release ships this payload inside the application package under `程序文件/Models/sensevoice/`. SenseVoice is MIT-licensed, which permits redistribution; this notice provides the required attribution.
 
 ## pyannote segmentation 3.0 model (bundled)
 
@@ -20,7 +20,7 @@ The desktop release ships this payload inside the application package under `Mod
 - ONNX conversion used here: <https://huggingface.co/csukuangfj/sherpa-onnx-pyannote-segmentation-3-0>
 - License (MIT License, Copyright (c) 2022 CNRS): the LICENSE file shipped in the conversion repository
 
-The desktop release ships this model inside the application package under `Models/speaker/`.
+The desktop release ships this model inside the application package under `程序文件/Models/speaker/`.
 
 ## 3D-Speaker CAM++ speaker-embedding model (bundled)
 
@@ -29,7 +29,7 @@ The desktop release ships this model inside the application package under `Model
 - Conversion source: <https://huggingface.co/csukuangfj/speaker-embedding-models>
 - Project and license (Apache License 2.0): <https://github.com/modelscope/3D-Speaker>
 
-The desktop release ships this model inside the application package under `Models/speaker/`. Both speaker models are used only when the user enables speaker labels; the voiceprints derived from them stay on the local machine.
+The desktop release ships this model inside the application package under `程序文件/Models/speaker/`. Both speaker models are used only when the user enables speaker labels; the voiceprints derived from them stay on the local machine.
 
 ## sherpa-onnx (bundled)
 

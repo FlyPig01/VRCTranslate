@@ -13,23 +13,16 @@ public static class AppDataFiles
     public const string OverlayLayout = "v2-overlay-layout.json";
     public const string Glossary = "glossary.json";
 
-    /// <summary>Stage-2 voiceprint library; listed so the portable migration carries it too.</summary>
+    /// <summary>Stage-2 voiceprint library.</summary>
     public const string Speakers = "v2-speakers.json";
 
-    /// <summary>Crash log written next to the settings; kept out of <see cref="All"/> so it is never migrated.</summary>
+    /// <summary>Crash log written next to the settings.</summary>
     public const string StartupErrorLog = "startup-error.log";
 
     /// <summary>
     /// Bounded, overwritten log of the last process loopback activations. It
-    /// holds technical values only (build, formats, HRESULTs) and is likewise
-    /// kept out of <see cref="All"/> so a migration never carries it.
+    /// holds technical values only (build, formats, HRESULTs).
     /// </summary>
     public const string CaptureDiagnostics = "capture-diagnostics.log";
 
-    /// <summary>Every settings document the pre-portable user-profile layout may hold.</summary>
-    public static IReadOnlyList<string> All { get; } =
-    [
-        Route, Profiles, UserSettings, SelfTranslation, VoiceSettings,
-        SelfVoiceSettings, OverlayAppearance, OverlayLayout, Glossary, Speakers,
-    ];
 }

@@ -8,22 +8,19 @@ namespace VrcTranslate.Application.Tests;
 
 /// <summary>
 /// D28/D29 acceptance: other-player captions queue instead of dropping, commit in
-/// caption order, and only real translations that differ from the recognized text
-/// ever reach the chatbox.
+/// caption order, and remain local to the subtitle surface.
 /// </summary>
 public sealed class OtherPlayerCaptionPipelineTests : IAsyncDisposable
 {
     private readonly ScriptedProvider _provider = new();
     private readonly RecordingSurface _surface = new();
-    private readonly RecordingChatbox _chatbox = new();
     private readonly OtherPlayerCaptionPipeline _pipeline;
 
     public OtherPlayerCaptionPipelineTests()
     {
         _pipeline = new OtherPlayerCaptionPipeline(
             new TranslationService(_provider, new PassThroughGuard()),
-            _surface,
-            _chatbox);
+            _surface);
     }
 
     public async ValueTask DisposeAsync() => await _pipeline.DisposeAsync();
@@ -31,7 +28,6 @@ public sealed class OtherPlayerCaptionPipelineTests : IAsyncDisposable
     private OtherPlayerCaptionPipeline CreatePipeline(int concurrency, int capacity) => new(
         new TranslationService(_provider, new PassThroughGuard()),
         _surface,
-        _chatbox,
         new OtherPlayerCaptionPipelineOptions { MaxConcurrentTranslations = concurrency, QueueCapacity = capacity });
 
     [Fact]
@@ -59,7 +55,6 @@ public sealed class OtherPlayerCaptionPipelineTests : IAsyncDisposable
         Assert.Equal(
             [("A", "译A"), ("B", "译B"), ("C", "译C")],
             _surface.FilledSnapshot().Select(item => (TextOf(item.Id), item.Translation)));
-        Assert.Equal(["译A", "译B", "译C"], _chatbox.SentSnapshot());
     }
 
     [Fact]
@@ -79,12 +74,44 @@ public sealed class OtherPlayerCaptionPipelineTests : IAsyncDisposable
         _provider.Succeed("A", "译A");
         await TestWait.UntilAsync(() => _surface.FilledSnapshot().Count == 2, "前两句未落定");
         Assert.Equal(["A", "B"], _surface.FilledSnapshot().Select(item => TextOf(item.Id)));
-        Assert.Equal(["译A", "译B"], _chatbox.SentSnapshot());
 
         _provider.Succeed("C", "译C");
         await TestWait.UntilAsync(() => _surface.FilledSnapshot().Count == 3, "第三句未落定");
         Assert.Equal(["A", "B", "C"], _surface.FilledSnapshot().Select(item => TextOf(item.Id)));
-        Assert.Equal(["译A", "译B", "译C"], _chatbox.SentSnapshot());
+    }
+
+    [Fact]
+    public async Task Simultaneous_completions_never_reorder_local_subtitles()
+    {
+        await using var pipeline = CreatePipeline(concurrency: 16, capacity: 64);
+
+        for (var round = 0; round < 10; round++)
+        {
+            await pipeline.BeginSessionAsync();
+            var firstFilled = _surface.FilledSnapshot().Count;
+            var texts = Enumerable.Range(0, 32)
+                .Select(index => $"R{round:D2}-{index:D2}")
+                .ToArray();
+            foreach (var text in texts)
+            {
+                _provider.Gate(text);
+                Assert.True(pipeline.TrySubmit(Input(text)));
+            }
+
+            var expectedStarted = ((round + 1) * texts.Length);
+            await TestWait.UntilAsync(
+                () => _provider.StartedCount >= expectedStarted - 16,
+                $"第 {round + 1} 轮并发翻译未启动");
+            Parallel.ForEach(texts, text => _provider.Succeed(text, $"译{text}"));
+            await TestWait.UntilAsync(
+                () => _surface.FilledSnapshot().Count == firstFilled + texts.Length,
+                $"第 {round + 1} 轮字幕未全部落定");
+
+            var actual = _surface.FilledSnapshot()
+                .Skip(firstFilled)
+                .Select(item => TextOf(item.Id));
+            Assert.Equal(texts, actual);
+        }
     }
 
     [Fact]
@@ -101,7 +128,6 @@ public sealed class OtherPlayerCaptionPipelineTests : IAsyncDisposable
         Assert.Equal("译A", filled[0].Translation);
         Assert.Null(filled[1].Translation);
         Assert.Equal("译C", filled[2].Translation);
-        Assert.Equal(["译A", "译C"], _chatbox.SentSnapshot());
     }
 
     [Fact]
@@ -113,7 +139,6 @@ public sealed class OtherPlayerCaptionPipelineTests : IAsyncDisposable
         await TestWait.UntilAsync(() => _surface.FilledSnapshot().Count == 1, "回显句未落定");
         Assert.Null(_surface.FilledSnapshot().Single().Translation);
         Assert.Empty(_provider.RequestsSnapshot());
-        Assert.Empty(_chatbox.SentSnapshot());
     }
 
     [Fact]
@@ -125,21 +150,18 @@ public sealed class OtherPlayerCaptionPipelineTests : IAsyncDisposable
 
         await TestWait.UntilAsync(() => _surface.FilledSnapshot().Count == 1, "同文句未落定");
         Assert.Null(_surface.FilledSnapshot().Single().Translation);
-        Assert.Empty(_chatbox.SentSnapshot());
     }
 
     [Fact]
-    public async Task A_real_translation_sends_exactly_one_trimmed_message()
+    public async Task A_real_translation_is_filled_locally_without_chatbox_truncation()
     {
         await _pipeline.BeginSessionAsync();
         var longTranslation = new string('好', 200);
         _provider.Succeed("短句", longTranslation);
         Assert.True(_pipeline.TrySubmit(Input("短句")));
 
-        await TestWait.UntilAsync(() => _chatbox.SentSnapshot().Count == 1, "OSC 未发送");
-        Assert.Equal(144, _chatbox.SentSnapshot().Single().Length);
-        Assert.StartsWith("好", _chatbox.SentSnapshot().Single(), StringComparison.Ordinal);
-        Assert.Single(_surface.FilledSnapshot());
+        await TestWait.UntilAsync(() => _surface.FilledSnapshot().Count == 1, "译文未写入字幕");
+        Assert.Equal(longTranslation, _surface.FilledSnapshot().Single().Translation);
     }
 
     [Fact]
@@ -171,7 +193,6 @@ public sealed class OtherPlayerCaptionPipelineTests : IAsyncDisposable
         Assert.Equal("译A", filled[0].Translation);
         Assert.Equal("译B", filled[1].Translation);
         Assert.Null(filled[2].Translation);
-        Assert.Equal(["译A", "译B"], _chatbox.SentSnapshot());
     }
 
     [Fact]
@@ -186,9 +207,8 @@ public sealed class OtherPlayerCaptionPipelineTests : IAsyncDisposable
         _provider.Succeed("A", "译A");
         await Task.Delay(100);
 
-        // A late result of a dead run neither fills nor sends (D29.4).
+        // A late result of a dead run cannot fill the local surface (D29.4).
         Assert.Empty(_surface.FilledSnapshot());
-        Assert.Empty(_chatbox.SentSnapshot());
         Assert.False(_pipeline.TrySubmit(Input("B")));
 
         // A new run accepts and completes work again.
@@ -197,7 +217,6 @@ public sealed class OtherPlayerCaptionPipelineTests : IAsyncDisposable
         Assert.True(_pipeline.TrySubmit(Input("Z")));
         await TestWait.UntilAsync(() => _surface.FilledSnapshot().Count == 1, "重启后未落定");
         Assert.Equal("译Z", _surface.FilledSnapshot().Single().Translation);
-        Assert.Equal(["译Z"], _chatbox.SentSnapshot());
     }
 
     [Fact]
@@ -242,10 +261,17 @@ public sealed class OtherPlayerCaptionPipelineTests : IAsyncDisposable
     {
         private readonly object _sync = new();
         private readonly Dictionary<string, TaskCompletionSource<TranslationProviderResponse>> _gates = new();
+        private int _startedCount;
 
         public string Id => "scripted";
 
-        public int StartedCount { get; private set; }
+        public int StartedCount
+        {
+            get
+            {
+                lock (_sync) return _startedCount;
+            }
+        }
 
         public TaskCompletionSource<TranslationProviderResponse> Gate(string text)
         {
@@ -269,7 +295,7 @@ public sealed class OtherPlayerCaptionPipelineTests : IAsyncDisposable
             TaskCompletionSource<TranslationProviderResponse> gate;
             lock (_sync)
             {
-                StartedCount++;
+                _startedCount++;
                 Requests.Add(request);
                 gate = Gate(request.Text);
             }
@@ -319,20 +345,4 @@ public sealed class OtherPlayerCaptionPipelineTests : IAsyncDisposable
         }
     }
 
-    private sealed class RecordingChatbox : IChatboxOutput
-    {
-        private readonly object _sync = new();
-        private readonly List<string> _sent = [];
-
-        public Task SendChatboxAsync(string message, CancellationToken cancellationToken = default)
-        {
-            lock (_sync) _sent.Add(message);
-            return Task.CompletedTask;
-        }
-
-        public List<string> SentSnapshot()
-        {
-            lock (_sync) return [.. _sent];
-        }
-    }
 }

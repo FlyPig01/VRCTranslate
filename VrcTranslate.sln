@@ -21,6 +21,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VrcTranslate.Application.Te
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VrcTranslate.Infrastructure.Tests", "tests\VrcTranslate.Infrastructure.Tests\VrcTranslate.Infrastructure.Tests.csproj", "{90C8EF52-48D9-44DC-8ABF-B3B38BC2344D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VrcTranslate.Launcher", "src\VrcTranslate.Launcher\VrcTranslate.Launcher.csproj", "{340099F8-FC87-4AC9-97F5-A3576F7ACDF2}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -115,6 +117,18 @@ Global
 		{90C8EF52-48D9-44DC-8ABF-B3B38BC2344D}.Release|x64.Build.0 = Release|x64
 		{90C8EF52-48D9-44DC-8ABF-B3B38BC2344D}.Release|x86.ActiveCfg = Release|x64
 		{90C8EF52-48D9-44DC-8ABF-B3B38BC2344D}.Release|x86.Build.0 = Release|x64
+		{340099F8-FC87-4AC9-97F5-A3576F7ACDF2}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{340099F8-FC87-4AC9-97F5-A3576F7ACDF2}.Debug|Any CPU.Build.0 = Debug|x64
+		{340099F8-FC87-4AC9-97F5-A3576F7ACDF2}.Debug|x64.ActiveCfg = Debug|x64
+		{340099F8-FC87-4AC9-97F5-A3576F7ACDF2}.Debug|x64.Build.0 = Debug|x64
+		{340099F8-FC87-4AC9-97F5-A3576F7ACDF2}.Debug|x86.ActiveCfg = Debug|x64
+		{340099F8-FC87-4AC9-97F5-A3576F7ACDF2}.Debug|x86.Build.0 = Debug|x64
+		{340099F8-FC87-4AC9-97F5-A3576F7ACDF2}.Release|Any CPU.ActiveCfg = Release|x64
+		{340099F8-FC87-4AC9-97F5-A3576F7ACDF2}.Release|Any CPU.Build.0 = Release|x64
+		{340099F8-FC87-4AC9-97F5-A3576F7ACDF2}.Release|x64.ActiveCfg = Release|x64
+		{340099F8-FC87-4AC9-97F5-A3576F7ACDF2}.Release|x64.Build.0 = Release|x64
+		{340099F8-FC87-4AC9-97F5-A3576F7ACDF2}.Release|x86.ActiveCfg = Release|x64
+		{340099F8-FC87-4AC9-97F5-A3576F7ACDF2}.Release|x86.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -127,5 +141,6 @@ Global
 		{04398188-8548-4085-B3C3-5ED656D757BB} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{3DF5700C-AACC-4E6A-A377-90AAB1E15DB5} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{90C8EF52-48D9-44DC-8ABF-B3B38BC2344D} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
+		{340099F8-FC87-4AC9-97F5-A3576F7ACDF2} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 	EndGlobalSection
 EndGlobal

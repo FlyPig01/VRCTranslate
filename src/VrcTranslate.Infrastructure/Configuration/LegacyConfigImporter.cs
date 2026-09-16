@@ -146,7 +146,7 @@ public sealed class LegacyConfigImporter
             {
                 credentialReferences.Add(reference);
                 if (reference.StartsWith("legacy:", StringComparison.OrdinalIgnoreCase))
-                    warnings.Add($"翻译档案“{profileId}”的凭据只生成了引用，需在 V2 中重新验证。");
+                    warnings.Add($"翻译档案“{profileId}”的凭据只生成了引用，需在当前版本中重新验证。");
             }
 
             importedProfiles.Add(new TranslationProfile(
@@ -262,7 +262,7 @@ public sealed class LegacyConfigImporter
                 {
                     credentialReferences.Add(reference);
                     if (reference.StartsWith("legacy:", StringComparison.OrdinalIgnoreCase))
-                        warnings.Add($"语音识别档案“{profileId}”的凭据只生成了引用，需在 V2 中重新验证。");
+                        warnings.Add($"语音识别档案“{profileId}”的凭据只生成了引用，需在当前版本中重新验证。");
                 }
 
                 settings.Voice.AsrProfiles.Add(new SpeechRecognitionProfileSettings

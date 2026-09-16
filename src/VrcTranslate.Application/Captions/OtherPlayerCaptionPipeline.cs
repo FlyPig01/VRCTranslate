@@ -4,12 +4,6 @@ using VrcTranslate.Core.Translation;
 
 namespace VrcTranslate.Application.Captions;
 
-/// <summary>Chatbox port: the pipeline must not learn the concrete OSC client.</summary>
-public interface IChatboxOutput
-{
-    Task SendChatboxAsync(string message, CancellationToken cancellationToken = default);
-}
-
 /// <summary>The caption surface other-player sentences appear on.</summary>
 public interface IOtherPlayerSubtitleSurface
 {
@@ -45,7 +39,7 @@ public sealed record OtherPlayerCaptionInput(
     string? SourceLanguageHint,
     TranslationRoute Route);
 
-/// <summary>Why a caption finished the way it did; only Succeeded may reach the chatbox.</summary>
+/// <summary>Why a caption finished the way it did.</summary>
 public enum OtherPlayerTranslationStatus
 {
     Succeeded,
@@ -60,15 +54,13 @@ public sealed record OtherPlayerCaptionDiagnostics(long CaptionId, string Messag
 /// Other-player caption pipeline (D28/D29). Recognition results are published to
 /// the subtitle surface the moment they exist, then translated on an ordered
 /// session queue: a slow or failed sentence never drops or delays the next one,
-/// and results are applied strictly in caption order. The chatbox only ever sees
-/// a real service translation that differs from the recognized text - echo
-/// profiles, failures, cancellations and same-text replies stay local.
+/// and results are applied strictly in caption order. This pipeline has no
+/// chatbox dependency: other-player speech is local subtitle content only.
 /// </summary>
 public sealed class OtherPlayerCaptionPipeline : IAsyncDisposable
 {
     private readonly TranslationService _translator;
     private readonly IOtherPlayerSubtitleSurface _subtitles;
-    private readonly IChatboxOutput _chatbox;
     private readonly OtherPlayerCaptionPipelineOptions _options;
     private readonly object _lifecycle = new();
     private SessionState? _current;
@@ -79,12 +71,10 @@ public sealed class OtherPlayerCaptionPipeline : IAsyncDisposable
     public OtherPlayerCaptionPipeline(
         TranslationService translator,
         IOtherPlayerSubtitleSurface subtitles,
-        IChatboxOutput chatbox,
         OtherPlayerCaptionPipelineOptions? options = null)
     {
         _translator = translator ?? throw new ArgumentNullException(nameof(translator));
         _subtitles = subtitles ?? throw new ArgumentNullException(nameof(subtitles));
-        _chatbox = chatbox ?? throw new ArgumentNullException(nameof(chatbox));
         _options = options ?? OtherPlayerCaptionPipelineOptions.Default;
         if (_options.MaxConcurrentTranslations < 1) throw new ArgumentOutOfRangeException(nameof(options));
         if (_options.QueueCapacity < 1) throw new ArgumentOutOfRangeException(nameof(options));
@@ -139,7 +129,7 @@ public sealed class OtherPlayerCaptionPipeline : IAsyncDisposable
 
     /// <summary>
     /// Ends the run: nothing new is accepted, in-flight translations are
-    /// cancelled, and no caption of this run is filled or sent afterwards.
+    /// cancelled, and no caption of this run is updated afterwards.
     /// </summary>
     public async Task EndSessionAsync()
     {
@@ -218,8 +208,8 @@ public sealed class OtherPlayerCaptionPipeline : IAsyncDisposable
         {
             if (string.Equals(item.Input.Route.Profile.Provider, "echo", StringComparison.OrdinalIgnoreCase))
             {
-                // The echo profile returns its input by design; treating that as a
-                // translation is how recognized text leaked into the chatbox (D28).
+                // The echo profile returns its input by design, so it cannot provide
+                // a distinct translated line for the local subtitle (D28).
                 commit = new Commit(state.Generation, item.CaptionId, OtherPlayerTranslationStatus.TestEcho, null, null);
             }
             else
@@ -257,11 +247,7 @@ public sealed class OtherPlayerCaptionPipeline : IAsyncDisposable
             if (!state.IsActive) return;
             try
             {
-                await ApplyAsync(commit, state.Lifetime.Token).ConfigureAwait(false);
-            }
-            catch (OperationCanceledException)
-            {
-                return;
+                Apply(commit);
             }
             catch (Exception exception)
             {
@@ -270,7 +256,7 @@ public sealed class OtherPlayerCaptionPipeline : IAsyncDisposable
         }
     }
 
-    private async Task ApplyAsync(Commit commit, CancellationToken cancellationToken)
+    private void Apply(Commit commit)
     {
         if (commit.Status == OtherPlayerTranslationStatus.Succeeded && commit.Result is { } result)
         {
@@ -278,14 +264,12 @@ public sealed class OtherPlayerCaptionPipeline : IAsyncDisposable
             if (string.IsNullOrWhiteSpace(translated) || SameAfterTrim(result.OriginalText, translated))
             {
                 // A provider that hands back the recognized line produced one text,
-                // not a translation: the caption keeps its original, the chatbox stays quiet.
+                // not a translation: the local caption keeps its original only.
                 _subtitles.FillTranslation(commit.CaptionId, null);
                 return;
             }
 
             _subtitles.FillTranslation(commit.CaptionId, translated);
-            await _chatbox.SendChatboxAsync(
-                TranslationOutputFormatter.TrimForOsc(translated), cancellationToken).ConfigureAwait(false);
             return;
         }
 
@@ -308,7 +292,7 @@ public sealed class OtherPlayerCaptionPipeline : IAsyncDisposable
     /// <summary>
     /// One run's queue, workers and commit ledger. Committing reads ids out of the
     /// ledger strictly in caption order, so finishing out of order cannot reorder
-    /// the surface or the chatbox.
+    /// the subtitle surface.
     /// </summary>
     private sealed class SessionState
     {
@@ -363,20 +347,16 @@ public sealed class OtherPlayerCaptionPipeline : IAsyncDisposable
         /// <summary>Files one outcome; ids contiguous from this run's first id continue to the committer.</summary>
         public void Record(Commit commit)
         {
-            List<Commit>? ready = null;
             lock (_gate)
             {
                 if (!IsActive) return;
                 Ledger[commit.CaptionId] = commit;
                 while (NextCommitId is { } next && Ledger.Remove(next, out var item))
                 {
-                    (ready ??= []).Add(item);
+                    _ = Commits.Writer.TryWrite(item);
                     NextCommitId = next + 1;
                 }
             }
-
-            if (ready is null) return;
-            foreach (var item in ready) _ = Commits.Writer.TryWrite(item);
         }
 
         public async Task EndAsync()

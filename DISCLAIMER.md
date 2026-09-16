@@ -10,7 +10,7 @@
 ## 2. 不修改游戏
 
 本软件**不读写 VRChat 进程内存、不注入、不修改任何游戏文件**。
-他人语音通过 Windows 系统回环（loopback）采集系统音频，字幕通过 VRChat 官方支持的 **OSC Chatbox** 发送。
+他人语音通过 Windows 系统回环（loopback）采集系统音频，识别与翻译结果只显示在本地字幕浮窗。只有用户自己的输入或语音译文会通过 VRChat 官方支持的 **OSC Chatbox** 发送。
 
 ## 3. 可能出错
 
@@ -41,4 +41,3 @@
 
 本软件包含第三方组件（sherpa-onnx、ONNX Runtime、Silero VAD、SenseVoice、pyannote、CAM++ 等），
 各自的许可与版权见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
-

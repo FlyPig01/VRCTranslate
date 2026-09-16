@@ -146,7 +146,7 @@
           <TextBlock Style="{StaticResource SecondaryTextStyle}" TextWrapping="Wrap"
                      Text="非官方：第三方个人项目，与 VRChat 官方及各翻译服务商均无隶属或合作关系。" />
           <TextBlock Style="{StaticResource SecondaryTextStyle}" TextWrapping="Wrap"
-                     Text="不修改游戏：不读写游戏进程、不注入、不改游戏文件；音频经 Windows 系统回环采集，字幕经 VRChat 官方的 OSC Chatbox 发送。" />
+                     Text="不修改游戏：不读写游戏进程、不注入、不改游戏文件；他人语音经 Windows 系统回环采集，字幕只在本地浮窗显示。" />
           <TextBlock Style="{StaticResource SecondaryTextStyle}" TextWrapping="Wrap"
                      Text="可能出错：语音识别与机器翻译都可能出错，不保证译文正确、完整或及时，请勿用于需要准确性的场合。" />
           <TextBlock Style="{StaticResource SecondaryTextStyle}" TextWrapping="Wrap"

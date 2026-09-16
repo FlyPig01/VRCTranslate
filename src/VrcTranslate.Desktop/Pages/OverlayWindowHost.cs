@@ -211,6 +211,8 @@ internal static class OverlayWindowHost
         {
             try
             {
+                // The subtitle returns to the topmost band without stealing
+                // keyboard focus from VRChat.
                 ShowWindow(EnsureSubtitle(), activate: false);
             }
             catch

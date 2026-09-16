@@ -355,8 +355,7 @@ public sealed class SubtitleSpeechSession : VoiceSessionHost
             if (pipeline is not null) return pipeline;
             pipeline = new OtherPlayerCaptionPipeline(
                 _state.Translator,
-                new OverlaySubtitleSurface(),
-                new AppStateChatboxOutput(_state));
+                new OverlaySubtitleSurface());
             pipeline.Diagnostics += (_, args) => RaiseNotified(new SpeechNotificationEventArgs(
                 SpeechNotificationKind.Warning, "他人语音字幕", args.Message));
             _pipeline = pipeline;
@@ -395,7 +394,7 @@ public sealed class SubtitleSpeechSession : VoiceSessionHost
     protected override async Task DispatchRecognizedAsync(SpeechRecognitionResult result, long recognizedId)
     {
         // 组合根职责（D28.2）：档案恢复完成后才取本句的路由快照，运行中换
-        // 档案只影响下一句；翻译、字幕与 OSC 的顺序交给管线。
+        // 档案只影响下一句；管线只负责本地字幕，不具备 OSC 输出能力。
         await _state.Ready.ConfigureAwait(false);
         var current = _state.CurrentRoute;
         var recognizedLanguage = result.SourceLanguage;
@@ -426,13 +425,6 @@ internal sealed class OverlaySubtitleSurface : IOtherPlayerSubtitleSurface
 
     public void FillTranslation(long captionId, string? translatedText) =>
         OverlayWindowHost.FillSubtitleTranslationFromAnyThread(captionId, translatedText);
-}
-
-/// <summary>Sends through the app's current chatbox client; reads it per send so reloads apply.</summary>
-internal sealed class AppStateChatboxOutput(AppState state) : IChatboxOutput
-{
-    public Task SendChatboxAsync(string message, CancellationToken cancellationToken = default) =>
-        state.Osc.SendChatboxAsync(message, cancellationToken);
 }
 
 /// <summary>Own-voice session: microphone audio to the self-translation targets.</summary>

@@ -59,6 +59,7 @@ if ((Get-Content -Raw $guidePage) -notmatch '(?s)QQ.*Ctrl\+Alt\+F') { throw 'The
 $translationMarkup = Get-Content -Raw $translationPage
 $translationCode = Get-Content -Raw $translationPageCode
 $appStateSource = Get-Content -Raw (Join-Path $desktopSource 'AppState.cs')
+$portableStorageSource = Get-Content -Raw (Join-Path $v2Root 'src\VrcTranslate.Infrastructure\Storage\PortableStorage.cs')
 $sessionHostSource = Get-Content -Raw (Join-Path $desktopSource 'VoiceSessionHost.cs')
 $captionPipelineSource = Get-Content -Raw (Join-Path $v2Root 'src\VrcTranslate.Application\Captions\OtherPlayerCaptionPipeline.cs')
 $infrastructureSource = Get-Content -Raw (Join-Path $v2Root 'src\VrcTranslate.Infrastructure\Translation\DeepSeekTranslationProvider.cs')
@@ -85,6 +86,10 @@ $overlayLayoutContract = Get-Content -Raw (Join-Path $v2Root 'src\VrcTranslate.C
 $overlayLayoutStore = Get-Content -Raw (Join-Path $v2Root 'src\VrcTranslate.Infrastructure\Configuration\OverlayWindowLayoutStore.cs')
 $captionBufferSource = Get-Content -Raw (Join-Path $v2Root 'src\VrcTranslate.Application\Subtitles\SubtitleCaptionBuffer.cs')
 $captionSettingsSource = Get-Content -Raw (Join-Path $desktopSource 'SubtitleCaptionSettings.cs')
+
+if ($appStateSource -match 'MigrateLegacyData' -or $portableStorageSource -match 'MigrateLegacyData') {
+    throw 'A clean installation must never import profiles or API keys automatically from another data directory.'
+}
 
 function Resolve-OverlayDefaultDimension {
     param(
@@ -376,10 +381,13 @@ if (Test-Path -LiteralPath $legacyOverlayChrome) {
 if ($overlayControllerSource -notmatch 'OverlappedPresenter' -or
     $overlayControllerSource -notmatch 'SetBorderAndTitleBar\(hasBorder:\s*true,\s*hasTitleBar:\s*true\)' -or
     $overlayControllerSource -notmatch 'IsResizable\s*=\s*true' -or
+    $overlayControllerSource -notmatch 'SetWindowPos' -or
+    $overlayControllerSource -notmatch 'HwndTopmost' -or
+    $overlayControllerSource -notmatch 'SwpNoActivate' -or
     $overlayControllerSource -notmatch 'SetLayeredWindowAttributes' -or
     $overlayControllerSource -notmatch 'WsExLayered' -or
     $overlayControllerSource -match 'WM_NCHITTEST|WmNcHitTest|InputNonClientPointerSource|SetWindowRgn|CreateRoundRectRgn|CallWindowProc|SetWindowSubclass|GetCursorPos|mouse_event') {
-    throw 'Game overlays must use standard captioned Windows windows with native movement/resizing and layered opacity, without custom hit testing or window regions.'
+    throw 'Game overlays must use standard captioned Windows windows with native movement/resizing, layered opacity, and non-activating native topmost promotion, without custom hit testing or window regions.'
 }
 if ($mainWindowSource -notmatch 'StartGlobalHotkeys|PollGlobalHotkeys|GetAsyncKeyState' -or $mainWindowSource -notmatch 'OverlayWindowHost|ToggleQuickInput') { throw 'The shell must expose a working global shortcut route to the quick-input overlay.' }
 if ($mainWindowSource -notmatch 'Closed\s*\+=\s*OnWindowClosed' -or $mainWindowSource -notmatch 'OnWindowClosed' -or $mainWindowSource -notmatch 'OverlayWindowHost\.CloseAll') { throw 'Closing the main shell must stop global polling and close both overlays.' }
@@ -601,7 +609,9 @@ if ($quickInputSource -notmatch 'new\s+OverlayWindowController' -or
 }
 if ($overlayControllerSource -notmatch 'BestEffort\(\(\)\s*=>\s*ConfigurePresenter' -or
     $overlayControllerSource -notmatch 'BestEffort\(\(\)\s*=>\s*RestoreLayout' -or
-    $overlayControllerSource -notmatch 'hwnd\s*==\s*IntPtr\.Zero\s*\|\|\s*!ShowWindow' -or
+    $overlayControllerSource -notmatch 'hwnd\s*==\s*IntPtr\.Zero' -or
+    $overlayControllerSource -notmatch 'ShowWindow\(hwnd,\s*SwShowNoActivate\)' -or
+    $overlayControllerSource -notmatch 'BringToTopWithoutActivation\(hwnd\)' -or
     $quickInputSource -notmatch 'OverlayWindowController\.ShowFallback\(this, activate\)' -or
     $overlayCodeSource -notmatch 'OverlayWindowController\.ShowFallback\(this, activate\)') {
     throw 'Optional native presentation failures must retain an openable compatibility path for both overlays.'
@@ -684,15 +694,15 @@ if ($quickInputSource -notmatch 'TranslationOutputFormatter\.FormatForChatbox' -
     $sessionHostSource -notmatch 'TranslationOutputFormatter\.FormatForChatbox') {
     throw 'Own-input preview and own-voice OSC output must share the Core translation formatter.'
 }
-# 他人语音的 OSC 闸门住在 Application 层管线里（D28/D29）：只有真实服务的、
-# 与原文不同的译文才能TrimForOsc 后发送；echo/失败/取消/同文一律零报文。
-# 静态检查只兜住结构，行为由 OtherPlayerCaptionPipelineTests 的九条用例保证。
-if ($captionPipelineSource -notmatch 'TranslationOutputFormatter\.TrimForOsc' -or
+# 他人语音只属于本地字幕。Application 管线从类型上不得拥有 OSC/Chatbox
+# 输出能力；手动输入和自身语音的发送路径在上面的断言中单独保留。
+if ($captionPipelineSource -match 'IChatboxOutput|SendChatboxAsync|TrimForOsc' -or
+    $sessionHostSource -match 'AppStateChatboxOutput' -or
     $captionPipelineSource -notmatch 'OtherPlayerTranslationStatus\.TestEcho' -or
     $captionPipelineSource -notmatch 'SameAfterTrim' -or
     $voiceSource -match 'TrimForChatbox\s*\(' -or
     $voiceSource -match 'CombinedText|FormattedText') {
-    throw 'Other-player captions must send only real, differing translations through the shared length guard, with echo/failure/same-text staying local.'
+    throw 'Other-player recognition must remain local to the subtitle surface and must not have an OSC/Chatbox output dependency.'
 }
 # D29 的丢句根因不允许回潮：结果入口不得再用布尔短路丢弃上一句翻译期间到达的下一句。
 if ($sessionHostSource -match '_processingResult' -or
@@ -725,11 +735,13 @@ if ($overlayMarkup -notmatch '<Grid x:Name="OverlaySurface"' -or
 if ($overlayControllerSource -notmatch '_window\.ExtendsContentIntoTitleBar\s*=\s*false' -or
     $overlayControllerSource -notmatch 'SetBorderAndTitleBar\(hasBorder:\s*true,\s*hasTitleBar:\s*true\)' -or
     $overlayControllerSource -notmatch 'IsAlwaysOnTop\s*=\s*true' -or
+    $overlayControllerSource -notmatch 'BringToTopWithoutActivation' -or
+    $overlayControllerSource -notmatch 'SetWindowPos' -or
     $overlayControllerSource -notmatch 'ApplyOpacity' -or
     $overlayControllerSource -notmatch 'SetLayeredWindowAttributes' -or
     $overlayControllerSource -notmatch 'args\.Cancel\s*=\s*true' -or
     $overlayControllerSource -notmatch 'Hide\(\)') {
-    throw 'Overlay controller must retain the standard title bar, native border, always-on-top behavior, layered opacity, and close-to-hide lifecycle.'
+    throw 'Overlay controller must retain the standard title bar, native border, reliable non-activating topmost behavior, layered opacity, and close-to-hide lifecycle.'
 }
 if ($overlayMarkup -match 'Shadow' -or $quickInputSource -match 'Shadow') { throw 'Game overlays must not add shadows over the game view.' }
 if ($voiceSource -notmatch 'SpeechRecognitionRequest|State\.LocalSpeech' -or ($voiceSource -notmatch '"zh-CN"' -and $sessionHostSource -notmatch '"zh-CN"')) { throw 'VoicePage must use the local recognition boundary and keep translation output fixed to Simplified Chinese.' }

@@ -72,11 +72,10 @@ public sealed class PortableStorageTests
     }
 
     [Fact]
-    public void Migration_list_covers_settings_but_not_the_crash_log()
+    public void Storage_contract_does_not_expose_automatic_legacy_migration()
     {
-        Assert.Contains(AppDataFiles.Route, AppDataFiles.All);
-        Assert.Contains(AppDataFiles.UserSettings, AppDataFiles.All);
-        Assert.Contains(AppDataFiles.Speakers, AppDataFiles.All);
-        Assert.DoesNotContain(AppDataFiles.StartupErrorLog, AppDataFiles.All);
+        Assert.Null(typeof(PortableStorage).GetMethod(
+            "MigrateLegacyData",
+            System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static));
     }
 }

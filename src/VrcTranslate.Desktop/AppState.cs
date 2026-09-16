@@ -53,8 +53,8 @@ public sealed class AppState
         _profiles = CreateDefaultProfiles();
         Translator = new ApplicationTranslationService(new RoutedTranslationProvider(catalog), new PassThroughInvariantGuard());
         // Portable layout: every document lives in the data folder beside the
-        // executable unless the install location is read-only.
-        PortableStorage.MigrateLegacyData();
+        // executable unless the install location is read-only. A clean package
+        // never imports old profiles or API keys from another installation.
         OverlayAppearance = new OverlayAppearanceService(new JsonOverlayAppearanceStore(
             PortableStorage.GetPath(AppDataFiles.OverlayAppearance)));
         _settingsStore = new JsonConfigurationStore<RouteSettings>(

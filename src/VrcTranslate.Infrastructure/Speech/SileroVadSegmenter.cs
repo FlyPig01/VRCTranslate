@@ -9,6 +9,19 @@ namespace VrcTranslate.Infrastructure.Speech;
 /// the gate open (flooding the recognizer with noise) or mask quiet talkers.
 /// The native detector already enforces min-speech/min-silence/max-speech
 /// timing; this wrapper only adapts it to the ISpeechSegmenter contract.
+/// <para>
+/// Measured behaviour of the native detector (2026-09-16, see
+/// docs/D16与D17修复方案.md §2.2) - none of it is a defect, and the numbers are
+/// here so nobody has to re-derive them: the forced cut at max-speech overshoots
+/// by about 704 samples (1.4 analysis windows) and drops roughly 1280-1344
+/// samples (80-84 ms) at each boundary; the detector needs about 1280 samples
+/// (80 ms) of warm-up before the first segment starts; the trailing audio that
+/// never becomes a segment varies between 0 and ~1.9 s depending on the last
+/// window's speech probability. Real speech has never reached the 12 s cut
+/// (longest natural segment measured: 5.46 s), so those losses stay unobserved
+/// in practice; the regression test
+/// <c>A_continuous_signal_is_force_cut_at_12s_without_eating_speech</c> guards them.
+/// </para>
 /// </summary>
 public sealed class SileroVadSegmenter : ISpeechSegmenter, IDisposable
 {

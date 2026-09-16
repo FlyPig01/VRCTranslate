@@ -1,4 +1,5 @@
 using VrcTranslate.Application.Abstractions;
+using VrcTranslate.Application.Captions;
 using VrcTranslate.Application.Speech;
 using VrcTranslate.Core.Speech;
 using VrcTranslate.Core.Translation;
@@ -44,7 +45,6 @@ public abstract class VoiceSessionHost
     private LocalSpeechCaptureSession? _session;
     private VrchatProcessWatcher? _monitor;
     private volatile bool _running;
-    private volatile bool _processingResult;
 
     protected VoiceSessionHost(LocalSpeechService speech, IAudioCaptureFactory captures)
     {
@@ -62,6 +62,9 @@ public abstract class VoiceSessionHost
 
     /// <summary>Raised with a toast-worthy pipeline outcome; may arrive from a worker thread.</summary>
     public event EventHandler<SpeechNotificationEventArgs>? Notified;
+
+    /// <summary>Derives raise the shared notification from their own pipeline events.</summary>
+    protected void RaiseNotified(SpeechNotificationEventArgs args) => Notified?.Invoke(this, args);
 
     /// <summary>
     /// Raised when the capture source changes, so a visible page can label where
@@ -87,6 +90,13 @@ public abstract class VoiceSessionHost
     public string SourceLanguage { get; set; } = LocalSpeechLanguages.SelfChinese;
 
     protected abstract AudioCaptureMode CaptureMode { get; }
+
+    /// <summary>
+    /// How this session processes one audio segment. Other-player sessions split
+    /// at speaker changes so alternating voices become separate captions; the
+    /// default of none is the own-voice behaviour. Read once per start.
+    /// </summary>
+    protected virtual SpeechCaptureProcessingOptions CaptureProcessing => SpeechCaptureProcessingOptions.None;
 
     /// <summary>
     /// Capture for the next start together with the monitor that must run with
@@ -123,9 +133,33 @@ public abstract class VoiceSessionHost
     /// result is passed so a session can also use the speaker label, and
     /// <paramref name="recognizedId"/> is the id that
     /// <see cref="PublishRecognized"/> returned for this sentence (0 when the
-    /// session publishes nothing).
+    /// session publishes nothing). The default is a no-op; the own-voice session
+    /// owns the default flow through <see cref="DispatchRecognizedAsync"/>.
     /// </summary>
-    protected abstract Task ProcessRecognizedAsync(SpeechRecognitionResult result, long recognizedId);
+    protected virtual Task ProcessRecognizedAsync(SpeechRecognitionResult result, long recognizedId) =>
+        Task.CompletedTask;
+
+    /// <summary>
+    /// How one recognized sentence continues after it was published: the default
+    /// serializes translation and output behind one gate with a toast on failure.
+    /// A session that owns its own pipeline (other-player captions) replaces this
+    /// entirely - results must never be dropped just because the previous one is
+    /// still translating (D29).
+    /// </summary>
+    protected virtual Task DispatchRecognizedAsync(SpeechRecognitionResult result, long recognizedId) =>
+        ProcessPipelinedAsync(result, recognizedId);
+
+    /// <summary>Session-scoped setup after the capture started; runs under the lifecycle gate.</summary>
+    protected virtual Task OnSessionStartedAsync() => Task.CompletedTask;
+
+    /// <summary>Session-scoped teardown before the capture stops; runs under the lifecycle gate.</summary>
+    protected virtual Task OnSessionStoppingAsync() => Task.CompletedTask;
+
+    /// <summary>
+    /// A source boundary switched the audio mid-run (for example VRChat exited).
+    /// Work that belonged to the previous source must not surface afterwards.
+    /// </summary>
+    protected virtual Task OnCaptureSourceBoundaryAsync() => Task.CompletedTask;
 
     protected abstract string CaptureFaultMessage { get; }
 
@@ -146,7 +180,8 @@ public abstract class VoiceSessionHost
                 SourceLanguage,
                 // Silero VAD when its bundled model is present, adaptive
                 // energy gate otherwise.
-                LocalSpeechSegmenterFactory.CreateDefault());
+                LocalSpeechSegmenterFactory.CreateDefault(),
+                CaptureProcessing);
             session.ResultReady += OnResultReady;
             session.Faulted += OnSessionFaulted;
             session.LevelChanged += OnLevelChanged;
@@ -154,6 +189,9 @@ public abstract class VoiceSessionHost
             try
             {
                 await session.StartAsync().ConfigureAwait(false);
+                // Session-scoped pipelines exist before the first result can
+                // arrive; if this fails the capture is torn down again.
+                await OnSessionStartedAsync().ConfigureAwait(false);
                 // The session is published before the monitor starts pushing
                 // targets, so a source change that immediately falls back to the
                 // compatibility mode already finds the page's data source.
@@ -187,6 +225,9 @@ public abstract class VoiceSessionHost
         try
         {
             _running = false;
+            // Pipelines stop before the capture does: work of this run must be
+            // cancelled and awaited while the events are still wired up.
+            await OnSessionStoppingAsync().ConfigureAwait(false);
             var monitor = _monitor;
             _monitor = null;
             // 先停监视器再释放采集：循环结束后不会再有扫描任务调用协调器。
@@ -216,38 +257,27 @@ public abstract class VoiceSessionHost
         string sourceLanguage,
         CancellationToken cancellationToken = default)
     {
-        if (!_running || _processingResult) return;
-        _processingResult = true;
-        try
-        {
-            var result = await _speech.RecognizeAsync(
-                new SpeechRecognitionRequest(samples, 16_000, sourceLanguage),
-                cancellationToken).ConfigureAwait(false);
-            if (!string.IsNullOrWhiteSpace(result.Text))
-            {
-                var recognizedId = PublishRecognized(result);
-                await ProcessRecognizedAsync(result, recognizedId).ConfigureAwait(false);
-            }
-        }
-        finally
-        {
-            _processingResult = false;
-        }
+        if (!_running) return;
+        var result = await _speech.RecognizeAsync(
+            new SpeechRecognitionRequest(samples, 16_000, sourceLanguage),
+            cancellationToken).ConfigureAwait(false);
+        if (string.IsNullOrWhiteSpace(result.Text)) return;
+        var recognizedId = PublishRecognized(result);
+        await DispatchRecognizedAsync(result, recognizedId).ConfigureAwait(false);
     }
 
     private void OnResultReady(object? sender, SpeechRecognitionResult result)
     {
-        if (!_running || string.IsNullOrWhiteSpace(result.Text) || _processingResult) return;
-        // The sentence is published before the pipeline queues it: the gate only
-        // serializes translation and output, never the moment a message appears.
+        if (!_running || string.IsNullOrWhiteSpace(result.Text)) return;
+        // The sentence is published before the pipeline queues it, and dispatch
+        // never drops a result because the previous one is still translating.
         var recognizedId = PublishRecognized(result);
-        _ = ProcessPipelinedAsync(result, recognizedId);
+        _ = DispatchRecognizedAsync(result, recognizedId);
     }
 
     private async Task ProcessPipelinedAsync(SpeechRecognitionResult result, long recognizedId)
     {
         await _processingGate.WaitAsync().ConfigureAwait(false);
-        _processingResult = true;
         try
         {
             await ProcessRecognizedAsync(result, recognizedId).ConfigureAwait(false);
@@ -262,7 +292,6 @@ public abstract class VoiceSessionHost
         }
         finally
         {
-            _processingResult = false;
             _processingGate.Release();
         }
     }
@@ -279,15 +308,33 @@ public abstract class VoiceSessionHost
     private void OnLevelChanged(object? sender, AudioLevelEventArgs args) =>
         LevelChanged?.Invoke(this, args);
 
-    private void OnSessionSourceChanged(object? sender, AudioSourceChangedEventArgs args) =>
+    private void OnSessionSourceChanged(object? sender, AudioSourceChangedEventArgs args)
+    {
         SourceChanged?.Invoke(this, args);
+        if (args.IsBoundary && _running)
+        {
+            _ = RunSourceBoundaryAsync();
+        }
+    }
+
+    private async Task RunSourceBoundaryAsync()
+    {
+        try
+        {
+            await OnCaptureSourceBoundaryAsync().ConfigureAwait(false);
+        }
+        catch (Exception exception)
+        {
+            Notified?.Invoke(this, DescribeFailure(exception));
+        }
+    }
 }
 
 /// <summary>Other-player caption session: VRChat loopback audio to subtitle output.</summary>
 public sealed class SubtitleSpeechSession : VoiceSessionHost
 {
     private readonly AppState _state;
-    private long _captionSequence;
+    private OtherPlayerCaptionPipeline? _pipeline;
 
     public SubtitleSpeechSession(AppState state) : base(state.LocalSpeech, state.AudioCapture)
     {
@@ -296,31 +343,62 @@ public sealed class SubtitleSpeechSession : VoiceSessionHost
     }
 
     /// <summary>
-    /// Shows the recognized line on the caption surface the moment recognition
-    /// produces it, while the translation is still being produced. The translation
-    /// fills this same message through the id returned here, so a fast speaker can
-    /// no longer deliver two captions at the same moment.
+    /// Created on first use: this session is constructed while <see cref="AppState"/>
+    /// is still assigning its translation service, so the pipeline must not capture
+    /// it eagerly in the constructor.
     /// </summary>
-    protected override long PublishRecognized(SpeechRecognitionResult result)
+    private OtherPlayerCaptionPipeline Pipeline
     {
-        var captionId = Interlocked.Increment(ref _captionSequence);
-        OverlayWindowHost.AppendRecognizedSubtitleFromAnyThread(captionId, result.Text, result.SpeakerLabel);
-        return captionId;
+        get
+        {
+            var pipeline = _pipeline;
+            if (pipeline is not null) return pipeline;
+            pipeline = new OtherPlayerCaptionPipeline(
+                _state.Translator,
+                new OverlaySubtitleSurface(),
+                new AppStateChatboxOutput(_state));
+            pipeline.Diagnostics += (_, args) => RaiseNotified(new SpeechNotificationEventArgs(
+                SpeechNotificationKind.Warning, "他人语音字幕", args.Message));
+            _pipeline = pipeline;
+            return pipeline;
+        }
     }
 
     // 回环族：具体采系统混音还是 VRChat 进程音频由自适应协调器决定。
     protected override AudioCaptureMode CaptureMode => AudioCaptureMode.SystemLoopback;
+
+    protected override SpeechCaptureProcessingOptions CaptureProcessing => new()
+    {
+        // 换人切分对多人对话是能力而不是装饰（D29）：不跟说话人标签开关绑定；
+        // 标签开关只控制是否给句子标注说话人名字。自身语音两者全关（默认）。
+        SplitAtSpeakerChanges = true,
+        AttachSpeakerLabels = _state.LocalSpeech.SpeakerLabelsEnabled,
+    };
 
     protected override string CaptureFaultMessage => "无法读取系统音频，请检查音频设备后重试。";
 
     protected override SpeechNotificationEventArgs DescribeFailure(Exception exception) =>
         new(SpeechNotificationKind.Error, "翻译失败", exception.Message);
 
-    protected override async Task ProcessRecognizedAsync(SpeechRecognitionResult result, long recognizedId)
+    protected override Task OnSessionStartedAsync() => Pipeline.BeginSessionAsync();
+
+    protected override Task OnSessionStoppingAsync() => Pipeline.EndSessionAsync();
+
+    protected override async Task OnCaptureSourceBoundaryAsync()
     {
-        var text = result.Text;
-        var recognizedLanguage = result.SourceLanguage;
+        // 音源切换后旧源的半句不允许再回填或外发：清空本会话的队列再继续。
+        var pipeline = Pipeline;
+        await pipeline.EndSessionAsync().ConfigureAwait(false);
+        await pipeline.BeginSessionAsync().ConfigureAwait(false);
+    }
+
+    protected override async Task DispatchRecognizedAsync(SpeechRecognitionResult result, long recognizedId)
+    {
+        // 组合根职责（D28.2）：档案恢复完成后才取本句的路由快照，运行中换
+        // 档案只影响下一句；翻译、字幕与 OSC 的顺序交给管线。
+        await _state.Ready.ConfigureAwait(false);
         var current = _state.CurrentRoute;
+        var recognizedLanguage = result.SourceLanguage;
         var sourceMode = string.IsNullOrWhiteSpace(recognizedLanguage) || recognizedLanguage.Equals("auto", StringComparison.OrdinalIgnoreCase)
             ? SourceLanguageMode.AutoDetect
             : SourceLanguageMode.Fixed;
@@ -332,39 +410,29 @@ public sealed class SubtitleSpeechSession : VoiceSessionHost
             new LanguagePolicy(sourceMode, "zh-CN", fixedSource),
             current.InvariantPolicy,
             current.RetryPolicy);
-        TextTranslationResult translated;
-        try
-        {
-            translated = await _state.Translator.TranslateAsync(
-                new TextTranslationRequest(text, voiceRoute, TextTranslationSource.SpeechRecognition,
-                    sourceLanguageHint: sourceMode == SourceLanguageMode.Fixed ? recognizedLanguage : null))
-                .ConfigureAwait(false);
-        }
-        catch
-        {
-            // The message that recognition already put on screen keeps its
-            // recognized line; resolving it as "no translation" stops the surface
-            // from waiting for a translation that will never come.
-            OverlayWindowHost.FillSubtitleTranslationFromAnyThread(recognizedId, null);
-            throw;
-        }
-
-        // The caption is completed as soon as the translation exists, so a failed
-        // or slow OSC send can never strand a message that waits for its text.
-        // Other players' captions belong to the subtitle surface only. The shared
-        // translation preview feeds the quick-input window and the own-voice page,
-        // which are about what the user says - writing another player's sentence
-        // there made their translation show up in the input box.
-        // Other-player captions are translated to Simplified Chinese only;
-        // use the shared OSC length guard without adding own-input targets
-        // or the original text to this stream.
-        // The caption message carries the speaker label as its own part; the
-        // OSC chat line stays translation-only so the in-game stream keeps its
-        // existing shape.
-        OverlayWindowHost.FillSubtitleTranslationFromAnyThread(recognizedId, translated.TranslatedText);
-        await _state.Osc.SendChatboxAsync(TranslationOutputFormatter.TrimForOsc(translated.TranslatedText))
-            .ConfigureAwait(false);
+        Pipeline.TrySubmit(new OtherPlayerCaptionInput(
+            result.Text,
+            result.SpeakerLabel,
+            fixedSource,
+            voiceRoute));
     }
+}
+
+/// <summary>Bridge between the caption pipeline and the desktop subtitle window.</summary>
+internal sealed class OverlaySubtitleSurface : IOtherPlayerSubtitleSurface
+{
+    public void PublishPending(long captionId, string text, string? speakerLabel) =>
+        OverlayWindowHost.AppendRecognizedSubtitleFromAnyThread(captionId, text, speakerLabel);
+
+    public void FillTranslation(long captionId, string? translatedText) =>
+        OverlayWindowHost.FillSubtitleTranslationFromAnyThread(captionId, translatedText);
+}
+
+/// <summary>Sends through the app's current chatbox client; reads it per send so reloads apply.</summary>
+internal sealed class AppStateChatboxOutput(AppState state) : IChatboxOutput
+{
+    public Task SendChatboxAsync(string message, CancellationToken cancellationToken = default) =>
+        state.Osc.SendChatboxAsync(message, cancellationToken);
 }
 
 /// <summary>Own-voice session: microphone audio to the self-translation targets.</summary>

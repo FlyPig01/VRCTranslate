@@ -60,6 +60,7 @@ $translationMarkup = Get-Content -Raw $translationPage
 $translationCode = Get-Content -Raw $translationPageCode
 $appStateSource = Get-Content -Raw (Join-Path $desktopSource 'AppState.cs')
 $sessionHostSource = Get-Content -Raw (Join-Path $desktopSource 'VoiceSessionHost.cs')
+$captionPipelineSource = Get-Content -Raw (Join-Path $v2Root 'src\VrcTranslate.Application\Captions\OtherPlayerCaptionPipeline.cs')
 $infrastructureSource = Get-Content -Raw (Join-Path $v2Root 'src\VrcTranslate.Infrastructure\Translation\DeepSeekTranslationProvider.cs')
 $settingsMarkup = Get-Content -Raw $settingsPage
 $settingsSource = Get-Content -Raw $settingsPageCode
@@ -584,10 +585,11 @@ if ($captionBufferSource -notmatch 'SubtitleTranslationState' -or
     $overlayHostSource -notmatch 'AppendRecognizedSubtitleFromAnyThread' -or
     $overlayHostSource -notmatch 'FillSubtitleTranslationFromAnyThread' -or
     $overlayHostSource -match 'AppendSubtitleFromAnyThread' -or
-    $sessionHostSource -notmatch '(?s)protected override long PublishRecognized.*?AppendRecognizedSubtitleFromAnyThread' -or
-    $sessionHostSource -notmatch '(?s)TranslateAsync.*?FillSubtitleTranslationFromAnyThread' -or
-    $sessionHostSource -notmatch 'FillSubtitleTranslationFromAnyThread\(recognizedId, null\)') {
-    throw 'Progressive captions must show the recognized line first and fill the translation into that same message: recognition owns the message, translation only completes it, and a failed or empty translation resolves the message instead of leaving it pending.'
+    $sessionHostSource -notmatch 'OverlaySubtitleSurface' -or
+    $captionPipelineSource -notmatch '_subtitles\.PublishPending' -or
+    $captionPipelineSource -notmatch '_subtitles\.FillTranslation\(commit\.CaptionId, translated\)' -or
+    $captionPipelineSource -notmatch 'FillTranslation\(commit\.CaptionId, null\)') {
+    throw 'Progressive captions must show the recognized line first and fill the translation into that same message: recognition owns the message, translation only completes it, and a failed, cancelled or same-text translation resolves the message instead of leaving it pending.'
 }
 if ($quickInputSource -notmatch 'new\s+OverlayWindowController' -or
     $quickInputSource -notmatch 'OverlayWindowHost\.GetSavedLayout' -or
@@ -679,14 +681,23 @@ if ($outputFormatterSource -notmatch 'Separator\s*=\s*" / "' -or
 }
 if ($quickInputSource -notmatch 'TranslationOutputFormatter\.FormatForChatbox' -or
     $quickInputSource -notmatch 'result\.Primary\.TranslatedText' -or
-    $sessionHostSource -notmatch 'TranslationOutputFormatter\.FormatForChatbox' -or
-    $sessionHostSource -notmatch 'TranslationOutputFormatter\.TrimForOsc') {
+    $sessionHostSource -notmatch 'TranslationOutputFormatter\.FormatForChatbox') {
     throw 'Own-input preview and own-voice OSC output must share the Core translation formatter.'
 }
-if ($sessionHostSource -notmatch 'TranslationOutputFormatter\.TrimForOsc' -or
+# 他人语音的 OSC 闸门住在 Application 层管线里（D28/D29）：只有真实服务的、
+# 与原文不同的译文才能TrimForOsc 后发送；echo/失败/取消/同文一律零报文。
+# 静态检查只兜住结构，行为由 OtherPlayerCaptionPipelineTests 的九条用例保证。
+if ($captionPipelineSource -notmatch 'TranslationOutputFormatter\.TrimForOsc' -or
+    $captionPipelineSource -notmatch 'OtherPlayerTranslationStatus\.TestEcho' -or
+    $captionPipelineSource -notmatch 'SameAfterTrim' -or
     $voiceSource -match 'TrimForChatbox\s*\(' -or
     $voiceSource -match 'CombinedText|FormattedText') {
-    throw 'Subtitle OSC output must use the shared length guard while keeping its single Simplified Chinese translation.'
+    throw 'Other-player captions must send only real, differing translations through the shared length guard, with echo/failure/same-text staying local.'
+}
+# D29 的丢句根因不允许回潮：结果入口不得再用布尔短路丢弃上一句翻译期间到达的下一句。
+if ($sessionHostSource -match '_processingResult' -or
+    $sessionHostSource -notmatch 'DispatchRecognizedAsync') {
+    throw 'Recognized results must be dispatched, never dropped while a predecessor is still translating (D29).'
 }
 # 句内并行：一句多目标必须同时发请求（串行时用户要等两段译文之和），并且主/副顺序不能变。
 # 主目标失败仍然整句失败、副目标失败降级为单目标，两条语义都要在代码里看得见。

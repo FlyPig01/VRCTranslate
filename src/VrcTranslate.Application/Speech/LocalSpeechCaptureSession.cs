@@ -13,6 +13,7 @@ public sealed class LocalSpeechCaptureSession : IAsyncDisposable
     private readonly IAudioCapture _capture;
     private readonly LocalSpeechService _speech;
     private readonly ISpeechSegmenter _segmenter;
+    private readonly SpeechCaptureProcessingOptions _processing;
     private readonly SemaphoreSlim _recognitionGate = new(1, 1);
     private readonly string _sourceLanguage;
     private readonly object _sync = new();
@@ -27,7 +28,8 @@ public sealed class LocalSpeechCaptureSession : IAsyncDisposable
         IAudioCapture capture,
         LocalSpeechService speech,
         string sourceLanguage = "auto",
-        ISpeechSegmenter? segmenter = null)
+        ISpeechSegmenter? segmenter = null,
+        SpeechCaptureProcessingOptions? processing = null)
     {
         _capture = capture ?? throw new ArgumentNullException(nameof(capture));
         _speech = speech ?? throw new ArgumentNullException(nameof(speech));
@@ -37,6 +39,7 @@ public sealed class LocalSpeechCaptureSession : IAsyncDisposable
         }
 
         _segmenter = segmenter ?? new SpeechSegmenter();
+        _processing = processing ?? SpeechCaptureProcessingOptions.None;
         _sourceState = new AudioSourceState(_capture.SourceKind);
         _capture.SamplesReady += OnSamplesReady;
         _capture.SourceChanged += OnSourceChanged;
@@ -311,16 +314,16 @@ public sealed class LocalSpeechCaptureSession : IAsyncDisposable
     }
 
     /// <summary>
-    /// The ranges to recognize separately. Splitting costs a segmentation pass, so it
-    /// only runs when speaker labels are on - but it is never gated behind a cheap
-    /// "does this look like two voices" guess: that guess skipped 38% of the real
-    /// speaker changes on measured dialogue while saving nothing (the segments it
-    /// rejected finished segmentation in 33~233 ms). See docs/能力边界与决策记录.md.
+    /// The ranges to recognize separately. Splitting is the session's processing
+    /// option (other-player sessions keep it on even without labels, D29); it is
+    /// never gated behind a cheap "does this look like two voices" guess: that
+    /// guess skipped 38% of the real speaker changes on measured dialogue while
+    /// saving nothing. See docs/能力边界与决策记录.md.
     /// </summary>
     private IReadOnlyList<SpeechSpan> PlanSpeakerSpans(ReadOnlyMemory<float> samples)
     {
         var whole = new SpeechSpan(0, samples.Length);
-        if (!_speech.SpeakerLabelsEnabled || !TryGetSpeakers(out var speakers)) return [whole];
+        if (!_processing.SplitAtSpeakerChanges || !TryGetSpeakers(out var speakers)) return [whole];
 
         try
         {
@@ -337,7 +340,7 @@ public sealed class LocalSpeechCaptureSession : IAsyncDisposable
 
     private SpeechRecognitionResult AttachSpeaker(SpeechRecognitionResult result, ReadOnlyMemory<float> samples)
     {
-        if (!_speech.SpeakerLabelsEnabled || !TryGetSpeakers(out var speakers)) return result;
+        if (!_processing.AttachSpeakerLabels || !TryGetSpeakers(out var speakers)) return result;
 
         try
         {

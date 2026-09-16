@@ -86,7 +86,8 @@ public sealed class LocalSpeechCaptureSessionTests
             SpeakerLabelsEnabled = true,
         };
         await using var session = new LocalSpeechCaptureSession(
-            capture, service, "en", new SpeechSegmenter(16_000, 0.01f, 100, 2_000));
+            capture, service, "en", new SpeechSegmenter(16_000, 0.01f, 100, 2_000),
+            new SpeechCaptureProcessingOptions { SplitAtSpeakerChanges = true, AttachSpeakerLabels = true });
         var result = new TaskCompletionSource<SpeechRecognitionResult>(TaskCreationOptions.RunContinuationsAsynchronously);
         session.ResultReady += (_, value) => result.TrySetResult(value);
 
@@ -102,11 +103,15 @@ public sealed class LocalSpeechCaptureSessionTests
     }
 
     [Fact]
-    public async Task Speaker_labels_cost_nothing_while_the_feature_is_off()
+    public async Task An_own_voice_session_skips_splitting_and_labels_entirely()
     {
+        // 自身语音两项都关（D29.5）：即使全局标签开关开着，也不做切分不做识别。
         var capture = new FakeAudioCapture(AudioCaptureRequest.Microphone());
         var speakers = new FakeSpeakerIdentifier { Available = true };
-        var service = new LocalSpeechService(new FakeModelManager(), new FakeRecognizer(), speakers);
+        var service = new LocalSpeechService(new FakeModelManager(), new FakeRecognizer(), speakers)
+        {
+            SpeakerLabelsEnabled = true,
+        };
         await using var session = new LocalSpeechCaptureSession(
             capture, service, "en", new SpeechSegmenter(16_000, 0.01f, 100, 2_000));
         var result = new TaskCompletionSource<SpeechRecognitionResult>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -121,8 +126,66 @@ public sealed class LocalSpeechCaptureSessionTests
         Assert.Null(recognized.SpeakerLabel);
         Assert.False(recognized.HasSpeaker);
         Assert.Equal(0, speakers.IdentifyCalls);
-        // 开关关着时连分割都不该问一次（省钱靠的是这个短路，不是头尾预判）。
         Assert.Equal(0, speakers.SplitCalls);
+    }
+
+    [Fact]
+    public async Task Other_player_sessions_split_at_speaker_changes_without_labels()
+    {
+        // 换人切分是多人对话的能力（D29）：标签关着也要切；标签开关只控制命名。
+        var capture = new FakeAudioCapture(AudioCaptureRequest.Microphone());
+        var speakers = new FakeSpeakerIdentifier
+        {
+            Available = true,
+            Spans = [new SpeechSpan(0, 1_000), new SpeechSpan(1_000, 2_000)],
+        };
+        var service = new LocalSpeechService(new FakeModelManager(), new FakeRecognizer(), speakers)
+        {
+            SpeakerLabelsEnabled = false,
+        };
+        await using var session = new LocalSpeechCaptureSession(
+            capture, service, "en", new SpeechSegmenter(16_000, 0.01f, 100, 2_000),
+            new SpeechCaptureProcessingOptions { SplitAtSpeakerChanges = true, AttachSpeakerLabels = false });
+        var results = new List<SpeechRecognitionResult>();
+        var both = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        session.ResultReady += (_, value) =>
+        {
+            lock (results)
+            {
+                results.Add(value);
+                if (results.Count == 2) both.TrySetResult();
+            }
+        };
+
+        await session.StartAsync();
+        capture.Emit(Enumerable.Repeat(0.2f, 4_800).ToArray());
+        capture.Emit(new float[2_000]);
+
+        await both.Task.WaitAsync(TimeSpan.FromSeconds(2));
+        Assert.Equal(2, results.Count);
+        Assert.All(results, item => Assert.Null(item.SpeakerLabel));
+        Assert.True(speakers.SplitCalls >= 1, "标签关闭时也必须执行换人切分");
+        Assert.Equal(0, speakers.IdentifyCalls);
+    }
+
+    [Fact]
+    public async Task A_failing_splitter_degrades_to_one_whole_caption()
+    {
+        var capture = new FakeAudioCapture(AudioCaptureRequest.Microphone());
+        var speakers = new FakeSpeakerIdentifier { Available = true, ThrowOnSplit = true };
+        var service = new LocalSpeechService(new FakeModelManager(), new FakeRecognizer(), speakers);
+        await using var session = new LocalSpeechCaptureSession(
+            capture, service, "en", new SpeechSegmenter(16_000, 0.01f, 100, 2_000),
+            new SpeechCaptureProcessingOptions { SplitAtSpeakerChanges = true });
+        var result = new TaskCompletionSource<SpeechRecognitionResult>(TaskCreationOptions.RunContinuationsAsynchronously);
+        session.ResultReady += (_, value) => result.TrySetResult(value);
+
+        await session.StartAsync();
+        capture.Emit(Enumerable.Repeat(0.2f, 4_800).ToArray());
+        capture.Emit(new float[2_000]);
+
+        var recognized = await result.Task.WaitAsync(TimeSpan.FromSeconds(2));
+        Assert.Equal("test", recognized.Text);
     }
 
     [Fact]
@@ -139,7 +202,8 @@ public sealed class LocalSpeechCaptureSessionTests
             SpeakerLabelsEnabled = true,
         };
         await using var session = new LocalSpeechCaptureSession(
-            capture, service, "en", new SpeechSegmenter(16_000, 0.01f, 100, 2_000));
+            capture, service, "en", new SpeechSegmenter(16_000, 0.01f, 100, 2_000),
+            new SpeechCaptureProcessingOptions { SplitAtSpeakerChanges = true, AttachSpeakerLabels = true });
         var results = new List<SpeechRecognitionResult>();
         var both = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         session.ResultReady += (_, value) =>
@@ -317,6 +381,7 @@ public sealed class LocalSpeechCaptureSessionTests
     private sealed class FakeSpeakerIdentifier : ISpeakerIdentifier
     {
         public bool Available { get; init; }
+        public bool ThrowOnSplit { get; init; }
         public IReadOnlyList<SpeechSpan> Spans { get; init; } = [];
         public int IdentifyCalls { get; private set; }
         public int SplitCalls { get; private set; }
@@ -335,6 +400,7 @@ public sealed class LocalSpeechCaptureSessionTests
         public IReadOnlyList<SpeechSpan> SplitAtSpeakerChanges(ReadOnlyMemory<float> samples, int sampleRate)
         {
             SplitCalls++;
+            if (ThrowOnSplit) throw new InvalidOperationException("分割模型不可用");
             return Spans;
         }
 

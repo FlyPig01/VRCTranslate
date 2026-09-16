@@ -69,38 +69,16 @@ public sealed class LocalSpeakerIdentifier : ISpeakerIdentifier, IDisposable
         }
     }
 
-    public bool IsSpeakerChangeSuspected(ReadOnlyMemory<float> samples, int sampleRate)
-    {
-        lock (_sync)
-        {
-            if (_disposed || EnsureEmbedder() is not { } embedder) return false;
-            var window = (int)(sampleRate * _options.ChangeWindowSeconds);
-            if (window <= 0 || samples.Length < window * 2) return false;
-
-            var headOffset = FindVoicedWindow(samples, window, fromStart: true);
-            if (headOffset < 0) return false;
-            var tailOffset = FindVoicedWindow(samples, window, fromStart: false);
-            if (tailOffset < 0) return false;
-
-            // Overlapping windows share audio, which would inflate the similarity
-            // and hide a real change; too short to tell apart means no suspicion.
-            if (tailOffset - headOffset < window) return false;
-
-            try
-            {
-                var head = embedder.Embed(samples.Slice(headOffset, window), sampleRate);
-                if (head.Length == 0) return false;
-                var tail = embedder.Embed(samples.Slice(tailOffset, window), sampleRate);
-                if (tail.Length == 0) return false;
-                return SpeakerMath.CosineSimilarity(head, tail) < _options.ChangeSimilarityThreshold;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-        }
-    }
-
+    /// <summary>
+    /// Splits a segment at the speaker changes the segmentation model reports.
+    /// <para>
+    /// No cheap pre-check runs in front of this on purpose: the head/tail
+    /// voiceprint comparison that used to gate it disagreed with the model on 11 of
+    /// 29 real dialogue segments (38% of real speaker changes were never split) and
+    /// saved nothing - the segments it rejected finished segmentation in 33~233 ms.
+    /// Measured 2026-09-16, see docs/分析-声纹功能是否保留.md.
+    /// </para>
+    /// </summary>
     public IReadOnlyList<SpeechSpan> SplitAtSpeakerChanges(ReadOnlyMemory<float> samples, int sampleRate)
     {
         lock (_sync)
@@ -179,35 +157,6 @@ public sealed class LocalSpeakerIdentifier : ISpeakerIdentifier, IDisposable
         }
     }
 
-    /// <summary>
-    /// Offset of the first comparison window that actually holds speech, scanning
-    /// inward from one end. A segment keeps a silence tail because the segmenter
-    /// waits out a pause before releasing a sentence, and the embedding of silence
-    /// looks like a different person, so unvoiced windows must never be compared.
-    /// </summary>
-    private int FindVoicedWindow(ReadOnlyMemory<float> samples, int window, bool fromStart)
-    {
-        const int steps = 8;
-        var step = Math.Max(1, window / 4);
-        for (var index = 0; index < steps; index++)
-        {
-            var offset = index * step;
-            if (offset + window > samples.Length) return -1;
-            var start = fromStart ? offset : samples.Length - window - offset;
-            if (start < 0) return -1;
-            if (Rms(samples.Slice(start, window).Span) >= _options.SilenceRmsFloor) return start;
-        }
-
-        return -1;
-    }
-
-    private static float Rms(ReadOnlySpan<float> samples)
-    {
-        if (samples.IsEmpty) return 0f;
-        double sum = 0;
-        foreach (var sample in samples) sum += sample * sample;
-        return (float)Math.Sqrt(sum / samples.Length);
-    }
 
     private void Persist() => _store.Save(
         _registry!.Snapshot(LocalSpeechModelCatalog.EmbeddingFileName));

@@ -311,9 +311,11 @@ public sealed class LocalSpeechCaptureSession : IAsyncDisposable
     }
 
     /// <summary>
-    /// The ranges to recognize separately. Splitting costs two extra embeddings and
-    /// a segmentation pass, so it is only attempted when speaker labels are on and
-    /// the cheap head/tail comparison already suspects two voices.
+    /// The ranges to recognize separately. Splitting costs a segmentation pass, so it
+    /// only runs when speaker labels are on - but it is never gated behind a cheap
+    /// "does this look like two voices" guess: that guess skipped 38% of the real
+    /// speaker changes on measured dialogue while saving nothing (the segments it
+    /// rejected finished segmentation in 33~233 ms). See docs/分析-声纹功能是否保留.md.
     /// </summary>
     private IReadOnlyList<SpeechSpan> PlanSpeakerSpans(ReadOnlyMemory<float> samples)
     {
@@ -322,7 +324,6 @@ public sealed class LocalSpeechCaptureSession : IAsyncDisposable
 
         try
         {
-            if (!speakers.IsSpeakerChangeSuspected(samples, _segmenter.SampleRate)) return [whole];
             var spans = speakers.SplitAtSpeakerChanges(samples, _segmenter.SampleRate);
             return spans.Count > 1 ? spans : [whole];
         }

@@ -6,26 +6,26 @@ namespace VrcTranslate.Core.Tests;
 public sealed class SpeakerIdentifierOptionsTests
 {
     [Fact]
-    public void The_change_window_stays_at_the_measured_floor()
+    public void The_split_floor_stays_where_the_segmentation_model_still_answers()
     {
-        // Measured on the bundled CAM++ model: a 1 s window scores 0.45 for the
-        // same speaker (indistinguishable from another speaker) while 2 s scores
-        // 0.69 against 0.09. Shrinking this back makes every sentence look like it
-        // holds two speakers, so the floor is a correctness constraint, not a
-        // performance knob.
+        // Measured 2026-09-16 on a real two-speaker podcast: 2.5 s slices report a
+        // change point in 6/24 cases and 3.0 s slices in 8/20, so 3 s is the shortest
+        // slice that still carries usable evidence. Dropping below it only asks the
+        // model questions it cannot answer.
         var options = new SpeakerIdentifierOptions();
 
         Assert.True(
-            options.ChangeWindowSeconds >= 2.0f,
-            "说话人比较窗口不得小于 2 秒：1 秒窗口的同人相似度与跨人相似度重叠。");
+            options.MinimumSplitSeconds >= 3.0f,
+            "最小可切割时长不得低于 3 秒：更短的片段上分割模型几乎给不出换人点。");
     }
 
     [Fact]
-    public void Two_comparison_windows_have_to_fit_in_a_splittable_segment()
+    public void Every_piece_a_split_produces_stays_recognizable()
     {
         var options = new SpeakerIdentifierOptions();
 
-        Assert.True(options.MinimumSplitSeconds >= options.ChangeWindowSeconds * 2);
-        Assert.InRange(options.ChangeSimilarityThreshold, 0.2f, 0.6f);
+        Assert.True(options.MinimumPartSeconds >= 0.5f);
+        Assert.True(options.MinimumPartSeconds < options.MinimumSplitSeconds);
+        Assert.InRange(options.MaxParts, 2, 4);
     }
 }

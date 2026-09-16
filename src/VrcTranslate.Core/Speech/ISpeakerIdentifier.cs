@@ -26,13 +26,16 @@ public interface ISpeakerIdentifier
     SpeakerMatch? Identify(ReadOnlyMemory<float> samples, int sampleRate);
 
     /// <summary>
-    /// Cheap check for two voices inside one segment. Comparing the head and tail
-    /// voiceprints is far cheaper than running segmentation over every sentence,
-    /// so it is used to decide whether segmentation is worth paying for.
+    /// Splits one segment at the speaker changes a segmentation model finds.
+    /// <para>
+    /// There is deliberately no cheap "is a change likely" pre-check in front of
+    /// this: the head/tail voiceprint comparison that used to gate it disagreed with
+    /// the segmentation model on 11 of 29 real dialogue segments (38% of the real
+    /// speaker changes were skipped) while saving nothing measurable - on the
+    /// segments it rejected, segmentation itself returned in 33~233 ms. Measured
+    /// 2026-09-16 on a two-speaker podcast; see docs/分析-声纹功能是否保留.md.
+    /// </para>
     /// </summary>
-    bool IsSpeakerChangeSuspected(ReadOnlyMemory<float> samples, int sampleRate);
-
-    /// <summary>Splits one segment at the speaker changes a segmentation model finds.</summary>
     IReadOnlyList<SpeechSpan> SplitAtSpeakerChanges(ReadOnlyMemory<float> samples, int sampleRate);
 
     void Rename(string speakerId, string? name);

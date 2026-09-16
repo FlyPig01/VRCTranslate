@@ -4,10 +4,14 @@ namespace VrcTranslate.Core.Speech;
 public static class SpeakerSegmentSplitter
 {
     /// <summary>
-    /// Change points closer than <paramref name="minPartSamples"/> to an edge or to
-    /// each other are ignored, and the result never exceeds
-    /// <paramref name="maxParts"/> pieces: a noisy detection must not shred a
-    /// sentence into fragments too short to recognize.
+    /// Turns change points into the ranges to recognize separately. A point closer
+    /// than <paramref name="minPartSamples"/> to an edge is <em>pulled in</em> to the
+    /// nearest position that keeps every piece recognizable instead of being dropped:
+    /// on measured dialogue 2 of 36 long segments reported a change the model then
+    /// threw away purely because it sat near an edge, which threw away the split too.
+    /// Points closer together than the minimum are merged, and the result never
+    /// exceeds <paramref name="maxParts"/> pieces, so a noisy detection still cannot
+    /// shred a sentence into fragments.
     /// </summary>
     public static IReadOnlyList<SpeechSpan> Split(
         int totalSamples,
@@ -19,12 +23,17 @@ public static class SpeakerSegmentSplitter
         ArgumentNullException.ThrowIfNull(changePoints);
         if (changePoints.Count == 0) return [];
 
+        // When even two minimum pieces do not fit, the only meaningful boundary is
+        // the middle; clamping below then guarantees a non-empty result.
+        var lower = Math.Min(minPartSamples, totalSamples / 2);
+        var upper = Math.Max(lower, totalSamples - minPartSamples);
+
         var accepted = new List<int>();
         foreach (var point in changePoints.Order())
         {
-            if (point < minPartSamples || point > totalSamples - minPartSamples) continue;
-            if (accepted.Count > 0 && point - accepted[^1] < minPartSamples) continue;
-            accepted.Add(point);
+            var clamped = Math.Clamp(point, lower, upper);
+            if (accepted.Count > 0 && clamped - accepted[^1] < minPartSamples) continue;
+            accepted.Add(clamped);
             if (accepted.Count >= maxParts - 1) break;
         }
 

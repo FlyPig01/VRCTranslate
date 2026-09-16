@@ -121,17 +121,17 @@ public sealed class LocalSpeechCaptureSessionTests
         Assert.Null(recognized.SpeakerLabel);
         Assert.False(recognized.HasSpeaker);
         Assert.Equal(0, speakers.IdentifyCalls);
-        Assert.Equal(0, speakers.ChangeChecks);
+        // 开关关着时连分割都不该问一次（省钱靠的是这个短路，不是头尾预判）。
+        Assert.Equal(0, speakers.SplitCalls);
     }
 
     [Fact]
-    public async Task A_suspected_speaker_change_produces_one_caption_per_voice()
+    public async Task A_reported_speaker_change_produces_one_caption_per_voice()
     {
         var capture = new FakeAudioCapture(AudioCaptureRequest.Microphone());
         var speakers = new FakeSpeakerIdentifier
         {
             Available = true,
-            SuspectChange = true,
             Spans = [new SpeechSpan(0, 1_000), new SpeechSpan(1_000, 2_000)],
         };
         var service = new LocalSpeechService(new FakeModelManager(), new FakeRecognizer(), speakers)
@@ -317,10 +317,9 @@ public sealed class LocalSpeechCaptureSessionTests
     private sealed class FakeSpeakerIdentifier : ISpeakerIdentifier
     {
         public bool Available { get; init; }
-        public bool SuspectChange { get; init; }
         public IReadOnlyList<SpeechSpan> Spans { get; init; } = [];
         public int IdentifyCalls { get; private set; }
-        public int ChangeChecks { get; private set; }
+        public int SplitCalls { get; private set; }
 
         public bool IsAvailable => Available;
 
@@ -333,13 +332,11 @@ public sealed class LocalSpeechCaptureSessionTests
                 new SpeakerIdentity("spk-test", "A", "小明"), 0.9f, SpeakerMatchKind.Session);
         }
 
-        public bool IsSpeakerChangeSuspected(ReadOnlyMemory<float> samples, int sampleRate)
+        public IReadOnlyList<SpeechSpan> SplitAtSpeakerChanges(ReadOnlyMemory<float> samples, int sampleRate)
         {
-            ChangeChecks++;
-            return SuspectChange;
+            SplitCalls++;
+            return Spans;
         }
-
-        public IReadOnlyList<SpeechSpan> SplitAtSpeakerChanges(ReadOnlyMemory<float> samples, int sampleRate) => Spans;
 
         public void Rename(string speakerId, string? name) { }
 

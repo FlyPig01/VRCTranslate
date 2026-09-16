@@ -79,7 +79,7 @@ public sealed class SileroVadSegmenterTests(ITestOutputHelper output)
         // 0.3 × 440 Hz 正弦 + 0.05 白噪声、连续 18 s、无静音。这不是真实语音，
         // 只是为了逼出 12 s 强切；实测该信号在 threshold 0~0.5 下切段结果一致，
         // 因此直接用 TryCreate() 的默认参数。所有容差来自同一份实测标定
-        // （docs/D16与D17修复方案.md §2.2）：段长超 704 样本、段间缺口 1344、
+        // （docs/archive/D16与D17修复方案.md §2.2）：段长超 704 样本、段间缺口 1344、
         // 首段起点偏移 1280（检测器预热）。喂入按 512 一块且包含尾部余量
         // （探测脚本曾漏喂尾块 256 样本，见方案 §5.2 的勘误）。
         const int sampleRate = 16_000;

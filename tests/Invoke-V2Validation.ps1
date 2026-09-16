@@ -752,7 +752,7 @@ if ($hotkeyDefaultsSource -notmatch 'ResolvePersisted' -or
 # 翻译服务配置卡片（方案《翻译服务配置简化方案》A0）：只给控制台直达与额度要点，
 # 额度必须带「以官网为准」，页面不得出现任何密钥或示例密钥。
 $guideMarkup = Get-Content -Raw $guidePage
-# 模型对比卡片（实验报告-识别与翻译.md 的实测结论）：5 个模型 + 推荐 + 计费口径 + 价格会变动。
+# 模型对比卡片（实验记录-识别与翻译.md 的实测结论）：5 个模型 + 推荐 + 计费口径 + 价格会变动。
 # 模型名必须落在数据侧真值上：小米那份的 pro 版本已实测不推荐，引导页不得推荐它。
 $xiaomiModels = Get-Content -Raw (Join-Path $v2Root 'src\VrcTranslate.Infrastructure\Translation\XiaomiTranslationProvider.cs')
 if ($guideMarkup -notmatch 'guide-comparison' -or

@@ -33,7 +33,7 @@ public interface ISpeakerIdentifier
     /// the segmentation model on 11 of 29 real dialogue segments (38% of the real
     /// speaker changes were skipped) while saving nothing measurable - on the
     /// segments it rejected, segmentation itself returned in 33~233 ms. Measured
-    /// 2026-09-16 on a two-speaker podcast; see docs/分析-声纹功能是否保留.md.
+    /// 2026-09-16 on a two-speaker podcast; see docs/能力边界与决策记录.md.
     /// </para>
     /// </summary>
     IReadOnlyList<SpeechSpan> SplitAtSpeakerChanges(ReadOnlyMemory<float> samples, int sampleRate);

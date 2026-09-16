@@ -315,7 +315,7 @@ public sealed class LocalSpeechCaptureSession : IAsyncDisposable
     /// only runs when speaker labels are on - but it is never gated behind a cheap
     /// "does this look like two voices" guess: that guess skipped 38% of the real
     /// speaker changes on measured dialogue while saving nothing (the segments it
-    /// rejected finished segmentation in 33~233 ms). See docs/分析-声纹功能是否保留.md.
+    /// rejected finished segmentation in 33~233 ms). See docs/能力边界与决策记录.md.
     /// </summary>
     private IReadOnlyList<SpeechSpan> PlanSpeakerSpans(ReadOnlyMemory<float> samples)
     {

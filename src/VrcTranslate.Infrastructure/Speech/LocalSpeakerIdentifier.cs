@@ -76,7 +76,7 @@ public sealed class LocalSpeakerIdentifier : ISpeakerIdentifier, IDisposable
     /// voiceprint comparison that used to gate it disagreed with the model on 11 of
     /// 29 real dialogue segments (38% of real speaker changes were never split) and
     /// saved nothing - the segments it rejected finished segmentation in 33~233 ms.
-    /// Measured 2026-09-16, see docs/分析-声纹功能是否保留.md.
+    /// Measured 2026-09-16, see docs/能力边界与决策记录.md.
     /// </para>
     /// </summary>
     public IReadOnlyList<SpeechSpan> SplitAtSpeakerChanges(ReadOnlyMemory<float> samples, int sampleRate)

@@ -11,7 +11,7 @@ namespace VrcTranslate.Infrastructure.Speech;
 /// timing; this wrapper only adapts it to the ISpeechSegmenter contract.
 /// <para>
 /// Measured behaviour of the native detector (2026-09-16, see
-/// docs/D16与D17修复方案.md §2.2) - none of it is a defect, and the numbers are
+/// docs/archive/D16与D17修复方案.md §2.2) - none of it is a defect, and the numbers are
 /// here so nobody has to re-derive them: the forced cut at max-speech overshoots
 /// by about 704 samples (1.4 analysis windows) and drops roughly 1280-1344
 /// samples (80-84 ms) at each boundary; the detector needs about 1280 samples

@@ -84,7 +84,7 @@
         </StackPanel>
       </Border>
 
-      <!-- 各家模型对比（实验报告-识别与翻译.md 的实测结论）：
+      <!-- 各家模型对比（实验记录-识别与翻译.md 的实测结论）：
            价格是用户 2026-09-16 从官网/控制台核对的，会变动；延迟是本机 108 次调用中位数。
            这里是纯静态文案：不绑数据、不新增 x:Name，代码后置文件不需要改。 -->
       <Border Style="{StaticResource SurfaceBorderStyle}" Padding="18"

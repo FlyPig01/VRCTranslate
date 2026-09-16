@@ -10,9 +10,13 @@ namespace VrcTranslate.Infrastructure.Translation;
 /// request body, the endpoint and the reply parsing live here once and each
 /// provider only names its own defaults and error label.
 /// <para>
-/// Thinking mode is what a hybrid reasoning model turns on by default; for
-/// translation it adds seconds of latency and no quality, so it is explicitly
-/// disabled unless the configured model is a reasoner.
+/// Thinking mode must be turned off <em>explicitly</em>: both DeepSeek and Xiaomi
+/// enable it when the field is merely absent, and a measured comparison on
+/// deepseek-flash showed 1443 ms / 145 completion tokens (139 of them reasoning)
+/// without the field versus 472 ms / 5 tokens with <c>disabled</c> - three times
+/// the latency and 29 times the tokens for the same one-line translation.
+/// Translation gains nothing from a reasoning chain, so the switch is always sent;
+/// only a model explicitly named as a reasoner keeps it on.
 /// </para>
 /// </summary>
 internal static class ChatCompletionsTranslation
@@ -35,8 +39,8 @@ internal static class ChatCompletionsTranslation
 
         if (WantsThinking(model))
         {
-            // Thinking mode is the default on hybrid models; a reasoner model
-            // is an explicit opt-in, and thinking mode rejects temperature.
+            // A reasoner keeps thinking on (it is what that model is for), and
+            // thinking mode rejects temperature, so none is sent here.
             body["thinking"] = new Dictionary<string, string?> { ["type"] = "enabled" };
         }
         else

@@ -21,6 +21,18 @@
 - 引导页已改为“小米 v2.6 Flash：日语略好；整体不如 DeepSeek，延迟高；不建议默认”。
 - 代码默认、旧档案和旧路由迁到 `mimo-v2.6-flash`；旧 Pro 迁到 `mimo-v2.6-pro`。
 
+## 思考模式核对
+
+用同一句 “Yeah, it's sick.” 直接对 Xiaomi API 测三种写法：
+
+| 请求写法 | 延迟 | completion tokens | reasoning tokens | 输出 |
+| --- | ---: | ---: | ---: | --- |
+| `thinking: {type: "disabled"}`（应用/测试实际发送） | 1159 ms | 8 | **0** | 是啊，太酷了。 |
+| `thinking: {type: "enabled"}` | 5049 ms | 132 | 123 | 是啊，太酷了。 |
+| 不传 `thinking` | 2787 ms | 77 | 68 | 是啊，太酷了。 |
+
+另一句 `Open the Quick Menu and check your Performance Rank.` 在 enabled/absent 下直接返回了 “I'm an AI assistant...” 的解释性长文（95/91 个 reasoning tokens），说明思考模式确实会破坏字幕翻译。测试 harness 和桌面 provider 都走 `disabled`，因此 **不是思考模式**；首轮 2128 ms/6367 ms 是冷启动和离群，复跑稳态为 1110 ms/4519 ms。
+
 ## 口径
 
 - 44 条 = 24 条通用（排除纯中文）+ 20 条 VRChat 对话。

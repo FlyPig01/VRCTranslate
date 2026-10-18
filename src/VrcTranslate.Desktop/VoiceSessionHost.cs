@@ -440,7 +440,7 @@ public sealed class SubtitleSpeechSession : VoiceSessionHost
         // 换人切分对多人对话是能力而不是装饰（D29）：不跟说话人标签开关绑定；
         // 标签开关只控制是否给句子标注说话人名字。自身语音两者全关（默认）。
         SplitAtSpeakerChanges = true,
-        AttachSpeakerLabels = _state.LocalSpeech.SpeakerLabelsEnabled,
+        AttachSpeakerLabels = true,
     };
 
     protected override string CaptureFaultMessage => "无法读取系统音频，请检查音频设备后重试。";

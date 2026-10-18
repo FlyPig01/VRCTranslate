@@ -5,6 +5,9 @@ public sealed record SpeakerIdentity(string Id, string Label, string? Name)
 {
     /// <summary>What captions show: the user-chosen name when there is one, otherwise the session label.</summary>
     public string DisplayName => string.IsNullOrWhiteSpace(Name) ? Label : Name;
+
+    /// <summary>What the settings list shows; never the record's generated ToString.</summary>
+    public string DisplayText => string.IsNullOrWhiteSpace(Name) ? $"{Label} · 未命名" : $"{Label} · {Name}";
 }
 
 /// <summary>How a sentence was matched to a speaker.</summary>
@@ -18,6 +21,9 @@ public enum SpeakerMatchKind
 
     /// <summary>Nobody was close enough; a new session speaker was registered.</summary>
     New,
+
+    /// <summary>The session speaker limit is full; the caption uses "未知" until a slot frees.</summary>
+    Unknown,
 }
 
 public sealed record SpeakerMatch(SpeakerIdentity Speaker, float Similarity, SpeakerMatchKind Kind);
@@ -45,6 +51,15 @@ public sealed record SpeakerMatchOptions
     public float ExemplarNoveltyThreshold { get; init; } = 0.90f;
 
     public float MaxAdaptationRate { get; init; } = 0.20f;
+
+    /// <summary>Unnamed speakers kept in one session; named speakers use the library instead.</summary>
+    public int MaxSessionSpeakers { get; init; } = 16;
+
+    /// <summary>Named voiceprints kept on disk; reaching it never evicts a named speaker.</summary>
+    public int MaxRememberedSpeakers { get; init; } = 100;
+
+    /// <summary>How long an unnamed session speaker may go unheard before it frees its slot.</summary>
+    public TimeSpan SessionSpeakerTtl { get; init; } = TimeSpan.FromMinutes(10);
 }
 
 /// <summary>One persisted voiceprint. Only speakers the user named are stored.</summary>
@@ -80,6 +95,9 @@ public sealed record SpeakerVoiceprintDocument(
 /// </summary>
 public sealed class SpeakerRegistry
 {
+    /// <summary>Caption identity used while the 16 unnamed session slots are full.</summary>
+    public static SpeakerIdentity UnknownSpeaker { get; } = new("spk-unknown", "?", "未知");
+
     private readonly SpeakerMatchOptions _options;
     private readonly List<SpeakerState> _speakers = [];
     private int _labelCounter;
@@ -89,11 +107,23 @@ public sealed class SpeakerRegistry
 
     public SpeakerMatchOptions Options => _options;
 
-    public IReadOnlyList<SpeakerIdentity> Speakers =>
-        _speakers.Select(speaker => speaker.Identity).ToArray();
+    /// <summary>Monotonic change counter so the UI can tell when its list is stale.</summary>
+    public int Version { get; private set; }
+
+    public IReadOnlyList<SpeakerIdentity> Speakers
+    {
+        get
+        {
+            SweepExpiredSessionSpeakers();
+            return _speakers.Select(speaker => speaker.Identity).ToArray();
+        }
+    }
 
     /// <summary>Named speakers only: those are the ones the library keeps.</summary>
-    public int RememberedCount => _speakers.Count(speaker => speaker.Name is not null);
+    public int RememberedCount => _speakers.Count(speaker => speaker.IsRemembered);
+
+    /// <summary>Unnamed speakers currently occupying the session slots.</summary>
+    public int SessionCount => _speakers.Count(speaker => !speaker.IsRemembered);
 
     public SpeakerMatch Match(ReadOnlySpan<float> embedding)
     {
@@ -103,6 +133,7 @@ public sealed class SpeakerRegistry
             throw new ArgumentException("说话人嵌入不能为空。", nameof(embedding));
         }
 
+        SweepExpiredSessionSpeakers();
         SpeakerState? best = null;
         var bestSimilarity = float.NegativeInfinity;
         foreach (var speaker in _speakers)
@@ -127,6 +158,14 @@ public sealed class SpeakerRegistry
                 best.IsRemembered ? SpeakerMatchKind.Remembered : SpeakerMatchKind.Session);
         }
 
+        if (SessionCount >= _options.MaxSessionSpeakers)
+        {
+            return new SpeakerMatch(
+                UnknownSpeaker,
+                best is null ? 0f : bestSimilarity,
+                SpeakerMatchKind.Unknown);
+        }
+
         var created = new SpeakerState(
             "spk-" + (++_idCounter).ToString("D4"),
             NextLabel(),
@@ -134,6 +173,7 @@ public sealed class SpeakerRegistry
             isRemembered: false,
             name: null);
         _speakers.Add(created);
+        Version++;
         return new SpeakerMatch(created.Identity, best is null ? 0f : bestSimilarity, SpeakerMatchKind.New);
     }
 
@@ -141,7 +181,15 @@ public sealed class SpeakerRegistry
     {
         var speaker = Find(speakerId);
         if (speaker is null) return false;
-        speaker.Name = string.IsNullOrWhiteSpace(name) ? null : name.Trim();
+        var trimmed = string.IsNullOrWhiteSpace(name) ? null : name.Trim();
+        if (trimmed is not null && !speaker.IsRemembered && RememberedCount >= _options.MaxRememberedSpeakers)
+        {
+            return false;
+        }
+
+        speaker.Name = trimmed;
+        speaker.IsRemembered = trimmed is not null;
+        Version++;
         return true;
     }
 
@@ -155,7 +203,9 @@ public sealed class SpeakerRegistry
         if (source.Dimension != target.Dimension) return false;
 
         target.Absorb(source, _options);
+        target.IsRemembered |= source.IsRemembered;
         _speakers.Remove(source);
+        Version++;
         return true;
     }
 
@@ -164,6 +214,7 @@ public sealed class SpeakerRegistry
         var speaker = Find(speakerId);
         if (speaker is null) return false;
         _speakers.Remove(speaker);
+        Version++;
         return true;
     }
 
@@ -171,6 +222,7 @@ public sealed class SpeakerRegistry
     {
         _speakers.Clear();
         _labelCounter = 0;
+        Version++;
     }
 
     /// <summary>Named speakers, ready to be written to the library.</summary>
@@ -194,6 +246,7 @@ public sealed class SpeakerRegistry
         {
             if (string.IsNullOrWhiteSpace(record.Name)) continue;
             if (record.Centroid is null || record.Centroid.Length == 0) continue;
+            if (RememberedCount >= _options.MaxRememberedSpeakers) break;
             var normalized = SpeakerMath.Normalize(record.Centroid);
             if (normalized.Length == 0) continue;
             var speaker = new SpeakerState(
@@ -205,6 +258,17 @@ public sealed class SpeakerRegistry
             speaker.Restore(record, _options);
             _speakers.Add(speaker);
         }
+
+        Version++;
+    }
+
+    private void SweepExpiredSessionSpeakers()
+    {
+        if (_speakers.Count == 0) return;
+        var cutoff = DateTimeOffset.UtcNow - _options.SessionSpeakerTtl;
+        var removed = _speakers.RemoveAll(speaker =>
+            !speaker.IsRemembered && speaker.LastSeenAt < cutoff);
+        if (removed > 0) Version++;
     }
 
     private SpeakerState? Find(string speakerId) => _speakers.FirstOrDefault(speaker =>
@@ -251,7 +315,7 @@ public sealed class SpeakerRegistry
 
         public float[] Centroid { get; private set; }
 
-        public bool IsRemembered { get; }
+        public bool IsRemembered { get; set; }
 
         public int ObservationCount { get; private set; }
 

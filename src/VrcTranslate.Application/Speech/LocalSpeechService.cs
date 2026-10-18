@@ -27,10 +27,10 @@ public sealed class LocalSpeechService : IAsyncDisposable
     public ISpeakerIdentifier? Speakers => _speakers;
 
     /// <summary>
-    /// Whether captions carry speaker labels. Off by default: the feature costs an
-    /// extra embedding per sentence and only pays off once the user wants names.
+    /// Whether captions carry speaker labels. On by default: other-player captions
+    /// always show who spoke, while the own-voice session keeps its labels off.
     /// </summary>
-    public bool SpeakerLabelsEnabled { get; set; }
+    public bool SpeakerLabelsEnabled { get; set; } = true;
 
     public string ModelId => _recognizer.ModelId;
 

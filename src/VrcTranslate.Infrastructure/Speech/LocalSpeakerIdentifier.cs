@@ -36,6 +36,8 @@ public sealed class LocalSpeakerIdentifier : ISpeakerIdentifier, IDisposable
 
     public bool IsAvailable => !_disposed && _models.GetStatus().State == LocalSpeechModelState.Ready;
 
+    public event EventHandler? SpeakersChanged;
+
     /// <summary>Model that wrote a voiceprint library this build cannot use, otherwise null.</summary>
     public string? ReplacedLibraryModel => _store.IncompatibleModel;
 
@@ -52,6 +54,8 @@ public sealed class LocalSpeakerIdentifier : ISpeakerIdentifier, IDisposable
 
     public SpeakerMatch? Identify(ReadOnlyMemory<float> samples, int sampleRate)
     {
+        SpeakerMatch? match;
+        var changed = false;
         lock (_sync)
         {
             if (_disposed || EnsureEmbedder() is not { } embedder) return null;
@@ -65,8 +69,15 @@ public sealed class LocalSpeakerIdentifier : ISpeakerIdentifier, IDisposable
                 return null;
             }
 
-            return embedding.Length == 0 ? null : EnsureRegistry().Match(embedding);
+            if (embedding.Length == 0) return null;
+            var registry = EnsureRegistry();
+            var before = registry.Version;
+            match = registry.Match(embedding);
+            changed = registry.Version != before;
         }
+
+        if (changed) RaiseSpeakersChanged();
+        return match;
     }
 
     /// <summary>
@@ -103,35 +114,51 @@ public sealed class LocalSpeakerIdentifier : ISpeakerIdentifier, IDisposable
         }
     }
 
-    public void Rename(string speakerId, string? name)
+    public bool Rename(string speakerId, string? name)
     {
+        var changed = false;
         lock (_sync)
         {
-            if (_disposed) return;
-            if (EnsureRegistry().Rename(speakerId, name)) Persist();
+            if (_disposed) return false;
+            if (EnsureRegistry().Rename(speakerId, name))
+            {
+                Persist();
+                changed = true;
+            }
         }
+
+        if (changed) RaiseSpeakersChanged();
+        return changed;
     }
 
     public bool Merge(string sourceId, string targetId)
     {
+        var changed = false;
         lock (_sync)
         {
             if (_disposed) return false;
             if (!EnsureRegistry().Merge(sourceId, targetId)) return false;
             Persist();
-            return true;
+            changed = true;
         }
+
+        if (changed) RaiseSpeakersChanged();
+        return true;
     }
 
     public bool Forget(string speakerId)
     {
+        var changed = false;
         lock (_sync)
         {
             if (_disposed) return false;
             if (!EnsureRegistry().Forget(speakerId)) return false;
             Persist();
-            return true;
+            changed = true;
         }
+
+        if (changed) RaiseSpeakersChanged();
+        return true;
     }
 
     public void Clear()
@@ -141,6 +168,17 @@ public sealed class LocalSpeakerIdentifier : ISpeakerIdentifier, IDisposable
             if (_disposed) return;
             EnsureRegistry().Clear();
             _store.Clear();
+        }
+
+        RaiseSpeakersChanged();
+    }
+
+    private void RaiseSpeakersChanged()
+    {
+        try { SpeakersChanged?.Invoke(this, EventArgs.Empty); }
+        catch
+        {
+            // A settings-page listener must never break recognition.
         }
     }
 

@@ -73,6 +73,19 @@ public sealed partial class SubtitleOverlayWindow : Window
         new(Microsoft.UI.ColorHelper.FromArgb(255, 147, 167, 188));
     private static readonly SolidColorBrush SpeakerTextBrush =
         new(Microsoft.UI.ColorHelper.FromArgb(255, 143, 232, 222));
+
+    /// <summary>Stable per-speaker colours; only the left rail and the label use them.</summary>
+    private static readonly SolidColorBrush[] SpeakerBrushes =
+    [
+        new(Microsoft.UI.ColorHelper.FromArgb(255, 143, 232, 222)),
+        new(Microsoft.UI.ColorHelper.FromArgb(255, 242, 200, 121)),
+        new(Microsoft.UI.ColorHelper.FromArgb(255, 199, 166, 255)),
+        new(Microsoft.UI.ColorHelper.FromArgb(255, 127, 200, 255)),
+        new(Microsoft.UI.ColorHelper.FromArgb(255, 255, 158, 181)),
+        new(Microsoft.UI.ColorHelper.FromArgb(255, 182, 227, 155)),
+        new(Microsoft.UI.ColorHelper.FromArgb(255, 255, 179, 122)),
+        new(Microsoft.UI.ColorHelper.FromArgb(255, 214, 220, 229)),
+    ];
     // A faint rule between messages on the one dark surface. It stays below the
     // green/teal accent range the surface must never carry.
     private static readonly SolidColorBrush SeparatorBrush =
@@ -80,6 +93,9 @@ public sealed partial class SubtitleOverlayWindow : Window
 
     private readonly SubtitleCaptionBuffer _captions;
     private readonly List<CaptionBubble> _bubbles = [];
+    private readonly Dictionary<string, SolidColorBrush> _speakerBrushes = new(StringComparer.Ordinal);
+    private int _nextSpeakerBrush;
+    private DateTime _ignoreViewChangesUntil;
     private readonly Microsoft.UI.Dispatching.DispatcherQueue? _dispatcher;
     private readonly double _initialOpacity;
     private readonly Microsoft.UI.Dispatching.DispatcherQueueTimer? _contentCheckTimer;
@@ -416,20 +432,39 @@ public sealed partial class SubtitleOverlayWindow : Window
 
     private CaptionBubble CreateBubble(SubtitleCaption caption)
     {
-        var body = new StackPanel { Spacing = 2, HorizontalAlignment = HorizontalAlignment.Stretch };
-        // No rounded bubble around a message: one dark surface with a hairline
-        // between messages reads like the player's own subtitles and keeps the
-        // captions quieter.
+        var speakerBrush = SpeakerBrushFor(caption.SpeakerLabel);
+        var body = new StackPanel
+        {
+            Spacing = 2,
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            Margin = new Thickness(MessagePadding, MessagePaddingTop, MessagePadding, 0),
+        };
+        // A 3px colour rail is the only speaker-specific chrome; the message
+        // itself stays on the same dark surface. Consecutive messages by the
+        // same speaker share the rail and drop the separator (see RefreshSeparators).
+        var content = new Grid();
+        content.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(3) });
+        content.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        var rail = new Border
+        {
+            Width = 3,
+            Background = speakerBrush,
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            VerticalAlignment = VerticalAlignment.Stretch,
+        };
+        Grid.SetColumn(body, 1);
+        content.Children.Add(rail);
+        content.Children.Add(body);
+
         var container = new Border
         {
-            Child = body,
+            Child = content,
             BorderBrush = SeparatorBrush,
             BorderThickness = new Thickness(0, SeparatorThickness, 0, 0),
-            Padding = new Thickness(MessagePadding, MessagePaddingTop, MessagePadding, 0),
             Margin = new Thickness(0, 0, 0, MessageSpacing),
-            HorizontalAlignment = HorizontalAlignment.Stretch
+            HorizontalAlignment = HorizontalAlignment.Stretch,
         };
-        var bubble = new CaptionBubble(caption, container, body);
+        var bubble = new CaptionBubble(caption, container, body, speakerBrush, true);
         RenderBody(bubble);
         return bubble;
     }
@@ -445,7 +480,7 @@ public sealed partial class SubtitleOverlayWindow : Window
     private void RenderBody(CaptionBubble bubble)
     {
         bubble.Body.Children.Clear();
-        if (bubble.Caption.HasSpeaker)
+        if (bubble.ShowSpeakerLabel && bubble.Caption.HasSpeaker)
         {
             bubble.Body.Children.Add(new TextBlock
             {
@@ -454,7 +489,7 @@ public sealed partial class SubtitleOverlayWindow : Window
                 LineHeight = LineHeightFor(SpeakerFontSize),
                 LineStackingStrategy = LineStackingStrategy.BlockLineHeight,
                 FontWeight = FontWeights.SemiBold,
-                Foreground = SpeakerTextBrush,
+                Foreground = bubble.SpeakerBrush,
                 TextAlignment = TextAlignment.Center,
                 HorizontalAlignment = HorizontalAlignment.Stretch,
                 TextTrimming = TextTrimming.CharacterEllipsis,
@@ -504,10 +539,32 @@ public sealed partial class SubtitleOverlayWindow : Window
     {
         for (var index = 0; index < _bubbles.Count; index++)
         {
-            _bubbles[index].Container.BorderThickness = index == 0
+            var sameSpeaker = index > 0 && SameSpeaker(_bubbles[index - 1].Caption, _bubbles[index].Caption);
+            _bubbles[index].Container.BorderThickness = index == 0 || sameSpeaker
                 ? new Thickness(0)
                 : new Thickness(0, SeparatorThickness, 0, 0);
+
+            var showLabel = index == 0 || !sameSpeaker;
+            if (_bubbles[index].ShowSpeakerLabel != showLabel)
+            {
+                _bubbles[index].ShowSpeakerLabel = showLabel;
+                RenderBody(_bubbles[index]);
+            }
         }
+    }
+
+    private static bool SameSpeaker(SubtitleCaption previous, SubtitleCaption current) =>
+        previous.HasSpeaker &&
+        current.HasSpeaker &&
+        string.Equals(previous.SpeakerLabel, current.SpeakerLabel, StringComparison.Ordinal);
+
+    private SolidColorBrush SpeakerBrushFor(string? speakerLabel)
+    {
+        if (string.IsNullOrWhiteSpace(speakerLabel)) return SeparatorBrush;
+        if (_speakerBrushes.TryGetValue(speakerLabel, out var existing)) return existing;
+        var brush = SpeakerBrushes[_nextSpeakerBrush++ % SpeakerBrushes.Length];
+        _speakerBrushes[speakerLabel] = brush;
+        return brush;
     }
 
     private void OnSurfaceSizeChanged(object sender, SizeChangedEventArgs e)
@@ -633,10 +690,31 @@ public sealed partial class SubtitleOverlayWindow : Window
     {
         try
         {
-            // ScrollableHeight only reflects the new message after a layout pass.
+            // A programmatic ChangeView also raises ViewChanged. Without this
+            // guard the surface mistakes its own scroll for the reader scrolling
+            // back and then stops following every later caption.
+            _ignoreViewChangesUntil = DateTime.UtcNow.AddMilliseconds(250);
             CaptionScroll.UpdateLayout();
             CaptionScroll.ChangeView(null, CaptionScroll.ScrollableHeight, null, disableAnimation: true);
             _followLatest = true;
+            NewCaptionHint.Visibility = Visibility.Collapsed;
+
+            // The new message may not have changed ScrollableHeight before the
+            // first layout pass; correct once more on the next dispatcher turn.
+            _dispatcher?.TryEnqueue(() =>
+            {
+                try
+                {
+                    CaptionScroll.UpdateLayout();
+                    CaptionScroll.ChangeView(null, CaptionScroll.ScrollableHeight, null, disableAnimation: true);
+                    _followLatest = true;
+                    NewCaptionHint.Visibility = Visibility.Collapsed;
+                }
+                catch
+                {
+                    // A surface that cannot scroll yet still shows the newest message.
+                }
+            });
         }
         catch
         {
@@ -646,6 +724,7 @@ public sealed partial class SubtitleOverlayWindow : Window
 
     private void OnCaptionViewChanged(object? sender, ScrollViewerViewChangedEventArgs e)
     {
+        if (DateTime.UtcNow < _ignoreViewChangesUntil) return;
         _followLatest = CaptionScroll.ScrollableHeight - CaptionScroll.VerticalOffset <= FollowThreshold;
         if (_followLatest) NewCaptionHint.Visibility = Visibility.Collapsed;
     }
@@ -727,7 +806,15 @@ public sealed partial class SubtitleOverlayWindow : Window
     }
 
     /// <summary>One rendered message: its model, its container and its line host.</summary>
-    private sealed record CaptionBubble(SubtitleCaption Caption, Border Container, StackPanel Body);
+    private sealed record CaptionBubble(
+        SubtitleCaption Caption,
+        Border Container,
+        StackPanel Body,
+        SolidColorBrush SpeakerBrush,
+        bool ShowSpeaker)
+    {
+        public bool ShowSpeakerLabel { get; set; } = ShowSpeaker;
+    }
 }
 
 public sealed record SubtitleLanguageChangedEventArgs(string SourceLanguage, string TargetLanguage);

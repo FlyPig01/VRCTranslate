@@ -257,33 +257,22 @@
 
           <Border Style="{StaticResource SurfaceBorderStyle}" Padding="18,16">
             <StackPanel Spacing="10">
-              <Grid ColumnSpacing="14">
-                <Grid.ColumnDefinitions>
-                  <ColumnDefinition Width="*" />
-                  <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <StackPanel Spacing="3">
-                  <TextBlock Text="说话人"
-                             FontSize="17"
-                             FontWeight="SemiBold"
-                             Foreground="#16202E" />
-                  <TextBlock x:Name="SpeakerStatus"
-                             Text="他人语音暂不区分说话人"
-                             FontSize="12"
-                             Foreground="#607083"
-                             TextWrapping="Wrap" />
-                </StackPanel>
-                <ToggleSwitch Grid.Column="1"
-                              x:Name="SpeakerToggle"
-                              AutomationProperties.Name="区分说话人"
-                              OnContent="区分"
-                              OffContent="不区分"
-                              Toggled="OnSpeakerToggleToggled" />
-              </Grid>
+              <StackPanel Spacing="3">
+                <TextBlock Text="说话人"
+                           FontSize="17"
+                           FontWeight="SemiBold"
+                           Foreground="#16202E" />
+                <TextBlock x:Name="SpeakerStatus"
+                           Text="已常驻开启 · 等待第一位说话人"
+                           FontSize="12"
+                           Foreground="#607083"
+                           TextWrapping="Wrap" />
+              </StackPanel>
               <ListView x:Name="SpeakerList"
                         MaxHeight="170"
                         SelectionMode="Single"
                         SelectionChanged="OnSpeakerSelectionChanged"
+                        DisplayMemberPath="DisplayText"
                         AutomationProperties.AutomationId="speaker-list"
                         BorderThickness="1"
                         CornerRadius="8" />

@@ -585,7 +585,7 @@ if ($overlayMarkup -notmatch '<ScrollViewer[^>]*subtitle-text' -or
     $overlayMarkup -match 'x:Name="SubtitleText"|清空') {
     throw 'The subtitle overlay must render one scrolling message list: no single-caption block and no clear action.'
 }
-if ($overlayMarkup -notmatch 'subtitle-new-message' -or $overlayMarkup -notmatch '有新消息' -or
+if ($overlayMarkup -notmatch 'subtitle-new-message' -or $overlayMarkup -notmatch '最新消息' -or
     $overlayCodeSource -notmatch 'SubtitleCaptionBuffer' -or
     $overlayCodeSource -notmatch 'AppendCaption' -or
     $overlayCodeSource -notmatch 'ScrollToLatest' -or

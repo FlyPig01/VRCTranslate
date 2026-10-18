@@ -506,7 +506,13 @@ public sealed class LocalSpeechCaptureSessionTests
             return Spans;
         }
 
-        public void Rename(string speakerId, string? name) { }
+        public event EventHandler? SpeakersChanged
+        {
+            add { }
+            remove { }
+        }
+
+        public bool Rename(string speakerId, string? name) => true;
 
         public bool Merge(string sourceId, string targetId) => false;
 

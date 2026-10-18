@@ -18,6 +18,9 @@ public interface ISpeakerIdentifier
 
     IReadOnlyList<SpeakerIdentity> Speakers { get; }
 
+    /// <summary>Raised when the speaker list or a name changes; UI subscribers still need their own dispatcher.</summary>
+    event EventHandler? SpeakersChanged;
+
     /// <summary>
     /// Extracts a voiceprint and matches it, registering a new speaker when nothing
     /// is close enough. Null when the clip was too short to identify, in which case
@@ -38,7 +41,8 @@ public interface ISpeakerIdentifier
     /// </summary>
     IReadOnlyList<SpeechSpan> SplitAtSpeakerChanges(ReadOnlyMemory<float> samples, int sampleRate);
 
-    void Rename(string speakerId, string? name);
+    /// <summary>Names a speaker; false when the 100-person library is full.</summary>
+    bool Rename(string speakerId, string? name);
 
     bool Merge(string sourceId, string targetId);
 

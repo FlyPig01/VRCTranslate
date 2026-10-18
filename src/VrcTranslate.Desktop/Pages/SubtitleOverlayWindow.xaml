@@ -46,7 +46,7 @@
       <!-- Offered only after the reader scrolled back; nothing moves the view
            away from an older message. -->
       <Button x:Name="NewCaptionHint"
-              Content="有新消息"
+              Content="最新消息"
               Visibility="Collapsed"
               HorizontalAlignment="Right"
               VerticalAlignment="Bottom"

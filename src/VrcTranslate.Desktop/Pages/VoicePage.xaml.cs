@@ -36,7 +36,7 @@ public sealed partial class VoicePage : Page
     private readonly AudioLevelMeter _audioMeter = new(new AudioLevelMeterOptions { BarCount = 24 });
     private LevelBarRenderer? _levelBars;
     private IReadOnlyList<SpeakerIdentity> _speakers = [];
-    private bool _updatingSpeakerToggle;
+    private bool _speakerEventsAttached;
     private bool _fallbackNoticeActive;
     private bool _selfTestAttached;
 
@@ -96,6 +96,11 @@ public sealed partial class VoicePage : Page
         State.SubtitleVoice.Notified += OnSessionNotified;
         State.SubtitleVoice.LevelChanged += OnAudioLevelChanged;
         State.SubtitleVoice.SourceChanged += OnCaptureSourceChanged;
+        if (!_speakerEventsAttached && State.LocalSpeech.Speakers is { } speakers)
+        {
+            speakers.SpeakersChanged += OnSpeakersChanged;
+            _speakerEventsAttached = true;
+        }
     }
 
     private void DetachSpeechEvents()
@@ -106,7 +111,15 @@ public sealed partial class VoicePage : Page
         State.SubtitleVoice.Notified -= OnSessionNotified;
         State.SubtitleVoice.LevelChanged -= OnAudioLevelChanged;
         State.SubtitleVoice.SourceChanged -= OnCaptureSourceChanged;
+        if (_speakerEventsAttached && State.LocalSpeech.Speakers is { } speakers)
+        {
+            speakers.SpeakersChanged -= OnSpeakersChanged;
+            _speakerEventsAttached = false;
+        }
     }
+
+    private void OnSpeakersChanged(object? sender, EventArgs e) =>
+        DispatcherQueue.TryEnqueue(UpdateSpeakerPanel);
 
     private void OnSessionRunningChanged(object? sender, EventArgs e) =>
         DispatcherQueue.TryEnqueue(UpdateRunningVisuals);
@@ -602,7 +615,7 @@ public sealed partial class VoicePage : Page
         }
 
         _settings.Provider = "local";
-        State.LocalSpeech.SpeakerLabelsEnabled = _settings.SpeakerLabels;
+        State.LocalSpeech.SpeakerLabelsEnabled = true;
         ApplySubtitleContentSetting();
         SpeechModelBox.SelectedIndex = 0;
         HotkeyDisplay.Apply(VoiceHotkeyValue, ReadGlobalVoiceHotkey());
@@ -666,15 +679,6 @@ public sealed partial class VoicePage : Page
         OverlayWindowHost.ApplySubtitleContentMode(mode);
     }
 
-    private void OnSpeakerToggleToggled(object sender, RoutedEventArgs e)
-    {
-        if (!_loaded || _updatingSpeakerToggle) return;
-        State.LocalSpeech.SpeakerLabelsEnabled = SpeakerToggle.IsOn;
-        _settings.SpeakerLabels = SpeakerToggle.IsOn;
-        SaveSettings();
-        UpdateSpeakerPanel();
-    }
-
     private void OnSpeakerSelectionChanged(object sender, SelectionChangedEventArgs e) =>
         UpdateSpeakerButtons();
 
@@ -698,7 +702,20 @@ public sealed partial class VoicePage : Page
         };
         if (await dialog.ShowAsync() != ContentDialogResult.Primary) return;
 
-        State.LocalSpeech.Speakers?.Rename(speaker.Id, input.Text);
+        var namedCount = _speakers.Count(item => item.Name is not null);
+        if (speaker.Name is null && namedCount >= 100)
+        {
+            ShowInfo("命名库已满（100 人），请先合并或忘记一个说话人", InfoBarSeverity.Warning);
+            return;
+        }
+
+        var renamed = State.LocalSpeech.Speakers?.Rename(speaker.Id, input.Text) ?? false;
+        if (!renamed)
+        {
+            ShowInfo("命名失败：命名库已满，请先合并或忘记一个说话人", InfoBarSeverity.Warning);
+            return;
+        }
+
         UpdateSpeakerPanel();
         ShowInfo($"已命名为「{input.Text.Trim()}」，下次会话会自动沿用", InfoBarSeverity.Success);
     }
@@ -766,39 +783,37 @@ public sealed partial class VoicePage : Page
 
     private void UpdateSpeakerButtons()
     {
-        var selected = SpeakerList.SelectedItem is SpeakerIdentity;
-        SpeakerRenameButton.IsEnabled = selected;
-        SpeakerMergeButton.IsEnabled = selected;
-        SpeakerForgetButton.IsEnabled = selected;
+        var selected = SpeakerList.SelectedItem as SpeakerIdentity;
+        var namedCount = _speakers.Count(item => item.Name is not null);
+        var atLibraryCap = selected?.Name is null && namedCount >= 100;
+        SpeakerRenameButton.IsEnabled = selected is not null && !atLibraryCap;
+        SpeakerMergeButton.IsEnabled = selected is not null;
+        SpeakerForgetButton.IsEnabled = selected is not null;
     }
 
-    /// <summary>Mirrors the speaker library into the card; the feature is off by default.</summary>
+    /// <summary>Mirrors the speaker library into the card; labels are always on for other-player speech.</summary>
     private void UpdateSpeakerPanel()
     {
-        if (SpeakerList is null || SpeakerToggle is null || SpeakerStatus is null) return;
+        if (SpeakerList is null || SpeakerStatus is null) return;
         var identifier = State.LocalSpeech.Speakers;
-        var available = State.LocalSpeech.Speakers is { IsAvailable: true };
+        var available = identifier is { IsAvailable: true };
+        var selectedId = (SpeakerList.SelectedItem as SpeakerIdentity)?.Id;
         _speakers = available ? identifier!.Speakers : [];
 
         SpeakerList.ItemsSource = _speakers;
-        SpeakerToggle.IsEnabled = available;
-        _updatingSpeakerToggle = true;
-        try
+        if (selectedId is not null)
         {
-            SpeakerToggle.IsOn = available && State.LocalSpeech.SpeakerLabelsEnabled;
-        }
-        finally
-        {
-            _updatingSpeakerToggle = false;
+            SpeakerList.SelectedItem = _speakers.FirstOrDefault(item =>
+                string.Equals(item.Id, selectedId, StringComparison.Ordinal));
         }
 
+        var namedCount = _speakers.Count(item => item.Name is not null);
+        var sessionCount = _speakers.Count - namedCount;
         SpeakerStatus.Text = !available
             ? "说话人模型不可用，重新导入本地组件后可恢复"
-            : State.LocalSpeech.SpeakerLabelsEnabled
-                ? _speakers.Count == 0
-                    ? "已开启 · 等待第一位说话人"
-                    : $"已开启 · 本会话识别到 {_speakers.Count} 位说话人，命名后会跨会话沿用"
-                : "他人语音暂不区分说话人";
+            : _speakers.Count == 0
+                ? "已常驻开启 · 等待第一位说话人"
+                : $"已常驻开启 · 命名库 {namedCount}/100 · 本次会话 {sessionCount}/16";
         UpdateSpeakerButtons();
     }
 
@@ -806,6 +821,7 @@ public sealed partial class VoicePage : Page
     {
         public string Provider { get; set; } = "local";
 
+        // Kept for reading older settings files; the feature is always on now.
         public bool SpeakerLabels { get; set; }
 
         /// <summary>

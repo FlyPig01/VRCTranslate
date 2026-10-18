@@ -151,8 +151,9 @@ public sealed class SpeakerRegistryTests
         // The merged voiceprint covers both voices, so the first one matches.
         var merged = registry.Match(AtAngle(0.9f));
         Assert.Equal(second.Speaker.Id, merged.Speaker.Id);
-        // The target was created in this session, so it keeps the session threshold.
-        Assert.Equal(SpeakerMatchKind.Session, merged.Kind);
+        // Naming moves the target into the remembered library, so it uses the
+        // stricter threshold and no longer occupies a session slot.
+        Assert.Equal(SpeakerMatchKind.Remembered, merged.Kind);
     }
 
     [Fact]
@@ -223,6 +224,87 @@ public sealed class SpeakerRegistryTests
 
         Assert.Equal("小红", match.Speaker.Name);
         Assert.Single(registry.Speakers);
+    }
+
+    [Fact]
+    public void Session_slots_stop_at_the_limit_and_use_unknown()
+    {
+        var registry = new SpeakerRegistry(new SpeakerMatchOptions { MaxSessionSpeakers = 2 });
+        var first = registry.Match(Vector(1f, 0f));
+        var second = registry.Match(Vector(0f, 1f));
+
+        var third = registry.Match(Vector(-1f, 0f));
+
+        Assert.Equal(SpeakerMatchKind.Unknown, third.Kind);
+        Assert.Equal("未知", third.Speaker.DisplayName);
+        Assert.Equal(2, registry.Speakers.Count);
+        Assert.NotEqual(first.Speaker.Id, second.Speaker.Id);
+    }
+
+    [Fact]
+    public void Expired_session_speakers_free_a_slot()
+    {
+        var registry = new SpeakerRegistry(new SpeakerMatchOptions
+        {
+            MaxSessionSpeakers = 1,
+            SessionSpeakerTtl = TimeSpan.FromMilliseconds(20),
+        });
+        var first = registry.Match(Vector(1f, 0f));
+        Thread.Sleep(40);
+
+        var second = registry.Match(Vector(-1f, 0f));
+
+        Assert.Equal(SpeakerMatchKind.New, second.Kind);
+        Assert.NotEqual(first.Speaker.Id, second.Speaker.Id);
+        Assert.Single(registry.Speakers);
+    }
+
+    [Fact]
+    public void Named_speakers_do_not_consume_session_slots()
+    {
+        var registry = new SpeakerRegistry(new SpeakerMatchOptions { MaxSessionSpeakers = 1 });
+        var first = registry.Match(Vector(1f, 0f));
+        Assert.True(registry.Rename(first.Speaker.Id, "小明"));
+
+        var second = registry.Match(Vector(0f, 1f));
+        var third = registry.Match(Vector(-1f, 0f));
+
+        Assert.Equal(SpeakerMatchKind.New, second.Kind);
+        Assert.Equal(SpeakerMatchKind.Unknown, third.Kind);
+        Assert.Equal(2, registry.Speakers.Count);
+        Assert.Equal(1, registry.RememberedCount);
+        Assert.Equal(1, registry.SessionCount);
+    }
+
+    [Fact]
+    public void Named_library_stops_at_the_configured_limit()
+    {
+        var registry = new SpeakerRegistry(new SpeakerMatchOptions
+        {
+            MaxSessionSpeakers = 200,
+            MaxRememberedSpeakers = 2,
+        });
+        var first = registry.Match(Vector(1f, 0f));
+        var second = registry.Match(Vector(0f, 1f));
+        var third = registry.Match(Vector(-1f, 0f));
+        Assert.True(registry.Rename(first.Speaker.Id, "小明"));
+        Assert.True(registry.Rename(second.Speaker.Id, "小红"));
+
+        Assert.False(registry.Rename(third.Speaker.Id, "小刚"));
+        Assert.Equal(2, registry.RememberedCount);
+        Assert.Equal(3, registry.Speakers.Count);
+    }
+
+    [Fact]
+    public void Display_text_never_exposes_the_record_shape()
+    {
+        var registry = new SpeakerRegistry();
+        var match = registry.Match(Vector(1f, 0f));
+
+        Assert.Equal("A · 未命名", match.Speaker.DisplayText);
+
+        registry.Rename(match.Speaker.Id, "小明");
+        Assert.Equal("A · 小明", registry.Speakers[0].DisplayText);
     }
 
     private static SpeakerVoiceprintDocument Document(string name, float[] centroid, int dimension) => new(

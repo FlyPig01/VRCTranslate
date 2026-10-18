@@ -73,10 +73,10 @@ public sealed class SpeakerRegistryTests
         // must not claim this is 小明.
         var cautious = registry.Match(AtAngle(0.60f));
 
-        // 0.60 is in the gray zone around 0.65: do not claim 小明 and do not
-        // create a ghost speaker either.
-        Assert.Equal(SpeakerMatchKind.Uncertain, cautious.Kind);
-        Assert.Equal("未知", cautious.Speaker.DisplayName);
+        // 0.60 clears the session bar but not the remembered one, so the
+        // library must not claim this is 小明 (1.1.5-compatible behaviour).
+        Assert.Equal(SpeakerMatchKind.New, cautious.Kind);
+        Assert.Null(cautious.Speaker.Name);
     }
 
     [Fact]
@@ -307,24 +307,6 @@ public sealed class SpeakerRegistryTests
 
         registry.Rename(match.Speaker.Id, "小明");
         Assert.Equal("A · 小明", registry.Speakers[0].DisplayText);
-    }
-
-    [Fact]
-    public void Ambiguous_match_holds_the_previous_speaker_without_updating()
-    {
-        var registry = new SpeakerRegistry();
-        var first = registry.Match(Vector(1f, 0f));
-        var second = registry.Match(Vector(0f, 1f));
-        var before = registry.Speakers.Single(item => item.Id == first.Speaker.Id).ObservationCount;
-
-        // Roughly 0.70/0.71 to A/B: above the session threshold, but the margin
-        // is too small to trust a switch.
-        var ambiguous = registry.Match(Vector(0.70f, 0.714f), first.Speaker.Id);
-
-        Assert.Equal(SpeakerMatchKind.Held, ambiguous.Kind);
-        Assert.Equal(first.Speaker.Id, ambiguous.Speaker.Id);
-        Assert.Equal(before, registry.Speakers.Single(item => item.Id == first.Speaker.Id).ObservationCount);
-        Assert.NotNull(second);
     }
 
     [Fact]

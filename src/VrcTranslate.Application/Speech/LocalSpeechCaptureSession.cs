@@ -31,9 +31,6 @@ public sealed class LocalSpeechCaptureSession : IAsyncDisposable
     private bool _fallbackNoticeConsumed;
     private bool _usingEnergyGate;
     private bool _splitFaultLogged;
-    private string? _lastSpeakerId;
-    private string? _lastSpeakerLabel;
-    private int _lastLocalSpeakerId = -1;
     private long _audibleStartTimestamp;
     private long _diagnosticsWindowStart = Stopwatch.GetTimestamp();
     private long _diagnosticsChunks;
@@ -139,7 +136,6 @@ public sealed class LocalSpeechCaptureSession : IAsyncDisposable
         {
             if (_disposed) return;
             _sourceGeneration++;
-            ResetSpeakerContinuity();
             retired = _sourceCts;
             _sourceCts = new CancellationTokenSource();
         }
@@ -503,18 +499,8 @@ public sealed class LocalSpeechCaptureSession : IAsyncDisposable
             try
             {
                 if (IsStaleSource(generation)) return;
-                // Local diarization ids are valid only inside one VAD segment;
-                // reset the intra-segment prior before its first span.
-                _lastLocalSpeakerId = -1;
-                var spans = PlanSpeakerSpans(samples);
-                IReadOnlyDictionary<int, SpeakerMatch?>? clusterMatches = null;
-                if (_processing.AttachSpeakerLabels && TryGetSpeakers(out var clusterSpeakers))
-                {
-                    clusterMatches = BuildClusterMatches(samples, spans, clusterSpeakers);
-                }
-
                 // One span normally; two or three when one sentence holds two voices.
-                foreach (var span in spans)
+                foreach (var span in PlanSpeakerSpans(samples))
                 {
                     // A damaged split must cost the split, never the sentence.
                     var start = Math.Clamp(span.StartSample, 0, samples.Length);
@@ -540,15 +526,7 @@ public sealed class LocalSpeechCaptureSession : IAsyncDisposable
                         RaiseDiagnostic($"result chars={result.Text.Length} lang={result.SourceLanguage}");
                     }
 
-                    var hasCluster = span.LocalSpeakerId >= 0 &&
-                                     clusterMatches is not null &&
-                                     clusterMatches.TryGetValue(span.LocalSpeakerId, out var clusterMatch);
-                    RaiseResultReady(AttachSpeaker(
-                        result,
-                        part,
-                        span.LocalSpeakerId,
-                        hasCluster,
-                        hasCluster ? clusterMatches![span.LocalSpeakerId] : null));
+                    RaiseResultReady(AttachSpeaker(result, part));
                 }
             }
             finally
@@ -598,10 +576,7 @@ public sealed class LocalSpeechCaptureSession : IAsyncDisposable
 
     private SpeechRecognitionResult AttachSpeaker(
         SpeechRecognitionResult result,
-        ReadOnlyMemory<float> samples,
-        int localSpeakerId,
-        bool hasClusterMatch = false,
-        SpeakerMatch? clusterMatch = null)
+        ReadOnlyMemory<float> samples)
     {
         if (!_processing.AttachSpeakerLabels || !TryGetSpeakers(out var speakers)) return result;
 
@@ -609,81 +584,27 @@ public sealed class LocalSpeechCaptureSession : IAsyncDisposable
         var rms = Rms(samples.Span);
         try
         {
-            // Previous-speaker continuity is valid only inside one diarization
-            // cluster. A new VAD segment or a changed local cluster must not
-            // inherit the old label just because the old voiceprint is still
-            // above its threshold. Cluster matches use concatenated audio from
-            // all short spans of the same local cluster, so a 1s interjection is
-            // identified from the whole cluster instead of from 1s alone.
-            var sameLocal = !hasClusterMatch &&
-                            localSpeakerId >= 0 &&
-                            localSpeakerId == _lastLocalSpeakerId;
-            var previousId = sameLocal ? _lastSpeakerId : null;
-            var match = hasClusterMatch
-                ? clusterMatch
-                : speakers.Identify(samples, _segmenterSampleRate, previousId);
-            var decision = match?.Kind.ToString() ?? "identify-null";
-            var speaker = match?.Speaker;
-
+            // 1.1.5-compatible path: every span matches independently. No local
+            // cluster prior and no previous-speaker hold; a known B can be
+            // recognized from a short span directly.
+            var match = speakers.Identify(samples, _segmenterSampleRate);
             if (match is null)
             {
-                if (sameLocal && _lastSpeakerId is not null)
+                RaiseDiagnostic(
+                    $"speaker span duration={duration:0.00} rms={rms:0.0000} decision=unknown");
+                return result with
                 {
-                    speaker = new SpeakerIdentity(_lastSpeakerId, _lastSpeakerLabel ?? "?", _lastSpeakerLabel);
-                    decision = "identify-null-same-local";
-                }
-                else
-                {
-                    // This short span belongs to a new local cluster or a new
-                    // VAD segment. Showing the old speaker here is exactly the
-                    // one-sentence-late switch; show an explicit unknown label
-                    // instead of a blank that looks like a continuation.
-                    _lastSpeakerId = null;
-                    _lastSpeakerLabel = null;
-                    RaiseDiagnostic(
-                        $"speaker span duration={duration:0.00} rms={rms:0.0000} decision=unknown local={localSpeakerId}");
-                    return result with
-                    {
-                        SpeakerId = SpeakerRegistry.UnknownSpeaker.Id,
-                        SpeakerLabel = SpeakerRegistry.UnknownSpeaker.DisplayName,
-                    };
-                }
-            }
-            else if (sameLocal &&
-                     _lastSpeakerId is not null &&
-                     match.Kind is SpeakerMatchKind.New or SpeakerMatchKind.Uncertain or SpeakerMatchKind.Held or SpeakerMatchKind.Unknown)
-            {
-                // Same local cluster: use the previous speaker only when the
-                // global match is not confident. A strong match still wins.
-                speaker = new SpeakerIdentity(_lastSpeakerId, _lastSpeakerLabel ?? "?", _lastSpeakerLabel);
-                decision = "local-cluster-hold";
-            }
-            else if (match.Kind == SpeakerMatchKind.Uncertain && sameLocal && _lastSpeakerId is not null)
-            {
-                speaker = new SpeakerIdentity(_lastSpeakerId, _lastSpeakerLabel ?? "?", _lastSpeakerLabel);
-                decision = "uncertain-hold-previous";
+                    SpeakerId = SpeakerRegistry.UnknownSpeaker.Id,
+                    SpeakerLabel = SpeakerRegistry.UnknownSpeaker.DisplayName,
+                };
             }
 
-            if (speaker is null) return result;
-            if (speaker.Id == "spk-unknown")
-            {
-                _lastSpeakerId = null;
-                _lastSpeakerLabel = null;
-                decision = "unknown";
-            }
-            else
-            {
-                _lastSpeakerId = speaker.Id;
-                _lastSpeakerLabel = speaker.DisplayName;
-            }
-
-            if (localSpeakerId >= 0) _lastLocalSpeakerId = localSpeakerId;
-
+            var speaker = match.Speaker;
             RaiseDiagnostic(
                 $"speaker span duration={duration:0.00} rms={rms:0.0000} " +
-                $"best={match?.Similarity:0.000} second={match?.SecondSimilarity:0.000} " +
-                $"margin={match?.Margin:0.000} decision={decision} " +
-                $"speaker={speaker.Id}/{speaker.DisplayName} local={localSpeakerId} sameLocal={sameLocal}");
+                $"best={match.Similarity:0.000} second={match.SecondSimilarity:0.000} " +
+                $"margin={match.Margin:0.000} decision={match.Kind} " +
+                $"speaker={speaker.Id}/{speaker.DisplayName}");
             return result with { SpeakerId = speaker.Id, SpeakerLabel = speaker.DisplayName };
         }
         catch (Exception exception)
@@ -691,63 +612,6 @@ public sealed class LocalSpeechCaptureSession : IAsyncDisposable
             RaiseDiagnostic($"speaker identify failed: {exception.GetType().Name}: {exception.Message}");
             return result;
         }
-    }
-
-    /// <summary>
-    /// One embedding per local diarization cluster, using the concatenated audio
-    /// of all its spans. This is what lets two 1.2s/1.4s lines identify as one
-    /// speaker instead of being skipped individually.
-    /// </summary>
-    private IReadOnlyDictionary<int, SpeakerMatch?> BuildClusterMatches(
-        ReadOnlyMemory<float> samples,
-        IReadOnlyList<SpeechSpan> spans,
-        ISpeakerIdentifier speakers)
-    {
-        var matches = new Dictionary<int, SpeakerMatch?>();
-        foreach (var group in spans.Where(span => span.LocalSpeakerId >= 0)
-                     .GroupBy(span => span.LocalSpeakerId))
-        {
-            var parts = group.ToArray();
-            var total = parts.Sum(part => Math.Max(0, part.Length));
-            if (total <= 0)
-            {
-                matches[group.Key] = null;
-                continue;
-            }
-
-            var audio = new float[total];
-            var offset = 0;
-            foreach (var span in parts)
-            {
-                var start = Math.Clamp(span.StartSample, 0, samples.Length);
-                var end = Math.Clamp(span.EndSample, start, samples.Length);
-                if (end <= start) continue;
-                samples.Span.Slice(start, end - start).CopyTo(audio.AsSpan(offset));
-                offset += end - start;
-            }
-
-            if (offset <= 0)
-            {
-                matches[group.Key] = null;
-                continue;
-            }
-
-            var match = speakers.Identify(audio.AsMemory(0, offset), _segmenterSampleRate);
-            matches[group.Key] = match;
-            RaiseDiagnostic(
-                $"speaker cluster local={group.Key} spans={parts.Length} " +
-                $"duration={offset / (double)_segmenterSampleRate:0.00} " +
-                $"decision={match?.Kind.ToString() ?? "identify-null"}");
-        }
-
-        return matches;
-    }
-
-    private void ResetSpeakerContinuity()
-    {
-        _lastSpeakerId = null;
-        _lastSpeakerLabel = null;
-        _lastLocalSpeakerId = -1;
     }
 
     private static float Rms(ReadOnlySpan<float> samples)

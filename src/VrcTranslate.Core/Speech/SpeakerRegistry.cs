@@ -151,6 +151,10 @@ public sealed class SpeakerRegistry
 
     public SpeakerMatch Match(ReadOnlySpan<float> embedding, string? previousSpeakerId = null)
     {
+        // 1.1.5-compatible path: every span matches independently. The extra
+        // argument remains for source compatibility but must not turn a real
+        // speaker change into a held previous speaker.
+        _ = previousSpeakerId;
         var normalized = SpeakerMath.Normalize(embedding);
         if (normalized.Length == 0)
         {
@@ -160,21 +164,13 @@ public sealed class SpeakerRegistry
         SweepExpiredSessionSpeakers();
         SpeakerState? best = null;
         SpeakerState? second = null;
-        SpeakerState? previous = null;
         var bestSimilarity = float.NegativeInfinity;
         var secondSimilarity = float.NegativeInfinity;
-        var previousSimilarity = float.NegativeInfinity;
         foreach (var speaker in _speakers)
         {
             // A library written by another embedding model has a different
             // dimension; those records simply cannot be compared.
             if (speaker.Dimension != normalized.Length) continue;
-            if (previousSpeakerId is not null &&
-                string.Equals(speaker.Id, previousSpeakerId, StringComparison.Ordinal))
-            {
-                previous = speaker;
-            }
-
             var similarity = speaker.Similarity(normalized);
             if (similarity > bestSimilarity)
             {
@@ -188,14 +184,10 @@ public sealed class SpeakerRegistry
                 secondSimilarity = similarity;
                 second = speaker;
             }
-
-            if (speaker == previous) previousSimilarity = similarity;
         }
 
         var margin = second is null ? 1f : bestSimilarity - secondSimilarity;
-        var bestThreshold = best is null ? _options.SessionThreshold : ThresholdFor(best);
-
-        if (best is not null && bestSimilarity >= bestThreshold && margin >= _options.MatchMargin)
+        if (best is not null && bestSimilarity >= ThresholdFor(best))
         {
             best.Observe(normalized, _options);
             return new SpeakerMatch(
@@ -205,31 +197,6 @@ public sealed class SpeakerRegistry
                 second is null ? -1f : secondSimilarity,
                 margin,
                 "match");
-        }
-
-        if (previous is not null && previousSimilarity >= ThresholdFor(previous) - _options.GrayZone)
-        {
-            // Keep the previous speaker when the new evidence is ambiguous. The
-            // profile is not updated: this observation is not trustworthy enough
-            // to move the centroid.
-            return new SpeakerMatch(
-                previous.Identity,
-                previousSimilarity,
-                SpeakerMatchKind.Held,
-                second is null ? -1f : secondSimilarity,
-                margin,
-                "held-previous");
-        }
-
-        if (best is not null && bestSimilarity >= bestThreshold - _options.GrayZone)
-        {
-            return new SpeakerMatch(
-                UnknownSpeaker,
-                bestSimilarity,
-                SpeakerMatchKind.Uncertain,
-                second is null ? -1f : secondSimilarity,
-                margin,
-                "ambiguous");
         }
 
         if (SessionCount >= _options.MaxSessionSpeakers)

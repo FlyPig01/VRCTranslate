@@ -57,8 +57,7 @@ public sealed class LocalSpeakerIdentifier : ISpeakerIdentifier, IDisposable
         int sampleRate,
         string? previousSpeakerId = null)
     {
-        if (samples.Length < (int)(sampleRate * _matchOptions.MinimumEmbeddingSeconds)) return null;
-        if (Rms(samples.Span) < _matchOptions.MinimumEmbeddingRms) return null;
+        _ = previousSpeakerId;
 
         SpeakerMatch? match;
         var changed = false;
@@ -78,7 +77,7 @@ public sealed class LocalSpeakerIdentifier : ISpeakerIdentifier, IDisposable
             if (embedding.Length == 0) return null;
             var registry = EnsureRegistry();
             var before = registry.Version;
-            match = registry.Match(embedding, previousSpeakerId);
+            match = registry.Match(embedding);
             changed = registry.Version != before;
         }
 
@@ -99,14 +98,6 @@ public sealed class LocalSpeakerIdentifier : ISpeakerIdentifier, IDisposable
 
         if (changed) RaiseSpeakersChanged();
         return true;
-    }
-
-    private static float Rms(ReadOnlySpan<float> samples)
-    {
-        if (samples.IsEmpty) return 0f;
-        double sum = 0d;
-        foreach (var sample in samples) sum += sample * sample;
-        return (float)Math.Sqrt(sum / samples.Length);
     }
 
     /// <summary>

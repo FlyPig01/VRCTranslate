@@ -15,10 +15,11 @@ public static class LocalSpeechSegmenterFactory
         if (model is null) return new SpeechSegmenter();
         try
         {
-            // The native max-speech cut overshoots in practice. Four seconds
-            // keeps the first caption and multi-speaker bursts shorter than the
-            // old 6s setting; the 16s stall guard still has ample margin.
-            return new SileroVadSegmenter(model, maxSpeechSeconds: 4f);
+            // 1.1.5 baseline: six seconds gave the diarization model enough
+            // context to find a speaker change inside the segment. The shorter
+            // 4s experiment produced more sub-3s segments, which pyannote never
+            // splits; do not shorten it without an A/B on real dialogue.
+            return new SileroVadSegmenter(model, maxSpeechSeconds: 6f);
         }
         catch
         {

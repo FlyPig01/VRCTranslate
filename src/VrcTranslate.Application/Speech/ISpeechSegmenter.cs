@@ -22,3 +22,13 @@ public interface ISpeechSegmenter
     /// </summary>
     void Reset();
 }
+
+/// <summary>
+/// Optional capability of a native gate: it currently holds speech that has
+/// not closed into a segment yet. The capture session uses this to distinguish
+/// a long continuous utterance (normal) from a stuck gate (fallback case).
+/// </summary>
+public interface IHasPendingSpeech
+{
+    bool HasPendingSpeech { get; }
+}

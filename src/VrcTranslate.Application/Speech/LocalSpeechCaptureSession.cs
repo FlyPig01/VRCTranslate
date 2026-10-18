@@ -11,7 +11,6 @@ namespace VrcTranslate.Application.Speech;
 /// </summary>
 public sealed class LocalSpeechCaptureSession : IAsyncDisposable
 {
-    private static readonly TimeSpan SilentVadFallbackWindow = TimeSpan.FromSeconds(12);
     private const float AudibleRms = 0.01f;
 
     private readonly IAudioCapture _capture;
@@ -270,7 +269,7 @@ public sealed class LocalSpeechCaptureSession : IAsyncDisposable
         var segments = AppendSamples(args.Samples);
         if (segments.Count == 0 && ShouldFallBackForSilentVad())
         {
-            SwitchToEnergyGate(new InvalidOperationException("VAD 连续 12 秒没有产出语音段。"));
+            SwitchToEnergyGate(new InvalidOperationException("VAD 长时间没有产出语音段（超过保护窗口）。"));
         }
 
         foreach (var segment in segments)
@@ -345,7 +344,7 @@ public sealed class LocalSpeechCaptureSession : IAsyncDisposable
             SegmenterFallback?.Invoke(
                 this,
                 new SpeechSegmenterFallbackEventArgs(
-                    "语音活动检测不可用，已切换到备用分段器；字幕仍会继续。",
+                    "语音活动检测长时间未产出语音段，已切换到备用分段器；字幕仍会继续。",
                     exception));
         }
         catch
@@ -367,7 +366,22 @@ public sealed class LocalSpeechCaptureSession : IAsyncDisposable
     {
         if (_usingEnergyGate) return false;
         var start = Interlocked.Read(ref _audibleStartTimestamp);
-        return start != 0 && Stopwatch.GetElapsedTime(start) >= SilentVadFallbackWindow;
+        if (start == 0) return false;
+
+        var elapsed = Stopwatch.GetElapsedTime(start);
+        if (elapsed < _processing.SilentVadFallbackWindow) return false;
+
+        // A continuous utterance longer than the native max-speech duration is
+        // normal, not a stuck gate. Wait for the native max-speech cut before
+        // forcing a fallback; only a gate that stays "speech detected" without
+        // ever producing a segment hits the hard ceiling.
+        if (_segmenter is IHasPendingSpeech { HasPendingSpeech: true } &&
+            elapsed < _processing.SilentVadHardFallbackWindow)
+        {
+            return false;
+        }
+
+        return true;
     }
 
     private void FlushDiagnosticsIfDue(float rms)

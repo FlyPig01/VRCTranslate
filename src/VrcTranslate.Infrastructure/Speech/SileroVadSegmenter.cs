@@ -23,7 +23,7 @@ namespace VrcTranslate.Infrastructure.Speech;
 /// <c>A_continuous_signal_is_force_cut_at_12s_without_eating_speech</c> guards them.
 /// </para>
 /// </summary>
-public sealed class SileroVadSegmenter : ISpeechSegmenter, IDisposable
+public sealed class SileroVadSegmenter : ISpeechSegmenter, IHasPendingSpeech, IDisposable
 {
     private readonly object _sync = new();
     private readonly VoiceActivityDetector _vad;
@@ -67,6 +67,19 @@ public sealed class SileroVadSegmenter : ISpeechSegmenter, IDisposable
     }
 
     public int SampleRate { get; }
+
+    /// <summary>True while the native detector holds an uncompleted speech span.</summary>
+    public bool HasPendingSpeech
+    {
+        get
+        {
+            lock (_sync)
+            {
+                try { return _vad.IsSpeechDetected(); }
+                catch { return false; }
+            }
+        }
+    }
 
     public IReadOnlyList<ReadOnlyMemory<float>> Append(ReadOnlyMemory<float> chunk)
     {

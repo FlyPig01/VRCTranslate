@@ -409,9 +409,62 @@ public sealed class LocalSpeechCaptureSessionTests
         }
     }
 
+    [Fact]
+    public async Task Pending_native_speech_does_not_trigger_the_stalled_fallback_before_the_hard_ceiling()
+    {
+        var capture = new FakeAudioCapture(AudioCaptureRequest.SystemLoopback());
+        var fallback = new TaskCompletionSource<SpeechSegmenterFallbackEventArgs>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var options = new SpeechCaptureProcessingOptions
+        {
+            SilentVadFallbackWindow = TimeSpan.FromMilliseconds(100),
+            SilentVadHardFallbackWindow = TimeSpan.FromMilliseconds(300),
+        };
+        await using var session = new LocalSpeechCaptureSession(
+            capture, CreateSpeechService(), "en", new PendingSpeechSegmenter(), options);
+        session.SegmenterFallback += (_, args) => fallback.TrySetResult(args);
+
+        await session.StartAsync();
+        var chunk = Enumerable.Repeat(0.2f, 1_600).ToArray(); // 100 ms at 16 kHz
+
+        // 200 ms: past the normal window, but the gate reports pending speech,
+        // so this is a long utterance rather than a stalled VAD.
+        for (var index = 0; index < 4; index++)
+        {
+            capture.Emit(chunk);
+            await Task.Delay(50);
+        }
+
+        Assert.False(fallback.Task.IsCompleted);
+
+        // 350 ms: past the hard ceiling even while speech is still pending.
+        for (var index = 0; index < 3; index++)
+        {
+            capture.Emit(chunk);
+            await Task.Delay(50);
+        }
+
+        var args = await fallback.Task.WaitAsync(TimeSpan.FromSeconds(2));
+        Assert.Contains("长时间未产出", args.Message, StringComparison.Ordinal);
+    }
+
     private static LocalSpeechService CreateSpeechService() => new(
         new FakeModelManager(),
         new FakeRecognizer());
+
+    /// <summary>Native gate stand-in that always reports an uncompleted speech span.</summary>
+    private sealed class PendingSpeechSegmenter : ISpeechSegmenter, IHasPendingSpeech
+    {
+        public int SampleRate => 16_000;
+
+        public bool HasPendingSpeech => true;
+
+        public IReadOnlyList<ReadOnlyMemory<float>> Append(ReadOnlyMemory<float> chunk) => [];
+
+        public IReadOnlyList<ReadOnlyMemory<float>> Flush() => [];
+
+        public void Reset() { }
+    }
 
     /// <summary>Native gate stand-in that fails on the very first chunk.</summary>
     private sealed class ThrowingSegmenter : ISpeechSegmenter

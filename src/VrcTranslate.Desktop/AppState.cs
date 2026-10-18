@@ -339,7 +339,17 @@ public sealed class AppState
         var wasDefault = string.Equals(_profiles[index].Id, CurrentRoute.Profile.ProfileId, StringComparison.OrdinalIgnoreCase);
         _profiles.RemoveAt(index);
         PersistProfiles();
-        if (wasDefault) SetDefaultProfile(_profiles[0].Id);
+        if (wasDefault)
+        {
+            // Prefer another configured service over the offline echo profile;
+            // only fall back to echo when nothing else can serve a route.
+            var replacement = TranslationProfileResolver.SelectFallback(_profiles, TranslationProviderIds);
+            if (replacement is null || !SetDefaultProfile(replacement.Id))
+            {
+                SetRoute(CreateFallbackRoute());
+            }
+        }
+
         return true;
     }
 

@@ -21,6 +21,7 @@ public sealed partial class TranslationPage : Page
     private readonly ObservableCollection<GlossaryEntry> _terms = [];
     private bool _loaded;
     private bool _glossaryAutoSaveReady;
+    private bool _profileDialogOpen;
     private AppState State => ((App)Microsoft.UI.Xaml.Application.Current).State;
 
     private static readonly IReadOnlyDictionary<string, string> ProviderNames = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
@@ -220,20 +221,39 @@ public sealed partial class TranslationPage : Page
 
     private async void OnDeleteServiceClicked(object sender, RoutedEventArgs e)
     {
+        if (_profileDialogOpen) return;
         if (sender is not Button { Tag: string id }) return;
         var profile = State.TranslationProfiles?.FirstOrDefault(p => p.Id == id);
         if (profile is null) return;
-        var dialog = new ContentDialog { Title = "删除服务档案", Content = new TextBlock { Text = $"确定删除“{profile.DisplayName}”吗？此操作不会删除其他档案。", TextWrapping = TextWrapping.Wrap }, PrimaryButtonText = "删除", CloseButtonText = "取消", DefaultButton = ContentDialogButton.Close, XamlRoot = XamlRoot };
-        if (await dialog.ShowAsync() == ContentDialogResult.Primary)
+        _profileDialogOpen = true;
+        try
         {
-            if (State.DeleteProfile(id)) ShowMessage("档案已删除。", InfoBarSeverity.Success);
-            else ShowMessage("至少需要保留一个服务档案。", InfoBarSeverity.Warning);
+            var dialog = new ContentDialog { Title = "删除服务档案", Content = new TextBlock { Text = $"确定删除“{profile.DisplayName}”吗？此操作不会删除其他档案。", TextWrapping = TextWrapping.Wrap }, PrimaryButtonText = "删除", CloseButtonText = "取消", DefaultButton = ContentDialogButton.Close, XamlRoot = XamlRoot };
+            if (await dialog.ShowAsync() == ContentDialogResult.Primary)
+            {
+                if (State.DeleteProfile(id)) ShowMessage("档案已删除。", InfoBarSeverity.Success);
+                else ShowMessage("至少需要保留一个服务档案。", InfoBarSeverity.Warning);
+            }
+        }
+        catch (Exception exception)
+        {
+            // A second dialog or a closing-window race must not terminate the app.
+            CaptionDiagnostics.WriteException("delete-profile dialog", exception);
+        }
+        finally
+        {
+            _profileDialogOpen = false;
         }
     }
 
     private async void OnProfileCardTapped(object sender, TappedRoutedEventArgs e)
     {
-        if (e.OriginalSource is Button || sender is not Border { Tag: string id }) return;
+        // The delete/edit buttons live inside the card. A tap on the button's
+        // text must not fall through to the card and open a second ContentDialog
+        // while the button's own dialog is open (the 1.0.1 crash).
+        if (_profileDialogOpen) return;
+        if (IsInsideButton(e.OriginalSource as DependencyObject)) return;
+        if (sender is not Border { Tag: string id }) return;
         var record = State.TranslationProfiles?.FirstOrDefault(profile => profile.Id == id);
         // 出厂预设（小米 MiMo / 腾讯云 / 阿里云）还没有密钥时，选中它只会让下一次翻译失败：
         // 直接打开编辑对话框，用户粘贴密钥保存即生效，少绕一步。
@@ -252,9 +272,26 @@ public sealed partial class TranslationPage : Page
     /// key of its own - that is, the user has not configured this service yet.
     /// </summary>
     private static bool IsUnconfiguredPreset(TranslationProfileRecord profile) =>
+        // Echo needs no key. A saved Tencent/Aliyun profile keeps the generic
+        // "本地配置" credential label but stores its key in Options["secret"];
+        // checking only the label and endpoint misclassified every restored
+        // API profile as an unconfigured preset.
+        !string.Equals(profile.Provider, "echo", StringComparison.OrdinalIgnoreCase) &&
+        profile.Options is not { Count: > 0 } &&
         string.Equals(profile.CredentialReference, "本地配置", StringComparison.Ordinal) &&
         PresetEndpoints.TryGetValue(profile.Provider, out var endpoint) &&
         profile.Endpoint.TrimEnd('/').Equals(endpoint.TrimEnd('/'), StringComparison.OrdinalIgnoreCase);
+
+    private static bool IsInsideButton(DependencyObject? source)
+    {
+        while (source is not null)
+        {
+            if (source is Button) return true;
+            source = VisualTreeHelper.GetParent(source);
+        }
+
+        return false;
+    }
 
     /// <summary>Endpoints of the shipped presets; a profile still on one of them has no user configuration.</summary>
     private static readonly IReadOnlyDictionary<string, string> PresetEndpoints = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
@@ -267,6 +304,26 @@ public sealed partial class TranslationPage : Page
     };
 
     private async Task ShowProfileDialogAsync(TranslationProfileRecord? existing)
+    {
+        if (_profileDialogOpen) return;
+        _profileDialogOpen = true;
+        try
+        {
+            await ShowProfileDialogCoreAsync(existing);
+        }
+        catch (Exception exception)
+        {
+            // One dialog at a time is a WinUI hard rule; a race must be logged,
+            // not allowed to escape an async void and terminate the process.
+            CaptionDiagnostics.WriteException("translation-profile dialog", exception);
+        }
+        finally
+        {
+            _profileDialogOpen = false;
+        }
+    }
+
+    private async Task ShowProfileDialogCoreAsync(TranslationProfileRecord? existing)
     {
         var isNew = existing is null;
         var lastProvider = existing?.Provider ?? "deepseek";

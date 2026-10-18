@@ -1164,6 +1164,40 @@ function Invoke-TranslationUiSmoke {
                 throw "Translation profile action '$($profileButton.Current.AutomationId)' is outside the application window."
             }
         }
+
+        # 1.0.1 regression: the delete button lives inside the profile card. Its
+        # tap used to bubble into the card handler, which opened the edit dialog
+        # while the delete confirmation was still open; WinUI allows one dialog
+        # at a time and the unhandled COMException terminated the process.
+        $visibleDelete = $profileDeletes | Where-Object {
+            $rect = $_.Current.BoundingRectangle
+            $rect.Width -gt 0 -and $rect.Height -gt 0 -and
+            -not [double]::IsInfinity($rect.Width) -and -not [double]::IsInfinity($rect.Height)
+        } | Select-Object -First 1
+        if ($null -eq $visibleDelete) { throw 'UI smoke could not find a visible translation service delete button.' }
+        $visibleDelete.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke()
+        $deleteDialogCondition = New-Object System.Windows.Automation.PropertyCondition(
+            [System.Windows.Automation.AutomationElement]::NameProperty, '删除服务档案')
+        $deleteDialog = $null
+        for ($attempt = 0; $attempt -lt 30 -and $null -eq $deleteDialog; $attempt++) {
+            Start-Sleep -Milliseconds 200
+            $deleteDialog = $window.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $deleteDialogCondition)
+        }
+        if ($null -eq $deleteDialog) { throw 'Clicking a translation service delete button did not open the confirmation dialog.' }
+        $deleteCancel = $deleteDialog.FindFirst(
+            [System.Windows.Automation.TreeScope]::Descendants,
+            (New-Object System.Windows.Automation.PropertyCondition(
+                [System.Windows.Automation.AutomationElement]::NameProperty, '取消')))
+        if ($null -ne $deleteCancel) {
+            $deleteCancel.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke()
+        } else {
+            try { $deleteDialog.GetCurrentPattern([System.Windows.Automation.WindowPattern]::Pattern).Close() } catch { }
+        }
+        Start-Sleep -Milliseconds 400
+        if ($process.HasExited) {
+            throw "Clicking delete on a translation profile terminated the desktop process with code $($process.ExitCode)."
+        }
+
         $invokePattern = $editButton.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern)
         $invokePattern.Invoke()
         $dialogCondition = New-Object System.Windows.Automation.PropertyCondition(

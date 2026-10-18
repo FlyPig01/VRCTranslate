@@ -1,7 +1,7 @@
 namespace VrcTranslate.Core.Speech;
 
 /// <summary>A speaker heard in this session, or restored from the voiceprint library.</summary>
-public sealed record SpeakerIdentity(string Id, string Label, string? Name)
+public sealed record SpeakerIdentity(string Id, string Label, string? Name, int ObservationCount = 0)
 {
     /// <summary>What captions show: the user-chosen name when there is one, otherwise the session label.</summary>
     public string DisplayName => string.IsNullOrWhiteSpace(Name) ? Label : Name;
@@ -22,11 +22,23 @@ public enum SpeakerMatchKind
     /// <summary>Nobody was close enough; a new session speaker was registered.</summary>
     New,
 
+    /// <summary>The match was ambiguous; the caption keeps the previous speaker.</summary>
+    Held,
+
+    /// <summary>The match was too close to call and no previous speaker exists.</summary>
+    Uncertain,
+
     /// <summary>The session speaker limit is full; the caption uses "未知" until a slot frees.</summary>
     Unknown,
 }
 
-public sealed record SpeakerMatch(SpeakerIdentity Speaker, float Similarity, SpeakerMatchKind Kind);
+public sealed record SpeakerMatch(
+    SpeakerIdentity Speaker,
+    float Similarity,
+    SpeakerMatchKind Kind,
+    float SecondSimilarity = -1f,
+    float Margin = 1f,
+    string? Reason = null);
 
 /// <summary>
 /// Matching policy. Session matches are looser because the acoustic conditions
@@ -60,6 +72,18 @@ public sealed record SpeakerMatchOptions
 
     /// <summary>How long an unnamed session speaker may go unheard before it frees its slot.</summary>
     public TimeSpan SessionSpeakerTtl { get; init; } = TimeSpan.FromMinutes(10);
+
+    /// <summary>Required gap to the second-best speaker before a match is accepted.</summary>
+    public float MatchMargin { get; init; } = 0.06f;
+
+    /// <summary>Scores this close to the threshold are treated as ambiguous, not as a new speaker.</summary>
+    public float GrayZone { get; init; } = 0.05f;
+
+    /// <summary>Shorter spans are too noisy for a trustworthy voiceprint.</summary>
+    public float MinimumEmbeddingSeconds { get; init; } = 1.5f;
+
+    /// <summary>Quieter spans are skipped instead of polluting the profile.</summary>
+    public float MinimumEmbeddingRms { get; init; } = 0.004f;
 }
 
 /// <summary>One persisted voiceprint. Only speakers the user named are stored.</summary>
@@ -125,7 +149,7 @@ public sealed class SpeakerRegistry
     /// <summary>Unnamed speakers currently occupying the session slots.</summary>
     public int SessionCount => _speakers.Count(speaker => !speaker.IsRemembered);
 
-    public SpeakerMatch Match(ReadOnlySpan<float> embedding)
+    public SpeakerMatch Match(ReadOnlySpan<float> embedding, string? previousSpeakerId = null)
     {
         var normalized = SpeakerMath.Normalize(embedding);
         if (normalized.Length == 0)
@@ -135,27 +159,77 @@ public sealed class SpeakerRegistry
 
         SweepExpiredSessionSpeakers();
         SpeakerState? best = null;
+        SpeakerState? second = null;
+        SpeakerState? previous = null;
         var bestSimilarity = float.NegativeInfinity;
+        var secondSimilarity = float.NegativeInfinity;
+        var previousSimilarity = float.NegativeInfinity;
         foreach (var speaker in _speakers)
         {
             // A library written by another embedding model has a different
             // dimension; those records simply cannot be compared.
             if (speaker.Dimension != normalized.Length) continue;
+            if (previousSpeakerId is not null &&
+                string.Equals(speaker.Id, previousSpeakerId, StringComparison.Ordinal))
+            {
+                previous = speaker;
+            }
+
             var similarity = speaker.Similarity(normalized);
             if (similarity > bestSimilarity)
             {
+                secondSimilarity = bestSimilarity;
+                second = best;
                 bestSimilarity = similarity;
                 best = speaker;
             }
+            else if (similarity > secondSimilarity)
+            {
+                secondSimilarity = similarity;
+                second = speaker;
+            }
+
+            if (speaker == previous) previousSimilarity = similarity;
         }
 
-        if (best is not null && bestSimilarity >= ThresholdFor(best))
+        var margin = second is null ? 1f : bestSimilarity - secondSimilarity;
+        var bestThreshold = best is null ? _options.SessionThreshold : ThresholdFor(best);
+
+        if (best is not null && bestSimilarity >= bestThreshold && margin >= _options.MatchMargin)
         {
             best.Observe(normalized, _options);
             return new SpeakerMatch(
                 best.Identity,
                 bestSimilarity,
-                best.IsRemembered ? SpeakerMatchKind.Remembered : SpeakerMatchKind.Session);
+                best.IsRemembered ? SpeakerMatchKind.Remembered : SpeakerMatchKind.Session,
+                second is null ? -1f : secondSimilarity,
+                margin,
+                "match");
+        }
+
+        if (previous is not null && previousSimilarity >= ThresholdFor(previous) - _options.GrayZone)
+        {
+            // Keep the previous speaker when the new evidence is ambiguous. The
+            // profile is not updated: this observation is not trustworthy enough
+            // to move the centroid.
+            return new SpeakerMatch(
+                previous.Identity,
+                previousSimilarity,
+                SpeakerMatchKind.Held,
+                second is null ? -1f : secondSimilarity,
+                margin,
+                "held-previous");
+        }
+
+        if (best is not null && bestSimilarity >= bestThreshold - _options.GrayZone)
+        {
+            return new SpeakerMatch(
+                UnknownSpeaker,
+                bestSimilarity,
+                SpeakerMatchKind.Uncertain,
+                second is null ? -1f : secondSimilarity,
+                margin,
+                "ambiguous");
         }
 
         if (SessionCount >= _options.MaxSessionSpeakers)
@@ -163,7 +237,10 @@ public sealed class SpeakerRegistry
             return new SpeakerMatch(
                 UnknownSpeaker,
                 best is null ? 0f : bestSimilarity,
-                SpeakerMatchKind.Unknown);
+                SpeakerMatchKind.Unknown,
+                second is null ? -1f : secondSimilarity,
+                margin,
+                "session-full");
         }
 
         var created = new SpeakerState(
@@ -174,7 +251,22 @@ public sealed class SpeakerRegistry
             name: null);
         _speakers.Add(created);
         Version++;
-        return new SpeakerMatch(created.Identity, best is null ? 0f : bestSimilarity, SpeakerMatchKind.New);
+        return new SpeakerMatch(
+            created.Identity,
+            best is null ? 0f : bestSimilarity,
+            SpeakerMatchKind.New,
+            second is null ? -1f : secondSimilarity,
+            margin,
+            "new");
+    }
+
+    /// <summary>Removes the most recent observation from a speaker after a user correction.</summary>
+    public bool RejectLastObservation(string speakerId)
+    {
+        var speaker = Find(speakerId);
+        if (speaker is null || !speaker.RejectLastObservation()) return false;
+        Version++;
+        return true;
     }
 
     public bool Rename(string speakerId, string? name)
@@ -295,6 +387,11 @@ public sealed class SpeakerRegistry
     private sealed class SpeakerState
     {
         private readonly List<float[]> _exemplars = [];
+        private float[]? _previousCentroid;
+        private int _previousObservationCount;
+        private int _previousExemplarCount;
+        private DateTimeOffset _previousLastSeenAt;
+        private bool _hasObservationSnapshot;
 
         public SpeakerState(string id, string label, float[] centroid, bool isRemembered, string? name)
         {
@@ -303,6 +400,9 @@ public sealed class SpeakerRegistry
             Centroid = centroid;
             IsRemembered = isRemembered;
             Name = name;
+            // Creating the first centroid is itself one observation; otherwise
+            // the UI would report a named speaker as having zero samples.
+            ObservationCount = 1;
             CreatedAt = DateTimeOffset.UtcNow;
             LastSeenAt = CreatedAt;
         }
@@ -325,7 +425,7 @@ public sealed class SpeakerRegistry
 
         public int Dimension => Centroid.Length;
 
-        public SpeakerIdentity Identity => new(Id, Label, Name);
+        public SpeakerIdentity Identity => new(Id, Label, Name, ObservationCount);
 
         /// <summary>Best cosine similarity against the centroid or any stored sample.</summary>
         public float Similarity(ReadOnlySpan<float> normalized)
@@ -342,6 +442,12 @@ public sealed class SpeakerRegistry
 
         public void Observe(float[] normalized, SpeakerMatchOptions options)
         {
+            _previousCentroid = Centroid;
+            _previousObservationCount = ObservationCount;
+            _previousExemplarCount = _exemplars.Count;
+            _previousLastSeenAt = LastSeenAt;
+            _hasObservationSnapshot = true;
+
             var coverage = Similarity(normalized);
             ObservationCount++;
             LastSeenAt = DateTimeOffset.UtcNow;
@@ -397,6 +503,17 @@ public sealed class SpeakerRegistry
             ObservationCount,
             CreatedAt,
             LastSeenAt);
+
+        public bool RejectLastObservation()
+        {
+            if (!_hasObservationSnapshot || _previousCentroid is null) return false;
+            Centroid = _previousCentroid;
+            ObservationCount = _previousObservationCount;
+            LastSeenAt = _previousLastSeenAt;
+            while (_exemplars.Count > _previousExemplarCount) _exemplars.RemoveAt(_exemplars.Count - 1);
+            _hasObservationSnapshot = false;
+            return true;
+        }
 
         public void Restore(SpeakerVoiceprintRecord record, SpeakerMatchOptions options)
         {

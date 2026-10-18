@@ -483,6 +483,15 @@ public sealed partial class SubtitleOverlayWindow : Window
         };
         var bubble = new CaptionBubble(caption, container, body, speakerBrush, true);
         RenderBody(bubble);
+        if (caption.HasSpeaker)
+        {
+            var reject = new MenuFlyoutItem { Text = "不是此人" };
+            reject.Click += (_, _) => RejectSpeaker(bubble);
+            var menu = new MenuFlyout();
+            menu.Items.Add(reject);
+            container.ContextFlyout = menu;
+        }
+
         return bubble;
     }
 
@@ -582,6 +591,37 @@ public sealed partial class SubtitleOverlayWindow : Window
         var brush = SpeakerBrushes[_nextSpeakerBrush++ % SpeakerBrushes.Length];
         _speakerBrushes[speakerLabel] = brush;
         return brush;
+    }
+
+    private void RejectSpeaker(CaptionBubble bubble)
+    {
+        var index = _bubbles.FindIndex(item => ReferenceEquals(item, bubble));
+        if (index < 0) return;
+
+        var label = bubble.Caption.SpeakerLabel;
+        if (!string.IsNullOrWhiteSpace(label) &&
+            Microsoft.UI.Xaml.Application.Current is App app &&
+            app.State.LocalSpeech.Speakers is { } speakers)
+        {
+            var identity = speakers.Speakers.FirstOrDefault(item =>
+                string.Equals(item.DisplayName, label, StringComparison.Ordinal));
+            if (identity is not null)
+            {
+                try { speakers.Reject(identity.Id); }
+                catch { /* a correction must never break the caption surface */ }
+            }
+        }
+
+        var updated = bubble with
+        {
+            Caption = bubble.Caption.WithSpeaker(null),
+            SpeakerBrush = SeparatorBrush,
+            ShowSpeakerLabel = false,
+        };
+        _bubbles[index] = updated;
+        RenderBody(updated);
+        RefreshSeparators();
+        CaptionDiagnostics.Write($"caption speaker rejected id={bubble.Caption.Id}");
     }
 
     private void OnSurfaceSizeChanged(object sender, SizeChangedEventArgs e)

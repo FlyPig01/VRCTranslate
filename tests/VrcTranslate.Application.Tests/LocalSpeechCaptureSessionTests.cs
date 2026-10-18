@@ -492,7 +492,10 @@ public sealed class LocalSpeechCaptureSessionTests
 
         public IReadOnlyList<SpeakerIdentity> Speakers => [];
 
-        public SpeakerMatch? Identify(ReadOnlyMemory<float> samples, int sampleRate)
+        public SpeakerMatch? Identify(
+            ReadOnlyMemory<float> samples,
+            int sampleRate,
+            string? previousSpeakerId = null)
         {
             IdentifyCalls++;
             return new SpeakerMatch(
@@ -513,6 +516,8 @@ public sealed class LocalSpeechCaptureSessionTests
         }
 
         public bool Rename(string speakerId, string? name) => true;
+
+        public bool Reject(string speakerId) => true;
 
         public bool Merge(string sourceId, string targetId) => false;
 

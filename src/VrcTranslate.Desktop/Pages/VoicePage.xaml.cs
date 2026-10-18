@@ -717,7 +717,16 @@ public sealed partial class VoicePage : Page
         }
 
         UpdateSpeakerPanel();
-        ShowInfo($"已命名为「{input.Text.Trim()}」，下次会话会自动沿用", InfoBarSeverity.Success);
+        if (speaker.ObservationCount < 2)
+        {
+            ShowInfo(
+                $"已命名为「{input.Text.Trim()}」，但当前样本较少；建议让 TA 再说几句再使用",
+                InfoBarSeverity.Warning);
+        }
+        else
+        {
+            ShowInfo($"已命名为「{input.Text.Trim()}」，下次会话会自动沿用", InfoBarSeverity.Success);
+        }
     }
 
     private async void OnMergeSpeakerClicked(object sender, RoutedEventArgs e)

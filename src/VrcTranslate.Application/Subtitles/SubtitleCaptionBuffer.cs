@@ -122,6 +122,10 @@ public sealed record SubtitleCaption
             text.Length > 0 ? SubtitleTranslationState.Ready : SubtitleTranslationState.Unavailable);
     }
 
+    /// <summary>Changes only the speaker identity after a user correction.</summary>
+    public SubtitleCaption WithSpeaker(string? speakerLabel) =>
+        new(Original, Translated, speakerLabel, Id, TranslationState);
+
     private static string Normalize(string? text) => text?.Trim() ?? string.Empty;
 
     private static string? NormalizeSpeaker(string? speakerLabel) =>

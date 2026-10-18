@@ -52,8 +52,14 @@ public sealed class LocalSpeakerIdentifier : ISpeakerIdentifier, IDisposable
         }
     }
 
-    public SpeakerMatch? Identify(ReadOnlyMemory<float> samples, int sampleRate)
+    public SpeakerMatch? Identify(
+        ReadOnlyMemory<float> samples,
+        int sampleRate,
+        string? previousSpeakerId = null)
     {
+        if (samples.Length < (int)(sampleRate * _matchOptions.MinimumEmbeddingSeconds)) return null;
+        if (Rms(samples.Span) < _matchOptions.MinimumEmbeddingRms) return null;
+
         SpeakerMatch? match;
         var changed = false;
         lock (_sync)
@@ -72,12 +78,35 @@ public sealed class LocalSpeakerIdentifier : ISpeakerIdentifier, IDisposable
             if (embedding.Length == 0) return null;
             var registry = EnsureRegistry();
             var before = registry.Version;
-            match = registry.Match(embedding);
+            match = registry.Match(embedding, previousSpeakerId);
             changed = registry.Version != before;
         }
 
         if (changed) RaiseSpeakersChanged();
         return match;
+    }
+
+    public bool Reject(string speakerId)
+    {
+        var changed = false;
+        lock (_sync)
+        {
+            if (_disposed) return false;
+            if (!EnsureRegistry().RejectLastObservation(speakerId)) return false;
+            Persist();
+            changed = true;
+        }
+
+        if (changed) RaiseSpeakersChanged();
+        return true;
+    }
+
+    private static float Rms(ReadOnlySpan<float> samples)
+    {
+        if (samples.IsEmpty) return 0f;
+        double sum = 0d;
+        foreach (var sample in samples) sum += sample * sample;
+        return (float)Math.Sqrt(sum / samples.Length);
     }
 
     /// <summary>
@@ -100,12 +129,18 @@ public sealed class LocalSpeakerIdentifier : ISpeakerIdentifier, IDisposable
 
             try
             {
-                var points = splitter.FindChangePoints(samples);
-                return SpeakerSegmentSplitter.Split(
+                var split = splitter.Find(samples);
+                var spans = SpeakerSegmentSplitter.Split(
                     samples.Length,
-                    points,
+                    split.ChangePoints,
                     (int)(sampleRate * _options.MinimumPartSeconds),
                     _options.MaxParts);
+                return spans
+                    .Select(span => span with
+                    {
+                        LocalSpeakerId = LocalSpeakerFor(split.Segments, span),
+                    })
+                    .ToArray();
             }
             catch (Exception)
             {
@@ -215,6 +250,25 @@ public sealed class LocalSpeakerIdentifier : ISpeakerIdentifier, IDisposable
 
         _registry = registry;
         return registry;
+    }
+
+    private static int LocalSpeakerFor(
+        IReadOnlyList<DiarizationSegment> segments,
+        SpeechSpan span)
+    {
+        var bestOverlap = 0;
+        var localSpeaker = -1;
+        foreach (var segment in segments)
+        {
+            var start = Math.Max(span.StartSample, segment.StartSample);
+            var end = Math.Min(span.EndSample, segment.EndSample);
+            var overlap = end - start;
+            if (overlap <= bestOverlap) continue;
+            bestOverlap = overlap;
+            localSpeaker = segment.LocalSpeakerId;
+        }
+
+        return localSpeaker;
     }
 
     /// <summary>Caller holds <see cref="_sync"/>.</summary>

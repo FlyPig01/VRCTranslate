@@ -7,6 +7,14 @@ namespace VrcTranslate.Infrastructure.Speech;
 /// expensive part of speaker separation, so callers only run it for a segment
 /// that already looked like it holds two voices.
 /// </summary>
+/// <summary>One diarization segment with its segment-local speaker id.</summary>
+public sealed record DiarizationSegment(int StartSample, int EndSample, int LocalSpeakerId);
+
+/// <summary>Change points plus the local speaker ids they separated.</summary>
+public sealed record DiarizationResult(
+    IReadOnlyList<int> ChangePoints,
+    IReadOnlyList<DiarizationSegment> Segments);
+
 public sealed class SpeakerDiarizationSplitter : IDisposable
 {
     private readonly OfflineSpeakerDiarization _diarization;
@@ -49,16 +57,32 @@ public sealed class SpeakerDiarizationSplitter : IDisposable
     /// the caller can split its own range and never lose audio that the model
     /// chose not to report.
     /// </summary>
-    public IReadOnlyList<int> FindChangePoints(ReadOnlyMemory<float> samples)
+    public IReadOnlyList<int> FindChangePoints(ReadOnlyMemory<float> samples) =>
+        Find(samples).ChangePoints;
+
+    /// <summary>
+    /// Diarization boundaries and the segment-local speaker ids that produced
+    /// them. The caller keeps its own change-point splitting, so no audio is lost;
+    /// the ids are only a low-risk consistency prior, never a hard identity.
+    /// </summary>
+    public DiarizationResult Find(ReadOnlyMemory<float> samples)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
-        if (samples.IsEmpty) return [];
+        if (samples.IsEmpty) return new DiarizationResult([], []);
 
         lock (_gate)
         {
             var segments = _diarization.Process(samples.ToArray());
             var sampleRate = _diarization.SampleRate > 0 ? _diarization.SampleRate : SpeakerEmbedder.RequiredSampleRate;
             var points = new List<int>();
+            var mapped = new List<DiarizationSegment>(segments.Length);
+            foreach (var segment in segments)
+            {
+                var start = Math.Clamp((int)MathF.Round(segment.Start * sampleRate), 0, samples.Length);
+                var end = Math.Clamp((int)MathF.Round(segment.End * sampleRate), start, samples.Length);
+                if (end > start) mapped.Add(new DiarizationSegment(start, end, segment.Speaker));
+            }
+
             for (var i = 1; i < segments.Length; i++)
             {
                 if (segments[i].Speaker == segments[i - 1].Speaker) continue;
@@ -67,7 +91,7 @@ public sealed class SpeakerDiarizationSplitter : IDisposable
                 points.Add(offset);
             }
 
-            return points;
+            return new DiarizationResult(points, mapped);
         }
     }
 

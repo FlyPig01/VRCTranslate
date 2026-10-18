@@ -31,6 +31,9 @@ public sealed class LocalSpeechCaptureSession : IAsyncDisposable
     private bool _fallbackNoticeConsumed;
     private bool _usingEnergyGate;
     private bool _splitFaultLogged;
+    private string? _lastSpeakerId;
+    private string? _lastSpeakerLabel;
+    private int _lastLocalSpeakerId = -1;
     private long _audibleStartTimestamp;
     private long _diagnosticsWindowStart = Stopwatch.GetTimestamp();
     private long _diagnosticsChunks;
@@ -136,6 +139,7 @@ public sealed class LocalSpeechCaptureSession : IAsyncDisposable
         {
             if (_disposed) return;
             _sourceGeneration++;
+            ResetSpeakerContinuity();
             retired = _sourceCts;
             _sourceCts = new CancellationTokenSource();
         }
@@ -499,6 +503,9 @@ public sealed class LocalSpeechCaptureSession : IAsyncDisposable
             try
             {
                 if (IsStaleSource(generation)) return;
+                // Local diarization ids are valid only inside one VAD segment;
+                // reset the intra-segment prior before its first span.
+                _lastLocalSpeakerId = -1;
                 // One span normally; two or three when one sentence holds two voices.
                 foreach (var span in PlanSpeakerSpans(samples))
                 {
@@ -526,7 +533,7 @@ public sealed class LocalSpeechCaptureSession : IAsyncDisposable
                         RaiseDiagnostic($"result chars={result.Text.Length} lang={result.SourceLanguage}");
                     }
 
-                    RaiseResultReady(AttachSpeaker(result, part));
+                    RaiseResultReady(AttachSpeaker(result, part, span.LocalSpeakerId));
                 }
             }
             finally
@@ -559,7 +566,7 @@ public sealed class LocalSpeechCaptureSession : IAsyncDisposable
         try
         {
             var spans = speakers.SplitAtSpeakerChanges(samples, _segmenterSampleRate);
-            return spans.Count > 1 ? spans : [whole];
+            return spans.Count > 0 ? spans : [whole];
         }
         catch (Exception exception)
         {
@@ -574,22 +581,86 @@ public sealed class LocalSpeechCaptureSession : IAsyncDisposable
         }
     }
 
-    private SpeechRecognitionResult AttachSpeaker(SpeechRecognitionResult result, ReadOnlyMemory<float> samples)
+    private SpeechRecognitionResult AttachSpeaker(
+        SpeechRecognitionResult result,
+        ReadOnlyMemory<float> samples,
+        int localSpeakerId)
     {
         if (!_processing.AttachSpeakerLabels || !TryGetSpeakers(out var speakers)) return result;
 
+        var duration = samples.Length / (double)_segmenterSampleRate;
+        var rms = Rms(samples.Span);
         try
         {
-            var match = speakers.Identify(samples, _segmenterSampleRate);
-            return match is null
-                ? result
-                : result with { SpeakerId = match.Speaker.Id, SpeakerLabel = match.Speaker.DisplayName };
+            var match = speakers.Identify(samples, _segmenterSampleRate, _lastSpeakerId);
+            var decision = match?.Kind.ToString() ?? "identify-null";
+            var speaker = match?.Speaker;
+
+            // A short/noisy span has no trustworthy embedding; the registry
+            // returns null and the caption keeps the previous speaker instead of
+            // creating a ghost identity.
+            if (match is null)
+            {
+                if (_lastSpeakerId is null)
+                {
+                    RaiseDiagnostic(
+                        $"speaker span duration={duration:0.00} rms={rms:0.0000} decision=identify-null-no-previous");
+                    return result;
+                }
+
+                speaker = new SpeakerIdentity(_lastSpeakerId, _lastSpeakerLabel ?? "?", _lastSpeakerLabel);
+            }
+            else if (localSpeakerId >= 0 &&
+                     localSpeakerId == _lastLocalSpeakerId &&
+                     _lastSpeakerId is not null &&
+                     match.Kind is SpeakerMatchKind.New or SpeakerMatchKind.Uncertain or SpeakerMatchKind.Held)
+            {
+                // The local diarization cluster says this is the same voice as
+                // the previous span. Use that as a prior, but only when the
+                // global match is not confident; a strong match always wins.
+                speaker = new SpeakerIdentity(_lastSpeakerId, _lastSpeakerLabel ?? "?", _lastSpeakerLabel);
+                decision = "local-cluster-hold";
+            }
+            else if (match.Kind == SpeakerMatchKind.Uncertain)
+            {
+                if (_lastSpeakerId is not null)
+                {
+                    speaker = new SpeakerIdentity(_lastSpeakerId, _lastSpeakerLabel ?? "?", _lastSpeakerLabel);
+                    decision = "uncertain-hold-previous";
+                }
+            }
+
+            if (speaker is null) return result;
+            _lastSpeakerId = speaker.Id;
+            _lastSpeakerLabel = speaker.DisplayName;
+            if (localSpeakerId >= 0) _lastLocalSpeakerId = localSpeakerId;
+
+            RaiseDiagnostic(
+                $"speaker span duration={duration:0.00} rms={rms:0.0000} " +
+                $"best={match?.Similarity:0.000} second={match?.SecondSimilarity:0.000} " +
+                $"margin={match?.Margin:0.000} decision={decision} local={localSpeakerId}");
+            return result with { SpeakerId = speaker.Id, SpeakerLabel = speaker.DisplayName };
         }
         catch (Exception exception)
         {
-            _ = exception;
+            RaiseDiagnostic($"speaker identify failed: {exception.GetType().Name}: {exception.Message}");
             return result;
         }
+    }
+
+    private void ResetSpeakerContinuity()
+    {
+        _lastSpeakerId = null;
+        _lastSpeakerLabel = null;
+        _lastLocalSpeakerId = -1;
+    }
+
+    private static float Rms(ReadOnlySpan<float> samples)
+    {
+        if (samples.IsEmpty) return 0f;
+        double sum = 0d;
+        foreach (var sample in samples) sum += sample * sample;
+        return (float)Math.Sqrt(sum / samples.Length);
     }
 
     private bool TryGetSpeakers(out ISpeakerIdentifier speakers)

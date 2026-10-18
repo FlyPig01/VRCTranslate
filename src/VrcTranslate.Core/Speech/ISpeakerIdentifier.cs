@@ -1,7 +1,7 @@
 namespace VrcTranslate.Core.Speech;
 
 /// <summary>A half-open sample range inside one captured segment.</summary>
-public readonly record struct SpeechSpan(int StartSample, int EndSample)
+public readonly record struct SpeechSpan(int StartSample, int EndSample, int LocalSpeakerId = -1)
 {
     public int Length => EndSample - StartSample;
 }
@@ -26,7 +26,10 @@ public interface ISpeakerIdentifier
     /// is close enough. Null when the clip was too short to identify, in which case
     /// the caller keeps whatever label the previous sentence used.
     /// </summary>
-    SpeakerMatch? Identify(ReadOnlyMemory<float> samples, int sampleRate);
+    SpeakerMatch? Identify(
+        ReadOnlyMemory<float> samples,
+        int sampleRate,
+        string? previousSpeakerId = null);
 
     /// <summary>
     /// Splits one segment at the speaker changes a segmentation model finds.
@@ -43,6 +46,9 @@ public interface ISpeakerIdentifier
 
     /// <summary>Names a speaker; false when the 100-person library is full.</summary>
     bool Rename(string speakerId, string? name);
+
+    /// <summary>Drops the last observation after the user says "not this speaker".</summary>
+    bool Reject(string speakerId);
 
     bool Merge(string sourceId, string targetId);
 

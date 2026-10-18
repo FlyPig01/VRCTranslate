@@ -44,6 +44,10 @@
 
 完整结论、局限和实施顺序见 [report.md](report.md)；逐条对照见 [results/examples.md](results/examples.md)。
 
+### Flash 模型复核（2026-10-19）
+
+小米 V2.5 下线前的 Flash 复核：DeepSeek V4.1 Flash 为 **0.57 / p50 687 ms**，小米 v2.6 Flash 为 **0.52 / p50 2128 ms（p95 6367 ms）**。详见 [flash-retest.md](flash-retest.md)。
+
 ## 怎么跑
 
 前置：.NET 10 SDK、Python 3；API 配置在 `v2-profiles.json` 中，默认读取：

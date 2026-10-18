@@ -424,7 +424,7 @@ public sealed class AppState : ITranslationGlossaryProvider
             Id = string.IsNullOrWhiteSpace(profile.Id) ? Guid.NewGuid().ToString("N") : profile.Id.Trim(),
             DisplayName = string.IsNullOrWhiteSpace(profile.DisplayName) ? "未命名服务" : profile.DisplayName.Trim(),
             Provider = NormalizeProvider(profile.Provider) ?? profile.Provider.Trim().ToLowerInvariant(),
-            Model = string.IsNullOrWhiteSpace(profile.Model) ? DefaultModelForProvider(profile.Provider) : profile.Model.Trim(),
+            Model = NormalizeModel(profile.Provider, string.IsNullOrWhiteSpace(profile.Model) ? DefaultModelForProvider(profile.Provider) : profile.Model),
             Endpoint = endpoint.ToString(),
             CredentialReference = string.IsNullOrWhiteSpace(profile.CredentialReference) ? "本地配置" : profile.CredentialReference.Trim()
         };
@@ -605,7 +605,7 @@ public sealed class AppState : ITranslationGlossaryProvider
             .RetainServable(document.Profiles, TranslationProviderIds)
             .Select(profile => profile with
             {
-                Model = string.IsNullOrWhiteSpace(profile.Model) ? DefaultModelForProvider(profile.Provider) : profile.Model.Trim(),
+                Model = NormalizeModel(profile.Provider, string.IsNullOrWhiteSpace(profile.Model) ? DefaultModelForProvider(profile.Provider) : profile.Model),
                 Region = profile.Region ?? string.Empty,
                 Options = profile.Options ?? new Dictionary<string, string>()
             })
@@ -644,7 +644,7 @@ public sealed class AppState : ITranslationGlossaryProvider
     private static List<TranslationProfileRecord> CreateProviderPlaceholders() =>
     [
         new("deepseek", "DeepSeek", "deepseek", "deepseek-flash", "https://api.deepseek.com", "本地配置", "auto", "zh-CN", "", new Dictionary<string, string>()),
-        new("xiaomi", "小米 MiMo", "xiaomi", "mimo-v2.5", "https://api.xiaomimimo.com/v1", "本地配置", "auto", "zh-CN", "", new Dictionary<string, string>()),
+        new("xiaomi", "小米 MiMo", "xiaomi", "mimo-v2.6-flash", "https://api.xiaomimimo.com/v1", "本地配置", "auto", "zh-CN", "", new Dictionary<string, string>()),
         new("tencent", "腾讯云翻译", "tencent", "TextTranslate", "https://tmt.tencentcloudapi.com", "本地配置", "auto", "zh-CN", "ap-beijing", new Dictionary<string, string>()),
         new("aliyun", "阿里云机器翻译", "aliyun", "general", "https://mt.cn-hangzhou.aliyuncs.com", "本地配置", "auto", "zh-CN", "cn-hangzhou", new Dictionary<string, string>())
     ];
@@ -679,6 +679,7 @@ public sealed class AppState : ITranslationGlossaryProvider
         var provider = NormalizeProvider(settings.Provider);
         if (provider is null || !TranslationProviderIds.Contains(provider, StringComparer.OrdinalIgnoreCase)) return false;
         if (!Uri.TryCreate(settings.Endpoint, UriKind.Absolute, out var endpoint) || !IsHttpEndpoint(endpoint)) return false;
+        var model = NormalizeModel(provider, settings.Model);
 
         var displayName = string.IsNullOrWhiteSpace(settings.DisplayName) ? "默认翻译" : settings.DisplayName.Trim();
         var targetLanguage = string.IsNullOrWhiteSpace(settings.TargetLanguage) ? "zh-CN" : settings.TargetLanguage.Trim();
@@ -698,7 +699,7 @@ public sealed class AppState : ITranslationGlossaryProvider
                     "default-profile",
                     displayName,
                     provider,
-                    settings.Model.Trim(),
+                    model,
                     endpoint,
                     string.IsNullOrWhiteSpace(settings.CredentialReference) ? "本地配置" : settings.CredentialReference.Trim(),
                     region: settings.Region,
@@ -744,11 +745,24 @@ public sealed class AppState : ITranslationGlossaryProvider
     {
         "echo" => "本地回显",
         "deepseek" => "deepseek-flash",
-        "xiaomi" => "mimo-v2.5",
+        "xiaomi" => "mimo-v2.6-flash",
         "tencent" => "TextTranslate",
         "aliyun" => "general",
         _ => "deepseek-flash"
     };
+
+    /// <summary>Moves saved Xiaomi profiles off the retired V2.5 ids before they name a dead model.</summary>
+    private static string NormalizeModel(string? provider, string? model)
+    {
+        var trimmed = model?.Trim() ?? string.Empty;
+        if (!string.Equals(provider?.Trim(), "xiaomi", StringComparison.OrdinalIgnoreCase)) return trimmed;
+        return trimmed.ToLowerInvariant() switch
+        {
+            "mimo-v2.5" => "mimo-v2.6-flash",
+            "mimo-v2.5-pro" => "mimo-v2.6-pro",
+            _ => trimmed
+        };
+    }
 
     private static bool IsHttpEndpoint(Uri endpoint) =>
         endpoint.Scheme.Equals(Uri.UriSchemeHttp, StringComparison.OrdinalIgnoreCase) ||

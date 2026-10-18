@@ -1,0 +1,1320 @@
+{
+  "runAt": "2026-10-19T04:20:25.9452637\u002B08:00",
+  "itemCount": 44,
+  "variants": [
+    "xiaomi-flash-app",
+    "deepseek-flash-app"
+  ],
+  "items": [
+    {
+      "set": "baseline",
+      "id": "yue-1",
+      "lang": "yue",
+      "category": "\u7CA4\u8BED\uFF08\u4E66\u9762\u4E2D\u6587\uFF0C\u975E\u666E\u901A\u8BDD\uFF09",
+      "source": "\u5514\u8BE5\u4F60\u5E2E\u6211\u7747\u4E0B\u4F62\u7CFB\u54AA\u4F01\u55BA\u95E8\u53E3\u3002",
+      "gold": "\u9EBB\u70E6\u4F60\u5E2E\u6211\u770B\u4E00\u4E0B\u4ED6\u662F\u4E0D\u662F\u7AD9\u5728\u95E8\u53E3\u3002",
+      "context": []
+    },
+    {
+      "set": "baseline",
+      "id": "yue-2",
+      "lang": "yue",
+      "category": "\u7CA4\u8BED",
+      "source": "\u6211\u4ECA\u65E5\u5514\u5F97\u95F2\uFF0C\u542C\u65E5\u5148\u5566\u3002",
+      "gold": "\u6211\u4ECA\u5929\u6CA1\u7A7A\uFF0C\u660E\u5929\u518D\u8BF4\u5427\u3002",
+      "context": []
+    },
+    {
+      "set": "baseline",
+      "id": "en-1",
+      "lang": "en",
+      "category": "\u82F1\u8BED",
+      "source": "Hey, can you hear me now? I just fixed my microphone.",
+      "gold": "\u563F\uFF0C\u4F60\u73B0\u5728\u80FD\u542C\u5230\u6211\u8BF4\u8BDD\u5417\uFF1F\u6211\u521A\u628A\u9EA6\u514B\u98CE\u4FEE\u597D\u4E86\u3002",
+      "context": []
+    },
+    {
+      "set": "baseline",
+      "id": "en-2",
+      "lang": "en",
+      "category": "\u82F1\u8BED",
+      "source": "Yeah that sounds fun, I\u0027ll hop on later tonight after work.",
+      "gold": "\u597D\u554A\uFF0C\u542C\u8D77\u6765\u633A\u6709\u610F\u601D\uFF0C\u6211\u4ECA\u665A\u4E0B\u73ED\u540E\u518D\u4E0A\u7EBF\u3002",
+      "context": []
+    },
+    {
+      "set": "baseline",
+      "id": "en-3",
+      "lang": "en",
+      "category": "\u82F1\u8BED",
+      "source": "Sorry, my mic cut out for a second, what did you say?",
+      "gold": "\u62B1\u6B49\uFF0C\u6211\u9EA6\u514B\u98CE\u521A\u624D\u65AD\u4E86\u4E00\u4E0B\uFF0C\u4F60\u8BF4\u4EC0\u4E48\uFF1F",
+      "context": []
+    },
+    {
+      "set": "baseline",
+      "id": "en-4",
+      "lang": "en",
+      "category": "\u82F1\u8BED",
+      "source": "Can you show me where you got that avatar? I have been looking for one like it.",
+      "gold": "\u80FD\u544A\u8BC9\u6211\u4F60\u8FD9\u4E2A\u6A21\u578B\u662F\u5728\u54EA\u5F04\u7684\u5417\uFF1F\u6211\u4E00\u76F4\u5728\u627E\u8FD9\u79CD\u7684\u3002",
+      "context": []
+    },
+    {
+      "set": "baseline",
+      "id": "en-5",
+      "lang": "en",
+      "category": "\u82F1\u8BED",
+      "source": "The lag is really bad right now, I think the server is struggling.",
+      "gold": "\u73B0\u5728\u5EF6\u8FDF\u7279\u522B\u4E25\u91CD\uFF0C\u6211\u89C9\u5F97\u670D\u52A1\u5668\u5FEB\u6491\u4E0D\u4F4F\u4E86\u3002",
+      "context": []
+    },
+    {
+      "set": "baseline",
+      "id": "ja-1",
+      "lang": "ja",
+      "category": "\u65E5\u8BED",
+      "source": "\u3046\u3061\u306E\u4E2D\u5B66\u306F\u5F01\u5F53\u5236\u3067\u6301\u3063\u3066\u3044\u304D\u306A\u3044\u5834\u5408\u306F50\u5186\u306E\u5B66\u6821\u8CA9\u58F2\u306E\u30D1\u30F3\u3092\u8CB7\u3046\u3002",
+      "gold": "\u6211\u4EEC\u4E2D\u5B66\u662F\u76D2\u996D\u5236\uFF0C\u6CA1\u5E26\u996D\u7684\u8BDD\u5C31\u82B150\u65E5\u5143\u4E70\u5B66\u6821\u5356\u7684\u9EB5\u5305\u3002",
+      "context": []
+    },
+    {
+      "set": "baseline",
+      "id": "ja-2",
+      "lang": "ja",
+      "category": "\u65E5\u8BED",
+      "source": "\u3061\u3087\u3063\u3068\u5F85\u3063\u3066\u3001\u3044\u307E\u6E96\u5099\u3057\u3066\u308B\u304B\u3089\u3002",
+      "gold": "\u7A0D\u7B49\u4E00\u4E0B\uFF0C\u6211\u73B0\u5728\u6B63\u5728\u51C6\u5907\u3002",
+      "context": []
+    },
+    {
+      "set": "baseline",
+      "id": "ja-3",
+      "lang": "ja",
+      "category": "\u65E5\u8BED",
+      "source": "\u3053\u306E\u30EF\u30FC\u30EB\u30C9\u3001\u524D\u306B\u6765\u305F\u3053\u3068\u3042\u308B\u6C17\u304C\u3059\u308B\u3002",
+      "gold": "\u8FD9\u4E2A\u4E16\u754C\u6211\u597D\u50CF\u4EE5\u524D\u6765\u8FC7\u3002",
+      "context": []
+    },
+    {
+      "set": "baseline",
+      "id": "ja-4",
+      "lang": "ja",
+      "category": "\u65E5\u8BED",
+      "source": "\u3054\u3081\u3093\u3001\u3044\u307E\u30DE\u30A4\u30AF\u306E\u8ABF\u5B50\u304C\u60AA\u304F\u3066\u805E\u3053\u3048\u306A\u3044\u304B\u3082\u3002",
+      "gold": "\u4E0D\u597D\u610F\u601D\uFF0C\u6211\u9EA6\u514B\u98CE\u73B0\u5728\u6709\u70B9\u95EE\u9898\uFF0C\u53EF\u80FD\u542C\u4E0D\u5230\u3002",
+      "context": []
+    },
+    {
+      "set": "baseline",
+      "id": "ja-5",
+      "lang": "ja",
+      "category": "\u65E5\u8BED",
+      "source": "\u307E\u3060\u5408\u6D41\u3067\u304D\u3066\u306A\u3044\u3093\u3060\u3051\u3069\u3001\u5148\u306B\u30EF\u30FC\u30EB\u30C9\u56DE\u3063\u3066\u3066\u3002",
+      "gold": "\u6211\u8FD8\u6CA1\u6CD5\u8FDB\u623F\u95F4\uFF0C\u4F60\u4EEC\u5148\u901B\u7740\u8FD9\u4E2A\u4E16\u754C\u3002",
+      "context": []
+    },
+    {
+      "set": "baseline",
+      "id": "ko-1",
+      "lang": "ko",
+      "category": "\u97E9\u8BED",
+      "source": "\uB9C8\uC774\uD06C\uAC00 \uC548 \uB4E4\uB824\uC11C \uB2E4\uC2DC \uB9D0\uD574 \uC904\uB798?",
+      "gold": "\u542C\u4E0D\u5230\u4F60\u9EA6\u514B\u98CE\uFF0C\u80FD\u518D\u8BF4\u4E00\u904D\u5417\uFF1F",
+      "context": []
+    },
+    {
+      "set": "baseline",
+      "id": "ko-2",
+      "lang": "ko",
+      "category": "\u97E9\u8BED",
+      "source": "\uC774 \uC6D4\uB4DC \uC9C4\uC9DC \uC608\uC058\uB2E4, \uC5B4\uB514\uC11C \uBCF8 \uAC70\uC57C?",
+      "gold": "\u8FD9\u4E2A\u4E16\u754C\u771F\u6F02\u4EAE\uFF0C\u4F60\u4ECE\u54EA\u770B\u5230\u7684\uFF1F",
+      "context": []
+    },
+    {
+      "set": "baseline",
+      "id": "ko-3",
+      "lang": "ko",
+      "category": "\u97E9\u8BED",
+      "source": "\uB098 \uC9C0\uAE08 \uB809 \uB54C\uBB38\uC5D0 \uBABB \uC6C0\uC9C1\uC774\uACA0\uC5B4.",
+      "gold": "\u6211\u73B0\u5728\u5361\u5F97\u52A8\u4E0D\u4E86\u4E86\u3002",
+      "context": []
+    },
+    {
+      "set": "baseline",
+      "id": "ko-4",
+      "lang": "ko",
+      "category": "\u97E9\u8BED",
+      "source": "\uC7A0\uAE50\uB9CC, \uC544\uBC14\uD0C0 \uBC14\uAFB8\uACE0 \uC62C\uAC8C.",
+      "gold": "\u7B49\u6211\u4E00\u4E0B\uFF0C\u6211\u6362\u4E2A\u6A21\u578B\u5C31\u6765\u3002",
+      "context": []
+    },
+    {
+      "set": "baseline",
+      "id": "cs-1",
+      "lang": "mix",
+      "category": "\u4E2D\u002B\u65E5 \u6DF7\u8BF4",
+      "source": "\u8FD9\u4E2A\u30EF\u30FC\u30EB\u30C9\u6628\u5929\u6211\u901B\u8FC7\u4E86\uFF0C\u633A\u6709\u610F\u601D\u7684\u3002",
+      "gold": "\u8FD9\u4E2A\u4E16\u754C\u6211\u6628\u5929\u901B\u8FC7\u4E86\uFF0C\u633A\u6709\u610F\u601D\u7684\u3002",
+      "context": []
+    },
+    {
+      "set": "baseline",
+      "id": "cs-2",
+      "lang": "mix",
+      "category": "\u65E5\u002B\u82F1 \u6DF7\u8BF4",
+      "source": "\u3061\u3087\u3063\u3068\u5F85\u3063\u3066\u3001\u6211\u6362\u4E2Aavatar\u5C31\u6765\u3002",
+      "gold": "\u7A0D\u7B49\u4E00\u4E0B\uFF0C\u6211\u6362\u4E2A\u6A21\u578B\u5C31\u6765\u3002",
+      "context": []
+    },
+    {
+      "set": "baseline",
+      "id": "cs-3",
+      "lang": "mix",
+      "category": "\u82F1\u002B\u4E2D \u6DF7\u8BF4",
+      "source": "OK guys \u6211\u5148\u4E0B\u7EBF\u4E86\uFF0C\u660E\u5929\u89C1\u3002",
+      "gold": "\u597D\u7684\u5404\u4F4D\uFF0C\u6211\u5148\u4E0B\u7EBF\u4E86\uFF0C\u660E\u5929\u89C1\u3002",
+      "context": []
+    },
+    {
+      "set": "baseline",
+      "id": "cs-4",
+      "lang": "mix",
+      "category": "\u97E9\u002B\u4E2D \u6DF7\u8BF4",
+      "source": "\uC774\uAC70 \uD55C\uAD6D\uC5D0\uC11C \uC628 \uAC70\uC608\uC694? \u770B\u7740\u50CF\u56FD\u5185\u7684\u6A21\u578B\u3002",
+      "gold": "\u8FD9\u662F\u4ECE\u97E9\u56FD\u6765\u7684\u5417\uFF1F\u770B\u7740\u50CF\u56FD\u5185\u7684\u6A21\u578B\u3002",
+      "context": []
+    },
+    {
+      "set": "baseline",
+      "id": "cs-5",
+      "lang": "mix",
+      "category": "\u7CA4\u002B\u82F1 \u6DF7\u8BF4",
+      "source": "\u5514\u8BE5\u6652\uFF0C\u6211\u800C\u5BB6\u53BB\u6362\u886B\uFF0Cwait for me\u3002",
+      "gold": "\u8C22\u8C22\u5566\uFF0C\u6211\u73B0\u5728\u53BB\u6362\u8863\u670D\uFF0C\u7B49\u6211\u4E00\u4E0B\u3002",
+      "context": []
+    },
+    {
+      "set": "baseline",
+      "id": "2sp-1",
+      "lang": "mix",
+      "category": "\u4E24\u4EBA\u5BF9\u8BDD\uFF1A\u4E2D\u002B\u82F1",
+      "source": "A: \u4F60\u597D\uFF0C\u521D\u6B21\u89C1\u9762\u3002B: Hi! Nice to meet you, I\u0027m from Canada.",
+      "gold": "A\uFF1A\u4F60\u597D\uFF0C\u521D\u6B21\u89C1\u9762\u3002B\uFF1A\u4F60\u597D\uFF01\u5F88\u9AD8\u5174\u8BA4\u8BC6\u4F60\uFF0C\u6211\u662F\u52A0\u62FF\u5927\u4EBA\u3002",
+      "context": []
+    },
+    {
+      "set": "baseline",
+      "id": "2sp-2",
+      "lang": "mix",
+      "category": "\u4E24\u4EBA\u5BF9\u8BDD\uFF1A\u65E5\u002B\u4E2D",
+      "source": "A: \u3053\u308C\u3069\u3046\u3084\u3063\u3066\u958B\u304F\u306E\uFF1FB: \u6309\u4E00\u4E0B\u90A3\u8FB9\u7684\u6309\u94AE\u5C31\u884C\u4E86\u3002",
+      "gold": "A\uFF1A\u8FD9\u4E2A\u600E\u4E48\u6253\u5F00\uFF1FB\uFF1A\u6309\u4E00\u4E0B\u90A3\u8FB9\u7684\u6309\u94AE\u5C31\u884C\u4E86\u3002",
+      "context": []
+    },
+    {
+      "set": "baseline",
+      "id": "2sp-3",
+      "lang": "mix",
+      "category": "\u4E24\u4EBA\u5BF9\u8BDD\uFF1A\u82F1\u002B\u4E2D",
+      "source": "A: Are you joining the event tonight? B: \u5E94\u8BE5\u4F1A\u53BB\uFF0C\u4F60\u8981\u4E00\u8D77\u5417\uFF1F",
+      "gold": "A\uFF1A\u4F60\u4ECA\u665A\u53C2\u52A0\u6D3B\u52A8\u5417\uFF1FB\uFF1A\u5E94\u8BE5\u4F1A\u53BB\uFF0C\u4F60\u8981\u4E00\u8D77\u5417\uFF1F",
+      "context": []
+    },
+    {
+      "set": "conversation",
+      "id": "conv-01",
+      "lang": "en",
+      "category": "\u77ED\u53E5/\u4FDA\u8BED",
+      "source": "Yeah, it\u0027s sick.",
+      "gold": "\u770B\u4E86\uFF0C\u592A\u5E05\u4E86\u3002",
+      "context": [
+        {
+          "speaker": "A",
+          "text": "Did you check out the new world?"
+        }
+      ]
+    },
+    {
+      "set": "conversation",
+      "id": "conv-02",
+      "lang": "en",
+      "category": "\u672F\u8BED",
+      "source": "Open the Quick Menu and check your Performance Rank.",
+      "gold": "\u6253\u5F00\u5FEB\u6377\u83DC\u5355\uFF0C\u770B\u4E00\u4E0B\u4F60\u7684\u6027\u80FD\u7B49\u7EA7\u3002",
+      "context": [
+        {
+          "speaker": "A",
+          "text": "How do I see if my avatar is too heavy?"
+        }
+      ]
+    },
+    {
+      "set": "conversation",
+      "id": "conv-03",
+      "lang": "en",
+      "category": "\u672F\u8BED",
+      "source": "That guy is an Impostor, not a real player.",
+      "gold": "\u90A3\u5BB6\u4F19\u662F\u6A21\u578B\u66FF\u8EAB\uFF0C\u4E0D\u662F\u771F\u4EBA\u73A9\u5BB6\u3002",
+      "context": [
+        {
+          "speaker": "A",
+          "text": "Is that a real player?"
+        }
+      ]
+    },
+    {
+      "set": "conversation",
+      "id": "conv-04",
+      "lang": "en",
+      "category": "\u4E0A\u4E0B\u6587/\u4EE3\u8BCD",
+      "source": "Can you show me?",
+      "gold": "\u4F60\u80FD\u5E26\u6211\u53BB\u5417\uFF1F",
+      "context": [
+        {
+          "speaker": "A",
+          "text": "Where\u0027s the mirror?"
+        },
+        {
+          "speaker": "B",
+          "text": "Upstairs, next to the portal."
+        }
+      ]
+    },
+    {
+      "set": "conversation",
+      "id": "conv-05",
+      "lang": "en",
+      "category": "\u4E0A\u4E0B\u6587/\u4EE3\u8BCD",
+      "source": "Alright, let\u0027s start without her.",
+      "gold": "\u597D\u5427\uFF0C\u90A3\u6211\u4EEC\u4E0D\u7B49\u5979\u4E86\uFF0C\u5148\u5F00\u59CB\u5427\u3002",
+      "context": [
+        {
+          "speaker": "A",
+          "text": "Is she coming?"
+        },
+        {
+          "speaker": "B",
+          "text": "She said she\u0027d be late."
+        }
+      ]
+    },
+    {
+      "set": "conversation",
+      "id": "conv-06",
+      "lang": "mix",
+      "category": "\u4E2D\u82F1\u6DF7\u5408",
+      "source": "\u8FD9\u4E2A world \u7684 lighting \u592A\u6697\u4E86\uFF0Ccan you turn it up?",
+      "gold": "\u8FD9\u4E2A\u4E16\u754C\u7684\u706F\u5149\u592A\u6697\u4E86\uFF0C\u4F60\u80FD\u8C03\u4EAE\u4E00\u70B9\u5417\uFF1F",
+      "context": [
+        {
+          "speaker": "A",
+          "text": "This world is too dark."
+        }
+      ]
+    },
+    {
+      "set": "conversation",
+      "id": "conv-07",
+      "lang": "mix",
+      "category": "\u4E2D\u65E5\u82F1\u6DF7\u5408/\u672F\u8BED",
+      "source": "\u3061\u3087\u3063\u3068\u5F85\u3063\u3066\u3001I need to fix my FBT.",
+      "gold": "\u7A0D\u7B49\u4E00\u4E0B\uFF0C\u6211\u5F97\u8C03\u4E00\u4E0B\u5168\u8EAB\u8FFD\u8E2A\u3002",
+      "context": [
+        {
+          "speaker": "A",
+          "text": "Are you ready?"
+        }
+      ]
+    },
+    {
+      "set": "conversation",
+      "id": "conv-08",
+      "lang": "en",
+      "category": "ASR \u9519\u8BEF",
+      "source": "I\u0027m gonna hop off, see you to marrow.",
+      "gold": "\u6211\u5148\u4E0B\u4E86\uFF0C\u660E\u5929\u89C1\u3002",
+      "context": [
+        {
+          "speaker": "A",
+          "text": "Are you leaving already?"
+        }
+      ]
+    },
+    {
+      "set": "conversation",
+      "id": "conv-09",
+      "lang": "en",
+      "category": "ASR \u9519\u8BEF",
+      "source": "My mic is peak, can you hear me?",
+      "gold": "\u6211\u9EA6\u514B\u98CE\u7206\u97F3\u4E86\uFF0C\u4F60\u80FD\u542C\u5230\u6211\u8BF4\u8BDD\u5417\uFF1F",
+      "context": [
+        {
+          "speaker": "A",
+          "text": "Can you hear me?"
+        }
+      ]
+    },
+    {
+      "set": "conversation",
+      "id": "conv-10",
+      "lang": "en",
+      "category": "ASR \u9519\u8BEF",
+      "source": "Let\u0027s meet at the mirror in the lobby.",
+      "gold": "\u6211\u4EEC\u5728\u5927\u5385\u7684\u955C\u5B50\u524D\u96C6\u5408\u5427\u3002",
+      "context": [
+        {
+          "speaker": "A",
+          "text": "Where should we meet?"
+        }
+      ]
+    },
+    {
+      "set": "conversation",
+      "id": "conv-11",
+      "lang": "en",
+      "category": "\u957F\u53E5",
+      "source": "I was trying to change my avatar earlier but the loading screen got stuck, so I just restarted the game and now it\u0027s fine.",
+      "gold": "\u6211\u521A\u624D\u60F3\u6362\u6A21\u578B\uFF0C\u4F46\u52A0\u8F7D\u754C\u9762\u5361\u4F4F\u4E86\uFF0C\u6240\u4EE5\u5C31\u76F4\u63A5\u91CD\u542F\u4E86\u6E38\u620F\uFF0C\u73B0\u5728\u597D\u4E86\u3002",
+      "context": [
+        {
+          "speaker": "A",
+          "text": "Why did you restart?"
+        }
+      ]
+    },
+    {
+      "set": "conversation",
+      "id": "conv-12",
+      "lang": "en",
+      "category": "\u4E0A\u4E0B\u6587/\u957F\u53E5",
+      "source": "Hurry up, they\u0027re waiting for us.",
+      "gold": "\u5FEB\u70B9\uFF0C\u4ED6\u4EEC\u8FD8\u5728\u7B49\u6211\u4EEC\u5462\u3002",
+      "context": [
+        {
+          "speaker": "A",
+          "text": "The event starts in ten minutes."
+        },
+        {
+          "speaker": "B",
+          "text": "I\u0027m still downloading the world."
+        }
+      ]
+    },
+    {
+      "set": "conversation",
+      "id": "conv-13",
+      "lang": "en",
+      "category": "\u672F\u8BED/\u5E73\u53F0",
+      "source": "Are you on Quest or PC? The world has a Quest version.",
+      "gold": "\u4F60\u662F Quest \u7AEF\u8FD8\u662F PC \u7AEF\uFF1F\u8FD9\u4E2A\u4E16\u754C\u6709 Quest \u7248\u672C\u3002",
+      "context": [
+        {
+          "speaker": "A",
+          "text": "Can you see the new world?"
+        }
+      ]
+    },
+    {
+      "set": "conversation",
+      "id": "conv-14",
+      "lang": "en",
+      "category": "\u672F\u8BED",
+      "source": "I got kicked from the instance for no reason.",
+      "gold": "\u6211\u83AB\u540D\u5176\u5999\u88AB\u8E22\u51FA\u623F\u95F4\u4E86\u3002",
+      "context": [
+        {
+          "speaker": "A",
+          "text": "Why did you leave?"
+        }
+      ]
+    },
+    {
+      "set": "conversation",
+      "id": "conv-15",
+      "lang": "en",
+      "category": "\u4FDA\u8BED/\u672F\u8BED",
+      "source": "No cap, that was the best portal drop I\u0027ve ever seen.",
+      "gold": "\u771F\u7684\uFF0C\u90A3\u662F\u6211\u89C1\u8FC7\u6700\u5E05\u7684\u6254\u4F20\u9001\u95E8\u3002",
+      "context": [
+        {
+          "speaker": "A",
+          "text": "Did you see that?"
+        }
+      ]
+    },
+    {
+      "set": "conversation",
+      "id": "conv-16",
+      "lang": "en",
+      "category": "\u77ED\u53E5/\u672F\u8BED",
+      "source": "AFK for a sec, getting water.",
+      "gold": "\u6682\u79BB\u4E00\u4E0B\uFF0C\u6211\u53BB\u5012\u676F\u6C34\u3002",
+      "context": [
+        {
+          "speaker": "A",
+          "text": "Where are you going?"
+        }
+      ]
+    },
+    {
+      "set": "conversation",
+      "id": "conv-17",
+      "lang": "en",
+      "category": "\u4E0A\u4E0B\u6587/\u4EE3\u8BCD",
+      "source": "Thanks, I couldn\u0027t hear anything.",
+      "gold": "\u8C22\u4E86\uFF0C\u6211\u4EC0\u4E48\u90FD\u542C\u4E0D\u89C1\u3002",
+      "context": [
+        {
+          "speaker": "A",
+          "text": "Did you mute him?"
+        },
+        {
+          "speaker": "B",
+          "text": "Yeah, he was blasting music."
+        }
+      ]
+    },
+    {
+      "set": "conversation",
+      "id": "conv-18",
+      "lang": "mix",
+      "category": "\u4E2D\u82F1\u6DF7\u5408/\u672F\u8BED",
+      "source": "\u8FD9\u4E2A avatar \u7684 PhysBone \u597D\u591A\uFF0Clag \u5F97\u6211\u5934\u90FD\u6655\u4E86\u3002",
+      "gold": "\u8FD9\u4E2A\u6A21\u578B\u7684\u7269\u7406\u9AA8\u9ABC\u592A\u591A\u4E86\uFF0C\u5361\u5F97\u6211\u5934\u90FD\u6655\u4E86\u3002",
+      "context": [
+        {
+          "speaker": "A",
+          "text": "This avatar is so laggy."
+        }
+      ]
+    },
+    {
+      "set": "conversation",
+      "id": "conv-19",
+      "lang": "en",
+      "category": "\u77ED\u53E5",
+      "source": "Let\u0027s take a group photo in front of the mirror before we go.",
+      "gold": "\u8D70\u4E4B\u524D\u6211\u4EEC\u5728\u955C\u5B50\u524D\u62CD\u5F20\u5408\u7167\u5427\u3002",
+      "context": [
+        {
+          "speaker": "A",
+          "text": "Before we go..."
+        }
+      ]
+    },
+    {
+      "set": "conversation",
+      "id": "conv-20",
+      "lang": "en",
+      "category": "\u4E0A\u4E0B\u6587/\u793E\u4EA4",
+      "source": "Welcome! Add me if you need help.",
+      "gold": "\u6B22\u8FCE\uFF01\u9700\u8981\u5E2E\u5FD9\u5C31\u52A0\u6211\u597D\u53CB\u3002",
+      "context": [
+        {
+          "speaker": "A",
+          "text": "Is this your first time in VRChat?"
+        },
+        {
+          "speaker": "B",
+          "text": "Yeah, I just got my headset yesterday."
+        }
+      ]
+    }
+  ],
+  "results": [
+    {
+      "variant": "xiaomi-flash-app",
+      "set": "baseline",
+      "itemId": "yue-1",
+      "translation": "\u9EBB\u70E6\u4F60\u5E2E\u6211\u770B\u770B\u4ED6\u662F\u4E0D\u662F\u7AD9\u5728\u95E8\u53E3\u3002",
+      "raw": "\u9EBB\u70E6\u4F60\u5E2E\u6211\u770B\u770B\u4ED6\u662F\u4E0D\u662F\u7AD9\u5728\u95E8\u53E3\u3002",
+      "latencyMs": 2128,
+      "error": null
+    },
+    {
+      "variant": "xiaomi-flash-app",
+      "set": "baseline",
+      "itemId": "yue-2",
+      "translation": "\u6211\u4ECA\u5929\u6CA1\u7A7A\uFF0C\u660E\u5929\u5427\u3002",
+      "raw": "\u6211\u4ECA\u5929\u6CA1\u7A7A\uFF0C\u660E\u5929\u5427\u3002",
+      "latencyMs": 888,
+      "error": null
+    },
+    {
+      "variant": "xiaomi-flash-app",
+      "set": "baseline",
+      "itemId": "en-1",
+      "translation": "\u563F\uFF0C\u73B0\u5728\u80FD\u542C\u5230\u6211\u5417\uFF1F\u6211\u521A\u4FEE\u597D\u4E86\u9EA6\u514B\u98CE\u3002",
+      "raw": "\u563F\uFF0C\u73B0\u5728\u80FD\u542C\u5230\u6211\u5417\uFF1F\u6211\u521A\u4FEE\u597D\u4E86\u9EA6\u514B\u98CE\u3002",
+      "latencyMs": 6199,
+      "error": null
+    },
+    {
+      "variant": "xiaomi-flash-app",
+      "set": "baseline",
+      "itemId": "en-2",
+      "translation": "\u542C\u8D77\u6765\u4E0D\u9519\uFF0C\u6211\u4ECA\u665A\u4E0B\u73ED\u540E\u5C31\u6765\u3002",
+      "raw": "\u542C\u8D77\u6765\u4E0D\u9519\uFF0C\u6211\u4ECA\u665A\u4E0B\u73ED\u540E\u5C31\u6765\u3002",
+      "latencyMs": 752,
+      "error": null
+    },
+    {
+      "variant": "xiaomi-flash-app",
+      "set": "baseline",
+      "itemId": "en-3",
+      "translation": "\u62B1\u6B49\uFF0C\u6211\u7684\u9EA6\u514B\u98CE\u521A\u624D\u65AD\u4E86\u4E00\u4E0B\uFF0C\u4F60\u8BF4\u4EC0\u4E48\u6765\u7740\uFF1F",
+      "raw": "\u62B1\u6B49\uFF0C\u6211\u7684\u9EA6\u514B\u98CE\u521A\u624D\u65AD\u4E86\u4E00\u4E0B\uFF0C\u4F60\u8BF4\u4EC0\u4E48\u6765\u7740\uFF1F",
+      "latencyMs": 2863,
+      "error": null
+    },
+    {
+      "variant": "xiaomi-flash-app",
+      "set": "baseline",
+      "itemId": "en-4",
+      "translation": "\u4F60\u80FD\u544A\u8BC9\u6211\u90A3\u4E2A\u865A\u62DF\u5F62\u8C61\u662F\u5728\u54EA\u91CC\u4E70\u7684\u5417\uFF1F\u6211\u4E5F\u4E00\u76F4\u5728\u627E\u7C7B\u4F3C\u7684\u3002",
+      "raw": "\u4F60\u80FD\u544A\u8BC9\u6211\u90A3\u4E2A\u865A\u62DF\u5F62\u8C61\u662F\u5728\u54EA\u91CC\u4E70\u7684\u5417\uFF1F\u6211\u4E5F\u4E00\u76F4\u5728\u627E\u7C7B\u4F3C\u7684\u3002",
+      "latencyMs": 2100,
+      "error": null
+    },
+    {
+      "variant": "xiaomi-flash-app",
+      "set": "baseline",
+      "itemId": "en-5",
+      "translation": "\u73B0\u5728\u5EF6\u8FDF\u592A\u4E25\u91CD\u4E86\uFF0C\u6211\u89C9\u5F97\u670D\u52A1\u5668\u5FEB\u6491\u4E0D\u4F4F\u4E86\u3002",
+      "raw": "\u73B0\u5728\u5EF6\u8FDF\u592A\u4E25\u91CD\u4E86\uFF0C\u6211\u89C9\u5F97\u670D\u52A1\u5668\u5FEB\u6491\u4E0D\u4F4F\u4E86\u3002",
+      "latencyMs": 1628,
+      "error": null
+    },
+    {
+      "variant": "xiaomi-flash-app",
+      "set": "baseline",
+      "itemId": "ja-1",
+      "translation": "\u6211\u4EEC\u5B66\u6821\u662F\u4FBF\u5F53\u5236\uFF0C\u6CA1\u5E26\u4FBF\u5F53\u7684\u8BDD\u5C31\u82B150\u65E5\u5143\u4E70\u5B66\u6821\u5356\u7684\u9762\u5305\u3002",
+      "raw": "\u6211\u4EEC\u5B66\u6821\u662F\u4FBF\u5F53\u5236\uFF0C\u6CA1\u5E26\u4FBF\u5F53\u7684\u8BDD\u5C31\u82B150\u65E5\u5143\u4E70\u5B66\u6821\u5356\u7684\u9762\u5305\u3002",
+      "latencyMs": 2541,
+      "error": null
+    },
+    {
+      "variant": "xiaomi-flash-app",
+      "set": "baseline",
+      "itemId": "ja-2",
+      "translation": "\u7A0D\u7B49\u4E00\u4E0B\uFF0C\u6211\u6B63\u5728\u51C6\u5907\u3002",
+      "raw": "\u7A0D\u7B49\u4E00\u4E0B\uFF0C\u6211\u6B63\u5728\u51C6\u5907\u3002",
+      "latencyMs": 922,
+      "error": null
+    },
+    {
+      "variant": "xiaomi-flash-app",
+      "set": "baseline",
+      "itemId": "ja-3",
+      "translation": "\u8FD9\u4E2A\u4E16\u754C\uFF0C\u6211\u597D\u50CF\u4EE5\u524D\u6765\u8FC7\u3002",
+      "raw": "\u8FD9\u4E2A\u4E16\u754C\uFF0C\u6211\u597D\u50CF\u4EE5\u524D\u6765\u8FC7\u3002",
+      "latencyMs": 2640,
+      "error": null
+    },
+    {
+      "variant": "xiaomi-flash-app",
+      "set": "baseline",
+      "itemId": "ja-4",
+      "translation": "\u62B1\u6B49\uFF0C\u6211\u8FD9\u8FB9\u9EA6\u514B\u98CE\u6709\u70B9\u95EE\u9898\uFF0C\u53EF\u80FD\u542C\u4E0D\u89C1\u3002",
+      "raw": "\u62B1\u6B49\uFF0C\u6211\u8FD9\u8FB9\u9EA6\u514B\u98CE\u6709\u70B9\u95EE\u9898\uFF0C\u53EF\u80FD\u542C\u4E0D\u89C1\u3002",
+      "latencyMs": 3071,
+      "error": null
+    },
+    {
+      "variant": "xiaomi-flash-app",
+      "set": "baseline",
+      "itemId": "ja-5",
+      "translation": "\u8FD8\u6CA1\u6C47\u5408\uFF0C\u4F60\u5148\u901B\u901B\u4E16\u754C\u5427\u3002",
+      "raw": "\u8FD8\u6CA1\u6C47\u5408\uFF0C\u4F60\u5148\u901B\u901B\u4E16\u754C\u5427\u3002",
+      "latencyMs": 3754,
+      "error": null
+    },
+    {
+      "variant": "xiaomi-flash-app",
+      "set": "baseline",
+      "itemId": "ko-1",
+      "translation": "\u9EA6\u514B\u98CE\u6CA1\u542C\u5230\uFF0C\u80FD\u518D\u8BF4\u4E00\u904D\u5417\uFF1F",
+      "raw": "\u9EA6\u514B\u98CE\u6CA1\u542C\u5230\uFF0C\u80FD\u518D\u8BF4\u4E00\u904D\u5417\uFF1F",
+      "latencyMs": 6961,
+      "error": null
+    },
+    {
+      "variant": "xiaomi-flash-app",
+      "set": "baseline",
+      "itemId": "ko-2",
+      "translation": "\u8FD9\u4E2A\u4E16\u754C\u771F\u6F02\u4EAE\uFF0C\u4F60\u5728\u54EA\u91CC\u770B\u5230\u7684\uFF1F",
+      "raw": "\u8FD9\u4E2A\u4E16\u754C\u771F\u6F02\u4EAE\uFF0C\u4F60\u5728\u54EA\u91CC\u770B\u5230\u7684\uFF1F",
+      "latencyMs": 1006,
+      "error": null
+    },
+    {
+      "variant": "xiaomi-flash-app",
+      "set": "baseline",
+      "itemId": "ko-3",
+      "translation": "\u6211\u73B0\u5728\u5361\u4E86\uFF0C\u52A8\u4E0D\u4E86\u3002",
+      "raw": "\u6211\u73B0\u5728\u5361\u4E86\uFF0C\u52A8\u4E0D\u4E86\u3002",
+      "latencyMs": 2395,
+      "error": null
+    },
+    {
+      "variant": "xiaomi-flash-app",
+      "set": "baseline",
+      "itemId": "ko-4",
+      "translation": "\u7B49\u4E00\u4E0B\uFF0C\u6211\u53BB\u6362\u4E2A\u5F62\u8C61\u3002",
+      "raw": "\u7B49\u4E00\u4E0B\uFF0C\u6211\u53BB\u6362\u4E2A\u5F62\u8C61\u3002",
+      "latencyMs": 819,
+      "error": null
+    },
+    {
+      "variant": "xiaomi-flash-app",
+      "set": "baseline",
+      "itemId": "cs-1",
+      "translation": "\u8FD9\u4E2A\u573A\u666F\u6211\u6628\u5929\u901B\u8FC7\u4E86\uFF0C\u633A\u6709\u610F\u601D\u7684\u3002",
+      "raw": "\u8FD9\u4E2A\u573A\u666F\u6211\u6628\u5929\u901B\u8FC7\u4E86\uFF0C\u633A\u6709\u610F\u601D\u7684\u3002",
+      "latencyMs": 1940,
+      "error": null
+    },
+    {
+      "variant": "xiaomi-flash-app",
+      "set": "baseline",
+      "itemId": "cs-2",
+      "translation": "\u7A0D\u7B49\uFF0C\u6211\u6362\u4E2A\u865A\u62DF\u5F62\u8C61\u5C31\u6765\u3002",
+      "raw": "\u7A0D\u7B49\uFF0C\u6211\u6362\u4E2A\u865A\u62DF\u5F62\u8C61\u5C31\u6765\u3002",
+      "latencyMs": 944,
+      "error": null
+    },
+    {
+      "variant": "xiaomi-flash-app",
+      "set": "baseline",
+      "itemId": "cs-3",
+      "translation": "\u597D\u7684\u5404\u4F4D\uFF0C\u6211\u5148\u4E0B\u7EBF\u4E86\uFF0C\u660E\u5929\u89C1\u3002",
+      "raw": "\u597D\u7684\u5404\u4F4D\uFF0C\u6211\u5148\u4E0B\u7EBF\u4E86\uFF0C\u660E\u5929\u89C1\u3002",
+      "latencyMs": 864,
+      "error": null
+    },
+    {
+      "variant": "xiaomi-flash-app",
+      "set": "baseline",
+      "itemId": "cs-4",
+      "translation": "\u8FD9\u4E2A\u662F\u4ECE\u97E9\u56FD\u6765\u7684\u5417\uFF1F\u770B\u7740\u50CF\u56FD\u5185\u7684\u6A21\u578B\u3002",
+      "raw": "\u8FD9\u4E2A\u662F\u4ECE\u97E9\u56FD\u6765\u7684\u5417\uFF1F\u770B\u7740\u50CF\u56FD\u5185\u7684\u6A21\u578B\u3002",
+      "latencyMs": 2390,
+      "error": null
+    },
+    {
+      "variant": "xiaomi-flash-app",
+      "set": "baseline",
+      "itemId": "cs-5",
+      "translation": "\u591A\u8C22\uFF0C\u6211\u73B0\u5728\u53BB\u6362\u8863\u670D\uFF0C\u7B49\u6211\u4E00\u4E0B\u3002",
+      "raw": "\u591A\u8C22\uFF0C\u6211\u73B0\u5728\u53BB\u6362\u8863\u670D\uFF0C\u7B49\u6211\u4E00\u4E0B\u3002",
+      "latencyMs": 1535,
+      "error": null
+    },
+    {
+      "variant": "xiaomi-flash-app",
+      "set": "baseline",
+      "itemId": "2sp-1",
+      "translation": "\u4F60\u597D\uFF0C\u5F88\u9AD8\u5174\u89C1\u5230\u4F60\uFF0C\u6211\u6765\u81EA\u52A0\u62FF\u5927\u3002",
+      "raw": "\u4F60\u597D\uFF0C\u5F88\u9AD8\u5174\u89C1\u5230\u4F60\uFF0C\u6211\u6765\u81EA\u52A0\u62FF\u5927\u3002",
+      "latencyMs": 1746,
+      "error": null
+    },
+    {
+      "variant": "xiaomi-flash-app",
+      "set": "baseline",
+      "itemId": "2sp-2",
+      "translation": "A\uFF1A\u8FD9\u4E2A\u600E\u4E48\u6253\u5F00\uFF1FB\uFF1A\u6309\u4E00\u4E0B\u90A3\u8FB9\u7684\u6309\u94AE\u5C31\u884C\u4E86\u3002",
+      "raw": "A\uFF1A\u8FD9\u4E2A\u600E\u4E48\u6253\u5F00\uFF1FB\uFF1A\u6309\u4E00\u4E0B\u90A3\u8FB9\u7684\u6309\u94AE\u5C31\u884C\u4E86\u3002",
+      "latencyMs": 1194,
+      "error": null
+    },
+    {
+      "variant": "xiaomi-flash-app",
+      "set": "baseline",
+      "itemId": "2sp-3",
+      "translation": "I should go, do you want to come together?",
+      "raw": "I should go, do you want to come together?",
+      "latencyMs": 4440,
+      "error": null
+    },
+    {
+      "variant": "xiaomi-flash-app",
+      "set": "conversation",
+      "itemId": "conv-01",
+      "translation": "\u662F\u554A\uFF0C\u592A\u68D2\u4E86\u3002",
+      "raw": "\u662F\u554A\uFF0C\u592A\u68D2\u4E86\u3002",
+      "latencyMs": 1183,
+      "error": null
+    },
+    {
+      "variant": "xiaomi-flash-app",
+      "set": "conversation",
+      "itemId": "conv-02",
+      "translation": "\u6253\u5F00\u5FEB\u6377\u83DC\u5355\uFF0C\u67E5\u770B\u4F60\u7684\u6027\u80FD\u7B49\u7EA7\u3002",
+      "raw": "\u6253\u5F00\u5FEB\u6377\u83DC\u5355\uFF0C\u67E5\u770B\u4F60\u7684\u6027\u80FD\u7B49\u7EA7\u3002",
+      "latencyMs": 2390,
+      "error": null
+    },
+    {
+      "variant": "xiaomi-flash-app",
+      "set": "conversation",
+      "itemId": "conv-03",
+      "translation": "\u90A3\u5BB6\u4F19\u662F\u6A21\u578B\u66FF\u8EAB\uFF0C\u4E0D\u662F\u771F\u4EBA\u73A9\u5BB6\u3002",
+      "raw": "\u90A3\u5BB6\u4F19\u662F\u6A21\u578B\u66FF\u8EAB\uFF0C\u4E0D\u662F\u771F\u4EBA\u73A9\u5BB6\u3002",
+      "latencyMs": 2031,
+      "error": null
+    },
+    {
+      "variant": "xiaomi-flash-app",
+      "set": "conversation",
+      "itemId": "conv-04",
+      "translation": "\u80FD\u7ED9\u6211\u770B\u770B\u5417\uFF1F",
+      "raw": "\u80FD\u7ED9\u6211\u770B\u770B\u5417\uFF1F",
+      "latencyMs": 1969,
+      "error": null
+    },
+    {
+      "variant": "xiaomi-flash-app",
+      "set": "conversation",
+      "itemId": "conv-05",
+      "translation": "\u597D\uFF0C\u6211\u4EEC\u5148\u5F00\u59CB\uFF0C\u4E0D\u7B49\u5979\u4E86\u3002",
+      "raw": "\u597D\uFF0C\u6211\u4EEC\u5148\u5F00\u59CB\uFF0C\u4E0D\u7B49\u5979\u4E86\u3002",
+      "latencyMs": 3595,
+      "error": null
+    },
+    {
+      "variant": "xiaomi-flash-app",
+      "set": "conversation",
+      "itemId": "conv-06",
+      "translation": "\u8FD9\u4E2A\u4E16\u754C\u7684\u706F\u5149\u592A\u6697\u4E86\uFF0C\u80FD\u8C03\u4EAE\u4E00\u70B9\u5417\uFF1F",
+      "raw": "\u8FD9\u4E2A\u4E16\u754C\u7684\u706F\u5149\u592A\u6697\u4E86\uFF0C\u80FD\u8C03\u4EAE\u4E00\u70B9\u5417\uFF1F",
+      "latencyMs": 2231,
+      "error": null
+    },
+    {
+      "variant": "xiaomi-flash-app",
+      "set": "conversation",
+      "itemId": "conv-07",
+      "translation": "\u7B49\u4E00\u4E0B\uFF0C\u6211\u9700\u8981\u8C03\u6574\u4E00\u4E0B\u6211\u7684FBT\u3002",
+      "raw": "\u7B49\u4E00\u4E0B\uFF0C\u6211\u9700\u8981\u8C03\u6574\u4E00\u4E0B\u6211\u7684FBT\u3002",
+      "latencyMs": 7908,
+      "error": null
+    },
+    {
+      "variant": "xiaomi-flash-app",
+      "set": "conversation",
+      "itemId": "conv-08",
+      "translation": "\u6211\u8981\u4E0B\u7EBF\u4E86\uFF0C\u660E\u5929\u89C1\u3002",
+      "raw": "\u6211\u8981\u4E0B\u7EBF\u4E86\uFF0C\u660E\u5929\u89C1\u3002",
+      "latencyMs": 954,
+      "error": null
+    },
+    {
+      "variant": "xiaomi-flash-app",
+      "set": "conversation",
+      "itemId": "conv-09",
+      "translation": "\u6211\u7684\u9EA6\u514B\u98CE\u7206\u97F3\u4E86\uFF0C\u80FD\u542C\u5230\u6211\u8BF4\u8BDD\u5417\uFF1F",
+      "raw": "\u6211\u7684\u9EA6\u514B\u98CE\u7206\u97F3\u4E86\uFF0C\u80FD\u542C\u5230\u6211\u8BF4\u8BDD\u5417\uFF1F",
+      "latencyMs": 6367,
+      "error": null
+    },
+    {
+      "variant": "xiaomi-flash-app",
+      "set": "conversation",
+      "itemId": "conv-10",
+      "translation": "\u6211\u4EEC\u53BB\u5927\u5385\u7684\u955C\u5B50\u90A3\u91CC\u89C1\u5427\u3002",
+      "raw": "\u6211\u4EEC\u53BB\u5927\u5385\u7684\u955C\u5B50\u90A3\u91CC\u89C1\u5427\u3002",
+      "latencyMs": 1105,
+      "error": null
+    },
+    {
+      "variant": "xiaomi-flash-app",
+      "set": "conversation",
+      "itemId": "conv-11",
+      "translation": "\u6211\u521A\u624D\u60F3\u6362\u865A\u62DF\u5F62\u8C61\uFF0C\u4F46\u52A0\u8F7D\u753B\u9762\u5361\u4F4F\u4E86\uFF0C\u6240\u4EE5\u6211\u91CD\u542F\u4E86\u6E38\u620F\uFF0C\u73B0\u5728\u597D\u4E86\u3002",
+      "raw": "\u6211\u521A\u624D\u60F3\u6362\u865A\u62DF\u5F62\u8C61\uFF0C\u4F46\u52A0\u8F7D\u753B\u9762\u5361\u4F4F\u4E86\uFF0C\u6240\u4EE5\u6211\u91CD\u542F\u4E86\u6E38\u620F\uFF0C\u73B0\u5728\u597D\u4E86\u3002",
+      "latencyMs": 3170,
+      "error": null
+    },
+    {
+      "variant": "xiaomi-flash-app",
+      "set": "conversation",
+      "itemId": "conv-12",
+      "translation": "\u5FEB\u70B9\uFF0C\u4ED6\u4EEC\u5728\u7B49\u6211\u4EEC\u5462\u3002",
+      "raw": "\u5FEB\u70B9\uFF0C\u4ED6\u4EEC\u5728\u7B49\u6211\u4EEC\u5462\u3002",
+      "latencyMs": 1004,
+      "error": null
+    },
+    {
+      "variant": "xiaomi-flash-app",
+      "set": "conversation",
+      "itemId": "conv-13",
+      "translation": "\u4F60\u7528\u7684\u662FQuest\u8FD8\u662FPC\uFF1F\u8FD9\u4E2A\u4E16\u754C\u6709Quest\u7248\u672C\u3002",
+      "raw": "\u4F60\u7528\u7684\u662FQuest\u8FD8\u662FPC\uFF1F\u8FD9\u4E2A\u4E16\u754C\u6709Quest\u7248\u672C\u3002",
+      "latencyMs": 2580,
+      "error": null
+    },
+    {
+      "variant": "xiaomi-flash-app",
+      "set": "conversation",
+      "itemId": "conv-14",
+      "translation": "\u6211\u65E0\u7F18\u65E0\u6545\u88AB\u8E22\u51FA\u623F\u95F4\u4E86\u3002",
+      "raw": "\u6211\u65E0\u7F18\u65E0\u6545\u88AB\u8E22\u51FA\u623F\u95F4\u4E86\u3002",
+      "latencyMs": 2708,
+      "error": null
+    },
+    {
+      "variant": "xiaomi-flash-app",
+      "set": "conversation",
+      "itemId": "conv-15",
+      "translation": "\u4E0D\u9A97\u4EBA\uFF0C\u90A3\u662F\u6211\u89C1\u8FC7\u6700\u68D2\u7684\u6254\u4F20\u9001\u95E8\u3002",
+      "raw": "\u4E0D\u9A97\u4EBA\uFF0C\u90A3\u662F\u6211\u89C1\u8FC7\u6700\u68D2\u7684\u6254\u4F20\u9001\u95E8\u3002",
+      "latencyMs": 4948,
+      "error": null
+    },
+    {
+      "variant": "xiaomi-flash-app",
+      "set": "conversation",
+      "itemId": "conv-16",
+      "translation": "\u6682\u79BB\u4E00\u4E0B\uFF0C\u53BB\u5012\u6C34\u3002",
+      "raw": "\u6682\u79BB\u4E00\u4E0B\uFF0C\u53BB\u5012\u6C34\u3002",
+      "latencyMs": 828,
+      "error": null
+    },
+    {
+      "variant": "xiaomi-flash-app",
+      "set": "conversation",
+      "itemId": "conv-17",
+      "translation": "\u8C22\u8C22\uFF0C\u6211\u4EC0\u4E48\u90FD\u6CA1\u542C\u5230\u3002",
+      "raw": "\u8C22\u8C22\uFF0C\u6211\u4EC0\u4E48\u90FD\u6CA1\u542C\u5230\u3002",
+      "latencyMs": 2415,
+      "error": null
+    },
+    {
+      "variant": "xiaomi-flash-app",
+      "set": "conversation",
+      "itemId": "conv-18",
+      "translation": "\u8FD9\u4E2A\u865A\u62DF\u5F62\u8C61\u7684\u7269\u7406\u9AA8\u9ABC\u592A\u591A\u4E86\uFF0C\u5361\u5F97\u6211\u5934\u90FD\u6655\u4E86\u3002",
+      "raw": "\u8FD9\u4E2A\u865A\u62DF\u5F62\u8C61\u7684\u7269\u7406\u9AA8\u9ABC\u592A\u591A\u4E86\uFF0C\u5361\u5F97\u6211\u5934\u90FD\u6655\u4E86\u3002",
+      "latencyMs": 4747,
+      "error": null
+    },
+    {
+      "variant": "xiaomi-flash-app",
+      "set": "conversation",
+      "itemId": "conv-19",
+      "translation": "\u8D70\u4E4B\u524D\u6211\u4EEC\u5728\u955C\u5B50\u524D\u62CD\u5F20\u5408\u5F71\u5427\u3002",
+      "raw": "\u8D70\u4E4B\u524D\u6211\u4EEC\u5728\u955C\u5B50\u524D\u62CD\u5F20\u5408\u5F71\u5427\u3002",
+      "latencyMs": 1153,
+      "error": null
+    },
+    {
+      "variant": "xiaomi-flash-app",
+      "set": "conversation",
+      "itemId": "conv-20",
+      "translation": "\u6B22\u8FCE\uFF01\u9700\u8981\u5E2E\u52A9\u7684\u8BDD\u53EF\u4EE5\u52A0\u6211\u597D\u53CB\u3002",
+      "raw": "\u6B22\u8FCE\uFF01\u9700\u8981\u5E2E\u52A9\u7684\u8BDD\u53EF\u4EE5\u52A0\u6211\u597D\u53CB\u3002",
+      "latencyMs": 3102,
+      "error": null
+    },
+    {
+      "variant": "deepseek-flash-app",
+      "set": "baseline",
+      "itemId": "yue-1",
+      "translation": "\u8BF7\u5E2E\u6211\u770B\u770B\u4ED6\u662F\u4E0D\u662F\u7AD9\u5728\u95E8\u53E3\u3002",
+      "raw": "\u8BF7\u5E2E\u6211\u770B\u770B\u4ED6\u662F\u4E0D\u662F\u7AD9\u5728\u95E8\u53E3\u3002",
+      "latencyMs": 572,
+      "error": null
+    },
+    {
+      "variant": "deepseek-flash-app",
+      "set": "baseline",
+      "itemId": "yue-2",
+      "translation": "\u6211\u4ECA\u5929\u6CA1\u7A7A\uFF0C\u660E\u5929\u518D\u8BF4\u5427\u3002",
+      "raw": "\u6211\u4ECA\u5929\u6CA1\u7A7A\uFF0C\u660E\u5929\u518D\u8BF4\u5427\u3002",
+      "latencyMs": 802,
+      "error": null
+    },
+    {
+      "variant": "deepseek-flash-app",
+      "set": "baseline",
+      "itemId": "en-1",
+      "translation": "\u563F\uFF0C\u4F60\u73B0\u5728\u80FD\u542C\u5230\u6211\u8BF4\u8BDD\u5417\uFF1F\u6211\u521A\u628A\u9EA6\u514B\u98CE\u4FEE\u597D\u4E86\u3002",
+      "raw": "\u563F\uFF0C\u4F60\u73B0\u5728\u80FD\u542C\u5230\u6211\u8BF4\u8BDD\u5417\uFF1F\u6211\u521A\u628A\u9EA6\u514B\u98CE\u4FEE\u597D\u4E86\u3002",
+      "latencyMs": 459,
+      "error": null
+    },
+    {
+      "variant": "deepseek-flash-app",
+      "set": "baseline",
+      "itemId": "en-2",
+      "translation": "\u542C\u8D77\u6765\u633A\u6709\u610F\u601D\u7684\uFF0C\u6211\u4ECA\u665A\u4E0B\u73ED\u540E\u4E0A\u7EBF\u3002",
+      "raw": "\u542C\u8D77\u6765\u633A\u6709\u610F\u601D\u7684\uFF0C\u6211\u4ECA\u665A\u4E0B\u73ED\u540E\u4E0A\u7EBF\u3002",
+      "latencyMs": 517,
+      "error": null
+    },
+    {
+      "variant": "deepseek-flash-app",
+      "set": "baseline",
+      "itemId": "en-3",
+      "translation": "\u62B1\u6B49\uFF0C\u6211\u7684\u9EA6\u514B\u98CE\u521A\u624D\u65AD\u4E86\u4E00\u4E0B\uFF0C\u4F60\u8BF4\u4EC0\u4E48\uFF1F",
+      "raw": "\u62B1\u6B49\uFF0C\u6211\u7684\u9EA6\u514B\u98CE\u521A\u624D\u65AD\u4E86\u4E00\u4E0B\uFF0C\u4F60\u8BF4\u4EC0\u4E48\uFF1F",
+      "latencyMs": 749,
+      "error": null
+    },
+    {
+      "variant": "deepseek-flash-app",
+      "set": "baseline",
+      "itemId": "en-4",
+      "translation": "\u4F60\u80FD\u544A\u8BC9\u6211\u4F60\u90A3\u4E2A\u865A\u62DF\u5F62\u8C61\u662F\u5728\u54EA\u5F04\u5230\u7684\u5417\uFF1F\u6211\u4E00\u76F4\u5728\u627E\u8FD9\u6837\u7684\u3002",
+      "raw": "\u4F60\u80FD\u544A\u8BC9\u6211\u4F60\u90A3\u4E2A\u865A\u62DF\u5F62\u8C61\u662F\u5728\u54EA\u5F04\u5230\u7684\u5417\uFF1F\u6211\u4E00\u76F4\u5728\u627E\u8FD9\u6837\u7684\u3002",
+      "latencyMs": 572,
+      "error": null
+    },
+    {
+      "variant": "deepseek-flash-app",
+      "set": "baseline",
+      "itemId": "en-5",
+      "translation": "\u73B0\u5728\u7684\u5EF6\u8FDF\u771F\u7684\u5F88\u4E25\u91CD\uFF0C\u6211\u89C9\u5F97\u670D\u52A1\u5668\u6709\u70B9\u6491\u4E0D\u4F4F\u4E86\u3002",
+      "raw": "\u73B0\u5728\u7684\u5EF6\u8FDF\u771F\u7684\u5F88\u4E25\u91CD\uFF0C\u6211\u89C9\u5F97\u670D\u52A1\u5668\u6709\u70B9\u6491\u4E0D\u4F4F\u4E86\u3002",
+      "latencyMs": 527,
+      "error": null
+    },
+    {
+      "variant": "deepseek-flash-app",
+      "set": "baseline",
+      "itemId": "ja-1",
+      "translation": "\u6211\u4EEC\u521D\u4E2D\u662F\u4FBF\u5F53\u5236\uFF0C\u5982\u679C\u4E0D\u5E26\u4FBF\u5F53\u7684\u8BDD\u5C31\u4E7050\u65E5\u5143\u7684\u5B66\u6821\u552E\u5356\u7684\u9762\u5305\u3002",
+      "raw": "\u6211\u4EEC\u521D\u4E2D\u662F\u4FBF\u5F53\u5236\uFF0C\u5982\u679C\u4E0D\u5E26\u4FBF\u5F53\u7684\u8BDD\u5C31\u4E7050\u65E5\u5143\u7684\u5B66\u6821\u552E\u5356\u7684\u9762\u5305\u3002",
+      "latencyMs": 914,
+      "error": null
+    },
+    {
+      "variant": "deepseek-flash-app",
+      "set": "baseline",
+      "itemId": "ja-2",
+      "translation": "\u7A0D\u7B49\u4E00\u4E0B\uFF0C\u6211\u73B0\u5728\u6B63\u5728\u51C6\u5907\u3002",
+      "raw": "\u7A0D\u7B49\u4E00\u4E0B\uFF0C\u6211\u73B0\u5728\u6B63\u5728\u51C6\u5907\u3002",
+      "latencyMs": 802,
+      "error": null
+    },
+    {
+      "variant": "deepseek-flash-app",
+      "set": "baseline",
+      "itemId": "ja-3",
+      "translation": "\u6211\u89C9\u5F97\u8FD9\u4E2A\u865A\u62DF\u4E16\u754C\u6211\u4EE5\u524D\u6765\u8FC7\u3002",
+      "raw": "\u6211\u89C9\u5F97\u8FD9\u4E2A\u865A\u62DF\u4E16\u754C\u6211\u4EE5\u524D\u6765\u8FC7\u3002",
+      "latencyMs": 525,
+      "error": null
+    },
+    {
+      "variant": "deepseek-flash-app",
+      "set": "baseline",
+      "itemId": "ja-4",
+      "translation": "\u62B1\u6B49\uFF0C\u9EA6\u514B\u98CE\u73B0\u5728\u72B6\u6001\u4E0D\u592A\u597D\uFF0C\u53EF\u80FD\u542C\u4E0D\u5230\u3002",
+      "raw": "\u62B1\u6B49\uFF0C\u9EA6\u514B\u98CE\u73B0\u5728\u72B6\u6001\u4E0D\u592A\u597D\uFF0C\u53EF\u80FD\u542C\u4E0D\u5230\u3002",
+      "latencyMs": 704,
+      "error": null
+    },
+    {
+      "variant": "deepseek-flash-app",
+      "set": "baseline",
+      "itemId": "ja-5",
+      "translation": "\u6211\u8FD8\u6CA1\u80FD\u548C\u5927\u5BB6\u6C47\u5408\uFF0C\u4F60\u4EEC\u5148\u5728\u4E16\u754C\u91CC\u901B\u901B\u5427\u3002",
+      "raw": "\u6211\u8FD8\u6CA1\u80FD\u548C\u5927\u5BB6\u6C47\u5408\uFF0C\u4F60\u4EEC\u5148\u5728\u4E16\u754C\u91CC\u901B\u901B\u5427\u3002",
+      "latencyMs": 610,
+      "error": null
+    },
+    {
+      "variant": "deepseek-flash-app",
+      "set": "baseline",
+      "itemId": "ko-1",
+      "translation": "\u542C\u4E0D\u5230\u9EA6\u514B\u98CE\uFF0C\u80FD\u518D\u8BF4\u4E00\u904D\u5417\uFF1F",
+      "raw": "\u542C\u4E0D\u5230\u9EA6\u514B\u98CE\uFF0C\u80FD\u518D\u8BF4\u4E00\u904D\u5417\uFF1F",
+      "latencyMs": 714,
+      "error": null
+    },
+    {
+      "variant": "deepseek-flash-app",
+      "set": "baseline",
+      "itemId": "ko-2",
+      "translation": "\u8FD9\u4E2A\u4E16\u754C\u771F\u6F02\u4EAE\uFF0C\u4F60\u5728\u54EA\u513F\u770B\u5230\u7684\uFF1F",
+      "raw": "\u8FD9\u4E2A\u4E16\u754C\u771F\u6F02\u4EAE\uFF0C\u4F60\u5728\u54EA\u513F\u770B\u5230\u7684\uFF1F",
+      "latencyMs": 753,
+      "error": null
+    },
+    {
+      "variant": "deepseek-flash-app",
+      "set": "baseline",
+      "itemId": "ko-3",
+      "translation": "\u6211\u73B0\u5728\u56E0\u4E3A\u5361\u987F\u52A8\u4E0D\u4E86\u4E86\u3002",
+      "raw": "\u6211\u73B0\u5728\u56E0\u4E3A\u5361\u987F\u52A8\u4E0D\u4E86\u4E86\u3002",
+      "latencyMs": 687,
+      "error": null
+    },
+    {
+      "variant": "deepseek-flash-app",
+      "set": "baseline",
+      "itemId": "ko-4",
+      "translation": "\u7B49\u4E00\u4E0B\uFF0C\u6211\u6362\u4E2A\u865A\u62DF\u5F62\u8C61\u5C31\u6765\u3002",
+      "raw": "\u7B49\u4E00\u4E0B\uFF0C\u6211\u6362\u4E2A\u865A\u62DF\u5F62\u8C61\u5C31\u6765\u3002",
+      "latencyMs": 867,
+      "error": null
+    },
+    {
+      "variant": "deepseek-flash-app",
+      "set": "baseline",
+      "itemId": "cs-1",
+      "translation": "\u8FD9\u4E2Aworld\u6211\u6628\u5929\u901B\u8FC7\u4E86\uFF0C\u633A\u6709\u610F\u601D\u7684\u3002",
+      "raw": "\u8FD9\u4E2Aworld\u6211\u6628\u5929\u901B\u8FC7\u4E86\uFF0C\u633A\u6709\u610F\u601D\u7684\u3002",
+      "latencyMs": 598,
+      "error": null
+    },
+    {
+      "variant": "deepseek-flash-app",
+      "set": "baseline",
+      "itemId": "cs-2",
+      "translation": "\u7B49\u4E00\u4E0B\uFF0C\u6211\u6362\u4E2A\u865A\u62DF\u5F62\u8C61\u5C31\u6765\u3002",
+      "raw": "\u7B49\u4E00\u4E0B\uFF0C\u6211\u6362\u4E2A\u865A\u62DF\u5F62\u8C61\u5C31\u6765\u3002",
+      "latencyMs": 586,
+      "error": null
+    },
+    {
+      "variant": "deepseek-flash-app",
+      "set": "baseline",
+      "itemId": "cs-3",
+      "translation": "\u597D\u7684\u5404\u4F4D\uFF0C\u6211\u5148\u4E0B\u7EBF\u4E86\uFF0C\u660E\u5929\u89C1\u3002",
+      "raw": "\u597D\u7684\u5404\u4F4D\uFF0C\u6211\u5148\u4E0B\u7EBF\u4E86\uFF0C\u660E\u5929\u89C1\u3002",
+      "latencyMs": 552,
+      "error": null
+    },
+    {
+      "variant": "deepseek-flash-app",
+      "set": "baseline",
+      "itemId": "cs-4",
+      "translation": "\u8FD9\u662F\u4ECE\u97E9\u56FD\u6765\u7684\u5417\uFF1F",
+      "raw": "\u8FD9\u662F\u4ECE\u97E9\u56FD\u6765\u7684\u5417\uFF1F",
+      "latencyMs": 867,
+      "error": null
+    },
+    {
+      "variant": "deepseek-flash-app",
+      "set": "baseline",
+      "itemId": "cs-5",
+      "translation": "\u591A\u8C22\uFF0C\u6211\u73B0\u5728\u53BB\u6362\u8863\u670D\uFF0C\u7B49\u6211\u3002",
+      "raw": "\u591A\u8C22\uFF0C\u6211\u73B0\u5728\u53BB\u6362\u8863\u670D\uFF0C\u7B49\u6211\u3002",
+      "latencyMs": 745,
+      "error": null
+    },
+    {
+      "variant": "deepseek-flash-app",
+      "set": "baseline",
+      "itemId": "2sp-1",
+      "translation": "\u4F60\u597D\uFF01\u5F88\u9AD8\u5174\u89C1\u5230\u4F60\uFF0C\u6211\u6765\u81EA\u52A0\u62FF\u5927\u3002",
+      "raw": "\u4F60\u597D\uFF01\u5F88\u9AD8\u5174\u89C1\u5230\u4F60\uFF0C\u6211\u6765\u81EA\u52A0\u62FF\u5927\u3002",
+      "latencyMs": 609,
+      "error": null
+    },
+    {
+      "variant": "deepseek-flash-app",
+      "set": "baseline",
+      "itemId": "2sp-2",
+      "translation": "\u8FD9\u4E2A\u600E\u4E48\u6253\u5F00\uFF1F\u6309\u4E00\u4E0B\u90A3\u8FB9\u7684\u6309\u94AE\u5C31\u884C\u4E86\u3002",
+      "raw": "\u8FD9\u4E2A\u600E\u4E48\u6253\u5F00\uFF1F\u6309\u4E00\u4E0B\u90A3\u8FB9\u7684\u6309\u94AE\u5C31\u884C\u4E86\u3002",
+      "latencyMs": 790,
+      "error": null
+    },
+    {
+      "variant": "deepseek-flash-app",
+      "set": "baseline",
+      "itemId": "2sp-3",
+      "translation": "\u4F60\u4ECA\u665A\u4F1A\u53C2\u52A0\u6D3B\u52A8\u5417\uFF1F\u5E94\u8BE5\u4F1A\u53BB\uFF0C\u4F60\u8981\u4E00\u8D77\u5417\uFF1F",
+      "raw": "\u4F60\u4ECA\u665A\u4F1A\u53C2\u52A0\u6D3B\u52A8\u5417\uFF1F\u5E94\u8BE5\u4F1A\u53BB\uFF0C\u4F60\u8981\u4E00\u8D77\u5417\uFF1F",
+      "latencyMs": 782,
+      "error": null
+    },
+    {
+      "variant": "deepseek-flash-app",
+      "set": "conversation",
+      "itemId": "conv-01",
+      "translation": "\u662F\u554A\uFF0C\u592A\u9177\u4E86\u3002",
+      "raw": "\u662F\u554A\uFF0C\u592A\u9177\u4E86\u3002",
+      "latencyMs": 569,
+      "error": null
+    },
+    {
+      "variant": "deepseek-flash-app",
+      "set": "conversation",
+      "itemId": "conv-02",
+      "translation": "\u6253\u5F00\u5FEB\u6377\u83DC\u5355\uFF0C\u67E5\u770B\u4F60\u7684\u6027\u80FD\u7B49\u7EA7\u3002",
+      "raw": "\u6253\u5F00\u5FEB\u6377\u83DC\u5355\uFF0C\u67E5\u770B\u4F60\u7684\u6027\u80FD\u7B49\u7EA7\u3002",
+      "latencyMs": 469,
+      "error": null
+    },
+    {
+      "variant": "deepseek-flash-app",
+      "set": "conversation",
+      "itemId": "conv-03",
+      "translation": "\u90A3\u5BB6\u4F19\u662F\u6A21\u578B\u66FF\u8EAB\uFF0C\u4E0D\u662F\u771F\u6B63\u7684\u73A9\u5BB6\u3002",
+      "raw": "\u90A3\u5BB6\u4F19\u662F\u6A21\u578B\u66FF\u8EAB\uFF0C\u4E0D\u662F\u771F\u6B63\u7684\u73A9\u5BB6\u3002",
+      "latencyMs": 604,
+      "error": null
+    },
+    {
+      "variant": "deepseek-flash-app",
+      "set": "conversation",
+      "itemId": "conv-04",
+      "translation": "\u4F60\u80FD\u7ED9\u6211\u770B\u770B\u5417\uFF1F",
+      "raw": "\u4F60\u80FD\u7ED9\u6211\u770B\u770B\u5417\uFF1F",
+      "latencyMs": 646,
+      "error": null
+    },
+    {
+      "variant": "deepseek-flash-app",
+      "set": "conversation",
+      "itemId": "conv-05",
+      "translation": "\u597D\uFF0C\u6211\u4EEC\u4E0D\u7B49\u5979\u4E86\uFF0C\u5F00\u59CB\u5427\u3002",
+      "raw": "\u597D\uFF0C\u6211\u4EEC\u4E0D\u7B49\u5979\u4E86\uFF0C\u5F00\u59CB\u5427\u3002",
+      "latencyMs": 545,
+      "error": null
+    },
+    {
+      "variant": "deepseek-flash-app",
+      "set": "conversation",
+      "itemId": "conv-06",
+      "translation": "\u8FD9\u4E2A\u4E16\u754C\u7684\u706F\u5149\u592A\u6697\u4E86\uFF0C\u4F60\u80FD\u8C03\u4EAE\u4E00\u70B9\u5417\uFF1F",
+      "raw": "\u8FD9\u4E2A\u4E16\u754C\u7684\u706F\u5149\u592A\u6697\u4E86\uFF0C\u4F60\u80FD\u8C03\u4EAE\u4E00\u70B9\u5417\uFF1F",
+      "latencyMs": 791,
+      "error": null
+    },
+    {
+      "variant": "deepseek-flash-app",
+      "set": "conversation",
+      "itemId": "conv-07",
+      "translation": "\u7B49\u4E00\u4E0B\uFF0C\u6211\u9700\u8981\u8C03\u6574\u4E00\u4E0B\u6211\u7684\u5168\u8EAB\u8FFD\u8E2A\u3002",
+      "raw": "\u7B49\u4E00\u4E0B\uFF0C\u6211\u9700\u8981\u8C03\u6574\u4E00\u4E0B\u6211\u7684\u5168\u8EAB\u8FFD\u8E2A\u3002",
+      "latencyMs": 852,
+      "error": null
+    },
+    {
+      "variant": "deepseek-flash-app",
+      "set": "conversation",
+      "itemId": "conv-08",
+      "translation": "\u6211\u8981\u4E0B\u7EBF\u4E86\uFF0C\u660E\u5929\u89C1\u3002",
+      "raw": "\u6211\u8981\u4E0B\u7EBF\u4E86\uFF0C\u660E\u5929\u89C1\u3002",
+      "latencyMs": 732,
+      "error": null
+    },
+    {
+      "variant": "deepseek-flash-app",
+      "set": "conversation",
+      "itemId": "conv-09",
+      "translation": "\u6211\u7684\u9EA6\u514B\u98CE\u597D\u5F97\u5F88\uFF0C\u4F60\u80FD\u542C\u5230\u6211\u5417\uFF1F",
+      "raw": "\u6211\u7684\u9EA6\u514B\u98CE\u597D\u5F97\u5F88\uFF0C\u4F60\u80FD\u542C\u5230\u6211\u5417\uFF1F",
+      "latencyMs": 1030,
+      "error": null
+    },
+    {
+      "variant": "deepseek-flash-app",
+      "set": "conversation",
+      "itemId": "conv-10",
+      "translation": "\u6211\u4EEC\u5728\u5927\u5385\u7684\u955C\u5B50\u524D\u78B0\u9762\u5427\u3002",
+      "raw": "\u6211\u4EEC\u5728\u5927\u5385\u7684\u955C\u5B50\u524D\u78B0\u9762\u5427\u3002",
+      "latencyMs": 1119,
+      "error": null
+    },
+    {
+      "variant": "deepseek-flash-app",
+      "set": "conversation",
+      "itemId": "conv-11",
+      "translation": "\u6211\u4E4B\u524D\u60F3\u6362\u865A\u62DF\u5F62\u8C61\uFF0C\u4F46\u52A0\u8F7D\u753B\u9762\u5361\u4F4F\u4E86\uFF0C\u6240\u4EE5\u6211\u5C31\u91CD\u542F\u4E86\u6E38\u620F\uFF0C\u73B0\u5728\u597D\u4E86\u3002",
+      "raw": "\u6211\u4E4B\u524D\u60F3\u6362\u865A\u62DF\u5F62\u8C61\uFF0C\u4F46\u52A0\u8F7D\u753B\u9762\u5361\u4F4F\u4E86\uFF0C\u6240\u4EE5\u6211\u5C31\u91CD\u542F\u4E86\u6E38\u620F\uFF0C\u73B0\u5728\u597D\u4E86\u3002",
+      "latencyMs": 577,
+      "error": null
+    },
+    {
+      "variant": "deepseek-flash-app",
+      "set": "conversation",
+      "itemId": "conv-12",
+      "translation": "\u5FEB\u70B9\uFF0C\u4ED6\u4EEC\u5728\u7B49\u6211\u4EEC\u3002",
+      "raw": "\u5FEB\u70B9\uFF0C\u4ED6\u4EEC\u5728\u7B49\u6211\u4EEC\u3002",
+      "latencyMs": 764,
+      "error": null
+    },
+    {
+      "variant": "deepseek-flash-app",
+      "set": "conversation",
+      "itemId": "conv-13",
+      "translation": "\u4F60\u662F\u5728Quest\u8FD8\u662FPC\u4E0A\uFF1F\u8FD9\u4E2A\u4E16\u754C\u6709Quest\u7248\u672C\u3002",
+      "raw": "\u4F60\u662F\u5728Quest\u8FD8\u662FPC\u4E0A\uFF1F\u8FD9\u4E2A\u4E16\u754C\u6709Quest\u7248\u672C\u3002",
+      "latencyMs": 426,
+      "error": null
+    },
+    {
+      "variant": "deepseek-flash-app",
+      "set": "conversation",
+      "itemId": "conv-14",
+      "translation": "\u6211\u65E0\u7F18\u65E0\u6545\u88AB\u8E22\u51FA\u623F\u95F4\u4E86\u3002",
+      "raw": "\u6211\u65E0\u7F18\u65E0\u6545\u88AB\u8E22\u51FA\u623F\u95F4\u4E86\u3002",
+      "latencyMs": 781,
+      "error": null
+    },
+    {
+      "variant": "deepseek-flash-app",
+      "set": "conversation",
+      "itemId": "conv-15",
+      "translation": "\u8BF4\u5B9E\u8BDD\uFF0C\u90A3\u662F\u6211\u89C1\u8FC7\u6700\u68D2\u7684\u6254\u4F20\u9001\u95E8\u3002",
+      "raw": "\u8BF4\u5B9E\u8BDD\uFF0C\u90A3\u662F\u6211\u89C1\u8FC7\u6700\u68D2\u7684\u6254\u4F20\u9001\u95E8\u3002",
+      "latencyMs": 908,
+      "error": null
+    },
+    {
+      "variant": "deepseek-flash-app",
+      "set": "conversation",
+      "itemId": "conv-16",
+      "translation": "\u6682\u79BB\u4E00\u4E0B\uFF0C\u53BB\u62FF\u6C34\u3002",
+      "raw": "\u6682\u79BB\u4E00\u4E0B\uFF0C\u53BB\u62FF\u6C34\u3002",
+      "latencyMs": 899,
+      "error": null
+    },
+    {
+      "variant": "deepseek-flash-app",
+      "set": "conversation",
+      "itemId": "conv-17",
+      "translation": "\u8C22\u8C22\uFF0C\u6211\u4EC0\u4E48\u90FD\u542C\u4E0D\u89C1\u3002",
+      "raw": "\u8C22\u8C22\uFF0C\u6211\u4EC0\u4E48\u90FD\u542C\u4E0D\u89C1\u3002",
+      "latencyMs": 513,
+      "error": null
+    },
+    {
+      "variant": "deepseek-flash-app",
+      "set": "conversation",
+      "itemId": "conv-18",
+      "translation": "\u8FD9\u4E2A\u865A\u62DF\u5F62\u8C61\u7684\u7269\u7406\u9AA8\u9ABC\u592A\u591A\u4E86\uFF0C\u5361\u5F97\u6211\u5934\u90FD\u6655\u4E86\u3002",
+      "raw": "\u8FD9\u4E2A\u865A\u62DF\u5F62\u8C61\u7684\u7269\u7406\u9AA8\u9ABC\u592A\u591A\u4E86\uFF0C\u5361\u5F97\u6211\u5934\u90FD\u6655\u4E86\u3002",
+      "latencyMs": 439,
+      "error": null
+    },
+    {
+      "variant": "deepseek-flash-app",
+      "set": "conversation",
+      "itemId": "conv-19",
+      "translation": "\u51FA\u53D1\u524D\u6211\u4EEC\u5728\u955C\u5B50\u524D\u62CD\u5F20\u5408\u7167\u5427\u3002",
+      "raw": "\u51FA\u53D1\u524D\u6211\u4EEC\u5728\u955C\u5B50\u524D\u62CD\u5F20\u5408\u7167\u5427\u3002",
+      "latencyMs": 449,
+      "error": null
+    },
+    {
+      "variant": "deepseek-flash-app",
+      "set": "conversation",
+      "itemId": "conv-20",
+      "translation": "\u6B22\u8FCE\uFF01\u9700\u8981\u5E2E\u52A9\u7684\u8BDD\u52A0\u6211\u597D\u53CB\u3002",
+      "raw": "\u6B22\u8FCE\uFF01\u9700\u8981\u5E2E\u52A9\u7684\u8BDD\u52A0\u6211\u597D\u53CB\u3002",
+      "latencyMs": 717,
+      "error": null
+    }
+  ]
+}

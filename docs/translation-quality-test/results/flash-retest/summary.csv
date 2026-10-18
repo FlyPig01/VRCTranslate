@@ -1,0 +1,7 @@
+﻿variant,set,n,chrf2,p50_ms,p95_ms,failures
+deepseek-flash-app,baseline,24,0.58,687.0,867.0,0
+xiaomi-flash-app,baseline,24,0.53,1940.0,6199.0,0
+deepseek-flash-app,conversation,20,0.55,646.0,1030.0,0
+xiaomi-flash-app,conversation,20,0.51,2390.0,6367.0,0
+deepseek-flash-app,all,44,0.57,687.0,914.0,0
+xiaomi-flash-app,all,44,0.52,2128.0,6367.0,0

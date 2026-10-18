@@ -5,6 +5,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using VrcTranslate.Application.Abstractions;
+using VrcTranslate.Core.Translation;
 using VrcTranslate.Infrastructure.Translation;
 
 namespace TranslationQualityHarness;
@@ -23,6 +24,10 @@ internal static class Program
             var glossary = LoadGlossary(options.GlossaryPath);
             var items = LoadItems(options);
             var variants = BuildVariants(profiles);
+            if (options.Only is { Count: > 0 })
+            {
+                variants = variants.Where(variant => options.Only.Contains(variant.Name)).ToList();
+            }
             if (variants.Count == 0) throw new InvalidOperationException("No configured non-echo providers were found.");
             Console.WriteLine($"profiles={profiles.Count} items={items.Count} variants={variants.Count}");
 
@@ -185,6 +190,7 @@ internal static class Program
             !string.IsNullOrWhiteSpace(deepSeek.CredentialReference) &&
             !deepSeek.CredentialReference.Equals("本地配置", StringComparison.Ordinal))
         {
+            AddProvider("xiaomi-flash-app", profiles.FirstOrDefault(profile => profile.Provider.Equals("xiaomi", StringComparison.OrdinalIgnoreCase)));
             AddProvider("deepseek-flash-app", deepSeek);
             AddProvider("deepseek-chat-app", deepSeek with { Model = "deepseek-chat" });
             variants.Add(new DeepSeekDirectVariant("deepseek-flash-prompt", deepSeek, "deepseek-flash", includeContext: false, includeGlossary: false));
@@ -212,6 +218,12 @@ internal static class Program
 
         public async Task<VariantOutput> TranslateAsync(HarnessItem item, GlossaryDto glossary, CancellationToken cancellationToken)
         {
+            var hints = glossary.Enabled && glossary.Entries.Count > 0
+                ? new TranslationHints(glossary.Entries
+                    .Where(entry => !string.IsNullOrWhiteSpace(entry.Source) && !string.IsNullOrWhiteSpace(entry.Target))
+                    .Select(entry => new GlossaryEntry(entry.Source!, entry.Target!))
+                    .ToArray())
+                : null;
             var request = new TranslationProviderRequest(
                 item.Source,
                 "zh-CN",
@@ -222,7 +234,8 @@ internal static class Program
                 Guid.NewGuid().ToString("N"),
                 profile.Provider,
                 profile.Region,
-                profile.Options);
+                profile.Options,
+                hints);
             var response = await provider.TranslateAsync(request, cancellationToken).ConfigureAwait(false);
             var raw = response.TranslatedText;
             return new VariantOutput(Cleaner.Clean(raw), raw);
@@ -389,7 +402,7 @@ internal sealed record HarnessItem(string Set, string Id, string Lang, string Ca
 
 internal sealed record ContextLine(string Speaker, string Text);
 
-internal sealed record HarnessOptions(string ProfilesPath, string BaselinePath, string ConversationPath, string GlossaryPath, string OutputPath, int MaxItems)
+internal sealed record HarnessOptions(string ProfilesPath, string BaselinePath, string ConversationPath, string GlossaryPath, string OutputPath, int MaxItems, IReadOnlySet<string>? Only = null)
 {
     public static HarnessOptions Parse(string[] args)
     {
@@ -413,7 +426,14 @@ internal sealed record HarnessOptions(string ProfilesPath, string BaselinePath, 
         }
 
         var maxItems = values.TryGetValue("max-items", out var rawMax) && int.TryParse(rawMax, out var parsed) ? parsed : 0;
-        return new HarnessOptions(Get("profiles"), Get("baseline"), Get("conversation"), Get("glossary"), Get("out"), maxItems);
+        HashSet<string>? only = null;
+        if (values.TryGetValue("only", out var rawOnly) && !string.IsNullOrWhiteSpace(rawOnly))
+        {
+            only = new HashSet<string>(
+                rawOnly.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries),
+                StringComparer.OrdinalIgnoreCase);
+        }
+        return new HarnessOptions(Get("profiles"), Get("baseline"), Get("conversation"), Get("glossary"), Get("out"), maxItems, only);
     }
 }
 

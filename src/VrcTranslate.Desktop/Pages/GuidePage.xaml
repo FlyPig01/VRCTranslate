@@ -115,19 +115,19 @@
             <TextBlock Grid.Row="3" Grid.Column="1" Text="269 ms" VerticalAlignment="Center" />
             <TextBlock Grid.Row="3" Grid.Column="2" Text="日语好，英文好" Style="{StaticResource SecondaryTextStyle}" TextWrapping="Wrap" VerticalAlignment="Center" />
             <TextBlock Grid.Row="3" Grid.Column="3" Text="免费 100 万字符/月" Style="{StaticResource SecondaryTextStyle}" VerticalAlignment="Center" />
-            <TextBlock Grid.Row="4" Text="deepseek-flash" VerticalAlignment="Center" />
-            <TextBlock Grid.Row="4" Grid.Column="1" Text="495 ms" VerticalAlignment="Center" />
+            <TextBlock Grid.Row="4" Text="deepseek-flash（V4.1 Flash）" VerticalAlignment="Center" />
+            <TextBlock Grid.Row="4" Grid.Column="1" Text="687 ms" VerticalAlignment="Center" />
             <TextBlock Grid.Row="4" Grid.Column="2" Text="质量最高，粤语能翻译" Style="{StaticResource SecondaryTextStyle}" TextWrapping="Wrap" VerticalAlignment="Center" />
             <TextBlock Grid.Row="4" Grid.Column="3" Text="1 小时约 0.05 元（约 600 句）" Style="{StaticResource SecondaryTextStyle}" VerticalAlignment="Center" />
-            <TextBlock Grid.Row="5" Text="小米 MiMo v2.5" VerticalAlignment="Center" />
-            <TextBlock Grid.Row="5" Grid.Column="1" Text="696 ms" VerticalAlignment="Center" />
-            <TextBlock Grid.Row="5" Grid.Column="2" Text="韩语最好，英文最好" Style="{StaticResource SecondaryTextStyle}" TextWrapping="Wrap" VerticalAlignment="Center" />
-            <TextBlock Grid.Row="5" Grid.Column="3" Text="1 小时约 0.04 元（约 600 句）" Style="{StaticResource SecondaryTextStyle}" VerticalAlignment="Center" />
+            <TextBlock Grid.Row="5" Text="小米 MiMo v2.6 Flash" VerticalAlignment="Center" />
+            <TextBlock Grid.Row="5" Grid.Column="1" Text="约 2.1 秒" VerticalAlignment="Center" />
+            <TextBlock Grid.Row="5" Grid.Column="2" Text="日语略好；整体不如 DeepSeek，延迟高" Style="{StaticResource SecondaryTextStyle}" TextWrapping="Wrap" VerticalAlignment="Center" />
+            <TextBlock Grid.Row="5" Grid.Column="3" Text="以官网为准（约 600 句）" Style="{StaticResource SecondaryTextStyle}" VerticalAlignment="Center" />
           </Grid>
           <TextBlock Style="{StaticResource SecondaryTextStyle}" TextWrapping="Wrap"
-                     Text="推荐：不确定就先用「阿里云 专业版」；讲粤语、或觉得日语译得别扭，再换「deepseek-flash」。" />
+                     Text="推荐：要低延迟用「阿里云 专业版」；要更自然、术语和混合语言，用「deepseek-flash」；小米 v2.6 Flash 延迟高，不建议默认。" />
           <TextBlock Style="{StaticResource SecondaryTextStyle}" TextWrapping="Wrap"
-                     Text="机翻免费额度合计 700 万字符/月（腾讯 500 万 + 阿里 100 万），重度使用也用不完。计费单位＝说 1 小时（约 600 句，每句 20 字），本机 2026-09-16 实测；价格会变动，请以官网为准。" />
+                     Text="机翻免费额度合计 700 万字符/月（腾讯 500 万 + 阿里 100 万），重度使用也用不完。计费单位＝说 1 小时（约 600 句，每句 20 字）；DeepSeek/小米为 2026-10-19 的 44 句复核 p50，其余为本机 2026-09-16 实测；价格会变动，请以官网为准。" />
         </StackPanel>
       </Border>
 

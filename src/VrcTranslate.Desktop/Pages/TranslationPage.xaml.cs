@@ -342,7 +342,7 @@ public sealed partial class TranslationPage : Page
             {
                 "echo" => ("本地回显", "https://localhost/echo", "无需密钥"),
                 "deepseek" => ("deepseek-flash", "https://api.deepseek.com", "DeepSeek API Key"),
-                "xiaomi" => ("mimo-v2.5", "https://api.xiaomimimo.com/v1", "小米 MiMo API Key"),
+                "xiaomi" => ("mimo-v2.6-flash", "https://api.xiaomimimo.com/v1", "小米 MiMo API Key"),
                 "tencent" => ("TextTranslate", "https://tmt.tencentcloudapi.com", "腾讯云 SecretId"),
                 "aliyun" => ("general", "https://mt.cn-hangzhou.aliyuncs.com", "阿里云 AccessKey ID"),
                 _ => ("deepseek-flash", "https://api.deepseek.com", "DeepSeek API Key")
@@ -375,7 +375,7 @@ public sealed partial class TranslationPage : Page
             var selectedProvider = (providerBox.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? string.Empty;
             if (!string.Equals(selectedProvider, lastProvider, StringComparison.OrdinalIgnoreCase))
             {
-                if (string.IsNullOrWhiteSpace(modelBox.Text) || modelBox.Text is "gpt-4.1-mini" or "deepseek-chat" or "deepseek-flash" or "mimo-v2.5" or "本地回显" or "TextTranslate" or "general") modelBox.Text = string.Empty;
+                if (string.IsNullOrWhiteSpace(modelBox.Text) || modelBox.Text is "gpt-4.1-mini" or "deepseek-chat" or "deepseek-flash" or "mimo-v2.5" or "mimo-v2.6-flash" or "本地回显" or "TextTranslate" or "general") modelBox.Text = string.Empty;
                 if (endpointBox.Text is "https://api.deepseek.com" or "https://api.openai.com/v1" or "https://api.xiaomimimo.com/v1" or "https://localhost/echo" or "https://tmt.tencentcloudapi.com" or "https://mt.cn-hangzhou.aliyuncs.com") endpointBox.Text = string.Empty;
                 lastProvider = selectedProvider;
             }
@@ -468,7 +468,7 @@ public sealed partial class TranslationPage : Page
                     "aliyun" => (aliyunSceneBox.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "general",
                     "tencent" => "TextTranslate",
                     "deepseek" => string.IsNullOrWhiteSpace(modelBox.Text) ? "deepseek-flash" : modelBox.Text.Trim(),
-                    "xiaomi" => string.IsNullOrWhiteSpace(modelBox.Text) ? "mimo-v2.5" : modelBox.Text.Trim(),
+                    "xiaomi" => string.IsNullOrWhiteSpace(modelBox.Text) ? "mimo-v2.6-flash" : modelBox.Text.Trim(),
                     _ => string.IsNullOrWhiteSpace(modelBox.Text) ? "本地回显" : modelBox.Text.Trim()
                 };
                 var options = new Dictionary<string, string>();
@@ -551,7 +551,7 @@ public sealed partial class TranslationPage : Page
             // 阿里云的"版本"就是它的模型语义：存下来，档案卡片与运行页才显示得对。
             "aliyun" => (aliyunSceneBox.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "general",
             "echo" => "本地回显",
-            "xiaomi" => string.IsNullOrWhiteSpace(modelBox.Text) ? "mimo-v2.5" : modelBox.Text.Trim(),
+            "xiaomi" => string.IsNullOrWhiteSpace(modelBox.Text) ? "mimo-v2.6-flash" : modelBox.Text.Trim(),
             _ => string.IsNullOrWhiteSpace(modelBox.Text) ? "deepseek-flash" : modelBox.Text.Trim()
         };
         var options = new Dictionary<string, string>();

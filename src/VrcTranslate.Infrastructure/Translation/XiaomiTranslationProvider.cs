@@ -7,19 +7,19 @@ namespace VrcTranslate.Infrastructure.Translation;
 /// Xiaomi MiMo chat-completions translation provider. MiMo speaks the same
 /// OpenAI-compatible protocol as DeepSeek (including the `thinking` switch), so
 /// only the defaults differ: the platform endpoint, the model id and the error
-/// label. The default model is the non-reasoning `mimo-v2.5`; the `-pro` model
-/// spends seconds on reasoning that a one-sentence translation never uses.
+/// label. The default model is the non-reasoning `mimo-v2.6-flash`; the V2.5
+/// generation was retired on 2026-10-21, so the old ids must not remain defaults.
 /// </summary>
 public sealed class XiaomiTranslationProvider : ITranslationProvider
 {
     public const string DefaultEndpoint = "https://api.xiaomimimo.com/v1";
-    public const string DefaultModel = "mimo-v2.5";
+    public const string DefaultModel = "mimo-v2.6-flash";
 
     /// <summary>Provider id as written into profiles, routes and the registry.</summary>
     public const string ProviderId = "xiaomi";
 
     /// <summary>Model id that turns the platform's thinking mode on; kept as a name, not a default.</summary>
-    public const string ProModel = "mimo-v2.5-pro";
+    public const string ProModel = "mimo-v2.6-pro";
 
     private readonly HttpClient _httpClient;
 

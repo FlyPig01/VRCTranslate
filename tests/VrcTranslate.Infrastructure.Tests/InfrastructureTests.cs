@@ -323,7 +323,7 @@ public sealed class RoutedProviderTests
     [Fact]
     public void Xiaomi_request_body_uses_the_mimo_model_and_disables_thinking_by_default()
     {
-        Assert.Equal("mimo-v2.5", XiaomiTranslationProvider.DefaultModel);
+        Assert.Equal("mimo-v2.6-flash", XiaomiTranslationProvider.DefaultModel);
         Assert.Equal("https://api.xiaomimimo.com/v1", XiaomiTranslationProvider.DefaultEndpoint);
         var request = new TranslationProviderRequest(
             "hello", "zh-CN", "en", XiaomiTranslationProvider.DefaultModel, new Uri("https://api.xiaomimimo.com/v1"), "secret", "test", "xiaomi");
@@ -332,7 +332,7 @@ public sealed class RoutedProviderTests
 
         // MiMo accepts the same thinking switch as DeepSeek, so a one-sentence
         // translation must not pay for reasoning it does not use.
-        Assert.Contains("\"model\":\"mimo-v2.5\"", serialized, StringComparison.Ordinal);
+        Assert.Contains("\"model\":\"mimo-v2.6-flash\"", serialized, StringComparison.Ordinal);
         Assert.Contains("\"type\":\"disabled\"", serialized, StringComparison.Ordinal);
         Assert.Contains("temperature", serialized, StringComparison.Ordinal);
     }

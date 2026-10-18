@@ -369,11 +369,11 @@ if ($appStateSource -notmatch 'deepseek".*, "deepseek-flash"' -or $appStateSourc
 # 小米 MiMo：同一个 OpenAI 兼容协议，但必须是自己的档案 + 自己的预设（端点 / 模型 / 密钥标签），
 # 且默认用非思考模型——实测 -pro 单句要 2.9-4.9 秒，翻译用不上。
 $xiaomiProviderSource = Get-Content -Raw (Join-Path $v2Root 'src\VrcTranslate.Infrastructure\Translation\XiaomiTranslationProvider.cs')
-if ($appStateSource -notmatch 'xiaomi".*, "mimo-v2\.5"' -or
-    $appStateSource -notmatch '"xiaomi" => "mimo-v2\.5"' -or
+if ($appStateSource -notmatch 'xiaomi".*, "mimo-v2\.6-flash"' -or
+    $appStateSource -notmatch '"xiaomi" => "mimo-v2\.6-flash"' -or
     $translationCode -notmatch '小米 MiMo' -or
     $translationCode -notmatch 'https://api\.xiaomimimo\.com/v1' -or
-    $xiaomiProviderSource -notmatch 'DefaultModel = "mimo-v2\.5"' -or
+    $xiaomiProviderSource -notmatch 'DefaultModel = "mimo-v2\.6-flash"' -or
     $xiaomiProviderSource -notmatch 'DefaultEndpoint = "https://api\.xiaomimimo\.com/v1"') {
     throw 'Xiaomi MiMo must ship as its own profile preset with the non-reasoning model and the platform endpoint.'
 }
@@ -872,13 +872,13 @@ if ($guideMarkup -notmatch 'guide-comparison' -or
     $guideMarkup -notmatch '腾讯云 · 文本翻译' -or
     $guideMarkup -notmatch '阿里云 · 通用版' -or
     $guideMarkup -notmatch 'deepseek-flash' -or
-    $guideMarkup -notmatch '小米 MiMo v2\.5' -or
+    $guideMarkup -notmatch '小米 MiMo v2\.6 Flash' -or
     $guideMarkup -notmatch '700 万字符/月' -or
     $guideMarkup -notmatch '约 600 句' -or
     $guideMarkup -notmatch '价格会变动' -or
     $guideMarkup -match '0\.0000\d+ 元' -or
-    $xiaomiModels -notmatch 'mimo-v2\.5-pro' -or
-    $guideMarkup -match 'mimo-v2\.5-pro' -or
+    $xiaomiModels -notmatch 'mimo-v2\.6-pro' -or
+    $guideMarkup -match 'mimo-v2\.6-pro' -or
     $guideMarkup -match 'v4-pro') {
     throw 'Guide page comparison card must list the five recommended models with the 700 万字符/月 quota, the 推荐 line and the 价格会变动 caveat, and must never recommend the pro models that measured slower or worse.'
 }

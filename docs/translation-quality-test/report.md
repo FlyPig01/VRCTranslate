@@ -250,3 +250,15 @@ baseline 含 2 条粤语；机器翻译对粤语基本原样返回，会压低�
 3. results/raw-20261019-v3.json — 原始译文、延迟、错误。
 
 生产代码没有改动；测试包只新增了 docs/translation-quality-test/。是否按上面的顺序实施，等你审核后再决定。
+
+## 8. 2026-10-19 Flash 模型复核
+
+小米 V2.5 系列将于 2026-10-21 10:00（UTC+8）下线；DeepSeek 的 `deepseek-flash` 当前指向 DeepSeek-V4.1-Flash-1017。按“只测 Flash”的要求，用生产提示词+术语表、不启用上下文，在同样的 44 条样本上复核：
+
+| 模型 | 44 条 chrF2 | p50 | p95 |
+| --- | ---: | ---: | ---: |
+| `deepseek-flash`（V4.1-Flash-1017） | **0.57** | **687 ms** | **914 ms** |
+| `mimo-v2.6-flash` | 0.52 | 2128 ms | 6367 ms |
+
+结论：V2.6 Flash 可调用、0 失败，但质量和延迟都不如 DeepSeek V4.1 Flash；日语只在 5 条样本上高 0.03。引导页已改为“小米 v2.6 Flash：日语略好；整体不如 DeepSeek，延迟高；不建议默认”，代码默认和旧档案/路由迁到 V2.6。详见 [flash-retest.md](flash-retest.md)。
+

@@ -134,7 +134,10 @@
   <Target Name="CopyGeneratedPageXbfToPublishDirectory" AfterTargets="Publish">
     <ItemGroup>
       <GeneratedPageXbf Include="$(TargetDir)Pages\*.xbf" />
-      <GeneratedDesktopResource Include="$(TargetDir)App.xbf;$(TargetDir)MainWindow.xbf;$(TargetDir)VrcTranslate.pri;$(TargetDir)brand-icon.png" />
+      <!-- The visible brand asset is logo-mark.png; brand-icon.png was the old
+           name and no build produces it any more. Copying the stale name made
+           dotnet publish fail at the very end on a clean checkout. -->
+      <GeneratedDesktopResource Include="$(TargetDir)App.xbf;$(TargetDir)MainWindow.xbf;$(TargetDir)VrcTranslate.pri;$(TargetDir)logo-mark.png" />
     </ItemGroup>
     <MakeDir Directories="$(PublishDir)Pages" />
     <Copy SourceFiles="@(GeneratedPageXbf)" DestinationFiles="@(GeneratedPageXbf->'$(PublishDir)Pages\%(Filename)%(Extension)')" SkipUnchangedFiles="true" />

@@ -42,6 +42,14 @@ public sealed partial class MainWindow : Window
         var state = ((App)Microsoft.UI.Xaml.Application.Current).State;
         state.TranslationPreviewChanged += OnTranslationPreviewChanged;
         OverlayWindowHost.Initialize(state);
+        var modelStatus = state.LocalSpeech.GetModelStatus();
+        CaptionDiagnostics.Write(
+            $"model state={modelStatus.State} bundled={modelStatus.IsBundled} " +
+            $"path={modelStatus.FilePath} bytes={modelStatus.InstalledBytes}");
+        // One background check of the local speech stack. It warms the model and
+        // gives the voice page a real "can this machine produce captions" answer
+        // before the user presses start.
+        _ = state.EnsureSpeechSelfTestAsync();
         ApplySmokeCaption();
         StartGlobalHotkeys();
     }

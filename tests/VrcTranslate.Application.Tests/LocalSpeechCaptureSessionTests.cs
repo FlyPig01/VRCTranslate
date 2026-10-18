@@ -373,9 +373,58 @@ public sealed class LocalSpeechCaptureSessionTests
         Assert.Empty(results);
     }
 
+    [Fact]
+    public async Task A_throwing_segmenter_switches_to_the_energy_gate_and_keeps_captions()
+    {
+        var capture = new FakeAudioCapture(AudioCaptureRequest.SystemLoopback());
+        var fallback = new TaskCompletionSource<SpeechSegmenterFallbackEventArgs>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var result = new TaskCompletionSource<SpeechRecognitionResult>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var diagnostics = new List<string>();
+        await using var session = new LocalSpeechCaptureSession(
+            capture, CreateSpeechService(), "en", new ThrowingSegmenter());
+        session.SegmenterFallback += (_, args) => fallback.TrySetResult(args);
+        session.ResultReady += (_, value) => result.TrySetResult(value);
+        session.Diagnostic += (_, message) =>
+        {
+            lock (diagnostics) diagnostics.Add(message);
+        };
+
+        await session.StartAsync();
+        capture.Emit(Enumerable.Repeat(0.2f, 4_800).ToArray());
+        capture.Emit(new float[14_000]);
+
+        var changed = await fallback.Task.WaitAsync(TimeSpan.FromSeconds(2));
+        Assert.Contains("备用分段器", changed.Message, StringComparison.Ordinal);
+        Assert.NotNull(changed.Exception);
+
+        // The chunk that killed the native gate is replayed through the managed
+        // gate, so the sentence is not lost.
+        var recognized = await result.Task.WaitAsync(TimeSpan.FromSeconds(2));
+        Assert.Equal("test", recognized.Text);
+        lock (diagnostics)
+        {
+            Assert.Contains(diagnostics, message => message.Contains("segmenter fallback", StringComparison.Ordinal));
+        }
+    }
+
     private static LocalSpeechService CreateSpeechService() => new(
         new FakeModelManager(),
         new FakeRecognizer());
+
+    /// <summary>Native gate stand-in that fails on the very first chunk.</summary>
+    private sealed class ThrowingSegmenter : ISpeechSegmenter
+    {
+        public int SampleRate => 16_000;
+
+        public IReadOnlyList<ReadOnlyMemory<float>> Append(ReadOnlyMemory<float> chunk) =>
+            throw new InvalidOperationException("vad boom");
+
+        public IReadOnlyList<ReadOnlyMemory<float>> Flush() => [];
+
+        public void Reset() { }
+    }
 
     /// <summary>Speaker separation whose answers the test chooses.</summary>
     private sealed class FakeSpeakerIdentifier : ISpeakerIdentifier

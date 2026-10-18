@@ -13,7 +13,18 @@ namespace VrcTranslate.Infrastructure.Speech;
 /// Full upstream URL when the payload does not live in a single repository, or
 /// when the local file name differs from the upstream one.
 /// </param>
-public sealed record LocalSpeechModelFile(string Name, long MinimumBytes, Uri? Source = null);
+/// <param name="ExactBytes">
+/// Exact size of the file shipped inside the official package. The bundled
+/// payload is held to this value so a truncated copy cannot present itself as
+/// "ready" - the minimum floor alone accepted a 239 MB model cut down to
+/// 120 MB. A downloaded or re-exported payload keeps using
+/// <paramref name="MinimumBytes"/>.
+/// </param>
+public sealed record LocalSpeechModelFile(
+    string Name,
+    long MinimumBytes,
+    Uri? Source = null,
+    long? ExactBytes = null);
 
 /// <summary>
 /// A self-contained set of model files the local speech component can load:
@@ -34,6 +45,11 @@ public sealed record LocalSpeechModelPayload(
     public long MinimumBytesFor(string fileName) => Files
         .FirstOrDefault(file => string.Equals(file.Name, fileName, StringComparison.OrdinalIgnoreCase))
         ?.MinimumBytes ?? 0;
+
+    /// <summary>Exact official size of one shipped file, or null when not pinned.</summary>
+    public long? ExactBytesFor(string fileName) => Files
+        .FirstOrDefault(file => string.Equals(file.Name, fileName, StringComparison.OrdinalIgnoreCase))
+        ?.ExactBytes;
 
     /// <summary>Every upstream URL to try for one file, in order.</summary>
     public IReadOnlyList<Uri> SourcesFor(string fileName)

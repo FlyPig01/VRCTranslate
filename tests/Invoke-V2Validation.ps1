@@ -91,6 +91,90 @@ if ($appStateSource -match 'MigrateLegacyData' -or $portableStorageSource -match
     throw 'A clean installation must never import profiles or API keys automatically from another data directory.'
 }
 
+# P0 theme: every surface is hard-coded light, so the shell must not follow a
+# dark system app mode. Otherwise unstyled TextBlocks use the white dark-theme
+# foreground on near-white cards (reported as "文字 UI 为白色").
+$appMarkup = Get-Content -Raw (Join-Path $desktopSource 'App.xaml')
+if ($appMarkup -notmatch 'RequestedTheme="Light"') {
+    throw 'App.xaml must pin RequestedTheme="Light"; the shell has no dark palette.'
+}
+if ($appMarkup -match 'RequestedTheme="Dark"') {
+    throw 'The application-level theme must stay Light; only the two overlays opt into Dark.'
+}
+if ($overlayMarkup -notmatch 'RequestedTheme="Dark"') {
+    throw 'The subtitle overlay must keep its own dark surface.'
+}
+if ($quickInputSource -notmatch 'RequestedTheme\s*=\s*ElementTheme\.Dark') {
+    throw 'The quick-input overlay must keep its own dark surface.'
+}
+
+# P0 empty-caption diagnosis: a shipped speech sample runs the model, the speech
+# gate and the recognizer at startup, and both overlays/voice page must expose
+# the verdict plus the technical log.
+$selfTestAudio = Join-Path $desktopSource 'Resources\self-test-zh.wav'
+if (-not (Test-Path -LiteralPath $selfTestAudio -PathType Leaf)) {
+    throw 'The bundled self-test speech sample is missing: Resources\self-test-zh.wav.'
+}
+if ((Get-Item -LiteralPath $selfTestAudio).Length -lt 100000) {
+    throw 'The bundled self-test speech sample is unexpectedly small.'
+}
+if ((Get-Content -Raw $desktopProject) -notmatch 'Resources\\self-test-zh\.wav') {
+    throw 'The desktop project must copy Resources\self-test-zh.wav to output and publish.'
+}
+if ($voiceMarkup -notmatch 'SpeechSelfTestInfo' -or $voiceMarkup -notmatch 'speech-self-test') {
+    throw 'The voice page must expose the startup self-test verdict at the top.'
+}
+if ($voiceMarkup -notmatch '(?s)SpeechSelfTestInfo.*?VoiceStatusPanel') {
+    throw 'The self-test InfoBar must sit above the status card, not at the bottom of the page.'
+}
+if ($voiceSource -notmatch 'SpeechSelfTestChanged' -or $voiceSource -notmatch 'UpdateSpeechSelfTestStatus') {
+    throw 'The voice page must subscribe to the self-test result and render its verdict.'
+}
+if ($appStateSource -notmatch 'EnsureSpeechSelfTestAsync' -or $appStateSource -notmatch 'SpeechSelfTest') {
+    throw 'AppState must own the startup self-test task and expose its result.'
+}
+$captionSessionSource = Get-Content -Raw (Join-Path $v2Root 'src\VrcTranslate.Application\Speech\LocalSpeechCaptureSession.cs')
+if ($captionSessionSource -notmatch 'SegmenterFallback' -or
+    $captionSessionSource -notmatch 'SwitchToEnergyGate' -or
+    $captionSessionSource -notmatch 'ShouldFallBackForSilentVad') {
+    throw 'The caption session must fall back from a failing/stuck native gate and report it.'
+}
+if ($captionSessionSource -notmatch 'RaiseDiagnostic' -or $captionSessionSource -notmatch 'result chars=') {
+    throw 'The caption session must emit stage diagnostics for the support log.'
+}
+$modelManagerSource = Get-Content -Raw (Join-Path $v2Root 'src\VrcTranslate.Infrastructure\Speech\LocalSpeechModelManager.cs')
+if ($modelManagerSource -notmatch 'ExactBytesFor' -or $modelManagerSource -notmatch 'requireExact') {
+    throw 'The bundled model must be checked against its exact shipped sizes.'
+}
+if ($sessionHostSource -notmatch 'CreateSegmenter' -or $sessionHostSource -notmatch 'PrepareSessionAsync') {
+    throw 'The session host must await the self-test and honor its segmenter choice.'
+}
+if ($sessionHostSource -notmatch 'OnSessionDiagnostic' -or $sessionHostSource -notmatch 'OnSessionSegmenterFallback') {
+    throw 'The session host must forward speech diagnostics and the segmenter fallback.'
+}
+if ($overlayCodeSource -notmatch '_captions\.Resume\(\)' -or $overlayCodeSource -notmatch 'SetSelfTestResult') {
+    throw 'The subtitle window must resume its stream on show and surface the self-test verdict.'
+}
+if ($overlayHostSource -notmatch 'caption publish ignored' -or $overlayHostSource -notmatch 'SetSelfTestResult') {
+    throw 'The overlay host must log dropped captions and apply the self-test verdict.'
+}
+$appDataFilesSource = Get-Content -Raw (Join-Path $v2Root 'src\VrcTranslate.Infrastructure\Storage\AppDataFiles.cs')
+if ($appDataFilesSource -notmatch 'caption-diagnostics\.log') {
+    throw 'AppDataFiles must define the caption-diagnostics.log support file.'
+}
+$diagnosticsSource = Get-Content -Raw (Join-Path $desktopSource 'CaptionDiagnostics.cs')
+if ($diagnosticsSource -notmatch 'WriteSelfTest' -or $diagnosticsSource -notmatch 'WriteException') {
+    throw 'The caption diagnostics log must record the self-test and exceptions.'
+}
+$buildScriptSource = Get-Content -Raw (Join-Path $v2Root 'scripts\Build-Distribution.ps1')
+if ($buildScriptSource -notmatch 'self-test-zh\.wav') {
+    throw 'The release package must require the bundled self-test speech sample.'
+}
+$builtSelfTest = Join-Path $desktopOutput 'Resources\self-test-zh.wav'
+if (-not (Test-Path -LiteralPath $builtSelfTest -PathType Leaf)) {
+    throw 'The desktop build did not copy the self-test speech sample.'
+}
+
 function Resolve-OverlayDefaultDimension {
     param(
         [Parameter(Mandatory)]

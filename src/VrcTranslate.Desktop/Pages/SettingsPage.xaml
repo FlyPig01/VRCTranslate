@@ -47,21 +47,21 @@
             <Grid x:Name="HotkeyGrid" ColumnSpacing="14" RowSpacing="8">
               <Grid.ColumnDefinitions><ColumnDefinition Width="180" /><ColumnDefinition Width="260" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
               <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
-              <TextBlock x:Name="QuickInputHotkeyLabel" Text="打开输入框" FontWeight="SemiBold" VerticalAlignment="Center" />
+              <TextBlock x:Name="QuickInputHotkeyLabel" Text="打开输入框" FontWeight="SemiBold" Foreground="#16202E" VerticalAlignment="Center" />
               <Button x:Name="QuickInputHotkeyBox" Grid.Column="1" Style="{StaticResource HotkeyCaptureStyle}" AutomationProperties.Name="打开输入框快捷键" Click="OnHotkeyCaptureClick" PreviewKeyDown="OnHotkeyCapturePreviewKeyDown" PreviewKeyUp="OnHotkeyCapturePreviewKeyUp" LostFocus="OnHotkeyCaptureLostFocus">
                 <Border x:Name="QuickInputHotkeyField" Style="{StaticResource HotkeyCaptureFieldStyle}">
                   <StackPanel x:Name="QuickInputHotkeyKeys" Orientation="Horizontal" Spacing="7" VerticalAlignment="Center" />
                 </Border>
               </Button>
               <TextBlock x:Name="QuickInputHotkeyHint" Grid.Column="2" Text="打开 / 关闭输入框" Style="{StaticResource SecondaryTextStyle}" VerticalAlignment="Center" />
-              <TextBlock x:Name="VoiceHotkeyLabel" Grid.Row="1" Text="他人语音" FontWeight="SemiBold" VerticalAlignment="Center" />
+              <TextBlock x:Name="VoiceHotkeyLabel" Grid.Row="1" Text="他人语音" FontWeight="SemiBold" Foreground="#16202E" VerticalAlignment="Center" />
               <Button x:Name="VoiceHotkeyBox" Grid.Row="1" Grid.Column="1" Style="{StaticResource HotkeyCaptureStyle}" AutomationProperties.Name="他人语音快捷键" Click="OnHotkeyCaptureClick" PreviewKeyDown="OnHotkeyCapturePreviewKeyDown" PreviewKeyUp="OnHotkeyCapturePreviewKeyUp" LostFocus="OnHotkeyCaptureLostFocus">
                 <Border x:Name="VoiceHotkeyField" Style="{StaticResource HotkeyCaptureFieldStyle}">
                   <StackPanel x:Name="VoiceHotkeyKeys" Orientation="Horizontal" Spacing="7" VerticalAlignment="Center" />
                 </Border>
               </Button>
               <TextBlock x:Name="VoiceHotkeyHint" Grid.Row="1" Grid.Column="2" Text="开始 / 停止他人语音识别" Style="{StaticResource SecondaryTextStyle}" VerticalAlignment="Center" />
-              <TextBlock x:Name="SelfVoiceHotkeyLabel" Grid.Row="2" Text="自身语音" VerticalAlignment="Center" />
+              <TextBlock x:Name="SelfVoiceHotkeyLabel" Grid.Row="2" Text="自身语音" Foreground="#16202E" VerticalAlignment="Center" />
               <Button x:Name="SelfVoiceHotkeyBox" Grid.Row="2" Grid.Column="1" Style="{StaticResource HotkeyCaptureStyle}" AutomationProperties.Name="自身语音快捷键" Click="OnHotkeyCaptureClick" PreviewKeyDown="OnHotkeyCapturePreviewKeyDown" PreviewKeyUp="OnHotkeyCapturePreviewKeyUp" LostFocus="OnHotkeyCaptureLostFocus">
                 <Border x:Name="SelfVoiceHotkeyField" Style="{StaticResource HotkeyCaptureFieldStyle}">
                   <StackPanel x:Name="SelfVoiceHotkeyKeys" Orientation="Horizontal" Spacing="7" VerticalAlignment="Center" />
@@ -92,6 +92,7 @@
             <Grid x:Name="OscContentGrid" ColumnSpacing="12">
               <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
               <TextBlock Text="OSC 消息带原文"
+                         Foreground="#16202E"
                          VerticalAlignment="Center" />
               <ToggleSwitch Grid.Column="1"
                             x:Name="OscIncludeOriginalToggle"

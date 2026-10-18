@@ -43,6 +43,10 @@
     <Content Include="app.ico" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Content Include="logo-mark.png" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Content Include="Resources\default-glossary.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <!-- One fixed speech sample for the startup self-test. It lets a machine
+         whose local model cannot run say so instead of showing an empty caption
+         window; the sample is also the first model warm-up. -->
+    <Content Include="Resources\self-test-zh.wav" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <!-- The speech model ships inside the package once tests\Import-BundledSpeechModel.ps1
          has placed the ONNX payload in assets\models\speech\sensevoice; the
          files are re-downloadable and therefore kept out of source control. -->

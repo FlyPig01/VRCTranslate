@@ -1,5 +1,6 @@
 using VrcTranslate.Application.Translation;
 using VrcTranslate.Application.Abstractions;
+using VrcTranslate.Core.Speech;
 using VrcTranslate.Core.Translation;
 using VrcTranslate.Infrastructure.Translation;
 using VrcTranslate.Infrastructure.Configuration;
@@ -22,7 +23,10 @@ public sealed class AppState
     private readonly string _selfTranslationSettingsPath;
     private readonly Task _restoreTask;
     private readonly object _routeSync = new();
+    private readonly object _selfTestSync = new();
     private int _routeRevision;
+    private Task<LocalSpeechSelfTestResult>? _speechSelfTestTask;
+    private LocalSpeechSelfTestResult? _speechSelfTest;
     private OscChatboxClient _osc;
     private TranslationTargetSet _selfTranslationTargets;
 
@@ -116,6 +120,71 @@ public sealed class AppState
 
     /// <summary>Completes after the optional local route has been restored.</summary>
     public Task Ready => _restoreTask;
+
+    /// <summary>Latest startup self-test result, or null before the check ran.</summary>
+    public LocalSpeechSelfTestResult? SpeechSelfTest => _speechSelfTest;
+
+    /// <summary>
+    /// Raised from the self-test worker after the result changed. The voice page
+    /// marshals to its dispatcher; the session host reads the property directly.
+    /// </summary>
+    public event EventHandler? SpeechSelfTestChanged;
+
+    /// <summary>
+    /// Starts (or joins) the one startup check of the local speech stack. The
+    /// check never throws: a failure is a result the UI can explain.
+    /// </summary>
+    public Task<LocalSpeechSelfTestResult> EnsureSpeechSelfTestAsync()
+    {
+        lock (_selfTestSync)
+        {
+            return _speechSelfTestTask ??= RunSpeechSelfTestAsync();
+        }
+    }
+
+    /// <summary>
+    /// Re-runs the check after the model was installed, removed or repaired. The
+    /// cached result describes the old payload, so the voice page must not keep
+    /// showing a failure that the download just fixed.
+    /// </summary>
+    public Task<LocalSpeechSelfTestResult> RefreshSpeechSelfTestAsync()
+    {
+        lock (_selfTestSync)
+        {
+            _speechSelfTestTask = null;
+            _speechSelfTest = null;
+        }
+
+        return EnsureSpeechSelfTestAsync();
+    }
+
+    private async Task<LocalSpeechSelfTestResult> RunSpeechSelfTestAsync()
+    {
+        LocalSpeechSelfTestResult result;
+        try
+        {
+            var audioPath = Path.Combine(
+                AppContext.BaseDirectory,
+                LocalSpeechSelfTest.BundledAudioRelativePath.Replace('/', Path.DirectorySeparatorChar));
+            var selfTest = new LocalSpeechSelfTest(LocalSpeech);
+            result = await Task.Run(() => selfTest.RunAsync(audioPath)).ConfigureAwait(false);
+        }
+        catch (Exception exception)
+        {
+            CaptionDiagnostics.WriteException("self-test crashed", exception);
+            result = new LocalSpeechSelfTestResult(
+                ModelReady: false,
+                VadUsable: false,
+                AsrUsable: false,
+                Message: "自检过程异常",
+                Detail: exception.Message);
+        }
+
+        _speechSelfTest = result;
+        CaptionDiagnostics.WriteSelfTest(result);
+        SpeechSelfTestChanged?.Invoke(this, EventArgs.Empty);
+        return result;
+    }
 
     public OscChatboxClient Osc => _osc;
 

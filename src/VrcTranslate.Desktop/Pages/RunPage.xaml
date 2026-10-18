@@ -23,11 +23,11 @@
               <Grid.RowDefinitions><RowDefinition Height="Auto" /></Grid.RowDefinitions>
               <StackPanel x:Name="RouteSummaryService" Spacing="2" MinWidth="0">
                 <TextBlock Text="当前档案" Style="{StaticResource SecondaryTextStyle}" />
-                <TextBlock x:Name="RouteName" Text="默认翻译" FontSize="18" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                <TextBlock x:Name="RouteName" Text="默认翻译" FontSize="18" FontWeight="SemiBold" Foreground="#16202E" TextTrimming="CharacterEllipsis" />
               </StackPanel>
               <StackPanel x:Name="RouteSummaryModel" Grid.Column="1" Spacing="2" MinWidth="0">
                 <TextBlock Text="使用模型" Style="{StaticResource SecondaryTextStyle}" />
-                <TextBlock x:Name="ModelSummary" Text="尚未配置" FontSize="15" TextTrimming="CharacterEllipsis" />
+                <TextBlock x:Name="ModelSummary" Text="尚未配置" FontSize="15" Foreground="#16202E" TextTrimming="CharacterEllipsis" />
               </StackPanel>
               <Button x:Name="RouteSummaryButton" Grid.Column="2" Content="配置服务" Click="OnOpenTranslationClicked" AutomationProperties.Name="配置翻译服务" AutomationProperties.AutomationId="route-summary-config" />
             </Grid>

@@ -20,6 +20,14 @@
                     HorizontalAlignment="Center"
                     Spacing="14"
                     Margin="30,24,30,32">
+          <!-- 启动自检与识别错误放在页面顶部：旧的 InfoBar 在最底部，用户看不到，
+               正是"窗口永远为空"最难排查的原因之一。 -->
+          <InfoBar x:Name="SpeechSelfTestInfo"
+                   AutomationProperties.AutomationId="speech-self-test"
+                   IsOpen="False"
+                   IsClosable="True"
+                   Severity="Error" />
+          <InfoBar x:Name="VoiceInfo" IsOpen="False" IsClosable="True" />
           <Border x:Name="VoiceStatusPanel"
                   Background="#EAF2FF"
                   BorderBrush="#BBD3F7"
@@ -74,7 +82,8 @@
                   <TextBlock x:Name="VoiceStatusText"
                              Text="他人语音识别停止"
                              FontSize="16"
-                             FontWeight="SemiBold" />
+                             FontWeight="SemiBold"
+                             Foreground="#16202E" />
                   <!-- 紧凑采集来源徽标：只显示当前来源，不新增卡片、下拉或配置项。 -->
                   <Border x:Name="VoiceCaptureSourceBadge"
                           HorizontalAlignment="Left"
@@ -166,6 +175,7 @@
                   <ColumnDefinition Width="44" />
                 </Grid.ColumnDefinitions>
                 <TextBlock Text="透明度"
+                           Foreground="#16202E"
                            VerticalAlignment="Center" />
                 <Slider Grid.Column="1"
                         x:Name="SubtitleOverlayOpacitySlider"
@@ -180,6 +190,7 @@
                            x:Name="SubtitleOverlayOpacityValue"
                            Text="90%"
                            TextAlignment="Right"
+                           Foreground="#16202E"
                            VerticalAlignment="Center" />
               </Grid>
               <!-- 与透明度同级：只切换消息条里是否带原文，不新增卡片或下拉。 -->
@@ -189,6 +200,7 @@
                   <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
                 <TextBlock Text="字幕内容"
+                           Foreground="#16202E"
                            VerticalAlignment="Center" />
                 <ToggleSwitch Grid.Column="1"
                               x:Name="SubtitleContentToggle"
@@ -294,8 +306,6 @@
               </StackPanel>
             </StackPanel>
           </Border>
-
-          <InfoBar x:Name="VoiceInfo" IsOpen="False" IsClosable="True" />
         </StackPanel>
       </Grid>
     </ScrollViewer>

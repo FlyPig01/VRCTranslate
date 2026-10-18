@@ -37,10 +37,18 @@ internal static class OverlayWindowHost
     public static void AppendRecognizedSubtitleFromAnyThread(long captionId, string original, string? speakerLabel = null)
     {
         var window = _subtitle;
-        if (window is null) return;
+        if (window is null)
+        {
+            CaptionDiagnostics.Write("caption publish ignored: subtitle window missing");
+            return;
+        }
+
         if (_dispatcherQueue is { } queue)
         {
-            queue.TryEnqueue(() => window.AppendRecognizedCaption(captionId, original, speakerLabel));
+            if (!queue.TryEnqueue(() => window.AppendRecognizedCaption(captionId, original, speakerLabel)))
+            {
+                CaptionDiagnostics.Write("caption publish ignored: dispatcher unavailable");
+            }
         }
         else
         {
@@ -55,10 +63,18 @@ internal static class OverlayWindowHost
     public static void FillSubtitleTranslationFromAnyThread(long captionId, string? translated)
     {
         var window = _subtitle;
-        if (window is null) return;
+        if (window is null)
+        {
+            CaptionDiagnostics.Write("caption fill ignored: subtitle window missing");
+            return;
+        }
+
         if (_dispatcherQueue is { } queue)
         {
-            queue.TryEnqueue(() => window.FillCaptionTranslation(captionId, translated));
+            if (!queue.TryEnqueue(() => window.FillCaptionTranslation(captionId, translated)))
+            {
+                CaptionDiagnostics.Write("caption fill ignored: dispatcher unavailable");
+            }
         }
         else
         {
@@ -91,6 +107,7 @@ internal static class OverlayWindowHost
     private static void OnSubtitleSessionRunningChanged(object? sender, EventArgs e)
     {
         var running = _state?.SubtitleVoice.IsRunning == true;
+        CaptionDiagnostics.Write($"running changed running={running} surfaceCreated={_subtitle is not null}");
         void Apply()
         {
             _subtitle?.SetStreamPaused(!running);
@@ -115,11 +132,13 @@ internal static class OverlayWindowHost
             {
                 _state.OverlayAppearance.Changed -= OnAppearanceChanged;
                 _state.SubtitleVoice.RunningChanged -= OnSubtitleSessionRunningChanged;
+                _state.SpeechSelfTestChanged -= OnSpeechSelfTestChanged;
             }
 
             _state = state;
             _state.OverlayAppearance.Changed += OnAppearanceChanged;
             _state.SubtitleVoice.RunningChanged += OnSubtitleSessionRunningChanged;
+            _state.SpeechSelfTestChanged += OnSpeechSelfTestChanged;
         }
         _dispatcherQueue ??= Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread();
         EnsureLayoutStore();
@@ -167,6 +186,11 @@ internal static class OverlayWindowHost
         EnsureLayoutStore();
         var resolvedState = _state ?? throw new InvalidOperationException("Overlay host is not initialized.");
         var window = new SubtitleOverlayWindow(resolvedState.OverlayAppearance.Current.SubtitleOverlayOpacity);
+        window.SetSelfTestResult(resolvedState.SpeechSelfTest);
+        var selfTestState = resolvedState.SpeechSelfTest is { } selfTest
+            ? selfTest.IsUsable.ToString()
+            : "pending";
+        CaptionDiagnostics.Write($"subtitle window created selfTestUsable={selfTestState}");
         // Recognition may already be running when the surface is first created.
         window.SetStreamPaused(!resolvedState.SubtitleVoice.IsRunning);
         window.SurfaceCloseRequested += (_, _) => DisableCaptionFromUser();
@@ -215,10 +239,12 @@ internal static class OverlayWindowHost
                 // keyboard focus from VRChat.
                 ShowWindow(EnsureSubtitle(), activate: false);
             }
-            catch
+            catch (Exception exception)
             {
                 // An overlay is optional UI: a failed native show must not stop
-                // the recognition session that is already running.
+                // the recognition session that is already running, but it must
+                // not disappear without a trace either.
+                CaptionDiagnostics.WriteException("overlay show", exception);
             }
         }
 
@@ -286,6 +312,7 @@ internal static class OverlayWindowHost
         {
             _state.OverlayAppearance.Changed -= OnAppearanceChanged;
             _state.SubtitleVoice.RunningChanged -= OnSubtitleSessionRunningChanged;
+            _state.SpeechSelfTestChanged -= OnSpeechSelfTestChanged;
         }
 
         // Capture the final screen rectangles before requesting destruction.
@@ -372,10 +399,9 @@ internal static class OverlayWindowHost
         {
             window.ShowOverlay(activate);
         }
-        catch
+        catch (Exception exception)
         {
-            // An overlay is optional UI. A failed native show must not prevent
-            // the main application from remaining usable.
+            CaptionDiagnostics.WriteException("quick-input show", exception);
         }
     }
 
@@ -385,9 +411,9 @@ internal static class OverlayWindowHost
         {
             window.ShowOverlay(activate);
         }
-        catch
+        catch (Exception exception)
         {
-            // An overlay is optional UI. Keep the main application usable.
+            CaptionDiagnostics.WriteException("subtitle show", exception);
         }
     }
 
@@ -399,6 +425,19 @@ internal static class OverlayWindowHost
             var appearance = _state.OverlayAppearance.Current;
             _quickInput?.ApplyOpacity(appearance.InputOverlayOpacity);
             _subtitle?.ApplyOpacity(appearance.SubtitleOverlayOpacity);
+        }
+
+        if (_dispatcherQueue is null || _dispatcherQueue.HasThreadAccess) Apply();
+        else _dispatcherQueue.TryEnqueue(Apply);
+    }
+
+    private static void OnSpeechSelfTestChanged(object? sender, EventArgs e)
+    {
+        void Apply()
+        {
+            if (_state is null) return;
+            _subtitle?.SetSelfTestResult(_state.SpeechSelfTest);
+            CaptionDiagnostics.Write($"self-test title updated usable={_state.SpeechSelfTest?.IsUsable}");
         }
 
         if (_dispatcherQueue is null || _dispatcherQueue.HasThreadAccess) Apply();

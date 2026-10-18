@@ -38,6 +38,7 @@ public sealed partial class VoicePage : Page
     private IReadOnlyList<SpeakerIdentity> _speakers = [];
     private bool _updatingSpeakerToggle;
     private bool _fallbackNoticeActive;
+    private bool _selfTestAttached;
 
     private AppState State => _state;
 
@@ -68,10 +69,17 @@ public sealed partial class VoicePage : Page
             State.OverlayAppearance.Changed += OnOverlayAppearanceChanged;
         _overlayAppearanceReady = true;
         AttachSpeechEvents();
+        if (!_selfTestAttached)
+        {
+            State.SpeechSelfTestChanged += OnSpeechSelfTestChanged;
+            _selfTestAttached = true;
+        }
+
         // Catch up in case the size settled before this load callback ran.
         ResizeAudioLevel(VoiceAudioLevelHost.ActualWidth);
         LoadSettings();
         UpdateLocalModelStatus();
+        UpdateSpeechSelfTestStatus();
         UpdateRunningVisuals();
         UpdateSubtitleOverlayOpacity();
         _loaded = true;
@@ -160,10 +168,50 @@ public sealed partial class VoicePage : Page
                 });
         });
 
+    private void OnSpeechSelfTestChanged(object? sender, EventArgs e)
+    {
+        void Apply()
+        {
+            UpdateSpeechSelfTestStatus();
+            UpdateLocalModelStatus();
+        }
+
+        if (DispatcherQueue.HasThreadAccess) Apply();
+        else DispatcherQueue.TryEnqueue(Apply);
+    }
+
+    /// <summary>
+    /// The self-test answer belongs at the top of the page, before the user
+    /// starts anything: a model that cannot run is the one case where starting
+    /// captions only produces an empty window.
+    /// </summary>
+    private void UpdateSpeechSelfTestStatus()
+    {
+        if (SpeechSelfTestInfo is null) return;
+        var result = State.SpeechSelfTest;
+        if (result is null || result.IsUsable)
+        {
+            SpeechSelfTestInfo.IsOpen = false;
+            return;
+        }
+
+        SpeechSelfTestInfo.Severity = InfoBarSeverity.Error;
+        SpeechSelfTestInfo.Title = "本地语音自检失败";
+        SpeechSelfTestInfo.Message =
+            $"{result.Message}。字幕将无法生成；诊断日志：{CaptionDiagnostics.Path}";
+        SpeechSelfTestInfo.IsOpen = true;
+    }
+
     private void OnUnloaded(object sender, RoutedEventArgs e)
     {
         _overlayAppearanceReady = false;
         State.OverlayAppearance.Changed -= OnOverlayAppearanceChanged;
+        if (_selfTestAttached)
+        {
+            State.SpeechSelfTestChanged -= OnSpeechSelfTestChanged;
+            _selfTestAttached = false;
+        }
+
         // Recognition continues in the application-scoped session host; only
         // the UI subscriptions are released with the page.
         DetachSpeechEvents();
@@ -393,12 +441,16 @@ public sealed partial class VoicePage : Page
         }
 
         UpdateLocalModelStatus();
+        // The cached verdict describes the payload before the install/remove.
+        // Re-run it so the red bar disappears as soon as the repair worked (or
+        // explains the new state).
+        _ = State.RefreshSpeechSelfTestAsync();
     }
 
     private void UpdateLocalModelStatus()
     {
         var status = State.LocalSpeech.GetModelStatus();
-        ModelStatus.Text = status.State switch
+        var text = status.State switch
         {
             LocalSpeechModelState.Ready => status.IsBundled
                 ? "已就绪（随程序内置）· 中 / 英 / 日 / 韩"
@@ -407,6 +459,17 @@ public sealed partial class VoicePage : Page
             LocalSpeechModelState.Invalid => "文件不完整，请重新安装",
             _ => "尚未安装"
         };
+        if (status.State == LocalSpeechModelState.Ready)
+        {
+            text += State.SpeechSelfTest switch
+            {
+                null => " · 自检中…",
+                { IsUsable: true } => " · 自检通过",
+                _ => " · 自检失败"
+            };
+        }
+
+        ModelStatus.Text = text;
     }
 
     private async void OnStartClicked(object sender, RoutedEventArgs e) =>

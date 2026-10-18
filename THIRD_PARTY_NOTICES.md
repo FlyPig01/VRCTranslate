@@ -12,6 +12,13 @@ VRCTranslate (native desktop app) uses the following third-party components.
 
 The desktop release ships this payload inside the application package under `程序文件/Models/sensevoice/`. SenseVoice is MIT-licensed, which permits redistribution; this notice provides the required attribution.
 
+## Self-test speech sample (bundled)
+
+- File: `Resources/self-test-zh.wav` (5.6 s, 16 kHz mono PCM)
+- Source: `test_wavs/zh.wav` from the sherpa-onnx SenseVoice example repository: <https://huggingface.co/csukuangfj/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17>
+- Purpose: the startup self-test feeds this fixed sample through the shipped speech gate and recognizer, so a machine whose local model cannot run reports that instead of showing an empty caption window. The sample is never played to the user and is not used for training.
+- License: the sample is distributed with the sherpa-onnx example payload (Apache License 2.0), matching the sherpa-onnx license noted below.
+
 ## pyannote segmentation 3.0 model (bundled)
 
 - Model: `segmentation.int8.onnx`, converted from `pyannote/segmentation-3.0`

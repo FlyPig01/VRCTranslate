@@ -14,19 +14,30 @@ public sealed class LocalSpeechModelManager : ILocalSpeechModelManager
     private readonly LocalSpeechModelPayload _payload;
     private readonly string _modelDirectory;
     private readonly string _bundledDirectory;
+    private readonly bool _validateBundledExactSizes;
     private readonly SemaphoreSlim _installLock = new(1, 1);
     private volatile bool _installing;
 
     /// <summary>Manages the SenseVoice recognition payload.</summary>
-    public LocalSpeechModelManager(string? modelDirectory = null, string? bundledModelDirectory = null)
-        : this(LocalSpeechModelCatalog.Recognition, modelDirectory, bundledModelDirectory)
+    /// <param name="validateBundledExactSizes">
+    /// The production composition passes true so the official package's bundled
+    /// files are checked against their exact release sizes. Tests and tools that
+    /// script a payload with small placeholder files keep the historical minimum
+    /// floor and pass false.
+    /// </param>
+    public LocalSpeechModelManager(
+        string? modelDirectory = null,
+        string? bundledModelDirectory = null,
+        bool validateBundledExactSizes = false)
+        : this(LocalSpeechModelCatalog.Recognition, modelDirectory, bundledModelDirectory, validateBundledExactSizes)
     {
     }
 
     public LocalSpeechModelManager(
         LocalSpeechModelPayload payload,
         string? modelDirectory = null,
-        string? bundledModelDirectory = null)
+        string? bundledModelDirectory = null,
+        bool validateBundledExactSizes = false)
     {
         _payload = payload ?? throw new ArgumentNullException(nameof(payload));
         _modelDirectory = string.IsNullOrWhiteSpace(modelDirectory)
@@ -35,6 +46,7 @@ public sealed class LocalSpeechModelManager : ILocalSpeechModelManager
         _bundledDirectory = string.IsNullOrWhiteSpace(bundledModelDirectory)
             ? payload.GetBundledDirectory()
             : Path.GetFullPath(bundledModelDirectory);
+        _validateBundledExactSizes = validateBundledExactSizes;
     }
 
     public LocalSpeechModelPayload Payload => _payload;
@@ -50,13 +62,16 @@ public sealed class LocalSpeechModelManager : ILocalSpeechModelManager
                 _payload.DisplayName, _modelDirectory, TotalSize(_bundledDirectory), "正在安装");
         }
 
-        if (MeasurePayload(_bundledDirectory) is { } bundledSize)
+        // The bundled copy is what the official package ships, so it is held to
+        // the exact sizes recorded by the release build. A truncated file used
+        // to pass the minimum floor and still report Ready.
+        if (MeasurePayload(_bundledDirectory, requireExact: _validateBundledExactSizes) is { } bundledSize)
         {
             return new(LocalSpeechModelState.Ready, _payload.Id,
                 _payload.DisplayName, _bundledDirectory, bundledSize, "内置模型已就绪", IsBundled: true);
         }
 
-        if (MeasurePayload(_modelDirectory) is { } installedSize)
+        if (MeasurePayload(_modelDirectory, requireExact: false) is { } installedSize)
         {
             return new(LocalSpeechModelState.Ready, _payload.Id,
                 _payload.DisplayName, _modelDirectory, installedSize, "本地模型已就绪");
@@ -69,6 +84,16 @@ public sealed class LocalSpeechModelManager : ILocalSpeechModelManager
         {
             return new(LocalSpeechModelState.Invalid, _payload.Id,
                 _payload.DisplayName, _modelDirectory, TotalSize(_modelDirectory), "模型文件不完整，请重新安装");
+        }
+
+        // A damaged bundled payload must not hide behind "未安装" either: the
+        // user needs to know the package itself is incomplete and that a
+        // re-extract (or the download path) is the repair.
+        if (PayloadFileNames.Any(file => File.Exists(Path.Combine(_bundledDirectory, file))))
+        {
+            return new(LocalSpeechModelState.Invalid, _payload.Id,
+                _payload.DisplayName, _bundledDirectory, TotalSize(_bundledDirectory),
+                "内置模型文件不完整，请重新解压安装包或重新下载");
         }
 
         return new(LocalSpeechModelState.NotInstalled, _payload.Id,
@@ -220,12 +245,16 @@ public sealed class LocalSpeechModelManager : ILocalSpeechModelManager
     }
 
     private string? ResolveUsableDirectory() =>
-        MeasurePayload(_bundledDirectory) is not null ? _bundledDirectory
-        : MeasurePayload(_modelDirectory) is not null ? _modelDirectory
+        MeasurePayload(_bundledDirectory, requireExact: _validateBundledExactSizes) is not null ? _bundledDirectory
+        : MeasurePayload(_modelDirectory, requireExact: false) is not null ? _modelDirectory
         : null;
 
-    /// <summary>Total size when every payload file is present and large enough; otherwise null.</summary>
-    private long? MeasurePayload(string directory)
+    /// <summary>
+    /// Total size when every payload file is present and usable; otherwise null.
+    /// The bundled copy requires the exact release size, so a truncated file is
+    /// never preferred over a valid downloaded copy.
+    /// </summary>
+    private long? MeasurePayload(string directory, bool requireExact)
     {
         if (!Directory.Exists(directory)) return null;
         long total = 0;
@@ -236,7 +265,15 @@ public sealed class LocalSpeechModelManager : ILocalSpeechModelManager
             {
                 if (!File.Exists(path)) return null;
                 var length = new FileInfo(path).Length;
-                if (length < _payload.MinimumBytesFor(file)) return null;
+                if (requireExact && _payload.ExactBytesFor(file) is { } exact)
+                {
+                    if (length != exact) return null;
+                }
+                else if (length < _payload.MinimumBytesFor(file))
+                {
+                    return null;
+                }
+
                 total += length;
             }
             catch (IOException) { return null; }

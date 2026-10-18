@@ -25,4 +25,11 @@ public static class AppDataFiles
     /// </summary>
     public const string CaptureDiagnostics = "capture-diagnostics.log";
 
+    /// <summary>
+    /// Bounded technical log of the caption path: self-test, audio level,
+    /// segments, recognition counts, publish/append results and overlay state.
+    /// Never contains recognized or translated text.
+    /// </summary>
+    public const string CaptionDiagnostics = "caption-diagnostics.log";
+
 }

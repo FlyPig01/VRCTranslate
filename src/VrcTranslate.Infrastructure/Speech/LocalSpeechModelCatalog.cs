@@ -45,8 +45,8 @@ public static class LocalSpeechModelCatalog
         DisplayName,
         ModelDirectory,
         [
-            new LocalSpeechModelFile(ModelFileName, 100_000_000),
-            new LocalSpeechModelFile(TokensFileName, 10_000),
+            new LocalSpeechModelFile(ModelFileName, 100_000_000, ExactBytes: 239_233_841),
+            new LocalSpeechModelFile(TokensFileName, 10_000, ExactBytes: 315_894),
         ],
         [new Uri(SenseVoiceRepository), new Uri(SenseVoiceFallbackRepository)],
         ExpectedBytes: 239_549_735);
@@ -65,11 +65,13 @@ public static class LocalSpeechModelCatalog
             new LocalSpeechModelFile(
                 SegmentationFileName,
                 1_000_000,
-                new Uri("https://hf-mirror.com/csukuangfj/sherpa-onnx-pyannote-segmentation-3-0/resolve/main/model.int8.onnx")),
+                new Uri("https://hf-mirror.com/csukuangfj/sherpa-onnx-pyannote-segmentation-3-0/resolve/main/model.int8.onnx"),
+                ExactBytes: 1_540_506),
             new LocalSpeechModelFile(
                 EmbeddingFileName,
                 20_000_000,
-                new Uri("https://hf-mirror.com/csukuangfj/speaker-embedding-models/resolve/main/3dspeaker_speech_campplus_sv_zh_en_16k-common_advanced.onnx")),
+                new Uri("https://hf-mirror.com/csukuangfj/speaker-embedding-models/resolve/main/3dspeaker_speech_campplus_sv_zh_en_16k-common_advanced.onnx"),
+                ExactBytes: 28_281_164),
         ],
         [],
         ExpectedBytes: 29_821_670);

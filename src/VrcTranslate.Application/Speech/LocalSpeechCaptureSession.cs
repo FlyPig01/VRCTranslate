@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using VrcTranslate.Application.Abstractions;
 using VrcTranslate.Core.Speech;
 
@@ -10,19 +11,34 @@ namespace VrcTranslate.Application.Speech;
 /// </summary>
 public sealed class LocalSpeechCaptureSession : IAsyncDisposable
 {
+    private static readonly TimeSpan SilentVadFallbackWindow = TimeSpan.FromSeconds(12);
+    private const float AudibleRms = 0.01f;
+
     private readonly IAudioCapture _capture;
     private readonly LocalSpeechService _speech;
-    private readonly ISpeechSegmenter _segmenter;
     private readonly SpeechCaptureProcessingOptions _processing;
     private readonly SemaphoreSlim _recognitionGate = new(1, 1);
     private readonly string _sourceLanguage;
     private readonly object _sync = new();
+    private readonly object _segmenterSync = new();
+    private readonly object _diagnosticsSync = new();
+    private ISpeechSegmenter _segmenter;
+    private int _segmenterSampleRate;
     private CancellationTokenSource _sourceCts = new();
     private AudioSourceState _sourceState;
     private long _sourceGeneration;
     private bool _started;
     private bool _disposed;
     private bool _fallbackNoticeConsumed;
+    private bool _usingEnergyGate;
+    private bool _splitFaultLogged;
+    private long _audibleStartTimestamp;
+    private long _diagnosticsWindowStart = Stopwatch.GetTimestamp();
+    private long _diagnosticsChunks;
+    private long _diagnosticsSegments;
+    private long _diagnosticsResults;
+    private long _diagnosticsEmpty;
+    private float _diagnosticsMaxRms;
 
     public LocalSpeechCaptureSession(
         IAudioCapture capture,
@@ -39,6 +55,10 @@ public sealed class LocalSpeechCaptureSession : IAsyncDisposable
         }
 
         _segmenter = segmenter ?? new SpeechSegmenter();
+        _segmenterSampleRate = _segmenter.SampleRate;
+        // A session that was handed the managed gate by the self-test must not
+        // mistake the absence of VAD segments for a broken native gate later.
+        _usingEnergyGate = _segmenter is SpeechSegmenter;
         _processing = processing ?? SpeechCaptureProcessingOptions.None;
         _sourceState = new AudioSourceState(_capture.SourceKind);
         _capture.SamplesReady += OnSamplesReady;
@@ -54,6 +74,20 @@ public sealed class LocalSpeechCaptureSession : IAsyncDisposable
 
     /// <summary>Forwards measured input activity to a compact visualizer.</summary>
     public event EventHandler<AudioLevelEventArgs>? LevelChanged;
+
+    /// <summary>
+    /// Technical stage messages for the support log: sample counts and RMS,
+    /// segment counts, recognition result counts and the reason for a fallback.
+    /// Never carries recognized or translated text.
+    /// </summary>
+    public event EventHandler<string>? Diagnostic;
+
+    /// <summary>
+    /// Raised once when the native speech gate could not be used and the session
+    /// continued with the energy gate. Captions keep flowing; the shell shows one
+    /// short notice instead of an empty window.
+    /// </summary>
+    public event EventHandler<SpeechSegmenterFallbackEventArgs>? SegmenterFallback;
 
     public bool IsStarted
     {
@@ -112,7 +146,12 @@ public sealed class LocalSpeechCaptureSession : IAsyncDisposable
         // owns no unmanaged handle and is collected together with its tasks.
         try { retired.Cancel(); }
         catch (ObjectDisposedException) { }
-        _segmenter.Reset();
+        lock (_segmenterSync)
+        {
+            _segmenter.Reset();
+        }
+
+        RaiseDiagnostic("source boundary: pending segment dropped");
     }
 
     public async Task StartAsync(CancellationToken cancellationToken = default)
@@ -137,6 +176,7 @@ public sealed class LocalSpeechCaptureSession : IAsyncDisposable
         // Loading the local model costs an order of magnitude more than one
         // recognition, so the session loads it up front instead of making the
         // first sentence pay for it.
+        RaiseDiagnostic($"session start source={_capture.SourceKind} lang={_sourceLanguage} segmenter={_segmenter.GetType().Name}");
         _ = WarmUpAsync();
     }
 
@@ -148,8 +188,9 @@ public sealed class LocalSpeechCaptureSession : IAsyncDisposable
         }
         catch (Exception exception)
         {
-            // The first real recognition owns the user-visible error path.
-            _ = exception;
+            // The first real recognition owns the user-visible error path; the
+            // support log still needs to know the warm-up itself failed.
+            RaiseDiagnostic($"warmup failed {exception.GetType().Name}: {exception.Message}");
         }
     }
 
@@ -166,19 +207,27 @@ public sealed class LocalSpeechCaptureSession : IAsyncDisposable
         // The flushed tail belongs to the source that is still current, so it
         // keeps the stop-time behaviour of publishing the last half sentence.
         var generation = CurrentSourceGeneration();
-        foreach (var pending in _segmenter.Flush())
+        IReadOnlyList<ReadOnlyMemory<float>> pendingSegments;
+        lock (_segmenterSync)
+        {
+            pendingSegments = _segmenter.Flush();
+        }
+
+        foreach (var pending in pendingSegments)
         {
             await RecognizeSegmentAsync(pending, generation, cancellationToken).ConfigureAwait(false);
         }
+
+        var summary = $"session stop segmenter={_segmenter.GetType().Name} chunks={_diagnosticsChunks} " +
+                      $"segments={_diagnosticsSegments} results={_diagnosticsResults} empty={_diagnosticsEmpty}";
         if (_segmenter is SpeechSegmenter energy)
         {
-            // One line per stop so a missing-caption session can be described
-            // from a debug log without adding UI for it.
             var d = energy.Diagnostics;
-            System.Diagnostics.Debug.WriteLine(
-                $"[speech] segments={d.CompletedSegments} droppedShort={d.DroppedShortSegments} " +
-                $"noiseFloor={d.NoiseFloor:0.0000} activeRatio={d.ActiveRatio:0.00}");
+            summary += $" droppedShort={d.DroppedShortSegments} noiseFloor={d.NoiseFloor:0.0000} " +
+                       $"activeRatio={d.ActiveRatio:0.00}";
         }
+
+        RaiseDiagnostic(summary);
     }
 
     public async ValueTask DisposeAsync()
@@ -194,7 +243,11 @@ public sealed class LocalSpeechCaptureSession : IAsyncDisposable
             _capture.SamplesReady -= OnSamplesReady;
             _capture.SourceChanged -= OnSourceChanged;
             await _capture.DisposeAsync().ConfigureAwait(false);
-            if (_segmenter is IDisposable disposableSegmenter) disposableSegmenter.Dispose();
+            lock (_segmenterSync)
+            {
+                if (_segmenter is IDisposable disposableSegmenter) disposableSegmenter.Dispose();
+            }
+
             _sourceCts.Cancel();
             _sourceCts.Dispose();
             _recognitionGate.Dispose();
@@ -204,18 +257,176 @@ public sealed class LocalSpeechCaptureSession : IAsyncDisposable
     private void OnSamplesReady(object? sender, AudioSamplesEventArgs args)
     {
         if (_disposed || !IsStarted) return;
-        RaiseLevelChanged(args.Samples.Span);
-        if (args.SampleRate != _segmenter.SampleRate)
+        var (rms, peak) = Measure(args.Samples.Span);
+        RaiseLevelChanged(rms, peak);
+        if (args.SampleRate != _segmenterSampleRate)
         {
             RaiseFaulted(new InvalidOperationException("音频采样率必须为 16 kHz。"));
             return;
         }
 
         if (!TrySnapshotSource(out var generation, out var token)) return;
-        foreach (var segment in _segmenter.Append(args.Samples))
+        TrackAudible(rms);
+        var segments = AppendSamples(args.Samples);
+        if (segments.Count == 0 && ShouldFallBackForSilentVad())
         {
+            SwitchToEnergyGate(new InvalidOperationException("VAD 连续 12 秒没有产出语音段。"));
+        }
+
+        foreach (var segment in segments)
+        {
+            if (segment.IsEmpty) continue;
+            Interlocked.Exchange(ref _audibleStartTimestamp, 0);
+            Interlocked.Increment(ref _diagnosticsSegments);
             _ = RecognizeSegmentAsync(segment, generation, token);
         }
+
+        FlushDiagnosticsIfDue(rms);
+    }
+
+    /// <summary>
+    /// Feeds one captured chunk to the current gate. A native gate that throws
+    /// used to lose the exception inside the capture callback: the level meter
+    /// still moved, the caption window stayed empty and nothing was logged. The
+    /// chunk is replayed through the energy gate so no audio is lost.
+    /// </summary>
+    private IReadOnlyList<ReadOnlyMemory<float>> AppendSamples(ReadOnlyMemory<float> samples)
+    {
+        try
+        {
+            lock (_segmenterSync) return _segmenter.Append(samples);
+        }
+        catch (Exception exception)
+        {
+            SwitchToEnergyGate(exception);
+            try
+            {
+                lock (_segmenterSync) return _segmenter.Append(samples);
+            }
+            catch (Exception fallbackException)
+            {
+                RaiseFaulted(fallbackException);
+                return [];
+            }
+        }
+    }
+
+    /// <summary>
+    /// Replaces a failing or stuck speech gate with the managed energy gate for
+    /// the rest of the session. Captions keep flowing; the failure is logged and
+    /// surfaced once by the shell.
+    /// </summary>
+    private void SwitchToEnergyGate(Exception exception)
+    {
+        if (_usingEnergyGate) return;
+
+        lock (_segmenterSync)
+        {
+            if (_usingEnergyGate || _segmenter is SpeechSegmenter)
+            {
+                _usingEnergyGate = true;
+                return;
+            }
+
+            var previous = _segmenter;
+            _segmenter = new SpeechSegmenter();
+            _segmenterSampleRate = _segmenter.SampleRate;
+            _usingEnergyGate = true;
+            if (previous is IDisposable disposable)
+            {
+                try { disposable.Dispose(); } catch { /* the replacement already owns the path */ }
+            }
+        }
+
+        Interlocked.Exchange(ref _audibleStartTimestamp, 0);
+        RaiseDiagnostic($"segmenter fallback to energy gate: {exception.GetType().Name}: {exception.Message}");
+        try
+        {
+            SegmenterFallback?.Invoke(
+                this,
+                new SpeechSegmenterFallbackEventArgs(
+                    "语音活动检测不可用，已切换到备用分段器；字幕仍会继续。",
+                    exception));
+        }
+        catch
+        {
+            // A presentation subscriber must not break the audio path.
+        }
+    }
+
+    private void TrackAudible(float rms)
+    {
+        if (_usingEnergyGate || rms < AudibleRms) return;
+        if (Interlocked.Read(ref _audibleStartTimestamp) == 0)
+        {
+            Interlocked.CompareExchange(ref _audibleStartTimestamp, Stopwatch.GetTimestamp(), 0);
+        }
+    }
+
+    private bool ShouldFallBackForSilentVad()
+    {
+        if (_usingEnergyGate) return false;
+        var start = Interlocked.Read(ref _audibleStartTimestamp);
+        return start != 0 && Stopwatch.GetElapsedTime(start) >= SilentVadFallbackWindow;
+    }
+
+    private void FlushDiagnosticsIfDue(float rms)
+    {
+        Interlocked.Increment(ref _diagnosticsChunks);
+        lock (_diagnosticsSync)
+        {
+            if (rms > _diagnosticsMaxRms) _diagnosticsMaxRms = rms;
+        }
+
+        if (Stopwatch.GetElapsedTime(Interlocked.Read(ref _diagnosticsWindowStart)) < TimeSpan.FromSeconds(5))
+        {
+            return;
+        }
+
+        long chunks;
+        long segments;
+        long results;
+        long empty;
+        float maxRms;
+        lock (_diagnosticsSync)
+        {
+            chunks = _diagnosticsChunks;
+            _diagnosticsChunks = 0;
+            segments = _diagnosticsSegments;
+            _diagnosticsSegments = 0;
+            results = _diagnosticsResults;
+            _diagnosticsResults = 0;
+            empty = _diagnosticsEmpty;
+            _diagnosticsEmpty = 0;
+            maxRms = _diagnosticsMaxRms;
+            _diagnosticsMaxRms = 0f;
+        }
+
+        Interlocked.Exchange(ref _diagnosticsWindowStart, Stopwatch.GetTimestamp());
+        RaiseDiagnostic(
+            $"audio chunks={chunks} maxRms={maxRms:0.0000} segments={segments} " +
+            $"results={results} empty={empty} gate={(_usingEnergyGate ? "energy" : "vad")}");
+    }
+
+    private static (float Rms, float Peak) Measure(ReadOnlySpan<float> samples)
+    {
+        if (samples.IsEmpty) return (0f, 0f);
+        var sum = 0d;
+        var peak = 0f;
+        foreach (var sample in samples)
+        {
+            var absolute = Math.Abs(sample);
+            sum += absolute * absolute;
+            if (absolute > peak) peak = absolute;
+        }
+
+        return ((float)Math.Sqrt(sum / samples.Length), peak);
+    }
+
+    private void RaiseDiagnostic(string message)
+    {
+        try { Diagnostic?.Invoke(this, message); }
+        catch { /* diagnostics must never break the audio path */ }
     }
 
     private void OnSourceChanged(object? sender, AudioSourceChangedEventArgs args)
@@ -255,19 +466,8 @@ public sealed class LocalSpeechCaptureSession : IAsyncDisposable
         lock (_sync) return generation != _sourceGeneration;
     }
 
-    private void RaiseLevelChanged(ReadOnlySpan<float> samples)
+    private void RaiseLevelChanged(float rms, float peak)
     {
-        if (samples.IsEmpty) return;
-        var sum = 0d;
-        var peak = 0f;
-        foreach (var sample in samples)
-        {
-            var absolute = Math.Abs(sample);
-            sum += absolute * absolute;
-            if (absolute > peak) peak = absolute;
-        }
-
-        var rms = (float)Math.Sqrt(sum / samples.Length);
         try { LevelChanged?.Invoke(this, new AudioLevelEventArgs(rms, peak)); }
         catch (Exception exception) { RaiseFaulted(exception); }
     }
@@ -288,13 +488,30 @@ public sealed class LocalSpeechCaptureSession : IAsyncDisposable
                 // One span normally; two or three when one sentence holds two voices.
                 foreach (var span in PlanSpeakerSpans(samples))
                 {
-                    var part = samples.Slice(span.StartSample, span.Length);
+                    // A damaged split must cost the split, never the sentence.
+                    var start = Math.Clamp(span.StartSample, 0, samples.Length);
+                    var end = Math.Clamp(span.EndSample, start, samples.Length);
+                    if (end <= start) continue;
+
+                    var part = samples.Slice(start, end - start);
                     var result = await _speech.RecognizeAsync(
-                        new SpeechRecognitionRequest(part, _segmenter.SampleRate, _sourceLanguage),
+                        new SpeechRecognitionRequest(part, _segmenterSampleRate, _sourceLanguage),
                         cancellationToken).ConfigureAwait(false);
-                    if (string.IsNullOrWhiteSpace(result.Text)) continue;
+                    if (string.IsNullOrWhiteSpace(result.Text))
+                    {
+                        var empty = Interlocked.Increment(ref _diagnosticsEmpty);
+                        if (empty <= 3) RaiseDiagnostic("recognition returned no text");
+                        continue;
+                    }
+
                     // A slow result must not surface after the source switched.
                     if (IsStaleSource(generation)) return;
+                    var recognized = Interlocked.Increment(ref _diagnosticsResults);
+                    if (recognized <= 3)
+                    {
+                        RaiseDiagnostic($"result chars={result.Text.Length} lang={result.SourceLanguage}");
+                    }
+
                     RaiseResultReady(AttachSpeaker(result, part));
                 }
             }
@@ -327,13 +544,18 @@ public sealed class LocalSpeechCaptureSession : IAsyncDisposable
 
         try
         {
-            var spans = speakers.SplitAtSpeakerChanges(samples, _segmenter.SampleRate);
+            var spans = speakers.SplitAtSpeakerChanges(samples, _segmenterSampleRate);
             return spans.Count > 1 ? spans : [whole];
         }
         catch (Exception exception)
         {
             // Speaker separation is an enhancement: a failure must not cost the caption.
-            _ = exception;
+            if (!_splitFaultLogged)
+            {
+                _splitFaultLogged = true;
+                RaiseDiagnostic($"speaker split failed: {exception.GetType().Name}: {exception.Message}");
+            }
+
             return [whole];
         }
     }
@@ -344,7 +566,7 @@ public sealed class LocalSpeechCaptureSession : IAsyncDisposable
 
         try
         {
-            var match = speakers.Identify(samples, _segmenter.SampleRate);
+            var match = speakers.Identify(samples, _segmenterSampleRate);
             return match is null
                 ? result
                 : result with { SpeakerId = match.Speaker.Id, SpeakerLabel = match.Speaker.DisplayName };
@@ -378,6 +600,7 @@ public sealed class LocalSpeechCaptureSession : IAsyncDisposable
 
     private void RaiseFaulted(Exception exception)
     {
+        RaiseDiagnostic($"fault {exception.GetType().Name}: {exception.Message}");
         try { Faulted?.Invoke(this, exception); }
         catch { }
     }
@@ -387,3 +610,6 @@ public sealed class LocalSpeechCaptureSession : IAsyncDisposable
         if (_disposed) throw new ObjectDisposedException(nameof(LocalSpeechCaptureSession));
     }
 }
+
+/// <summary>One switch from the native speech gate to the managed energy gate.</summary>
+public sealed record SpeechSegmenterFallbackEventArgs(string Message, Exception? Exception);

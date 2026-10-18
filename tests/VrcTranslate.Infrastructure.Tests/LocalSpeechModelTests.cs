@@ -42,7 +42,10 @@ public sealed class LocalSpeechModelTests : IDisposable
         WriteSizedFile(Path.Combine(bundled, LocalSpeechModelCatalog.EmbeddingFileName), 28_281_164);
         var manager = new LocalSpeechModelManager(LocalSpeechModelCatalog.Speaker, _directory, bundled);
 
-        Assert.Equal(LocalSpeechModelState.NotInstalled, manager.GetStatus().State);
+        // The directory is not empty, so this is a damaged package rather than
+        // an absent model. The voice page must offer the repair path instead of
+        // claiming the model was never installed.
+        Assert.Equal(LocalSpeechModelState.Invalid, manager.GetStatus().State);
     }
 
     [Fact]
@@ -183,7 +186,7 @@ public sealed class LocalSpeechModelTests : IDisposable
     }
 
     [Fact]
-    public void Invalid_bundled_payload_without_user_copy_reports_not_installed()
+    public void Invalid_bundled_payload_without_user_copy_reports_invalid()
     {
         var bundledDirectory = _bundledDirectory;
         WritePayload(bundledDirectory, modelBytes: 128);
@@ -191,10 +194,63 @@ public sealed class LocalSpeechModelTests : IDisposable
 
         var status = manager.GetStatus();
 
-        // A placeholder bundled payload must fall back to the on-demand
-        // download flow instead of being reported as unusable state.
-        Assert.Equal(LocalSpeechModelState.NotInstalled, status.State);
+        // A damaged bundled payload must be visible as such: "未安装" would send
+        // the user to the download button without explaining why the packaged
+        // model does not work, and the download is exactly the repair path.
+        Assert.Equal(LocalSpeechModelState.Invalid, status.State);
+        Assert.Contains("内置模型", status.Message, StringComparison.Ordinal);
         Assert.False(status.IsBundled);
+    }
+
+    [Fact]
+    public void Truncated_bundled_model_is_not_ready_when_exact_sizes_are_enforced()
+    {
+        var bundled = Path.Combine(_bundledDirectory, "speaker");
+        Directory.CreateDirectory(bundled);
+        WriteSizedFile(Path.Combine(bundled, LocalSpeechModelCatalog.SegmentationFileName), 1_540_506);
+        WriteSizedFile(Path.Combine(bundled, LocalSpeechModelCatalog.EmbeddingFileName), 28_281_163);
+        var manager = new LocalSpeechModelManager(
+            LocalSpeechModelCatalog.Speaker, _directory, bundled, validateBundledExactSizes: true);
+
+        var status = manager.GetStatus();
+
+        Assert.Equal(LocalSpeechModelState.Invalid, status.State);
+        Assert.Contains("内置模型", status.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Truncated_bundled_model_falls_back_to_the_valid_downloaded_copy()
+    {
+        var bundled = Path.Combine(_bundledDirectory, "speaker");
+        Directory.CreateDirectory(bundled);
+        WriteSizedFile(Path.Combine(bundled, LocalSpeechModelCatalog.SegmentationFileName), 1_540_506);
+        WriteSizedFile(Path.Combine(bundled, LocalSpeechModelCatalog.EmbeddingFileName), 1_000_000);
+
+        var installed = Path.Combine(_directory, "speaker");
+        Directory.CreateDirectory(installed);
+        WriteSizedFile(Path.Combine(installed, LocalSpeechModelCatalog.SegmentationFileName), 1_540_506);
+        WriteSizedFile(Path.Combine(installed, LocalSpeechModelCatalog.EmbeddingFileName), 28_281_164);
+
+        var manager = new LocalSpeechModelManager(
+            LocalSpeechModelCatalog.Speaker, installed, bundled, validateBundledExactSizes: true);
+
+        var status = manager.GetStatus();
+
+        Assert.Equal(LocalSpeechModelState.Ready, status.State);
+        Assert.False(status.IsBundled);
+        Assert.Equal(installed, status.FilePath);
+        Assert.Equal(installed, manager.ModelDirectory);
+    }
+
+    [Fact]
+    public void Official_payload_files_pin_their_exact_bundled_sizes()
+    {
+        Assert.Equal(239_233_841, LocalSpeechModelCatalog.Recognition.ExactBytesFor(LocalSpeechModelCatalog.ModelFileName));
+        Assert.Equal(315_894, LocalSpeechModelCatalog.Recognition.ExactBytesFor(LocalSpeechModelCatalog.TokensFileName));
+        Assert.Equal(1_540_506, LocalSpeechModelCatalog.Speaker.ExactBytesFor(LocalSpeechModelCatalog.SegmentationFileName));
+        Assert.Equal(28_281_164, LocalSpeechModelCatalog.Speaker.ExactBytesFor(LocalSpeechModelCatalog.EmbeddingFileName));
+        Assert.Equal(239_549_735, LocalSpeechModelCatalog.Recognition.ExpectedBytes);
+        Assert.Equal(29_821_670, LocalSpeechModelCatalog.Speaker.ExpectedBytes);
     }
 
     [Fact]

@@ -18,6 +18,7 @@ public partial class App : Microsoft.UI.Xaml.Application
     {
         try
         {
+            CaptionDiagnostics.Initialize();
             _window = new MainWindow();
             _window.Activate();
         }

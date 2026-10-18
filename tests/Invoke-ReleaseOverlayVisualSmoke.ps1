@@ -13,6 +13,7 @@ $requiredAssets = @(
     'App.xbf',
     'MainWindow.xbf',
     'Resources\default-glossary.json',
+    'Resources\self-test-zh.wav',
     'Pages\GuidePage.xbf',
     'Pages\RunPage.xbf',
     'Pages\SelfMessagePage.xbf',

@@ -138,11 +138,13 @@
                       </Grid.ColumnDefinitions>
                       <TextBlock Text="{Binding Source}"
                                  VerticalAlignment="Center"
+                                 Foreground="#16202E"
                                  TextTrimming="CharacterEllipsis"
                                  MinWidth="0" />
                       <TextBlock Grid.Column="1"
                                  Text="{Binding Target}"
                                  VerticalAlignment="Center"
+                                 Foreground="#16202E"
                                  TextTrimming="CharacterEllipsis"
                                  MinWidth="0" />
                       <Button Grid.Column="2"

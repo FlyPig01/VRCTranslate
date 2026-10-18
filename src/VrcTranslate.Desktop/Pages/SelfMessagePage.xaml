@@ -77,6 +77,7 @@
                            Text="自身语音已停止"
                            FontSize="16"
                            FontWeight="SemiBold"
+                           Foreground="#16202E"
                            VerticalAlignment="Center" />
                 <Grid Grid.Column="1"
                       x:Name="MicrophoneLevelHost"
@@ -186,7 +187,7 @@
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />
               </Grid.ColumnDefinitions>
-              <TextBlock Text="第一语言" VerticalAlignment="Center" />
+              <TextBlock Text="第一语言" Foreground="#16202E" VerticalAlignment="Center" />
               <ComboBox Grid.Column="1"
                         x:Name="PrimaryTargetBox"
                         AutomationProperties.AutomationId="self-primary-target"
@@ -198,7 +199,7 @@
                 <ComboBoxItem Tag="ko-KR" Content="한국어" />
                 <ComboBoxItem Tag="zh-CN" Content="简体中文" />
               </ComboBox>
-              <TextBlock Grid.Column="2" Text="第二语言" VerticalAlignment="Center" />
+              <TextBlock Grid.Column="2" Text="第二语言" Foreground="#16202E" VerticalAlignment="Center" />
               <ComboBox Grid.Column="3"
                         x:Name="SecondaryTargetBox"
                         AutomationProperties.AutomationId="self-secondary-target"
@@ -219,6 +220,7 @@
                 <ColumnDefinition Width="44" />
               </Grid.ColumnDefinitions>
               <TextBlock Text="透明度"
+                         Foreground="#16202E"
                          VerticalAlignment="Center" />
               <Slider Grid.Column="1"
                       x:Name="InputOverlayOpacitySlider"
@@ -233,6 +235,7 @@
                          x:Name="InputOverlayOpacityValue"
                          Text="90%"
                          TextAlignment="Right"
+                         Foreground="#16202E"
                          VerticalAlignment="Center" />
             </Grid>
           </StackPanel>

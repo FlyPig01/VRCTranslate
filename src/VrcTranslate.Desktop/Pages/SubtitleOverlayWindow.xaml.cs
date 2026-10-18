@@ -5,6 +5,7 @@ using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
 using VrcTranslate.Application.Subtitles;
 using VrcTranslate.Core.Settings;
+using VrcTranslate.Core.Speech;
 
 namespace VrcTranslate.Desktop.Pages;
 
@@ -81,10 +82,13 @@ public sealed partial class SubtitleOverlayWindow : Window
     private readonly List<CaptionBubble> _bubbles = [];
     private readonly Microsoft.UI.Dispatching.DispatcherQueue? _dispatcher;
     private readonly double _initialOpacity;
+    private readonly Microsoft.UI.Dispatching.DispatcherQueueTimer? _contentCheckTimer;
     private OverlayWindowController? _windowController;
     private bool _followLatest = true;
     private bool _narrowSurface;
     private bool _fittingHeight;
+    private bool _contentRecoveryAttempted;
+    private string? _persistentStatus;
 
     /// <summary>
     /// True once the reader sized the surface by hand. Their rectangle is then
@@ -124,7 +128,15 @@ public sealed partial class SubtitleOverlayWindow : Window
         CaptionScroll.ViewChanged += OnCaptionViewChanged;
         NewCaptionHint.Click += OnNewCaptionHintClicked;
         OverlaySurface.SizeChanged += OnSurfaceSizeChanged;
+        OverlaySurface.Loaded += OnOverlayLoaded;
         _dispatcher = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread();
+        _contentCheckTimer = _dispatcher?.CreateTimer();
+        if (_contentCheckTimer is not null)
+        {
+            _contentCheckTimer.Interval = TimeSpan.FromMilliseconds(400);
+            _contentCheckTimer.IsRepeating = false;
+            _contentCheckTimer.Tick += OnContentCheckTick;
+        }
 
         EnsureWindowController();
         Closed += OnClosed;
@@ -181,8 +193,17 @@ public sealed partial class SubtitleOverlayWindow : Window
     internal void ShowOverlay(bool activate)
     {
         EnsureWindowController();
+        // The surface is only shown while recognition runs, so a visible window
+        // is the strongest signal that the stream must accept captions. Tying the
+        // pause state to visibility removes the dependency on event ordering from
+        // the running-changed notification.
+        _captions.Resume();
+        UpdateTitle();
         if (_windowController is not null) _windowController.Show(activate);
         else OverlayWindowController.ShowFallback(this, activate);
+        CaptionDiagnostics.Write($"overlay show paused={_captions.IsPaused} messages={_bubbles.Count}");
+        _contentCheckTimer?.Start();
+
         // A hidden surface does not lay out its messages, so catch up once it is
         // visible again - but only for a reader who was already at the newest one.
         if (_followLatest)
@@ -197,8 +218,29 @@ public sealed partial class SubtitleOverlayWindow : Window
 
     internal void HideOverlay()
     {
+        _captions.Pause();
+        _contentCheckTimer?.Stop();
+        CaptionDiagnostics.Write("overlay hide");
         if (_windowController is not null) _windowController.Hide();
         else OverlayWindowController.HideFallback(this);
+    }
+
+    /// <summary>
+    /// Puts the startup self-test verdict on the window's title, where it stays
+    /// visible even if the XAML content itself did not render. A passing check
+    /// keeps the plain "字幕"; the first real caption also clears it, so a false
+    /// negative on the self-test cannot leave a warning on a working surface.
+    /// </summary>
+    internal void SetSelfTestResult(LocalSpeechSelfTestResult? result)
+    {
+        _persistentStatus = result is { IsUsable: false } ? "自检失败" : null;
+        UpdateTitle();
+    }
+
+    private void UpdateTitle()
+    {
+        var title = _persistentStatus is { Length: > 0 } ? $"字幕（{_persistentStatus}）" : "字幕";
+        if (!string.Equals(Title, title, StringComparison.Ordinal)) Title = title;
     }
 
     internal void ApplyOpacity(double opacity) => _windowController?.ApplyOpacity(opacity);
@@ -269,14 +311,26 @@ public sealed partial class SubtitleOverlayWindow : Window
     public bool FillCaptionTranslation(long captionId, string? translated)
     {
         var index = _bubbles.FindIndex(bubble => bubble.Caption.Id == captionId);
-        if (index < 0) return false;
-        if (!_captions.TrySetTranslation(captionId, translated)) return false;
+        if (index < 0)
+        {
+            CaptionDiagnostics.Write($"caption fill ignored id={captionId} reason=missing");
+            return false;
+        }
+
+        if (!_captions.TrySetTranslation(captionId, translated))
+        {
+            CaptionDiagnostics.Write($"caption fill ignored id={captionId} reason=not-pending");
+            return false;
+        }
+
         if (!_captions.TryGetCaption(captionId, out var resolved)) return false;
 
         var bubble = _bubbles[index] with { Caption = resolved };
         _bubbles[index] = bubble;
         RenderBody(bubble);
         FitSurfaceHeight();
+        CaptionDiagnostics.Write(
+            $"caption filled id={captionId} hasTranslation={!string.IsNullOrWhiteSpace(translated)}");
         // The reader is looking at the newest message, so the extra line must not
         // push it out of view. A reader who scrolled back is never pulled down.
         if (_followLatest) ScrollToLatest();
@@ -287,7 +341,18 @@ public sealed partial class SubtitleOverlayWindow : Window
     {
         var follow = _followLatest;
         var droppedBefore = _captions.DroppedCount;
-        if (!_captions.Append(caption)) return false;
+        if (!_captions.Append(caption))
+        {
+            CaptionDiagnostics.Write(
+                $"caption dropped id={caption.Id} paused={_captions.IsPaused} empty={caption.IsEmpty}");
+            return false;
+        }
+
+        // A real caption proves the path works; a persistent self-test warning
+        // must not outlive it.
+        _persistentStatus = null;
+        UpdateTitle();
+        CaptionDiagnostics.Write($"caption appended id={caption.Id} chars={caption.Original.Length}");
 
         TrimSurface(_captions.DroppedCount - droppedBefore);
         var bubble = CreateBubble(caption);
@@ -614,11 +679,50 @@ public sealed partial class SubtitleOverlayWindow : Window
         }
     }
 
+    private void OnOverlayLoaded(object sender, RoutedEventArgs e)
+    {
+        OverlaySurface.Loaded -= OnOverlayLoaded;
+        var scale = OverlayDisplayScale.Resolve(OverlaySurface);
+        if (scale > 0d) CaptionDiagnostics.WriteDisplayScale(scale, "subtitle");
+    }
+
+    /// <summary>
+    /// A window that has never been activated before its first show can present a
+    /// blank XAML island on some Windows builds. The dark client area then looks
+    /// exactly like "no captions" even though the message list is full. If the
+    /// content reports no size shortly after the show, force a layout pass and
+    /// activate the window once; both are recorded in the support log.
+    /// </summary>
+    private void OnContentCheckTick(Microsoft.UI.Dispatching.DispatcherQueueTimer sender, object args)
+    {
+        _contentCheckTimer?.Stop();
+        if (_contentRecoveryAttempted || !IsOverlayVisible) return;
+
+        var width = OverlaySurface.ActualWidth;
+        var height = OverlaySurface.ActualHeight;
+        if (width >= 1d && height >= 1d) return;
+
+        _contentRecoveryAttempted = true;
+        CaptionDiagnostics.Write($"overlay content blank width={width:0} height={height:0}; recovering");
+        try
+        {
+            OverlaySurface.UpdateLayout();
+            Activate();
+        }
+        catch (Exception exception)
+        {
+            CaptionDiagnostics.WriteException("overlay content recovery", exception);
+        }
+    }
+
     private void OnClosed(object sender, WindowEventArgs args)
     {
         CaptionScroll.ViewChanged -= OnCaptionViewChanged;
         NewCaptionHint.Click -= OnNewCaptionHintClicked;
         OverlaySurface.SizeChanged -= OnSurfaceSizeChanged;
+        OverlaySurface.Loaded -= OnOverlayLoaded;
+        if (_contentCheckTimer is not null) _contentCheckTimer.Tick -= OnContentCheckTick;
+        _contentCheckTimer?.Stop();
         Closed -= OnClosed;
     }
 

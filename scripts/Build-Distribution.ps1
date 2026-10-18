@@ -140,6 +140,7 @@ function Assert-CleanPackage {
         '程序文件\MainWindow.xbf',
         '程序文件\VrcTranslate.pri',
         '程序文件\Resources\default-glossary.json',
+        '程序文件\Resources\self-test-zh.wav',
         '程序文件\Models\sensevoice\model.int8.onnx',
         '程序文件\Models\sensevoice\tokens.txt',
         '程序文件\Models\speaker\segmentation.int8.onnx',

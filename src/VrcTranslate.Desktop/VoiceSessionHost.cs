@@ -64,7 +64,11 @@ public abstract class VoiceSessionHost
     public event EventHandler<SpeechNotificationEventArgs>? Notified;
 
     /// <summary>Derives raise the shared notification from their own pipeline events.</summary>
-    protected void RaiseNotified(SpeechNotificationEventArgs args) => Notified?.Invoke(this, args);
+    protected void RaiseNotified(SpeechNotificationEventArgs args)
+    {
+        CaptionDiagnostics.Write($"notify {args.Kind} {args.Title}: {args.Message}");
+        Notified?.Invoke(this, args);
+    }
 
     /// <summary>
     /// Raised when the capture source changes, so a visible page can label where
@@ -166,6 +170,21 @@ public abstract class VoiceSessionHost
     /// <summary>Toast shown after a sentence went through the full pipeline; null means stay quiet.</summary>
     protected virtual SpeechNotificationEventArgs? SuccessNotification => null;
 
+    /// <summary>
+    /// Runs before the capture starts. Other-player captions use it to finish the
+    /// startup self-test; a failed check never blocks the session, because the
+    /// runtime fallbacks may still produce captions and the log needs the live
+    /// numbers.
+    /// </summary>
+    protected virtual Task PrepareSessionAsync() => Task.CompletedTask;
+
+    /// <summary>
+    /// Speech gate for the next run. The default is the native Silero VAD; a
+    /// session whose self-test reported it unusable keeps the managed energy gate
+    /// instead of retrying a known-broken native path on every chunk.
+    /// </summary>
+    protected virtual ISpeechSegmenter CreateSegmenter() => LocalSpeechSegmenterFactory.CreateDefault();
+
     public async Task StartAsync()
     {
         await _lifecycleGate.WaitAsync().ConfigureAwait(false);
@@ -173,19 +192,23 @@ public abstract class VoiceSessionHost
         {
             if (_running && _session?.IsStarted == true) return;
 
+            await PrepareSessionAsync().ConfigureAwait(false);
             var plan = CreateCapturePlan();
+            var segmenter = CreateSegmenter();
             var session = new LocalSpeechCaptureSession(
                 plan.Capture,
                 _speech,
                 SourceLanguage,
                 // Silero VAD when its bundled model is present, adaptive
                 // energy gate otherwise.
-                LocalSpeechSegmenterFactory.CreateDefault(),
+                segmenter,
                 CaptureProcessing);
             session.ResultReady += OnResultReady;
             session.Faulted += OnSessionFaulted;
             session.LevelChanged += OnLevelChanged;
             session.SourceChanged += OnSessionSourceChanged;
+            session.Diagnostic += OnSessionDiagnostic;
+            session.SegmenterFallback += OnSessionSegmenterFallback;
             try
             {
                 await session.StartAsync().ConfigureAwait(false);
@@ -198,6 +221,9 @@ public abstract class VoiceSessionHost
                 _session = session;
                 _monitor = plan.Monitor;
                 _running = true;
+                CaptionDiagnostics.Write(
+                    $"session started source={SourceState.Kind} lang={SourceLanguage} " +
+                    $"segmenter={segmenter.GetType().Name} split={CaptureProcessing.SplitAtSpeakerChanges}");
                 // 监视器在采集就绪后才开始推送目标，切换请求不会落在未启动的协调器上。
                 plan.Monitor?.Start();
                 RunningChanged?.Invoke(this, EventArgs.Empty);
@@ -208,6 +234,8 @@ public abstract class VoiceSessionHost
                 session.Faulted -= OnSessionFaulted;
                 session.LevelChanged -= OnLevelChanged;
                 session.SourceChanged -= OnSessionSourceChanged;
+                session.Diagnostic -= OnSessionDiagnostic;
+                session.SegmenterFallback -= OnSessionSegmenterFallback;
                 await session.DisposeAsync().ConfigureAwait(false);
                 if (plan.Monitor is not null) await plan.Monitor.DisposeAsync().ConfigureAwait(false);
                 throw;
@@ -225,6 +253,7 @@ public abstract class VoiceSessionHost
         try
         {
             _running = false;
+            CaptionDiagnostics.Write("session stopping");
             // Pipelines stop before the capture does: work of this run must be
             // cancelled and awaited while the events are still wired up.
             await OnSessionStoppingAsync().ConfigureAwait(false);
@@ -240,6 +269,8 @@ public abstract class VoiceSessionHost
                 session.Faulted -= OnSessionFaulted;
                 session.LevelChanged -= OnLevelChanged;
                 session.SourceChanged -= OnSessionSourceChanged;
+                session.Diagnostic -= OnSessionDiagnostic;
+                session.SegmenterFallback -= OnSessionSegmenterFallback;
                 await session.DisposeAsync().ConfigureAwait(false);
             }
 
@@ -301,15 +332,37 @@ public abstract class VoiceSessionHost
     private void OnSessionFaulted(object? sender, Exception exception)
     {
         if (!_running) return;
+        CaptionDiagnostics.WriteException("speech fault", exception);
         Notified?.Invoke(this, new SpeechNotificationEventArgs(
-            SpeechNotificationKind.Warning, "语音采集已停止", CaptureFaultMessage));
+            SpeechNotificationKind.Warning, "语音识别已停止", CaptureFaultMessage));
     }
 
     private void OnLevelChanged(object? sender, AudioLevelEventArgs args) =>
         LevelChanged?.Invoke(this, args);
 
+    private void OnSessionDiagnostic(object? sender, string message) =>
+        CaptionDiagnostics.Write("speech " + message);
+
+    private void OnSessionSegmenterFallback(object? sender, SpeechSegmenterFallbackEventArgs args)
+    {
+        if (args.Exception is not null)
+        {
+            CaptionDiagnostics.WriteException("speech segmenter fallback", args.Exception);
+        }
+        else
+        {
+            CaptionDiagnostics.Write("speech segmenter fallback");
+        }
+
+        Notified?.Invoke(this, new SpeechNotificationEventArgs(
+            SpeechNotificationKind.Warning, "语音分段", args.Message));
+    }
+
     private void OnSessionSourceChanged(object? sender, AudioSourceChangedEventArgs args)
     {
+        CaptionDiagnostics.Write(
+            $"source {args.State.Kind} process={args.State.ProcessIdentity?.ProcessId.ToString() ?? "none"} " +
+            $"boundary={args.IsBoundary} fault={args.State.LastFaultCode ?? "none"}");
         SourceChanged?.Invoke(this, args);
         if (args.IsBoundary && _running)
         {
@@ -356,8 +409,12 @@ public sealed class SubtitleSpeechSession : VoiceSessionHost
             pipeline = new OtherPlayerCaptionPipeline(
                 _state.Translator,
                 new OverlaySubtitleSurface());
-            pipeline.Diagnostics += (_, args) => RaiseNotified(new SpeechNotificationEventArgs(
-                SpeechNotificationKind.Warning, "他人语音字幕", args.Message));
+            pipeline.Diagnostics += (_, args) =>
+            {
+                CaptionDiagnostics.Write($"pipeline diagnostic id={args.CaptionId} {args.Message}");
+                RaiseNotified(new SpeechNotificationEventArgs(
+                    SpeechNotificationKind.Warning, "他人语音字幕", args.Message));
+            };
             _pipeline = pipeline;
             return pipeline;
         }
@@ -365,6 +422,13 @@ public sealed class SubtitleSpeechSession : VoiceSessionHost
 
     // 回环族：具体采系统混音还是 VRChat 进程音频由自适应协调器决定。
     protected override AudioCaptureMode CaptureMode => AudioCaptureMode.SystemLoopback;
+
+    protected override Task PrepareSessionAsync() => _state.EnsureSpeechSelfTestAsync();
+
+    protected override ISpeechSegmenter CreateSegmenter() =>
+        _state.SpeechSelfTest is { VadUsable: false }
+            ? new SpeechSegmenter()
+            : LocalSpeechSegmenterFactory.CreateDefault();
 
     protected override SpeechCaptureProcessingOptions CaptureProcessing => new()
     {
@@ -393,27 +457,39 @@ public sealed class SubtitleSpeechSession : VoiceSessionHost
 
     protected override async Task DispatchRecognizedAsync(SpeechRecognitionResult result, long recognizedId)
     {
-        // 组合根职责（D28.2）：档案恢复完成后才取本句的路由快照，运行中换
-        // 档案只影响下一句；管线只负责本地字幕，不具备 OSC 输出能力。
-        await _state.Ready.ConfigureAwait(false);
-        var current = _state.CurrentRoute;
-        var recognizedLanguage = result.SourceLanguage;
-        var sourceMode = string.IsNullOrWhiteSpace(recognizedLanguage) || recognizedLanguage.Equals("auto", StringComparison.OrdinalIgnoreCase)
-            ? SourceLanguageMode.AutoDetect
-            : SourceLanguageMode.Fixed;
-        var fixedSource = sourceMode == SourceLanguageMode.Fixed ? recognizedLanguage : null;
-        var voiceRoute = new TranslationRoute(
-            current.RouteId,
-            current.DisplayName,
-            current.Profile,
-            new LanguagePolicy(sourceMode, "zh-CN", fixedSource),
-            current.InvariantPolicy,
-            current.RetryPolicy);
-        Pipeline.TrySubmit(new OtherPlayerCaptionInput(
-            result.Text,
-            result.SpeakerLabel,
-            fixedSource,
-            voiceRoute));
+        try
+        {
+            // 组合根职责（D28.2）：档案恢复完成后才取本句的路由快照，运行中换
+            // 档案只影响下一句；管线只负责本地字幕，不具备 OSC 输出能力。
+            await _state.Ready.ConfigureAwait(false);
+            var current = _state.CurrentRoute;
+            var recognizedLanguage = result.SourceLanguage;
+            var sourceMode = string.IsNullOrWhiteSpace(recognizedLanguage) || recognizedLanguage.Equals("auto", StringComparison.OrdinalIgnoreCase)
+                ? SourceLanguageMode.AutoDetect
+                : SourceLanguageMode.Fixed;
+            var fixedSource = sourceMode == SourceLanguageMode.Fixed ? recognizedLanguage : null;
+            var voiceRoute = new TranslationRoute(
+                current.RouteId,
+                current.DisplayName,
+                current.Profile,
+                new LanguagePolicy(sourceMode, "zh-CN", fixedSource),
+                current.InvariantPolicy,
+                current.RetryPolicy);
+            var accepted = Pipeline.TrySubmit(new OtherPlayerCaptionInput(
+                result.Text,
+                result.SpeakerLabel,
+                fixedSource,
+                voiceRoute));
+            CaptionDiagnostics.Write(
+                $"caption submit accepted={accepted} chars={result.Text.Length} " +
+                $"lang={recognizedLanguage ?? "none"} route={current.Profile.Provider}");
+        }
+        catch (Exception exception)
+        {
+            // The dispatch is fire-and-forget by design; an exception here used to
+            // vanish and leave an empty caption window with no trace.
+            CaptionDiagnostics.WriteException("caption submit failed", exception);
+        }
     }
 }
 
@@ -439,6 +515,13 @@ public sealed class SelfVoiceSpeechSession : VoiceSessionHost
     }
 
     protected override AudioCaptureMode CaptureMode => AudioCaptureMode.Microphone;
+
+    protected override Task PrepareSessionAsync() => _state.EnsureSpeechSelfTestAsync();
+
+    protected override ISpeechSegmenter CreateSegmenter() =>
+        _state.SpeechSelfTest is { VadUsable: false }
+            ? new SpeechSegmenter()
+            : LocalSpeechSegmenterFactory.CreateDefault();
 
     protected override string CaptureFaultMessage => "麦克风暂时不可用，请检查设备后重试。";
 

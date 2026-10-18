@@ -1,4 +1,4 @@
-VRCTranslate v1.0.1
+VRCTranslate v1.0.2
 
 系统要求
 Windows 10 2004（Build 19041）或更高版本，64 位系统。

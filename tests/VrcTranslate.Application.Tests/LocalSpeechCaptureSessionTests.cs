@@ -493,6 +493,48 @@ public sealed class LocalSpeechCaptureSessionTests
         Assert.Equal("未知", results[1].SpeakerLabel);
     }
 
+    [Fact]
+    public async Task A_new_span_in_the_same_local_cluster_holds_the_previous_speaker()
+    {
+        var capture = new FakeAudioCapture(AudioCaptureRequest.Microphone());
+        var speakers = new FakeSpeakerIdentifier
+        {
+            Available = true,
+            Spans = [new SpeechSpan(0, 2_400, 1), new SpeechSpan(2_400, 4_800, 1)],
+            Matches = new Queue<SpeakerMatch?>(new SpeakerMatch?[]
+            {
+                new(new SpeakerIdentity("spk-a", "A", "A"), 0.9f, SpeakerMatchKind.Session),
+                new(new SpeakerIdentity("spk-b", "B", "B"), 0.3f, SpeakerMatchKind.New),
+            }),
+        };
+        var service = new LocalSpeechService(new FakeModelManager(), new FakeRecognizer(), speakers)
+        {
+            SpeakerLabelsEnabled = true,
+        };
+        await using var session = new LocalSpeechCaptureSession(
+            capture, service, "en", new SpeechSegmenter(16_000, 0.01f, 100, 2_000),
+            new SpeechCaptureProcessingOptions { SplitAtSpeakerChanges = true, AttachSpeakerLabels = true });
+        var results = new List<SpeechRecognitionResult>();
+        var both = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        session.ResultReady += (_, value) =>
+        {
+            lock (results)
+            {
+                results.Add(value);
+                if (results.Count == 2) both.TrySetResult();
+            }
+        };
+
+        await session.StartAsync();
+        capture.Emit(Enumerable.Repeat(0.2f, 4_800).ToArray());
+        capture.Emit(new float[2_000]);
+
+        await both.Task.WaitAsync(TimeSpan.FromSeconds(2));
+        Assert.Equal("spk-a", results[0].SpeakerId);
+        Assert.Equal("spk-a", results[1].SpeakerId);
+        Assert.Equal(1, speakers.ForgetCalls);
+    }
+
     private static LocalSpeechService CreateSpeechService() => new(
         new FakeModelManager(),
         new FakeRecognizer());
@@ -533,6 +575,7 @@ public sealed class LocalSpeechCaptureSessionTests
         public Queue<SpeakerMatch?> Matches { get; init; } = new();
         public int IdentifyCalls { get; private set; }
         public int SplitCalls { get; private set; }
+        public int ForgetCalls { get; private set; }
 
         public bool IsAvailable => Available;
 
@@ -569,7 +612,11 @@ public sealed class LocalSpeechCaptureSessionTests
 
         public bool Merge(string sourceId, string targetId) => false;
 
-        public bool Forget(string speakerId) => false;
+        public bool Forget(string speakerId)
+        {
+            ForgetCalls++;
+            return true;
+        }
 
         public void Clear() { }
     }

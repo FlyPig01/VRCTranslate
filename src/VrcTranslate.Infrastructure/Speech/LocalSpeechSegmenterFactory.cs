@@ -15,11 +15,10 @@ public static class LocalSpeechSegmenterFactory
         if (model is null) return new SpeechSegmenter();
         try
         {
-            // 1.1.5 baseline: six seconds gave the diarization model enough
-            // context to find a speaker change inside the segment. The shorter
-            // 4s experiment produced more sub-3s segments, which pyannote never
-            // splits; do not shorten it without an A/B on real dialogue.
-            return new SileroVadSegmenter(model, maxSpeechSeconds: 6f);
+            // Four seconds shortens the first-caption wait while the local
+            // cluster continuity rule keeps same-person fragments together.
+            // Different clusters still use independent per-span matching.
+            return new SileroVadSegmenter(model, maxSpeechSeconds: 4f);
         }
         catch
         {

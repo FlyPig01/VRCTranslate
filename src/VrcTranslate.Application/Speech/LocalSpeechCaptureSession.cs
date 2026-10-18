@@ -31,6 +31,9 @@ public sealed class LocalSpeechCaptureSession : IAsyncDisposable
     private bool _fallbackNoticeConsumed;
     private bool _usingEnergyGate;
     private bool _splitFaultLogged;
+    private string? _lastSpeakerId;
+    private string? _lastSpeakerLabel;
+    private int _lastLocalSpeakerId = -1;
     private long _audibleStartTimestamp;
     private long _diagnosticsWindowStart = Stopwatch.GetTimestamp();
     private long _diagnosticsChunks;
@@ -136,6 +139,9 @@ public sealed class LocalSpeechCaptureSession : IAsyncDisposable
         {
             if (_disposed) return;
             _sourceGeneration++;
+            _lastSpeakerId = null;
+            _lastSpeakerLabel = null;
+            _lastLocalSpeakerId = -1;
             retired = _sourceCts;
             _sourceCts = new CancellationTokenSource();
         }
@@ -499,6 +505,8 @@ public sealed class LocalSpeechCaptureSession : IAsyncDisposable
             try
             {
                 if (IsStaleSource(generation)) return;
+                // Local diarization ids are valid only inside one VAD segment.
+                _lastLocalSpeakerId = -1;
                 // One span normally; two or three when one sentence holds two voices.
                 foreach (var span in PlanSpeakerSpans(samples))
                 {
@@ -526,7 +534,7 @@ public sealed class LocalSpeechCaptureSession : IAsyncDisposable
                         RaiseDiagnostic($"result chars={result.Text.Length} lang={result.SourceLanguage}");
                     }
 
-                    RaiseResultReady(AttachSpeaker(result, part));
+                    RaiseResultReady(AttachSpeaker(result, part, span.LocalSpeakerId));
                 }
             }
             finally
@@ -576,22 +584,32 @@ public sealed class LocalSpeechCaptureSession : IAsyncDisposable
 
     private SpeechRecognitionResult AttachSpeaker(
         SpeechRecognitionResult result,
-        ReadOnlyMemory<float> samples)
+        ReadOnlyMemory<float> samples,
+        int localSpeakerId)
     {
         if (!_processing.AttachSpeakerLabels || !TryGetSpeakers(out var speakers)) return result;
 
         var duration = samples.Length / (double)_segmenterSampleRate;
         var rms = Rms(samples.Span);
+        var sameLocal = localSpeakerId >= 0 && localSpeakerId == _lastLocalSpeakerId;
         try
         {
-            // 1.1.5-compatible path: every span matches independently. No local
-            // cluster prior and no previous-speaker hold; a known B can be
-            // recognized from a short span directly.
+            // Per-span matching remains the source of truth. The only continuity
+            // rule is inside the same local diarization cluster: a New/unknown
+            // short span there is far more likely the same person than a new
+            // speaker. A different local cluster never inherits the old label.
             var match = speakers.Identify(samples, _segmenterSampleRate);
             if (match is null)
             {
+                if (sameLocal && _lastSpeakerId is not null)
+                {
+                    RaiseDiagnostic(
+                        $"speaker span duration={duration:0.00} rms={rms:0.0000} decision=local-hold-null local={localSpeakerId}");
+                    return result with { SpeakerId = _lastSpeakerId, SpeakerLabel = _lastSpeakerLabel };
+                }
+
                 RaiseDiagnostic(
-                    $"speaker span duration={duration:0.00} rms={rms:0.0000} decision=unknown");
+                    $"speaker span duration={duration:0.00} rms={rms:0.0000} decision=unknown local={localSpeakerId}");
                 return result with
                 {
                     SpeakerId = SpeakerRegistry.UnknownSpeaker.Id,
@@ -600,11 +618,41 @@ public sealed class LocalSpeechCaptureSession : IAsyncDisposable
             }
 
             var speaker = match.Speaker;
+            var decision = match.Kind.ToString();
+            if (sameLocal &&
+                _lastSpeakerId is not null &&
+                match.Kind is SpeakerMatchKind.New or SpeakerMatchKind.Unknown)
+            {
+                if (match.Kind == SpeakerMatchKind.New)
+                {
+                    // The per-span match created a ghost speaker; remove it so
+                    // the same person is not accumulated as a second identity.
+                    try { speakers.Forget(match.Speaker.Id); }
+                    catch { /* the label can still hold without the cleanup */ }
+                }
+
+                speaker = new SpeakerIdentity(_lastSpeakerId, _lastSpeakerLabel ?? "?", _lastSpeakerLabel);
+                decision = "local-hold";
+            }
+
+            if (speaker.Id == SpeakerRegistry.UnknownSpeaker.Id)
+            {
+                _lastSpeakerId = null;
+                _lastSpeakerLabel = null;
+            }
+            else
+            {
+                _lastSpeakerId = speaker.Id;
+                _lastSpeakerLabel = speaker.DisplayName;
+            }
+
+            if (localSpeakerId >= 0) _lastLocalSpeakerId = localSpeakerId;
+
             RaiseDiagnostic(
                 $"speaker span duration={duration:0.00} rms={rms:0.0000} " +
                 $"best={match.Similarity:0.000} second={match.SecondSimilarity:0.000} " +
-                $"margin={match.Margin:0.000} decision={match.Kind} " +
-                $"speaker={speaker.Id}/{speaker.DisplayName}");
+                $"margin={match.Margin:0.000} decision={decision} " +
+                $"speaker={speaker.Id}/{speaker.DisplayName} local={localSpeakerId} sameLocal={sameLocal}");
             return result with { SpeakerId = speaker.Id, SpeakerLabel = speaker.DisplayName };
         }
         catch (Exception exception)

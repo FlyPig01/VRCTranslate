@@ -592,53 +592,70 @@ public sealed class LocalSpeechCaptureSession : IAsyncDisposable
         var rms = Rms(samples.Span);
         try
         {
-            var match = speakers.Identify(samples, _segmenterSampleRate, _lastSpeakerId);
+            // Previous-speaker continuity is valid only inside one diarization
+            // cluster. A new VAD segment or a changed local cluster must not
+            // inherit the old label just because the old voiceprint is still
+            // above its threshold.
+            var sameLocal = localSpeakerId >= 0 && localSpeakerId == _lastLocalSpeakerId;
+            var previousId = sameLocal ? _lastSpeakerId : null;
+            var match = speakers.Identify(samples, _segmenterSampleRate, previousId);
             var decision = match?.Kind.ToString() ?? "identify-null";
             var speaker = match?.Speaker;
 
-            // A short/noisy span has no trustworthy embedding; the registry
-            // returns null and the caption keeps the previous speaker instead of
-            // creating a ghost identity.
             if (match is null)
             {
-                if (_lastSpeakerId is null)
+                if (sameLocal && _lastSpeakerId is not null)
                 {
+                    speaker = new SpeakerIdentity(_lastSpeakerId, _lastSpeakerLabel ?? "?", _lastSpeakerLabel);
+                    decision = "identify-null-same-local";
+                }
+                else
+                {
+                    // This short span belongs to a new local cluster or a new
+                    // VAD segment. Showing the old speaker here is exactly the
+                    // one-sentence-late switch; leave the label unknown instead.
+                    _lastSpeakerId = null;
+                    _lastSpeakerLabel = null;
                     RaiseDiagnostic(
-                        $"speaker span duration={duration:0.00} rms={rms:0.0000} decision=identify-null-no-previous");
+                        $"speaker span duration={duration:0.00} rms={rms:0.0000} decision=identify-null-local-change local={localSpeakerId}");
                     return result;
                 }
-
-                speaker = new SpeakerIdentity(_lastSpeakerId, _lastSpeakerLabel ?? "?", _lastSpeakerLabel);
             }
-            else if (localSpeakerId >= 0 &&
-                     localSpeakerId == _lastLocalSpeakerId &&
+            else if (sameLocal &&
                      _lastSpeakerId is not null &&
-                     match.Kind is SpeakerMatchKind.New or SpeakerMatchKind.Uncertain or SpeakerMatchKind.Held)
+                     match.Kind is SpeakerMatchKind.New or SpeakerMatchKind.Uncertain or SpeakerMatchKind.Held or SpeakerMatchKind.Unknown)
             {
-                // The local diarization cluster says this is the same voice as
-                // the previous span. Use that as a prior, but only when the
-                // global match is not confident; a strong match always wins.
+                // Same local cluster: use the previous speaker only when the
+                // global match is not confident. A strong match still wins.
                 speaker = new SpeakerIdentity(_lastSpeakerId, _lastSpeakerLabel ?? "?", _lastSpeakerLabel);
                 decision = "local-cluster-hold";
             }
-            else if (match.Kind == SpeakerMatchKind.Uncertain)
+            else if (match.Kind == SpeakerMatchKind.Uncertain && sameLocal && _lastSpeakerId is not null)
             {
-                if (_lastSpeakerId is not null)
-                {
-                    speaker = new SpeakerIdentity(_lastSpeakerId, _lastSpeakerLabel ?? "?", _lastSpeakerLabel);
-                    decision = "uncertain-hold-previous";
-                }
+                speaker = new SpeakerIdentity(_lastSpeakerId, _lastSpeakerLabel ?? "?", _lastSpeakerLabel);
+                decision = "uncertain-hold-previous";
             }
 
             if (speaker is null) return result;
-            _lastSpeakerId = speaker.Id;
-            _lastSpeakerLabel = speaker.DisplayName;
+            if (speaker.Id == "spk-unknown")
+            {
+                _lastSpeakerId = null;
+                _lastSpeakerLabel = null;
+                decision = "unknown";
+            }
+            else
+            {
+                _lastSpeakerId = speaker.Id;
+                _lastSpeakerLabel = speaker.DisplayName;
+            }
+
             if (localSpeakerId >= 0) _lastLocalSpeakerId = localSpeakerId;
 
             RaiseDiagnostic(
                 $"speaker span duration={duration:0.00} rms={rms:0.0000} " +
                 $"best={match?.Similarity:0.000} second={match?.SecondSimilarity:0.000} " +
-                $"margin={match?.Margin:0.000} decision={decision} local={localSpeakerId}");
+                $"margin={match?.Margin:0.000} decision={decision} " +
+                $"speaker={speaker.Id}/{speaker.DisplayName} local={localSpeakerId} sameLocal={sameLocal}");
             return result with { SpeakerId = speaker.Id, SpeakerLabel = speaker.DisplayName };
         }
         catch (Exception exception)

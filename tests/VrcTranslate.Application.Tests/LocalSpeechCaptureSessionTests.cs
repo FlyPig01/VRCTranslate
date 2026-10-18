@@ -448,6 +448,50 @@ public sealed class LocalSpeechCaptureSessionTests
         Assert.Contains("长时间未产出", args.Message, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task A_short_span_in_a_new_local_cluster_does_not_inherit_the_old_speaker()
+    {
+        var capture = new FakeAudioCapture(AudioCaptureRequest.Microphone());
+        var speakers = new FakeSpeakerIdentifier
+        {
+            Available = true,
+            Spans = [new SpeechSpan(0, 2_400, 1), new SpeechSpan(2_400, 4_800, 2)],
+            Matches = new Queue<SpeakerMatch?>(new SpeakerMatch?[]
+            {
+                new(new SpeakerIdentity("spk-a", "A", "A"), 0.9f, SpeakerMatchKind.Session),
+                null,
+            }),
+        };
+        var service = new LocalSpeechService(new FakeModelManager(), new FakeRecognizer(), speakers)
+        {
+            SpeakerLabelsEnabled = true,
+        };
+        await using var session = new LocalSpeechCaptureSession(
+            capture, service, "en", new SpeechSegmenter(16_000, 0.01f, 100, 2_000),
+            new SpeechCaptureProcessingOptions { SplitAtSpeakerChanges = true, AttachSpeakerLabels = true });
+        var results = new List<SpeechRecognitionResult>();
+        var both = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        session.ResultReady += (_, value) =>
+        {
+            lock (results)
+            {
+                results.Add(value);
+                if (results.Count == 2) both.TrySetResult();
+            }
+        };
+
+        await session.StartAsync();
+        capture.Emit(Enumerable.Repeat(0.2f, 4_800).ToArray());
+        capture.Emit(new float[2_000]);
+
+        await both.Task.WaitAsync(TimeSpan.FromSeconds(2));
+        Assert.Equal("spk-a", results[0].SpeakerId);
+        // Local cluster changed and the second span had no trustworthy
+        // embedding: the old speaker must not leak into the new speaker's line.
+        Assert.Null(results[1].SpeakerId);
+        Assert.Null(results[1].SpeakerLabel);
+    }
+
     private static LocalSpeechService CreateSpeechService() => new(
         new FakeModelManager(),
         new FakeRecognizer());
@@ -485,6 +529,7 @@ public sealed class LocalSpeechCaptureSessionTests
         public bool Available { get; init; }
         public bool ThrowOnSplit { get; init; }
         public IReadOnlyList<SpeechSpan> Spans { get; init; } = [];
+        public Queue<SpeakerMatch?> Matches { get; init; } = new();
         public int IdentifyCalls { get; private set; }
         public int SplitCalls { get; private set; }
 
@@ -498,8 +543,10 @@ public sealed class LocalSpeechCaptureSessionTests
             string? previousSpeakerId = null)
         {
             IdentifyCalls++;
-            return new SpeakerMatch(
-                new SpeakerIdentity("spk-test", "A", "小明"), 0.9f, SpeakerMatchKind.Session);
+            return Matches.Count > 0
+                ? Matches.Dequeue()
+                : new SpeakerMatch(
+                    new SpeakerIdentity("spk-test", "A", "小明"), 0.9f, SpeakerMatchKind.Session);
         }
 
         public IReadOnlyList<SpeechSpan> SplitAtSpeakerChanges(ReadOnlyMemory<float> samples, int sampleRate)

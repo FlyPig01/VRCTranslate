@@ -15,7 +15,12 @@ public static class LocalSpeechSegmenterFactory
         if (model is null) return new SpeechSegmenter();
         try
         {
-            return new SileroVadSegmenter(model);
+            // The native max-speech cut overshoots in practice (measured on the
+            // podcast sample: 12s configured -> 14.7s segments; 8s -> 11.4s;
+            // 6s -> 9.8s). Six seconds keeps the first continuous segment and
+            // the 53.5s target segment short enough to caption while the 16s
+            // stall guard still has margin above the observed 9.8s.
+            return new SileroVadSegmenter(model, maxSpeechSeconds: 6f);
         }
         catch
         {

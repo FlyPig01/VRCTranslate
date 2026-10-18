@@ -488,8 +488,9 @@ public sealed class LocalSpeechCaptureSessionTests
         Assert.Equal("spk-a", results[0].SpeakerId);
         // Local cluster changed and the second span had no trustworthy
         // embedding: the old speaker must not leak into the new speaker's line.
-        Assert.Null(results[1].SpeakerId);
-        Assert.Null(results[1].SpeakerLabel);
+        // The line is explicitly unknown instead of being silently grouped under A.
+        Assert.Equal("spk-unknown", results[1].SpeakerId);
+        Assert.Equal("未知", results[1].SpeakerLabel);
     }
 
     private static LocalSpeechService CreateSpeechService() => new(

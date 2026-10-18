@@ -92,6 +92,10 @@ public sealed partial class SubtitleOverlayWindow : Window
     private static readonly SolidColorBrush SeparatorBrush =
         new(Microsoft.UI.ColorHelper.FromArgb(255, 38, 54, 75));
 
+    /// <summary>Neutral but legible on the dark surface; used for "未知".</summary>
+    private static readonly SolidColorBrush UnknownSpeakerBrush =
+        new(Microsoft.UI.ColorHelper.FromArgb(255, 154, 167, 181));
+
     private readonly SubtitleCaptionBuffer _captions;
     private readonly List<CaptionBubble> _bubbles = [];
     private readonly Dictionary<string, SolidColorBrush> _speakerBrushes = new(StringComparer.Ordinal);
@@ -506,7 +510,9 @@ public sealed partial class SubtitleOverlayWindow : Window
     private void RenderBody(CaptionBubble bubble)
     {
         bubble.Body.Children.Clear();
-        if (bubble.ShowSpeakerLabel && bubble.Caption.HasSpeaker)
+        // Every message carries its label. A same-speaker run still shares the
+        // rail/colour and drops the separator, but no line is left ambiguous.
+        if (bubble.Caption.HasSpeaker)
         {
             bubble.Body.Children.Add(new TextBlock
             {
@@ -587,6 +593,7 @@ public sealed partial class SubtitleOverlayWindow : Window
     private SolidColorBrush SpeakerBrushFor(string? speakerLabel)
     {
         if (string.IsNullOrWhiteSpace(speakerLabel)) return SeparatorBrush;
+        if (speakerLabel == "未知") return UnknownSpeakerBrush;
         if (_speakerBrushes.TryGetValue(speakerLabel, out var existing)) return existing;
         var brush = SpeakerBrushes[_nextSpeakerBrush++ % SpeakerBrushes.Length];
         _speakerBrushes[speakerLabel] = brush;
@@ -614,9 +621,9 @@ public sealed partial class SubtitleOverlayWindow : Window
 
         var updated = bubble with
         {
-            Caption = bubble.Caption.WithSpeaker(null),
-            SpeakerBrush = SeparatorBrush,
-            ShowSpeakerLabel = false,
+            Caption = bubble.Caption.WithSpeaker("未知"),
+            SpeakerBrush = UnknownSpeakerBrush,
+            ShowSpeakerLabel = true,
         };
         _bubbles[index] = updated;
         RenderBody(updated);

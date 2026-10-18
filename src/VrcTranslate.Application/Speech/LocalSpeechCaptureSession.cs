@@ -506,8 +506,15 @@ public sealed class LocalSpeechCaptureSession : IAsyncDisposable
                 // Local diarization ids are valid only inside one VAD segment;
                 // reset the intra-segment prior before its first span.
                 _lastLocalSpeakerId = -1;
+                var spans = PlanSpeakerSpans(samples);
+                IReadOnlyDictionary<int, SpeakerMatch?>? clusterMatches = null;
+                if (_processing.AttachSpeakerLabels && TryGetSpeakers(out var clusterSpeakers))
+                {
+                    clusterMatches = BuildClusterMatches(samples, spans, clusterSpeakers);
+                }
+
                 // One span normally; two or three when one sentence holds two voices.
-                foreach (var span in PlanSpeakerSpans(samples))
+                foreach (var span in spans)
                 {
                     // A damaged split must cost the split, never the sentence.
                     var start = Math.Clamp(span.StartSample, 0, samples.Length);
@@ -533,7 +540,15 @@ public sealed class LocalSpeechCaptureSession : IAsyncDisposable
                         RaiseDiagnostic($"result chars={result.Text.Length} lang={result.SourceLanguage}");
                     }
 
-                    RaiseResultReady(AttachSpeaker(result, part, span.LocalSpeakerId));
+                    var hasCluster = span.LocalSpeakerId >= 0 &&
+                                     clusterMatches is not null &&
+                                     clusterMatches.TryGetValue(span.LocalSpeakerId, out var clusterMatch);
+                    RaiseResultReady(AttachSpeaker(
+                        result,
+                        part,
+                        span.LocalSpeakerId,
+                        hasCluster,
+                        hasCluster ? clusterMatches![span.LocalSpeakerId] : null));
                 }
             }
             finally
@@ -584,7 +599,9 @@ public sealed class LocalSpeechCaptureSession : IAsyncDisposable
     private SpeechRecognitionResult AttachSpeaker(
         SpeechRecognitionResult result,
         ReadOnlyMemory<float> samples,
-        int localSpeakerId)
+        int localSpeakerId,
+        bool hasClusterMatch = false,
+        SpeakerMatch? clusterMatch = null)
     {
         if (!_processing.AttachSpeakerLabels || !TryGetSpeakers(out var speakers)) return result;
 
@@ -595,10 +612,16 @@ public sealed class LocalSpeechCaptureSession : IAsyncDisposable
             // Previous-speaker continuity is valid only inside one diarization
             // cluster. A new VAD segment or a changed local cluster must not
             // inherit the old label just because the old voiceprint is still
-            // above its threshold.
-            var sameLocal = localSpeakerId >= 0 && localSpeakerId == _lastLocalSpeakerId;
+            // above its threshold. Cluster matches use concatenated audio from
+            // all short spans of the same local cluster, so a 1s interjection is
+            // identified from the whole cluster instead of from 1s alone.
+            var sameLocal = !hasClusterMatch &&
+                            localSpeakerId >= 0 &&
+                            localSpeakerId == _lastLocalSpeakerId;
             var previousId = sameLocal ? _lastSpeakerId : null;
-            var match = speakers.Identify(samples, _segmenterSampleRate, previousId);
+            var match = hasClusterMatch
+                ? clusterMatch
+                : speakers.Identify(samples, _segmenterSampleRate, previousId);
             var decision = match?.Kind.ToString() ?? "identify-null";
             var speaker = match?.Speaker;
 
@@ -613,12 +636,17 @@ public sealed class LocalSpeechCaptureSession : IAsyncDisposable
                 {
                     // This short span belongs to a new local cluster or a new
                     // VAD segment. Showing the old speaker here is exactly the
-                    // one-sentence-late switch; leave the label unknown instead.
+                    // one-sentence-late switch; show an explicit unknown label
+                    // instead of a blank that looks like a continuation.
                     _lastSpeakerId = null;
                     _lastSpeakerLabel = null;
                     RaiseDiagnostic(
-                        $"speaker span duration={duration:0.00} rms={rms:0.0000} decision=identify-null-local-change local={localSpeakerId}");
-                    return result;
+                        $"speaker span duration={duration:0.00} rms={rms:0.0000} decision=unknown local={localSpeakerId}");
+                    return result with
+                    {
+                        SpeakerId = SpeakerRegistry.UnknownSpeaker.Id,
+                        SpeakerLabel = SpeakerRegistry.UnknownSpeaker.DisplayName,
+                    };
                 }
             }
             else if (sameLocal &&
@@ -663,6 +691,56 @@ public sealed class LocalSpeechCaptureSession : IAsyncDisposable
             RaiseDiagnostic($"speaker identify failed: {exception.GetType().Name}: {exception.Message}");
             return result;
         }
+    }
+
+    /// <summary>
+    /// One embedding per local diarization cluster, using the concatenated audio
+    /// of all its spans. This is what lets two 1.2s/1.4s lines identify as one
+    /// speaker instead of being skipped individually.
+    /// </summary>
+    private IReadOnlyDictionary<int, SpeakerMatch?> BuildClusterMatches(
+        ReadOnlyMemory<float> samples,
+        IReadOnlyList<SpeechSpan> spans,
+        ISpeakerIdentifier speakers)
+    {
+        var matches = new Dictionary<int, SpeakerMatch?>();
+        foreach (var group in spans.Where(span => span.LocalSpeakerId >= 0)
+                     .GroupBy(span => span.LocalSpeakerId))
+        {
+            var parts = group.ToArray();
+            var total = parts.Sum(part => Math.Max(0, part.Length));
+            if (total <= 0)
+            {
+                matches[group.Key] = null;
+                continue;
+            }
+
+            var audio = new float[total];
+            var offset = 0;
+            foreach (var span in parts)
+            {
+                var start = Math.Clamp(span.StartSample, 0, samples.Length);
+                var end = Math.Clamp(span.EndSample, start, samples.Length);
+                if (end <= start) continue;
+                samples.Span.Slice(start, end - start).CopyTo(audio.AsSpan(offset));
+                offset += end - start;
+            }
+
+            if (offset <= 0)
+            {
+                matches[group.Key] = null;
+                continue;
+            }
+
+            var match = speakers.Identify(audio.AsMemory(0, offset), _segmenterSampleRate);
+            matches[group.Key] = match;
+            RaiseDiagnostic(
+                $"speaker cluster local={group.Key} spans={parts.Length} " +
+                $"duration={offset / (double)_segmenterSampleRate:0.00} " +
+                $"decision={match?.Kind.ToString() ?? "identify-null"}");
+        }
+
+        return matches;
     }
 
     private void ResetSpeakerContinuity()

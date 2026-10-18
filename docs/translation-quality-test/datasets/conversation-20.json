@@ -1,0 +1,290 @@
+{
+  "meta": {
+    "name": "VRChat 对话翻译评测集 v1",
+    "purpose": "真实 VRChat 对话风格的短句/术语/上下文/ASR 错误样本，用于比较不同翻译策略。",
+    "reference": "gold 为人工撰写的自然中文，非逐字直译；仅用于同一评测集横向比较。",
+    "note": "context 是当前句之前的对话，仅供翻译参考，不需要翻译；当前只翻译 source。"
+  },
+  "items": [
+    {
+      "id": "conv-01",
+      "lang": "en",
+      "category": "短句/俚语",
+      "context": [
+        {
+          "speaker": "A",
+          "text": "Did you check out the new world?"
+        }
+      ],
+      "source": "Yeah, it's sick.",
+      "gold": "看了，太帅了。"
+    },
+    {
+      "id": "conv-02",
+      "lang": "en",
+      "category": "术语",
+      "context": [
+        {
+          "speaker": "A",
+          "text": "How do I see if my avatar is too heavy?"
+        }
+      ],
+      "source": "Open the Quick Menu and check your Performance Rank.",
+      "gold": "打开快捷菜单，看一下你的性能等级。"
+    },
+    {
+      "id": "conv-03",
+      "lang": "en",
+      "category": "术语",
+      "context": [
+        {
+          "speaker": "A",
+          "text": "Is that a real player?"
+        }
+      ],
+      "source": "That guy is an Impostor, not a real player.",
+      "gold": "那家伙是模型替身，不是真人玩家。"
+    },
+    {
+      "id": "conv-04",
+      "lang": "en",
+      "category": "上下文/代词",
+      "context": [
+        {
+          "speaker": "A",
+          "text": "Where's the mirror?"
+        },
+        {
+          "speaker": "B",
+          "text": "Upstairs, next to the portal."
+        }
+      ],
+      "source": "Can you show me?",
+      "gold": "你能带我去吗？"
+    },
+    {
+      "id": "conv-05",
+      "lang": "en",
+      "category": "上下文/代词",
+      "context": [
+        {
+          "speaker": "A",
+          "text": "Is she coming?"
+        },
+        {
+          "speaker": "B",
+          "text": "She said she'd be late."
+        }
+      ],
+      "source": "Alright, let's start without her.",
+      "gold": "好吧，那我们不等她了，先开始吧。"
+    },
+    {
+      "id": "conv-06",
+      "lang": "mix",
+      "category": "中英混合",
+      "context": [
+        {
+          "speaker": "A",
+          "text": "This world is too dark."
+        }
+      ],
+      "source": "这个 world 的 lighting 太暗了，can you turn it up?",
+      "gold": "这个世界的灯光太暗了，你能调亮一点吗？"
+    },
+    {
+      "id": "conv-07",
+      "lang": "mix",
+      "category": "中日英混合/术语",
+      "context": [
+        {
+          "speaker": "A",
+          "text": "Are you ready?"
+        }
+      ],
+      "source": "ちょっと待って、I need to fix my FBT.",
+      "gold": "稍等一下，我得调一下全身追踪。"
+    },
+    {
+      "id": "conv-08",
+      "lang": "en",
+      "category": "ASR 错误",
+      "context": [
+        {
+          "speaker": "A",
+          "text": "Are you leaving already?"
+        }
+      ],
+      "source": "I'm gonna hop off, see you to marrow.",
+      "gold": "我先下了，明天见。"
+    },
+    {
+      "id": "conv-09",
+      "lang": "en",
+      "category": "ASR 错误",
+      "context": [
+        {
+          "speaker": "A",
+          "text": "Can you hear me?"
+        }
+      ],
+      "source": "My mic is peak, can you hear me?",
+      "gold": "我麦克风爆音了，你能听到我说话吗？"
+    },
+    {
+      "id": "conv-10",
+      "lang": "en",
+      "category": "ASR 错误",
+      "context": [
+        {
+          "speaker": "A",
+          "text": "Where should we meet?"
+        }
+      ],
+      "source": "Let's meet at the mirror in the lobby.",
+      "gold": "我们在大厅的镜子前集合吧。"
+    },
+    {
+      "id": "conv-11",
+      "lang": "en",
+      "category": "长句",
+      "context": [
+        {
+          "speaker": "A",
+          "text": "Why did you restart?"
+        }
+      ],
+      "source": "I was trying to change my avatar earlier but the loading screen got stuck, so I just restarted the game and now it's fine.",
+      "gold": "我刚才想换模型，但加载界面卡住了，所以就直接重启了游戏，现在好了。"
+    },
+    {
+      "id": "conv-12",
+      "lang": "en",
+      "category": "上下文/长句",
+      "context": [
+        {
+          "speaker": "A",
+          "text": "The event starts in ten minutes."
+        },
+        {
+          "speaker": "B",
+          "text": "I'm still downloading the world."
+        }
+      ],
+      "source": "Hurry up, they're waiting for us.",
+      "gold": "快点，他们还在等我们呢。"
+    },
+    {
+      "id": "conv-13",
+      "lang": "en",
+      "category": "术语/平台",
+      "context": [
+        {
+          "speaker": "A",
+          "text": "Can you see the new world?"
+        }
+      ],
+      "source": "Are you on Quest or PC? The world has a Quest version.",
+      "gold": "你是 Quest 端还是 PC 端？这个世界有 Quest 版本。"
+    },
+    {
+      "id": "conv-14",
+      "lang": "en",
+      "category": "术语",
+      "context": [
+        {
+          "speaker": "A",
+          "text": "Why did you leave?"
+        }
+      ],
+      "source": "I got kicked from the instance for no reason.",
+      "gold": "我莫名其妙被踢出房间了。"
+    },
+    {
+      "id": "conv-15",
+      "lang": "en",
+      "category": "俚语/术语",
+      "context": [
+        {
+          "speaker": "A",
+          "text": "Did you see that?"
+        }
+      ],
+      "source": "No cap, that was the best portal drop I've ever seen.",
+      "gold": "真的，那是我见过最帅的扔传送门。"
+    },
+    {
+      "id": "conv-16",
+      "lang": "en",
+      "category": "短句/术语",
+      "context": [
+        {
+          "speaker": "A",
+          "text": "Where are you going?"
+        }
+      ],
+      "source": "AFK for a sec, getting water.",
+      "gold": "暂离一下，我去倒杯水。"
+    },
+    {
+      "id": "conv-17",
+      "lang": "en",
+      "category": "上下文/代词",
+      "context": [
+        {
+          "speaker": "A",
+          "text": "Did you mute him?"
+        },
+        {
+          "speaker": "B",
+          "text": "Yeah, he was blasting music."
+        }
+      ],
+      "source": "Thanks, I couldn't hear anything.",
+      "gold": "谢了，我什么都听不见。"
+    },
+    {
+      "id": "conv-18",
+      "lang": "mix",
+      "category": "中英混合/术语",
+      "context": [
+        {
+          "speaker": "A",
+          "text": "This avatar is so laggy."
+        }
+      ],
+      "source": "这个 avatar 的 PhysBone 好多，lag 得我头都晕了。",
+      "gold": "这个模型的物理骨骼太多了，卡得我头都晕了。"
+    },
+    {
+      "id": "conv-19",
+      "lang": "en",
+      "category": "短句",
+      "context": [
+        {
+          "speaker": "A",
+          "text": "Before we go..."
+        }
+      ],
+      "source": "Let's take a group photo in front of the mirror before we go.",
+      "gold": "走之前我们在镜子前拍张合照吧。"
+    },
+    {
+      "id": "conv-20",
+      "lang": "en",
+      "category": "上下文/社交",
+      "context": [
+        {
+          "speaker": "A",
+          "text": "Is this your first time in VRChat?"
+        },
+        {
+          "speaker": "B",
+          "text": "Yeah, I just got my headset yesterday."
+        }
+      ],
+      "source": "Welcome! Add me if you need help.",
+      "gold": "欢迎！需要帮忙就加我好友。"
+    }
+  ]
+}

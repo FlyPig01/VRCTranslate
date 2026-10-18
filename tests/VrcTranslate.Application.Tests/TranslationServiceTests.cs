@@ -133,6 +133,34 @@ public sealed class TranslationServiceTests
         Assert.Contains("timeout", exception.Message, StringComparison.OrdinalIgnoreCase);
     }
 
+    [Fact]
+    public async Task Cleans_wrapping_quotes_and_translation_prefix()
+    {
+        var service = new TranslationService(new FakeProvider { Translation = "译文：\"你好\"" }, new PassThroughGuard());
+
+        var result = await service.TranslateAsync(new TextTranslationRequest("hello", CreateRoute(), TextTranslationSource.ManualText));
+
+        Assert.Equal("你好", result.TranslatedText);
+    }
+
+    [Fact]
+    public async Task Rejects_an_explanatory_reply_instead_of_showing_it_as_a_caption()
+    {
+        var service = new TranslationService(new FakeProvider { Translation = "以下是翻译：你好" }, new PassThroughGuard());
+
+        await Assert.ThrowsAsync<TranslationOutputRejectedException>(() =>
+            service.TranslateAsync(new TextTranslationRequest("hello", CreateRoute(), TextTranslationSource.ManualText)));
+    }
+
+    [Fact]
+    public async Task Rejects_a_runaway_reply()
+    {
+        var service = new TranslationService(new FakeProvider { Translation = new string('好', 700) }, new PassThroughGuard());
+
+        await Assert.ThrowsAsync<TranslationOutputRejectedException>(() =>
+            service.TranslateAsync(new TextTranslationRequest("这是一个足够长的测试句子用来触发长度护栏", CreateRoute(), TextTranslationSource.ManualText)));
+    }
+
     private static TranslationRoute CreateRoute(TranslationRetryPolicy? retryPolicy = null) => new(
         "route-1",
         "Default",

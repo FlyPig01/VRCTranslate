@@ -392,7 +392,11 @@ if ($chatCompletionsSource -notmatch '"type"\]\s*=\s*"disabled"' -or
     throw 'The chat-completions wire format (thinking switch, endpoint, reply parsing) must live in one shared implementation used by both DeepSeek and Xiaomi MiMo.'
 }
 if ($translationMarkup -notmatch 'ListViewItem|HorizontalContentAlignment="Stretch"') { throw 'Glossary rows must stretch to the table width.' }
-if ($translationCode -notmatch 'DefaultTerms' -or $translationCode -notmatch 'if \(_terms\.Count == 0\)') { throw 'The glossary must seed its default terms when no saved terms exist.' }
+if ($translationCode -notmatch 'EnsureGlossaryLoadedAsync' -or
+    $appStateSource -notmatch 'FallbackGlossary' -or
+    $appStateSource -notmatch 'LoadDefaultGlossaryAsync') {
+    throw 'The glossary must seed its default terms when no saved terms exist.'
+}
 # D2：术语库卡片删掉「保存」按钮和重复的「启用」文字，标题与开关并回同一条标题行。
 # 术语表本来就是自动保存的，所以新增 / 修改 / 删除 / 开关都必须自己立即落盘。
 if ($translationMarkup -match 'glossary-save|Content="保存"|Header="启用"') {

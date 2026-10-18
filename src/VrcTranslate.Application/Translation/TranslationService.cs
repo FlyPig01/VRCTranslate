@@ -45,7 +45,8 @@ public sealed class TranslationService
             request.CorrelationId,
             request.Route.Profile.Provider,
             request.Route.Profile.Region,
-            request.Route.Profile.Options);
+            request.Route.Profile.Options,
+            request.Hints);
 
         TranslationProviderResponse? response = null;
         Exception? lastError = null;
@@ -75,7 +76,8 @@ public sealed class TranslationService
         }
 
         stopwatch.Stop();
-        var validation = _invariantGuard.Validate(protectedText, response.TranslatedText);
+        var translatedText = TranslationOutputGuard.Clean(response.TranslatedText, request.Text);
+        var validation = _invariantGuard.Validate(protectedText, translatedText);
         if (!validation.IsValid)
         {
             throw new TranslationInvariantException(validation.Violations);
@@ -83,7 +85,7 @@ public sealed class TranslationService
 
         return new TextTranslationResult(
             request,
-            response.TranslatedText,
+            translatedText,
             resolvedSourceLanguage ?? response.DetectedSourceLanguage,
             stopwatch.Elapsed,
             validation);
@@ -147,5 +149,6 @@ public sealed class TranslationService
             request.Source,
             request.RequestedAt,
             request.SourceLanguageHint,
-            request.CorrelationId);
+            request.CorrelationId,
+            request.Hints);
 }

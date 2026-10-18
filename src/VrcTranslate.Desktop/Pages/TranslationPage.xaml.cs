@@ -6,18 +6,15 @@ using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
-using VrcTranslate.Infrastructure.Storage;
 using Microsoft.UI.Text;
 using VrcTranslate.Application.Abstractions;
 using VrcTranslate.Core.Translation;
-using VrcTranslate.Infrastructure.Configuration;
 using VrcTranslate.Infrastructure.Translation;
 
 namespace VrcTranslate.Desktop.Pages;
 
 public sealed partial class TranslationPage : Page
 {
-    private readonly JsonConfigurationStore<GlossaryDocument> _glossaryStore;
     private readonly ObservableCollection<GlossaryEntry> _terms = [];
     private bool _loaded;
     private bool _glossaryAutoSaveReady;
@@ -36,7 +33,6 @@ public sealed partial class TranslationPage : Page
     public TranslationPage()
     {
         InitializeComponent();
-        _glossaryStore = new JsonConfigurationStore<GlossaryDocument>(PortableStorage.GetPath(AppDataFiles.Glossary));
         GlossaryList.ItemsSource = _terms;
         Loaded += OnLoaded;
         Unloaded += OnUnloaded;
@@ -53,24 +49,13 @@ public sealed partial class TranslationPage : Page
         RebuildProfiles();
         try
         {
-            var bundledTerms = await LoadDefaultTermsAsync();
-            var document = await _glossaryStore.LoadAsync();
-            var merged = new Dictionary<string, GlossaryEntry>(StringComparer.OrdinalIgnoreCase);
-            foreach (var term in bundledTerms) merged[term.Source] = term;
-            foreach (var term in document.Entries ?? [])
-                if (!string.IsNullOrWhiteSpace(term.Source) && !string.IsNullOrWhiteSpace(term.Target))
-                    merged[term.Source.Trim()] = new GlossaryEntry(term.Source.Trim(), term.Target.Trim());
+            await State.EnsureGlossaryLoadedAsync();
+            var glossary = State.Current;
             _terms.Clear();
-            foreach (var term in merged.Values) _terms.Add(term);
-            GlossaryEnabledSwitch.IsOn = document.Enabled;
+            foreach (var term in glossary.Entries) _terms.Add(term);
+            GlossaryEnabledSwitch.IsOn = glossary.Enabled;
         }
         catch { }
-        if (_terms.Count == 0)
-        {
-            foreach (var term in await LoadDefaultTermsAsync()) _terms.Add(term);
-            if (_terms.Count == 0)
-                foreach (var term in DefaultTerms) _terms.Add(term);
-        }
         UpdateGlossaryEmptyState();
         // From here on every list change writes the document: the card has no
         // save button, so the file must always match what is on screen.
@@ -640,7 +625,7 @@ public sealed partial class TranslationPage : Page
     {
         try
         {
-            await _glossaryStore.SaveAsync(new GlossaryDocument { Enabled = GlossaryEnabledSwitch.IsOn, Entries = _terms.ToList() });
+            await State.SaveGlossaryAsync(new GlossaryDocument { Enabled = GlossaryEnabledSwitch.IsOn, Entries = _terms.ToList() });
             ShowGlossaryMessage("术语库已自动保存。", InfoBarSeverity.Success);
         }
         catch (Exception ex)
@@ -654,22 +639,4 @@ public sealed partial class TranslationPage : Page
     private void ShowMessage(string message, InfoBarSeverity severity) { ResultInfo.Title = severity == InfoBarSeverity.Success ? "已完成" : "请检查"; ResultInfo.Message = message; ResultInfo.Severity = severity; ResultInfo.IsOpen = true; RebuildProfiles(); }
     private static void SelectByTag(ComboBox comboBox, string? tag) => comboBox.SelectedItem = comboBox.Items.OfType<ComboBoxItem>().FirstOrDefault(item => Equals(item.Tag?.ToString(), tag));
 
-    private static readonly GlossaryEntry[] DefaultTerms = [
-        new("VRChat", "VRChat"), new("Chatbox", "Chatbox"), new("OSC", "OSC"), new("SenseVoice", "SenseVoice"), new("Avatar", "Avatar"), new("World", "World"), new("Booth", "Booth"), new("SDK", "SDK"), new("Unity", "Unity"), new("Udon", "Udon"), new("VRC", "VRC"), new("Quest", "Quest"), new("PCVR", "PCVR"), new("SteamVR", "SteamVR"), new("Modular Avatar", "Modular Avatar")
-    ];
-
-    private static async Task<IReadOnlyList<GlossaryEntry>> LoadDefaultTermsAsync()
-    {
-        try
-        {
-            var path = Path.Combine(AppContext.BaseDirectory, "default-glossary.json");
-            if (!File.Exists(path)) return DefaultTerms;
-            await using var stream = File.OpenRead(path);
-            var document = await System.Text.Json.JsonSerializer.DeserializeAsync<GlossaryDocument>(stream);
-            return document?.Entries?.Where(item => !string.IsNullOrWhiteSpace(item.Source) && !string.IsNullOrWhiteSpace(item.Target)).ToList() ?? DefaultTerms.ToList();
-        }
-        catch { return DefaultTerms; }
-    }
-    public sealed record GlossaryEntry(string Source, string Target);
-    public sealed class GlossaryDocument { public GlossaryDocument() { } public bool Enabled { get; set; } = true; public List<GlossaryEntry> Entries { get; set; } = []; }
 }

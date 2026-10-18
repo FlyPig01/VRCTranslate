@@ -16,19 +16,23 @@ using System.Text.Json;
 namespace VrcTranslate.Desktop;
 
 /// <summary>Small composition-root state shared by the shell pages.</summary>
-public sealed class AppState
+public sealed class AppState : ITranslationGlossaryProvider
 {
     private readonly JsonConfigurationStore<RouteSettings> _settingsStore;
     private readonly JsonConfigurationStore<ProfileDocument> _profileStore;
+    private readonly JsonConfigurationStore<GlossaryDocument> _glossaryStore;
     private readonly string _selfTranslationSettingsPath;
     private readonly Task _restoreTask;
     private readonly object _routeSync = new();
     private readonly object _selfTestSync = new();
+    private readonly object _glossaryLoadSync = new();
     private int _routeRevision;
     private Task<LocalSpeechSelfTestResult>? _speechSelfTestTask;
     private LocalSpeechSelfTestResult? _speechSelfTest;
     private OscChatboxClient _osc;
     private TranslationTargetSet _selfTranslationTargets;
+    private TranslationGlossary _glossary = TranslationGlossary.Empty;
+    private Task? _glossaryLoadTask;
 
     public AppState()
     {
@@ -65,6 +69,8 @@ public sealed class AppState
             PortableStorage.GetPath(AppDataFiles.Route));
         _profileStore = new JsonConfigurationStore<ProfileDocument>(
             PortableStorage.GetPath(AppDataFiles.Profiles));
+        _glossaryStore = new JsonConfigurationStore<GlossaryDocument>(
+            PortableStorage.GetPath(AppDataFiles.Glossary));
         _selfTranslationSettingsPath = PortableStorage.GetPath(AppDataFiles.SelfTranslation);
         _selfTranslationTargets = LoadSelfTranslationTargets();
         _osc = CreateOscClientFromUserSettings();
@@ -120,6 +126,102 @@ public sealed class AppState
 
     /// <summary>Completes after the optional local route has been restored.</summary>
     public Task Ready => _restoreTask;
+
+    /// <summary>Latest glossary snapshot; safe to read from the caption pipeline thread.</summary>
+    public TranslationGlossary Current => Volatile.Read(ref _glossary);
+
+    /// <summary>Raised after the glossary snapshot changed (load or save).</summary>
+    public event EventHandler? GlossaryChanged;
+
+    /// <summary>Loads the bundled glossary plus the user file once; safe to await repeatedly.</summary>
+    public Task EnsureGlossaryLoadedAsync()
+    {
+        lock (_glossaryLoadSync) return _glossaryLoadTask ??= LoadGlossaryAsync();
+    }
+
+    /// <summary>Writes the complete glossary document and publishes a fresh snapshot.</summary>
+    public async Task SaveGlossaryAsync(GlossaryDocument document)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+        await EnsureGlossaryLoadedAsync().ConfigureAwait(false);
+        var sanitized = new GlossaryDocument
+        {
+            Enabled = document.Enabled,
+            Entries = SanitizeGlossaryEntries(document.Entries)
+        };
+        await _glossaryStore.SaveAsync(sanitized).ConfigureAwait(false);
+        PublishGlossary(new TranslationGlossary(sanitized.Enabled, sanitized.Entries.ToArray()));
+    }
+
+    private async Task LoadGlossaryAsync()
+    {
+        try
+        {
+            var defaults = await LoadDefaultGlossaryAsync().ConfigureAwait(false);
+            var stored = await _glossaryStore.LoadAsync().ConfigureAwait(false);
+            var merged = new Dictionary<string, GlossaryEntry>(StringComparer.OrdinalIgnoreCase);
+            foreach (var term in defaults) merged[term.Source] = term;
+            foreach (var term in stored?.Entries ?? [])
+            {
+                if (string.IsNullOrWhiteSpace(term.Source) || string.IsNullOrWhiteSpace(term.Target)) continue;
+                var source = term.Source.Trim();
+                merged[source] = new GlossaryEntry(source, term.Target.Trim());
+            }
+
+            PublishGlossary(new TranslationGlossary(stored?.Enabled ?? true, merged.Values.ToArray()));
+        }
+        catch
+        {
+            // A malformed glossary must not prevent captions from starting.
+            PublishGlossary(new TranslationGlossary(true, (await LoadDefaultGlossaryAsync().ConfigureAwait(false)).ToArray()));
+        }
+    }
+
+    private void PublishGlossary(TranslationGlossary glossary)
+    {
+        Volatile.Write(ref _glossary, glossary);
+        GlossaryChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    private static List<GlossaryEntry> SanitizeGlossaryEntries(IEnumerable<GlossaryEntry>? entries)
+    {
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var result = new List<GlossaryEntry>();
+        foreach (var entry in entries ?? [])
+        {
+            if (string.IsNullOrWhiteSpace(entry.Source) || string.IsNullOrWhiteSpace(entry.Target)) continue;
+            var source = entry.Source.Trim();
+            if (!seen.Add(source)) continue;
+            result.Add(new GlossaryEntry(source, entry.Target.Trim()));
+        }
+
+        return result;
+    }
+
+    private static async Task<IReadOnlyList<GlossaryEntry>> LoadDefaultGlossaryAsync()
+    {
+        try
+        {
+            var path = Path.Combine(AppContext.BaseDirectory, "default-glossary.json");
+            if (!File.Exists(path)) return FallbackGlossary;
+            await using var stream = File.OpenRead(path);
+            var document = await JsonSerializer.DeserializeAsync<GlossaryDocument>(stream).ConfigureAwait(false);
+            var entries = SanitizeGlossaryEntries(document?.Entries);
+            return entries.Count > 0 ? entries : FallbackGlossary;
+        }
+        catch
+        {
+            return FallbackGlossary;
+        }
+    }
+
+    private static readonly GlossaryEntry[] FallbackGlossary =
+    [
+        new("VRChat", "VRChat"), new("Chatbox", "Chatbox"), new("OSC", "OSC"), new("SenseVoice", "SenseVoice"),
+        new("Avatar", "Avatar"), new("World", "World"), new("Booth", "Booth"), new("SDK", "SDK"),
+        new("Unity", "Unity"), new("Udon", "Udon"), new("VRC", "VRC"), new("Quest", "Quest"),
+        new("PCVR", "PCVR"), new("SteamVR", "SteamVR"), new("Modular Avatar", "Modular Avatar")
+    ];
 
     /// <summary>Latest startup self-test result, or null before the check ran.</summary>
     public LocalSpeechSelfTestResult? SpeechSelfTest => _speechSelfTest;
@@ -266,11 +368,13 @@ public sealed class AppState
         CancellationToken cancellationToken = default)
     {
         await Ready.ConfigureAwait(false);
+        await EnsureGlossaryLoadedAsync().ConfigureAwait(false);
         var request = new TextTranslationRequest(
             text,
             CurrentRoute,
             source,
-            sourceLanguageHint: "zh-CN");
+            sourceLanguageHint: "zh-CN",
+            hints: TranslationHints.ForGlossary(Current));
         return await Translator.TranslateManyAsync(request, SelfTranslationTargets, cancellationToken).ConfigureAwait(false);
     }
 

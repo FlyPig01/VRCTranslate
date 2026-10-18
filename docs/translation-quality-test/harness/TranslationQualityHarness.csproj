@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Platforms>x64</Platforms>
+    <PlatformTarget>x64</PlatformTarget>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <NoWarn>$(NoWarn);CA1416</NoWarn>
+    <AssemblyName>TranslationQualityHarness</AssemblyName>
+    <RootNamespace>TranslationQualityHarness</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\src\VrcTranslate.Core\VrcTranslate.Core.csproj" />
+    <ProjectReference Include="..\..\..\src\VrcTranslate.Application\VrcTranslate.Application.csproj" />
+    <ProjectReference Include="..\..\..\src\VrcTranslate.Infrastructure\VrcTranslate.Infrastructure.csproj" />
+  </ItemGroup>
+</Project>

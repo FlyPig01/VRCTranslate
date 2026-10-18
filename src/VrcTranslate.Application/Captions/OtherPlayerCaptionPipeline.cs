@@ -1,4 +1,5 @@
 using System.Threading.Channels;
+using VrcTranslate.Application.Abstractions;
 using VrcTranslate.Application.Translation;
 using VrcTranslate.Core.Translation;
 
@@ -62,6 +63,7 @@ public sealed class OtherPlayerCaptionPipeline : IAsyncDisposable
     private readonly TranslationService _translator;
     private readonly IOtherPlayerSubtitleSurface _subtitles;
     private readonly OtherPlayerCaptionPipelineOptions _options;
+    private readonly ITranslationGlossaryProvider? _glossaryProvider;
     private readonly object _lifecycle = new();
     private SessionState? _current;
     private long _captionSequence;
@@ -71,11 +73,13 @@ public sealed class OtherPlayerCaptionPipeline : IAsyncDisposable
     public OtherPlayerCaptionPipeline(
         TranslationService translator,
         IOtherPlayerSubtitleSurface subtitles,
-        OtherPlayerCaptionPipelineOptions? options = null)
+        OtherPlayerCaptionPipelineOptions? options = null,
+        ITranslationGlossaryProvider? glossaryProvider = null)
     {
         _translator = translator ?? throw new ArgumentNullException(nameof(translator));
         _subtitles = subtitles ?? throw new ArgumentNullException(nameof(subtitles));
         _options = options ?? OtherPlayerCaptionPipelineOptions.Default;
+        _glossaryProvider = glossaryProvider;
         if (_options.MaxConcurrentTranslations < 1) throw new ArgumentOutOfRangeException(nameof(options));
         if (_options.QueueCapacity < 1) throw new ArgumentOutOfRangeException(nameof(options));
     }
@@ -219,7 +223,8 @@ public sealed class OtherPlayerCaptionPipeline : IAsyncDisposable
                         item.Input.Text,
                         item.Input.Route,
                         TextTranslationSource.SpeechRecognition,
-                        sourceLanguageHint: item.Input.SourceLanguageHint),
+                        sourceLanguageHint: item.Input.SourceLanguageHint,
+                        hints: TranslationHints.ForGlossary(_glossaryProvider?.Current)),
                     state.Lifetime.Token).ConfigureAwait(false);
                 commit = new Commit(state.Generation, item.CaptionId, OtherPlayerTranslationStatus.Succeeded, result, null);
             }

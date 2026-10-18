@@ -2,6 +2,7 @@ using System.Text.Json;
 using VrcTranslate.Infrastructure.Configuration;
 using VrcTranslate.Infrastructure.Translation;
 using VrcTranslate.Application.Abstractions;
+using VrcTranslate.Core.Translation;
 using VrcTranslate.Infrastructure.Osc;
 using Xunit;
 
@@ -406,9 +407,27 @@ public sealed class RoutedProviderTests
             "hello", "zh-CN", "en", "deepseek-chat", new Uri("https://api.deepseek.com"), "secret", "test", "deepseek"));
 
         Assert.Equal("你好", result.TranslatedText);
-        Assert.Contains("zh-CN", handler.RequestBody, StringComparison.Ordinal);
-        Assert.Contains("Translate", handler.RequestBody, StringComparison.Ordinal);
+        Assert.Contains("VRChat", handler.RequestBody, StringComparison.Ordinal);
         Assert.Contains("/chat/completions", handler.RequestUri!.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void DeepSeek_prompt_includes_only_relevant_glossary_terms()
+    {
+        var request = new TranslationProviderRequest(
+            "Open the Quick Menu and check your rank", "zh-CN", "en", DeepSeekTranslationProvider.DefaultModel,
+            new Uri("https://api.deepseek.com"), "secret", "test", "deepseek",
+            Hints: new TranslationHints([new("Quick Menu", "快捷菜单"), new("Irrelevant Term", "无关")]));
+
+        using var document = JsonDocument.Parse(JsonSerializer.Serialize(DeepSeekTranslationProvider.BuildRequestBody(request)));
+        var system = document.RootElement.GetProperty("messages")[0].GetProperty("content").GetString();
+
+        Assert.NotNull(system);
+        Assert.Contains("VRChat", system, StringComparison.Ordinal);
+        Assert.Contains("简体中文", system, StringComparison.Ordinal);
+        Assert.Contains("Quick Menu=快捷菜单", system, StringComparison.Ordinal);
+        Assert.DoesNotContain("Irrelevant Term=无关", system, StringComparison.Ordinal);
+        Assert.Contains("当前台词", system, StringComparison.Ordinal);
     }
 
     [Fact]

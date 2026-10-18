@@ -408,7 +408,8 @@ public sealed class SubtitleSpeechSession : VoiceSessionHost
             if (pipeline is not null) return pipeline;
             pipeline = new OtherPlayerCaptionPipeline(
                 _state.Translator,
-                new OverlaySubtitleSurface());
+                new OverlaySubtitleSurface(),
+                glossaryProvider: _state);
             pipeline.Diagnostics += (_, args) =>
             {
                 CaptionDiagnostics.Write($"pipeline diagnostic id={args.CaptionId} {args.Message}");
@@ -423,7 +424,11 @@ public sealed class SubtitleSpeechSession : VoiceSessionHost
     // 回环族：具体采系统混音还是 VRChat 进程音频由自适应协调器决定。
     protected override AudioCaptureMode CaptureMode => AudioCaptureMode.SystemLoopback;
 
-    protected override Task PrepareSessionAsync() => _state.EnsureSpeechSelfTestAsync();
+    protected override async Task PrepareSessionAsync()
+    {
+        await _state.EnsureGlossaryLoadedAsync().ConfigureAwait(false);
+        await _state.EnsureSpeechSelfTestAsync().ConfigureAwait(false);
+    }
 
     protected override ISpeechSegmenter CreateSegmenter() =>
         _state.SpeechSelfTest is { VadUsable: false }

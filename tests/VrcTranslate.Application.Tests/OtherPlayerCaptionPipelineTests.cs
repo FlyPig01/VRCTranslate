@@ -233,6 +233,25 @@ public sealed class OtherPlayerCaptionPipelineTests : IAsyncDisposable
         Assert.Equal("model", request.Model);
     }
 
+    [Fact]
+    public async Task Glossary_snapshot_reaches_the_provider()
+    {
+        var glossary = new FakeGlossaryProvider(new TranslationGlossary(true, [new("Quick Menu", "快捷菜单")]));
+        await using var pipeline = new OtherPlayerCaptionPipeline(
+            new TranslationService(_provider, new PassThroughGuard()),
+            _surface,
+            glossaryProvider: glossary);
+        await pipeline.BeginSessionAsync();
+        _provider.Succeed("Open Quick Menu", "打开快捷菜单");
+
+        Assert.True(pipeline.TrySubmit(Input("Open Quick Menu")));
+        await TestWait.UntilAsync(() => _provider.RequestsSnapshot().Count == 1, "翻译请求未发出");
+
+        var request = _provider.RequestsSnapshot().Single();
+        Assert.NotNull(request.Hints);
+        Assert.Contains(request.Hints!.Glossary!, entry => entry.Source == "Quick Menu" && entry.Target == "快捷菜单");
+    }
+
     private OtherPlayerCaptionInput Input(string text, string? hint = null, string provider = "real") =>
         new(text, "小明", hint, CreateRoute(provider));
 
@@ -316,6 +335,11 @@ public sealed class OtherPlayerCaptionPipelineTests : IAsyncDisposable
         {
             lock (_sync) return [.. Requests];
         }
+    }
+
+    private sealed class FakeGlossaryProvider(TranslationGlossary current) : ITranslationGlossaryProvider
+    {
+        public TranslationGlossary Current => current;
     }
 
     private sealed class RecordingSurface : IOtherPlayerSubtitleSurface

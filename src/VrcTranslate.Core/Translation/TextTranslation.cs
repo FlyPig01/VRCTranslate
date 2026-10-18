@@ -15,7 +15,8 @@ public sealed record TextTranslationRequest
         TextTranslationSource source,
         DateTimeOffset? requestedAt = null,
         string? sourceLanguageHint = null,
-        string? correlationId = null)
+        string? correlationId = null,
+        TranslationHints? hints = null)
     {
         Text = string.IsNullOrWhiteSpace(text)
             ? throw new ArgumentException("Text is required.", nameof(text))
@@ -25,6 +26,7 @@ public sealed record TextTranslationRequest
         RequestedAt = requestedAt ?? DateTimeOffset.UtcNow;
         SourceLanguageHint = string.IsNullOrWhiteSpace(sourceLanguageHint) ? null : sourceLanguageHint.Trim();
         CorrelationId = string.IsNullOrWhiteSpace(correlationId) ? Guid.NewGuid().ToString("N") : correlationId.Trim();
+        Hints = hints;
     }
 
     public string Text { get; }
@@ -33,6 +35,7 @@ public sealed record TextTranslationRequest
     public DateTimeOffset RequestedAt { get; }
     public string? SourceLanguageHint { get; }
     public string CorrelationId { get; }
+    public TranslationHints? Hints { get; }
 }
 
 public sealed record TextTranslationResult

@@ -46,7 +46,7 @@
 
 ### Flash 模型复核（2026-10-19）
 
-小米 V2.5 下线前的 Flash 复核：DeepSeek V4.1 Flash 为 **0.57 / p50 687 ms**，小米 v2.6 Flash 为 **0.52 / p50 2128 ms（p95 6367 ms）**。详见 [flash-retest.md](flash-retest.md)。
+小米 V2.5 下线前的 Flash 复核：DeepSeek V4.1 Flash 为 **0.57 / p50 687 ms**；小米 v2.6 Flash 稳态复跑为 **0.53 / p50 1110 ms（p95 4519 ms）**，首次冷启动轮 p50 2128 ms。详见 [flash-retest.md](flash-retest.md)。
 
 ## 怎么跑
 

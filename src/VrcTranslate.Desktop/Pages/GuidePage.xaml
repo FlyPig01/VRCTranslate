@@ -120,7 +120,7 @@
             <TextBlock Grid.Row="4" Grid.Column="2" Text="质量最高，粤语能翻译" Style="{StaticResource SecondaryTextStyle}" TextWrapping="Wrap" VerticalAlignment="Center" />
             <TextBlock Grid.Row="4" Grid.Column="3" Text="1 小时约 0.05 元（约 600 句）" Style="{StaticResource SecondaryTextStyle}" VerticalAlignment="Center" />
             <TextBlock Grid.Row="5" Text="小米 MiMo v2.6 Flash" VerticalAlignment="Center" />
-            <TextBlock Grid.Row="5" Grid.Column="1" Text="约 2.1 秒" VerticalAlignment="Center" />
+            <TextBlock Grid.Row="5" Grid.Column="1" Text="约 1.1 秒" VerticalAlignment="Center" />
             <TextBlock Grid.Row="5" Grid.Column="2" Text="日语略好；整体不如 DeepSeek，延迟高" Style="{StaticResource SecondaryTextStyle}" TextWrapping="Wrap" VerticalAlignment="Center" />
             <TextBlock Grid.Row="5" Grid.Column="3" Text="以官网为准（约 600 句）" Style="{StaticResource SecondaryTextStyle}" VerticalAlignment="Center" />
           </Grid>

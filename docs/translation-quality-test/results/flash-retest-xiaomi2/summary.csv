@@ -1,0 +1,4 @@
+﻿variant,set,n,chrf2,p50_ms,p95_ms,failures
+xiaomi-flash-app,baseline,24,0.54,1030.0,1693.0,0
+xiaomi-flash-app,conversation,20,0.52,1300.0,6562.0,0
+xiaomi-flash-app,all,44,0.53,1110.0,4519.0,0

@@ -5,7 +5,7 @@
 | 模型 | n | chrF2 | p50 | p95 |
 | --- | ---: | ---: | ---: | ---: |
 | `deepseek-flash`（V4.1-Flash-1017） | 44 | **0.57** | **687 ms** | **914 ms** |
-| `mimo-v2.6-flash` | 44 | 0.52 | 2128 ms | 6367 ms |
+| `mimo-v2.6-flash`（复跑稳态） | 44 | 0.53 | 1110 ms | 4519 ms |
 
 分语种 chrF2：
 
@@ -17,7 +17,7 @@
 ## 结论
 
 - 两者都能正常调用、0 失败。
-- V2.6 Flash 质量低于 DeepSeek V4.1 Flash，p50 约 3 倍、p95 约 6.4 秒；日语只在 5 条样本上高 0.03，不足以抵消整体差距。
+- V2.6 Flash 质量低于 DeepSeek V4.1 Flash；稳态 p50 约 1.1 秒（首次冷启动轮 2.1 秒、p95 6.4 秒），复跑 p95 仍 4.5 秒；日语只在 5 条样本上高 0.03，不足以抵消整体差距。
 - 引导页已改为“小米 v2.6 Flash：日语略好；整体不如 DeepSeek，延迟高；不建议默认”。
 - 代码默认、旧档案和旧路由迁到 `mimo-v2.6-flash`；旧 Pro 迁到 `mimo-v2.6-pro`。
 
@@ -25,6 +25,7 @@
 
 - 44 条 = 24 条通用（排除纯中文）+ 20 条 VRChat 对话。
 - 指标是本地 chrF2 近似；延迟只测 provider 调用，不含 VAD/ASR/UI。
-- 原始结果：[flash-retest-20261019.json](results/flash-retest-20261019.json)
+- 首次冷启动轮：[flash-retest-20261019.json](results/flash-retest-20261019.json)
+- 复跑稳态：[flash-retest-xiaomi2.json](results/flash-retest-xiaomi2.json)
 - 评分：[summary.md](results/flash-retest/summary.md) / [examples.md](results/flash-retest/examples.md)
 - 与[主报告](report.md)的旧矩阵口径不同：主报告是原型提示词/多模型矩阵，本页是生产提示词+术语表的 Flash 单轮复核。

@@ -258,7 +258,7 @@ baseline 含 2 条粤语；机器翻译对粤语基本原样返回，会压低�
 | 模型 | 44 条 chrF2 | p50 | p95 |
 | --- | ---: | ---: | ---: |
 | `deepseek-flash`（V4.1-Flash-1017） | **0.57** | **687 ms** | **914 ms** |
-| `mimo-v2.6-flash` | 0.52 | 2128 ms | 6367 ms |
+| `mimo-v2.6-flash`（复跑稳态） | 0.53 | 1110 ms | 4519 ms |
 
-结论：V2.6 Flash 可调用、0 失败，但质量和延迟都不如 DeepSeek V4.1 Flash；日语只在 5 条样本上高 0.03。引导页已改为“小米 v2.6 Flash：日语略好；整体不如 DeepSeek，延迟高；不建议默认”，代码默认和旧档案/路由迁到 V2.6。详见 [flash-retest.md](flash-retest.md)。
+结论：V2.6 Flash 可调用、0 失败，但质量和延迟都不如 DeepSeek V4.1 Flash；稳态 p50 约 1.1 秒（首次冷启动轮 2.1 秒，p95 4.5–6.5 秒），日语只在 5 条样本上高 0.03。引导页已改为“小米 v2.6 Flash：日语略好；整体不如 DeepSeek，延迟高；不建议默认”，代码默认和旧档案/路由迁到 V2.6。详见 [flash-retest.md](flash-retest.md)。
 

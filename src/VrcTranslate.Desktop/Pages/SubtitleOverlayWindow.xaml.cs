@@ -3,6 +3,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
+using Microsoft.UI.Xaml.Input;
 using VrcTranslate.Application.Subtitles;
 using VrcTranslate.Core.Settings;
 using VrcTranslate.Core.Speech;
@@ -95,7 +96,15 @@ public sealed partial class SubtitleOverlayWindow : Window
     private readonly List<CaptionBubble> _bubbles = [];
     private readonly Dictionary<string, SolidColorBrush> _speakerBrushes = new(StringComparer.Ordinal);
     private int _nextSpeakerBrush;
-    private DateTime _ignoreViewChangesUntil;
+    private double _lastScrollableHeight;
+    private double _lastVerticalOffset;
+    private bool _programmaticScroll;
+    private DateTime _programmaticScrollUntil;
+    private int _scrollAttempts;
+    private int _scrollGeneration;
+    private bool _followCorrectionQueued;
+    private DateTime _lastUserScrollAt;
+    private bool _pointerPressed;
     private readonly Microsoft.UI.Dispatching.DispatcherQueue? _dispatcher;
     private readonly double _initialOpacity;
     private readonly Microsoft.UI.Dispatching.DispatcherQueueTimer? _contentCheckTimer;
@@ -142,6 +151,14 @@ public sealed partial class SubtitleOverlayWindow : Window
         Title = "字幕";
 
         CaptionScroll.ViewChanged += OnCaptionViewChanged;
+        CaptionScroll.AddHandler(UIElement.PointerWheelChangedEvent, new PointerEventHandler(OnPointerWheelChanged), true);
+        CaptionScroll.AddHandler(UIElement.PointerPressedEvent, new PointerEventHandler(OnPointerPressed), true);
+        CaptionScroll.AddHandler(UIElement.PointerMovedEvent, new PointerEventHandler(OnPointerMoved), true);
+        CaptionScroll.AddHandler(UIElement.PointerReleasedEvent, new PointerEventHandler(OnPointerReleased), true);
+        CaptionScroll.AddHandler(UIElement.PointerCanceledEvent, new PointerEventHandler(OnPointerReleased), true);
+        CaptionScroll.AddHandler(UIElement.KeyDownEvent, new KeyEventHandler(OnScrollKeyDown), true);
+        CaptionScroll.AddHandler(UIElement.ManipulationStartedEvent, new ManipulationStartedEventHandler((_, _) => MarkUserScroll()), true);
+        CaptionScroll.AddHandler(UIElement.ManipulationDeltaEvent, new ManipulationDeltaEventHandler((_, _) => MarkUserScroll()), true);
         NewCaptionHint.Click += OnNewCaptionHintClicked;
         OverlaySurface.SizeChanged += OnSurfaceSizeChanged;
         OverlaySurface.Loaded += OnOverlayLoaded;
@@ -575,6 +592,7 @@ public sealed partial class SubtitleOverlayWindow : Window
             _narrowSurface = narrow;
             foreach (var bubble in _bubbles) RenderBody(bubble);
             FitSurfaceHeight();
+            ScheduleFollowCorrection();
             return;
         }
 
@@ -582,7 +600,14 @@ public sealed partial class SubtitleOverlayWindow : Window
         // became visible), so the messages that are already there can be followed.
         // A resize by the reader is deliberately not answered with a fit: the
         // rectangle they chose stands for the rest of the session.
-        if (e.PreviousSize.Height <= 0d && e.NewSize.Height > 0d) FitSurfaceHeight();
+        if (e.PreviousSize.Height <= 0d && e.NewSize.Height > 0d)
+        {
+            FitSurfaceHeight();
+        }
+
+        // A native height change also changes the scrollable range; correct
+        // after the layout settles even when the height was content-driven.
+        ScheduleFollowCorrection();
     }
 
     /// <summary>
@@ -688,45 +713,136 @@ public sealed partial class SubtitleOverlayWindow : Window
 
     private void ScrollToLatest()
     {
+        _followLatest = true;
+        _scrollAttempts = 0;
+        _programmaticScroll = true;
+        _programmaticScrollUntil = DateTime.UtcNow.AddMilliseconds(600);
+        var generation = ++_scrollGeneration;
+        TryScrollToLatest(generation);
+    }
+
+    /// <summary>
+    /// Corrections are retried over several dispatcher turns: a long message or
+    /// a native window height change can settle after the first layout pass, and
+    /// a single ChangeView would then leave the newest line below the viewport.
+    /// </summary>
+    private void TryScrollToLatest(int generation)
+    {
+        if (!_programmaticScroll || generation != _scrollGeneration) return;
         try
         {
-            // A programmatic ChangeView also raises ViewChanged. Without this
-            // guard the surface mistakes its own scroll for the reader scrolling
-            // back and then stops following every later caption.
-            _ignoreViewChangesUntil = DateTime.UtcNow.AddMilliseconds(250);
             CaptionScroll.UpdateLayout();
-            CaptionScroll.ChangeView(null, CaptionScroll.ScrollableHeight, null, disableAnimation: true);
+            var target = CaptionScroll.ScrollableHeight;
+            CaptionScroll.ChangeView(null, target, null, disableAnimation: true);
+            _lastScrollableHeight = target;
+            _lastVerticalOffset = target;
             _followLatest = true;
             NewCaptionHint.Visibility = Visibility.Collapsed;
-
-            // The new message may not have changed ScrollableHeight before the
-            // first layout pass; correct once more on the next dispatcher turn.
-            _dispatcher?.TryEnqueue(() =>
+            if (++_scrollAttempts < 5)
             {
-                try
-                {
-                    CaptionScroll.UpdateLayout();
-                    CaptionScroll.ChangeView(null, CaptionScroll.ScrollableHeight, null, disableAnimation: true);
-                    _followLatest = true;
-                    NewCaptionHint.Visibility = Visibility.Collapsed;
-                }
-                catch
-                {
-                    // A surface that cannot scroll yet still shows the newest message.
-                }
-            });
+                _dispatcher?.TryEnqueue(() => TryScrollToLatest(generation));
+            }
+            else
+            {
+                _programmaticScroll = false;
+            }
         }
         catch
         {
+            _programmaticScroll = false;
             // A surface that cannot scroll yet still shows the newest message.
         }
     }
 
+    /// <summary>
+    /// Only a change in vertical position while the scrollable height is stable is
+    /// a reader scroll. A growing message, a window resize or our own ChangeView
+    /// must never turn following off.
+    /// </summary>
     private void OnCaptionViewChanged(object? sender, ScrollViewerViewChangedEventArgs e)
     {
-        if (DateTime.UtcNow < _ignoreViewChangesUntil) return;
-        _followLatest = CaptionScroll.ScrollableHeight - CaptionScroll.VerticalOffset <= FollowThreshold;
-        if (_followLatest) NewCaptionHint.Visibility = Visibility.Collapsed;
+        var scrollable = CaptionScroll.ScrollableHeight;
+        var offset = CaptionScroll.VerticalOffset;
+        var atBottom = scrollable - offset <= FollowThreshold;
+        var contentChanged = Math.Abs(scrollable - _lastScrollableHeight) > 0.5;
+        var userInput = DateTime.UtcNow - _lastUserScrollAt < TimeSpan.FromMilliseconds(400);
+        _lastScrollableHeight = scrollable;
+        _lastVerticalOffset = offset;
+
+        if (!userInput && (_programmaticScroll || DateTime.UtcNow < _programmaticScrollUntil))
+        {
+            _followLatest = true;
+            if (atBottom) NewCaptionHint.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        if (atBottom)
+        {
+            _followLatest = true;
+            NewCaptionHint.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        if (contentChanged && !userInput)
+        {
+            // Layout, a long message, an animation or a native resize moved the
+            // content; stay in follow mode and correct after it settles.
+            if (_followLatest) ScheduleFollowCorrection();
+            return;
+        }
+
+        _followLatest = false;
+        NewCaptionHint.Visibility = Visibility.Visible;
+    }
+
+    private void ScheduleFollowCorrection()
+    {
+        if (!_followLatest || _followCorrectionQueued) return;
+        _followCorrectionQueued = true;
+        _dispatcher?.TryEnqueue(() =>
+        {
+            _followCorrectionQueued = false;
+            if (!_followLatest) return;
+            if (CaptionScroll.ScrollableHeight - CaptionScroll.VerticalOffset <= FollowThreshold) return;
+            ScrollToLatest();
+        });
+    }
+
+    private void MarkUserScroll()
+    {
+        _lastUserScrollAt = DateTime.UtcNow;
+        // A reader gesture cancels any pending programmatic correction.
+        _programmaticScroll = false;
+        _scrollGeneration++;
+    }
+
+    private void OnPointerWheelChanged(object sender, PointerRoutedEventArgs e) => MarkUserScroll();
+
+    private void OnPointerPressed(object sender, PointerRoutedEventArgs e)
+    {
+        _pointerPressed = true;
+        MarkUserScroll();
+    }
+
+    private void OnPointerMoved(object sender, PointerRoutedEventArgs e)
+    {
+        if (_pointerPressed) MarkUserScroll();
+    }
+
+    private void OnPointerReleased(object sender, PointerRoutedEventArgs e)
+    {
+        _pointerPressed = false;
+        MarkUserScroll();
+    }
+
+    private void OnScrollKeyDown(object sender, KeyRoutedEventArgs e)
+    {
+        if (e.Key is Windows.System.VirtualKey.PageUp or Windows.System.VirtualKey.PageDown
+            or Windows.System.VirtualKey.Home or Windows.System.VirtualKey.End
+            or Windows.System.VirtualKey.Up or Windows.System.VirtualKey.Down)
+        {
+            MarkUserScroll();
+        }
     }
 
     private void OnNewCaptionHintClicked(object sender, RoutedEventArgs e)

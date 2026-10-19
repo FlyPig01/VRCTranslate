@@ -70,9 +70,6 @@ public sealed record SpeakerMatchOptions
     /// <summary>Named voiceprints kept on disk; reaching it never evicts a named speaker.</summary>
     public int MaxRememberedSpeakers { get; init; } = 100;
 
-    /// <summary>How long an unnamed session speaker may go unheard before it frees its slot.</summary>
-    public TimeSpan SessionSpeakerTtl { get; init; } = TimeSpan.FromMinutes(10);
-
     /// <summary>Required gap to the second-best speaker before a match is accepted.</summary>
     public float MatchMargin { get; init; } = 0.06f;
 
@@ -134,14 +131,8 @@ public sealed class SpeakerRegistry
     /// <summary>Monotonic change counter so the UI can tell when its list is stale.</summary>
     public int Version { get; private set; }
 
-    public IReadOnlyList<SpeakerIdentity> Speakers
-    {
-        get
-        {
-            SweepExpiredSessionSpeakers();
-            return _speakers.Select(speaker => speaker.Identity).ToArray();
-        }
-    }
+    public IReadOnlyList<SpeakerIdentity> Speakers =>
+        _speakers.Select(speaker => speaker.Identity).ToArray();
 
     /// <summary>Named speakers only: those are the ones the library keeps.</summary>
     public int RememberedCount => _speakers.Count(speaker => speaker.IsRemembered);
@@ -149,7 +140,10 @@ public sealed class SpeakerRegistry
     /// <summary>Unnamed speakers currently occupying the session slots.</summary>
     public int SessionCount => _speakers.Count(speaker => !speaker.IsRemembered);
 
-    public SpeakerMatch Match(ReadOnlySpan<float> embedding, string? previousSpeakerId = null)
+    public SpeakerMatch Match(
+        ReadOnlySpan<float> embedding,
+        string? previousSpeakerId = null,
+        bool allowCreate = true)
     {
         // 1.1.5-compatible path: every span matches independently. The extra
         // argument remains for source compatibility but must not turn a real
@@ -161,7 +155,6 @@ public sealed class SpeakerRegistry
             throw new ArgumentException("说话人嵌入不能为空。", nameof(embedding));
         }
 
-        SweepExpiredSessionSpeakers();
         SpeakerState? best = null;
         SpeakerState? second = null;
         var bestSimilarity = float.NegativeInfinity;
@@ -199,7 +192,19 @@ public sealed class SpeakerRegistry
                 "match");
         }
 
-        if (SessionCount >= _options.MaxSessionSpeakers)
+        if (!allowCreate)
+        {
+            return new SpeakerMatch(
+                UnknownSpeaker,
+                best is null ? 0f : bestSimilarity,
+                SpeakerMatchKind.Unknown,
+                second is null ? -1f : secondSimilarity,
+                margin,
+                "no-create");
+        }
+
+        if (SessionCount >= _options.MaxSessionSpeakers &&
+            !TryEvictLeastRecentlyUsedSessionSpeaker())
         {
             return new SpeakerMatch(
                 UnknownSpeaker,
@@ -321,13 +326,22 @@ public sealed class SpeakerRegistry
         Version++;
     }
 
-    private void SweepExpiredSessionSpeakers()
+    /// <summary>
+    /// LRU eviction: the unnamed session speaker that has gone the longest
+    /// without being matched loses its slot. Observation count is only the
+    /// tie-breaker when two speakers share the same timestamp.
+    /// </summary>
+    private bool TryEvictLeastRecentlyUsedSessionSpeaker()
     {
-        if (_speakers.Count == 0) return;
-        var cutoff = DateTimeOffset.UtcNow - _options.SessionSpeakerTtl;
-        var removed = _speakers.RemoveAll(speaker =>
-            !speaker.IsRemembered && speaker.LastSeenAt < cutoff);
-        if (removed > 0) Version++;
+        var victim = _speakers
+            .Where(speaker => !speaker.IsRemembered)
+            .OrderBy(speaker => speaker.LastSeenAt)
+            .ThenBy(speaker => speaker.ObservationCount)
+            .FirstOrDefault();
+        if (victim is null) return false;
+        _speakers.Remove(victim);
+        Version++;
+        return true;
     }
 
     private SpeakerState? Find(string speakerId) => _speakers.FirstOrDefault(speaker =>

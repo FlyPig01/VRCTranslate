@@ -592,16 +592,23 @@ public sealed class LocalSpeechCaptureSession : IAsyncDisposable
         var duration = samples.Length / (double)_segmenterSampleRate;
         var rms = Rms(samples.Span);
         var sameLocal = localSpeakerId >= 0 && localSpeakerId == _lastLocalSpeakerId;
+        // A short fragment, or a continuation inside the same local cluster,
+        // must never create a speaker or evict the LRU victim; it may only match
+        // an existing identity.
+        var allowCreate = duration >= 1.5 && !sameLocal;
         try
         {
             // Per-span matching remains the source of truth. The only continuity
             // rule is inside the same local diarization cluster: a New/unknown
             // short span there is far more likely the same person than a new
             // speaker. A different local cluster never inherits the old label.
-            var match = speakers.Identify(samples, _segmenterSampleRate);
+            var match = speakers.Identify(
+                samples,
+                _segmenterSampleRate,
+                allowCreate: allowCreate);
             if (match is null)
             {
-                if (sameLocal && _lastSpeakerId is not null)
+                if (duration >= 1.5 && sameLocal && _lastSpeakerId is not null)
                 {
                     RaiseDiagnostic(
                         $"speaker span duration={duration:0.00} rms={rms:0.0000} decision=local-hold-null local={localSpeakerId}");
@@ -617,16 +624,20 @@ public sealed class LocalSpeechCaptureSession : IAsyncDisposable
                 };
             }
 
-            if (duration < 1.5 && match.Kind == SpeakerMatchKind.New)
+            if (duration < 1.5 &&
+                match.Kind is SpeakerMatchKind.New or SpeakerMatchKind.Unknown)
             {
-                // A sub-1.5s clip that looks like a new identity is almost always
-                // a fragment of the current speaker. Do not create a ghost; show
-                // explicit unknown and leave the previous identity untouched.
-                try { speakers.Forget(match.Speaker.Id); }
-                catch { /* the unknown label is still correct */ }
+                // A sub-1.5s clip cannot create an identity. If the registry
+                // nevertheless created one, remove it; show explicit unknown.
+                if (match.Kind == SpeakerMatchKind.New)
+                {
+                    try { speakers.Forget(match.Speaker.Id); }
+                    catch { /* the unknown label is still correct */ }
+                }
+
                 RaiseDiagnostic(
                     $"speaker span duration={duration:0.00} rms={rms:0.0000} " +
-                    $"best={match.Similarity:0.000} decision=short-new-unknown local={localSpeakerId}");
+                    $"best={match.Similarity:0.000} decision=short-unknown local={localSpeakerId}");
                 return result with
                 {
                     SpeakerId = SpeakerRegistry.UnknownSpeaker.Id,

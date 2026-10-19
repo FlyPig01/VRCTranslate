@@ -627,7 +627,8 @@ public sealed class LocalSpeechCaptureSessionTests
         public SpeakerMatch? Identify(
             ReadOnlyMemory<float> samples,
             int sampleRate,
-            string? previousSpeakerId = null)
+            string? previousSpeakerId = null,
+            bool allowCreate = true)
         {
             IdentifyCalls++;
             return Matches.Count > 0

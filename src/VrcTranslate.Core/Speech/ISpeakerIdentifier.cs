@@ -29,7 +29,8 @@ public interface ISpeakerIdentifier
     SpeakerMatch? Identify(
         ReadOnlyMemory<float> samples,
         int sampleRate,
-        string? previousSpeakerId = null);
+        string? previousSpeakerId = null,
+        bool allowCreate = true);
 
     /// <summary>
     /// Splits one segment at the speaker changes a segmentation model finds.

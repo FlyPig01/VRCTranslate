@@ -229,36 +229,38 @@ public sealed class SpeakerRegistryTests
     }
 
     [Fact]
-    public void Session_slots_stop_at_the_limit_and_use_unknown()
+    public void The_least_recently_used_session_speaker_is_evicted_at_the_cap()
     {
         var registry = new SpeakerRegistry(new SpeakerMatchOptions { MaxSessionSpeakers = 2 });
         var first = registry.Match(Vector(1f, 0f));
+        Thread.Sleep(15);
         var second = registry.Match(Vector(0f, 1f));
 
         var third = registry.Match(Vector(-1f, 0f));
 
-        Assert.Equal(SpeakerMatchKind.Unknown, third.Kind);
-        Assert.Equal("未知", third.Speaker.DisplayName);
+        Assert.Equal(SpeakerMatchKind.New, third.Kind);
+        Assert.DoesNotContain(registry.Speakers, item => item.Id == first.Speaker.Id);
+        Assert.Contains(registry.Speakers, item => item.Id == second.Speaker.Id);
+        Assert.Contains(registry.Speakers, item => item.Id == third.Speaker.Id);
         Assert.Equal(2, registry.Speakers.Count);
-        Assert.NotEqual(first.Speaker.Id, second.Speaker.Id);
     }
 
     [Fact]
-    public void Expired_session_speakers_free_a_slot()
+    public void A_recent_match_makes_that_speaker_survive_lru_eviction()
     {
-        var registry = new SpeakerRegistry(new SpeakerMatchOptions
-        {
-            MaxSessionSpeakers = 1,
-            SessionSpeakerTtl = TimeSpan.FromMilliseconds(20),
-        });
+        var registry = new SpeakerRegistry(new SpeakerMatchOptions { MaxSessionSpeakers = 2 });
         var first = registry.Match(Vector(1f, 0f));
-        Thread.Sleep(40);
+        Thread.Sleep(15);
+        var second = registry.Match(Vector(0f, 1f));
+        Thread.Sleep(15);
+        _ = registry.Match(Vector(1f, 0f));
 
-        var second = registry.Match(Vector(-1f, 0f));
+        var third = registry.Match(Vector(-1f, 0f));
 
-        Assert.Equal(SpeakerMatchKind.New, second.Kind);
-        Assert.NotEqual(first.Speaker.Id, second.Speaker.Id);
-        Assert.Single(registry.Speakers);
+        Assert.Equal(SpeakerMatchKind.New, third.Kind);
+        Assert.Contains(registry.Speakers, item => item.Id == first.Speaker.Id);
+        Assert.DoesNotContain(registry.Speakers, item => item.Id == second.Speaker.Id);
+        Assert.Contains(registry.Speakers, item => item.Id == third.Speaker.Id);
     }
 
     [Fact]
@@ -272,7 +274,8 @@ public sealed class SpeakerRegistryTests
         var third = registry.Match(Vector(-1f, 0f));
 
         Assert.Equal(SpeakerMatchKind.New, second.Kind);
-        Assert.Equal(SpeakerMatchKind.Unknown, third.Kind);
+        Assert.Equal(SpeakerMatchKind.New, third.Kind);
+        Assert.DoesNotContain(registry.Speakers, item => item.Id == second.Speaker.Id);
         Assert.Equal(2, registry.Speakers.Count);
         Assert.Equal(1, registry.RememberedCount);
         Assert.Equal(1, registry.SessionCount);

@@ -55,7 +55,8 @@ public sealed class LocalSpeakerIdentifier : ISpeakerIdentifier, IDisposable
     public SpeakerMatch? Identify(
         ReadOnlyMemory<float> samples,
         int sampleRate,
-        string? previousSpeakerId = null)
+        string? previousSpeakerId = null,
+        bool allowCreate = true)
     {
         _ = previousSpeakerId;
 
@@ -77,7 +78,7 @@ public sealed class LocalSpeakerIdentifier : ISpeakerIdentifier, IDisposable
             if (embedding.Length == 0) return null;
             var registry = EnsureRegistry();
             var before = registry.Version;
-            match = registry.Match(embedding);
+            match = registry.Match(embedding, allowCreate: allowCreate);
             changed = registry.Version != before;
         }
 

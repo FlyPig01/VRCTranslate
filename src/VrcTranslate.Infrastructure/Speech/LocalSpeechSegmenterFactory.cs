@@ -15,10 +15,10 @@ public static class LocalSpeechSegmenterFactory
         if (model is null) return new SpeechSegmenter();
         try
         {
-            // Four seconds shortens the first-caption wait while the local
-            // cluster continuity rule keeps same-person fragments together.
-            // Different clusters still use independent per-span matching.
-            return new SileroVadSegmenter(model, maxSpeechSeconds: 4f);
+            // Six seconds: the user prefers translation context over the extra
+            // latency. Short <1.5s New fragments are shown as unknown instead of
+            // creating a ghost speaker.
+            return new SileroVadSegmenter(model, maxSpeechSeconds: 6f);
         }
         catch
         {

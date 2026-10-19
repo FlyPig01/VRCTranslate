@@ -617,6 +617,23 @@ public sealed class LocalSpeechCaptureSession : IAsyncDisposable
                 };
             }
 
+            if (duration < 1.5 && match.Kind == SpeakerMatchKind.New)
+            {
+                // A sub-1.5s clip that looks like a new identity is almost always
+                // a fragment of the current speaker. Do not create a ghost; show
+                // explicit unknown and leave the previous identity untouched.
+                try { speakers.Forget(match.Speaker.Id); }
+                catch { /* the unknown label is still correct */ }
+                RaiseDiagnostic(
+                    $"speaker span duration={duration:0.00} rms={rms:0.0000} " +
+                    $"best={match.Similarity:0.000} decision=short-new-unknown local={localSpeakerId}");
+                return result with
+                {
+                    SpeakerId = SpeakerRegistry.UnknownSpeaker.Id,
+                    SpeakerLabel = SpeakerRegistry.UnknownSpeaker.DisplayName,
+                };
+            }
+
             var speaker = match.Speaker;
             var decision = match.Kind.ToString();
             if (sameLocal &&

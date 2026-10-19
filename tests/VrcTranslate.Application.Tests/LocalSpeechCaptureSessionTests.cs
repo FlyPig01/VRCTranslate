@@ -500,11 +500,53 @@ public sealed class LocalSpeechCaptureSessionTests
         var speakers = new FakeSpeakerIdentifier
         {
             Available = true,
-            Spans = [new SpeechSpan(0, 2_400, 1), new SpeechSpan(2_400, 4_800, 1)],
+            Spans = [new SpeechSpan(0, 2_400, 1), new SpeechSpan(2_400, 26_400, 1)],
             Matches = new Queue<SpeakerMatch?>(new SpeakerMatch?[]
             {
                 new(new SpeakerIdentity("spk-a", "A", "A"), 0.9f, SpeakerMatchKind.Session),
                 new(new SpeakerIdentity("spk-b", "B", "B"), 0.3f, SpeakerMatchKind.New),
+            }),
+        };
+        var service = new LocalSpeechService(new FakeModelManager(), new FakeRecognizer(), speakers)
+        {
+            SpeakerLabelsEnabled = true,
+        };
+        await using var session = new LocalSpeechCaptureSession(
+            capture, service, "en", new SpeechSegmenter(16_000, 0.01f, 100, 2_000),
+            new SpeechCaptureProcessingOptions { SplitAtSpeakerChanges = true, AttachSpeakerLabels = true });
+        var results = new List<SpeechRecognitionResult>();
+        var both = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        session.ResultReady += (_, value) =>
+        {
+            lock (results)
+            {
+                results.Add(value);
+                if (results.Count == 2) both.TrySetResult();
+            }
+        };
+
+        await session.StartAsync();
+        capture.Emit(Enumerable.Repeat(0.2f, 26_400).ToArray());
+        capture.Emit(new float[2_000]);
+
+        await both.Task.WaitAsync(TimeSpan.FromSeconds(2));
+        Assert.Equal("spk-a", results[0].SpeakerId);
+        Assert.Equal("spk-a", results[1].SpeakerId);
+        Assert.Equal(1, speakers.ForgetCalls);
+    }
+
+    [Fact]
+    public async Task A_sub_1_5s_new_span_is_unknown_and_does_not_create_a_speaker()
+    {
+        var capture = new FakeAudioCapture(AudioCaptureRequest.Microphone());
+        var speakers = new FakeSpeakerIdentifier
+        {
+            Available = true,
+            Spans = [new SpeechSpan(0, 2_400, 1), new SpeechSpan(2_400, 4_800, 2)],
+            Matches = new Queue<SpeakerMatch?>(new SpeakerMatch?[]
+            {
+                new(new SpeakerIdentity("spk-a", "A", "A"), 0.9f, SpeakerMatchKind.Session),
+                new(new SpeakerIdentity("spk-b", "B", "B"), 0.35f, SpeakerMatchKind.New),
             }),
         };
         var service = new LocalSpeechService(new FakeModelManager(), new FakeRecognizer(), speakers)
@@ -531,7 +573,8 @@ public sealed class LocalSpeechCaptureSessionTests
 
         await both.Task.WaitAsync(TimeSpan.FromSeconds(2));
         Assert.Equal("spk-a", results[0].SpeakerId);
-        Assert.Equal("spk-a", results[1].SpeakerId);
+        Assert.Equal("spk-unknown", results[1].SpeakerId);
+        Assert.Equal("未知", results[1].SpeakerLabel);
         Assert.Equal(1, speakers.ForgetCalls);
     }
 

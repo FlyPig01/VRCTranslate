@@ -22,8 +22,8 @@ if ($version -notmatch '^\d+\.\d+\.\d+$') {
 
 $packageName = "VRCTranslate-v$version-win-x64"
 $packageDirectory = Join-Path $distRoot $packageName
-$programDirectory = Join-Path $packageDirectory '程序文件'
-$noticeDirectory = Join-Path $packageDirectory '说明与许可'
+$programDirectory = Join-Path $packageDirectory 'app'
+$noticeDirectory = Join-Path $packageDirectory 'licenses'
 $launcherPath = Join-Path $packageDirectory 'VRCTranslate.exe'
 $internalExecutable = Join-Path $programDirectory 'VrcTranslate.exe'
 $zipPath = Join-Path $distRoot "$packageName.zip"
@@ -120,7 +120,7 @@ function Assert-NoKnownLocalSecrets {
 function Assert-CleanPackage {
     param([Parameter(Mandatory)][string]$Root)
 
-    $allowedRootEntries = @('VRCTranslate.exe', '使用说明.txt', '程序文件', '说明与许可')
+    $allowedRootEntries = @('VRCTranslate.exe', 'README.txt', 'app', 'licenses')
     $unexpectedRootEntries = @(Get-ChildItem -LiteralPath $Root -Force | Where-Object {
         $_.Name -notin $allowedRootEntries
     })
@@ -130,22 +130,22 @@ function Assert-CleanPackage {
 
     foreach ($required in @(
         'VRCTranslate.exe',
-        '使用说明.txt',
-        '说明与许可\LICENSE',
-        '说明与许可\DISCLAIMER.md',
-        '说明与许可\THIRD_PARTY_NOTICES.md',
-        '程序文件\VrcTranslate.exe',
-        '程序文件\app.ico',
-        '程序文件\App.xbf',
-        '程序文件\MainWindow.xbf',
-        '程序文件\VrcTranslate.pri',
-        '程序文件\Resources\default-glossary.json',
-        '程序文件\Resources\self-test-zh.wav',
-        '程序文件\Models\sensevoice\model.int8.onnx',
-        '程序文件\Models\sensevoice\tokens.txt',
-        '程序文件\Models\speaker\segmentation.int8.onnx',
-        '程序文件\Models\speaker\embedding.onnx',
-        '程序文件\Models\vad\silero_vad.onnx')) {
+        'README.txt',
+        'licenses\LICENSE',
+        'licenses\DISCLAIMER.md',
+        'licenses\THIRD_PARTY_NOTICES.md',
+        'app\VrcTranslate.exe',
+        'app\app.ico',
+        'app\App.xbf',
+        'app\MainWindow.xbf',
+        'app\VrcTranslate.pri',
+        'app\Resources\default-glossary.json',
+        'app\Resources\self-test-zh.wav',
+        'app\Models\sensevoice\model.int8.onnx',
+        'app\Models\sensevoice\tokens.txt',
+        'app\Models\speaker\segmentation.int8.onnx',
+        'app\Models\speaker\embedding.onnx',
+        'app\Models\vad\silero_vad.onnx')) {
         if (-not (Test-Path -LiteralPath (Join-Path $Root $required) -PathType Leaf)) {
             throw "发布包缺少：$required"
         }
@@ -154,8 +154,8 @@ function Assert-CleanPackage {
     if (Test-Path -LiteralPath (Join-Path $Root 'data')) {
         throw '正式发布包不得包含 data 目录。'
     }
-    if (Test-Path -LiteralPath (Join-Path $Root '程序文件\data')) {
-        throw '程序文件目录不得包含 data 目录。'
+    if (Test-Path -LiteralPath (Join-Path $Root 'app\data')) {
+        throw 'app目录不得包含 data 目录。'
     }
 
     $forbidden = @(Get-ChildItem -LiteralPath $Root -Recurse -Force | Where-Object {
@@ -168,7 +168,7 @@ function Assert-CleanPackage {
         throw "发布包包含禁止文件：$relative"
     }
 
-    $runtimeConfig = Get-Content -LiteralPath (Join-Path $Root '程序文件\VrcTranslate.runtimeconfig.json') -Raw |
+    $runtimeConfig = Get-Content -LiteralPath (Join-Path $Root 'app\VrcTranslate.runtimeconfig.json') -Raw |
         ConvertFrom-Json
     if ($null -eq $runtimeConfig.runtimeOptions.includedFrameworks) {
         throw '发布包不是自包含运行时。'
@@ -176,7 +176,7 @@ function Assert-CleanPackage {
 
     foreach ($executablePath in @(
         (Join-Path $Root 'VRCTranslate.exe'),
-        (Join-Path $Root '程序文件\VrcTranslate.exe'))) {
+        (Join-Path $Root 'app\VrcTranslate.exe'))) {
         $versionInfo = (Get-Item -LiteralPath $executablePath).VersionInfo
         if ($versionInfo.FileVersion -ne "$version.0" -or $versionInfo.ProductVersion -ne $version) {
             throw "EXE 版本错误：FileVersion=$($versionInfo.FileVersion)，ProductVersion=$($versionInfo.ProductVersion)。"
@@ -197,7 +197,7 @@ if (Test-Path -LiteralPath $distRoot) {
 New-Item -ItemType Directory -Path $programDirectory -Force | Out-Null
 New-Item -ItemType Directory -Path $noticeDirectory -Force | Out-Null
 
-Write-Host '[2/9] 发布主程序到“程序文件”目录'
+Write-Host '[2/9] 发布主程序到“app”目录'
 & dotnet publish $desktopProject `
     -c Release `
     -p:Platform=x64 `
@@ -221,7 +221,7 @@ if (Test-Path -LiteralPath $launcherPublishRoot) {
 if ($LASTEXITCODE -ne 0) { throw "启动器发布失败，退出码 $LASTEXITCODE。" }
 Copy-Item -LiteralPath (Join-Path $launcherPublishRoot 'VRCTranslate.exe') -Destination $launcherPath
 
-Copy-Item -LiteralPath (Join-Path $repoRoot 'packaging\使用说明.txt') -Destination $packageDirectory
+Copy-Item -LiteralPath (Join-Path $repoRoot 'packaging\README.txt') -Destination $packageDirectory
 Copy-Item -LiteralPath (Join-Path $repoRoot 'LICENSE') -Destination $noticeDirectory
 Copy-Item -LiteralPath (Join-Path $repoRoot 'DISCLAIMER.md') -Destination $noticeDirectory
 Copy-Item -LiteralPath (Join-Path $repoRoot 'THIRD_PARTY_NOTICES.md') -Destination $noticeDirectory
@@ -257,7 +257,7 @@ try {
     Expand-Archive -LiteralPath $zipPath -DestinationPath $zipCheckRoot
     $extractedDirectory = Join-Path $zipCheckRoot $packageName
     Assert-CleanPackage -Root $extractedDirectory
-    foreach ($relative in @('VRCTranslate.exe', '程序文件\VrcTranslate.exe')) {
+    foreach ($relative in @('VRCTranslate.exe', 'app\VrcTranslate.exe')) {
         $sourceHash = (Get-FileHash -LiteralPath (Join-Path $packageDirectory $relative) -Algorithm SHA256).Hash
         $extractedHash = (Get-FileHash -LiteralPath (Join-Path $extractedDirectory $relative) -Algorithm SHA256).Hash
         if ($sourceHash -ne $extractedHash) {
@@ -267,7 +267,7 @@ try {
 
     Write-Host '[8/9] 验证 ZIP 解压后的主程序'
     & pwsh -NoProfile -ExecutionPolicy Bypass -File $releaseSmokeScript `
-        -Executable (Join-Path $extractedDirectory '程序文件\VrcTranslate.exe') `
+        -Executable (Join-Path $extractedDirectory 'app\VrcTranslate.exe') `
         -ExpectedVersion $version
     if ($LASTEXITCODE -ne 0) { throw "ZIP 解压版主程序冒烟测试失败，退出码 $LASTEXITCODE。" }
 

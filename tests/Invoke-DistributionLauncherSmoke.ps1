@@ -57,7 +57,7 @@ try
 
     $applicationProcess = Get-Process -Id $window.Current.ProcessId -ErrorAction Stop
     $actualPath = $applicationProcess.MainModule.FileName
-    $expectedPath = Join-Path $productRoot '程序文件\VrcTranslate.exe'
+    $expectedPath = Join-Path $productRoot 'app\VrcTranslate.exe'
     if (-not $actualPath.Equals($expectedPath, [StringComparison]::OrdinalIgnoreCase)) {
         throw "Launcher opened '$actualPath' instead of '$expectedPath'."
     }
@@ -71,7 +71,7 @@ try
         if (-not (Test-Path -LiteralPath $dataDirectory -PathType Container)) {
             throw 'The launcher did not create data beside itself.'
         }
-        if (Test-Path -LiteralPath (Join-Path $productRoot '程序文件\data')) {
+        if (Test-Path -LiteralPath (Join-Path $productRoot 'app\data')) {
             throw 'The internal program directory must not receive user data.'
         }
         $profilePath = Join-Path $dataDirectory 'v2-profiles.json'

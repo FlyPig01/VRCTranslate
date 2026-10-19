@@ -14,13 +14,13 @@ internal static partial class Program
     private static int Main()
     {
         var root = AppContext.BaseDirectory;
-        var programDirectory = Path.Combine(root, "程序文件");
+        var programDirectory = Path.Combine(root, "app");
         var executable = Path.Combine(programDirectory, "VrcTranslate.exe");
         if (!File.Exists(executable))
         {
             MessageBox(
                 0,
-                "找不到“程序文件”目录中的 VrcTranslate.exe。请完整解压发布包，不要单独移动启动程序。",
+                "找不到“app”目录中的 VrcTranslate.exe。请完整解压发布包，不要单独移动启动程序。",
                 "VRCTranslate 无法启动",
                 0x10);
             return 2;

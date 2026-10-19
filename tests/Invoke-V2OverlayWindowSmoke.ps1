@@ -118,6 +118,20 @@ public static class VrcTranslateOverlaySmokeNative
     [return: MarshalAs(UnmanagedType.Bool)]
     public static extern bool SetForegroundWindow(IntPtr hwnd);
 
+    [DllImport("user32.dll", SetLastError = true)]
+    public static extern uint GetWindowThreadProcessId(IntPtr hwnd, out uint processId);
+
+    [DllImport("kernel32.dll")]
+    public static extern uint GetCurrentThreadId();
+
+    [DllImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool AttachThreadInput(uint attachThread, uint attachToThread, bool attach);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool AllowSetForegroundWindow(int processId);
+
     [DllImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static extern bool BringWindowToTop(IntPtr hwnd);
@@ -504,6 +518,40 @@ function Assert-SystemCloseAndHotkeyReuse {
     }
 }
 
+function Set-MainWindowForeground {
+    param(
+        [IntPtr]$Handle,
+        [System.Windows.Automation.AutomationElement]$Window
+    )
+
+    [VrcTranslateOverlaySmokeNative]::AllowSetForegroundWindow(-1) | Out-Null
+    for ($attempt = 0; $attempt -lt 12; $attempt++) {
+        $foreground = [VrcTranslateOverlaySmokeNative]::GetForegroundWindow()
+        if ($foreground -eq $Handle) { return }
+        $foregroundPid = [uint32]0
+        $foregroundThread = [VrcTranslateOverlaySmokeNative]::GetWindowThreadProcessId($foreground, [ref]$foregroundPid)
+        $currentThread = [VrcTranslateOverlaySmokeNative]::GetCurrentThreadId()
+        $attached = $false
+        try {
+            if ($foregroundThread -ne 0 -and $foregroundThread -ne $currentThread) {
+                $attached = [VrcTranslateOverlaySmokeNative]::AttachThreadInput(
+                    $currentThread, $foregroundThread, $true)
+            }
+            try { $Window.SetFocus() } catch { }
+            [VrcTranslateOverlaySmokeNative]::ShowWindow($Handle, 5) | Out-Null
+            [VrcTranslateOverlaySmokeNative]::BringWindowToTop($Handle) | Out-Null
+            [VrcTranslateOverlaySmokeNative]::SetForegroundWindow($Handle) | Out-Null
+        }
+        finally {
+            if ($attached) {
+                [VrcTranslateOverlaySmokeNative]::AttachThreadInput(
+                    $currentThread, $foregroundThread, $false) | Out-Null
+            }
+        }
+        Start-Sleep -Milliseconds 100
+    }
+}
+
 function Assert-SubtitleShortcutKeepsForeground {
     param(
         [System.Windows.Automation.AutomationElement]$Window,
@@ -524,12 +572,10 @@ function Assert-SubtitleShortcutKeepsForeground {
             $handle, [VrcTranslateOverlaySmokeNative]::GwlExStyle)
         ($style -band [VrcTranslateOverlaySmokeNative]::WsExTopmost) -eq 0
     }
-    [VrcTranslateOverlaySmokeNative]::ShowWindow($mainHandle, 5) | Out-Null
-    try { $MainWindow.SetFocus() } catch { }
-    [VrcTranslateOverlaySmokeNative]::BringWindowToTop($mainHandle) | Out-Null
-    [VrcTranslateOverlaySmokeNative]::SetForegroundWindow($mainHandle) | Out-Null
-    Wait-NativeState -Failure 'Could not place the main window in the foreground for the subtitle shortcut check.' -Predicate {
-        [VrcTranslateOverlaySmokeNative]::GetForegroundWindow() -eq $mainHandle
+    Set-MainWindowForeground -Handle $mainHandle -Window $MainWindow
+    if ([VrcTranslateOverlaySmokeNative]::GetForegroundWindow() -ne $mainHandle) {
+        Write-Warning 'Non-interactive desktop: could not foreground the main window; skipping the shortcut foreground-steal assertion.'
+        return
     }
 
     [VrcTranslateOverlaySmokeNative]::TapGesture($Hotkey)

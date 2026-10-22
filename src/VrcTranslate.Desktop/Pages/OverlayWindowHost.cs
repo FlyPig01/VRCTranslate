@@ -1,3 +1,4 @@
+using VrcTranslate.Application.Abstractions;
 using VrcTranslate.Application.Subtitles;
 using VrcTranslate.Core.Settings;
 using VrcTranslate.Infrastructure.Configuration;
@@ -53,6 +54,21 @@ internal static class OverlayWindowHost
         else
         {
             window.AppendRecognizedCaption(captionId, original, speakerLabel);
+        }
+    }
+
+    /// <summary>Creates or updates one streaming Qwen caption from any thread.</summary>
+    public static void ShowStreamingCaptionFromAnyThread(QwenCaptionUpdate update)
+    {
+        var window = _subtitle;
+        if (window is null) return;
+        if (_dispatcherQueue is { } queue)
+        {
+            queue.TryEnqueue(() => window.ShowStreamingCaption(update));
+        }
+        else
+        {
+            window.ShowStreamingCaption(update);
         }
     }
 

@@ -548,10 +548,9 @@ if ($voiceSource -notmatch 'SourceChanged' -or
     $voiceSource -notmatch 'VoiceInfo\.IsOpen = false') {
     throw 'The badge must follow the session source events on the UI thread, hint once on the first fallback, and withdraw the hint after recovery.'
 }
-if ([regex]::Matches($voiceMarkup, '<ComboBox[\s>]').Count -ne 2 -or
-    $voiceMarkup -notmatch 'SpeechModelBox' -or
-    $voiceMarkup -notmatch 'TencentLanguageBox') {
-    throw 'VoicePage must keep exactly the local model and Tencent language selectors; no capture-source or process picker may be added.'
+if ([regex]::Matches($voiceMarkup, '<ComboBox[\s>]').Count -ne 1 -or
+    $voiceMarkup -notmatch 'SpeechModelBox') {
+    throw 'VoicePage must keep exactly the local model selector; cloud engines live in their own cards and dialogs, with no capture-source picker.'
 }
 if ($voiceMarkup -match 'Windows 系统识别 · 无需密钥') { throw 'VoicePage must keep the recognition status label concise.' }
 if ([regex]::Matches($voiceMarkup, 'AutomationProperties.Name="打开字幕"').Count -ne 0) { throw 'The window-only subtitle entry must stay deleted so the caption surface cannot be toggled apart from recognition.' }
@@ -906,34 +905,37 @@ if ($guideMarkup -notmatch '翻译服务配置' -or
     throw 'Guide page must carry the translation-service card: 开通 + 创建密钥 links with AutomationIds for every shipped provider, quota hints marked 以官网为准, and no key or example key material.'
 }
 
-# 语音识别卡片：用户只需要看到三种方式、免费额度、超出价格和推荐顺序。
-# 实时与按句都是可用选项；页面必须短，不写实现过程。
-$tencentAsrSource = Get-Content -Raw (Join-Path $v2Root 'src\VrcTranslate.Core\Speech\TencentAsrSettings.cs')
-$tencentRealtimeSource = Get-Content -Raw (Join-Path $v2Root 'src\VrcTranslate.Infrastructure\Speech\TencentRealtimeAsrClient.cs')
+# 语音识别：本地 + 阿里云 Qwen LiveTranslate；腾讯实时识别已从界面移除。
+$qwenSource = Get-Content -Raw (Join-Path $v2Root 'src\VrcTranslate.Infrastructure\Speech\QwenLiveTranslateClient.cs')
+$qwenSettingsSource = Get-Content -Raw (Join-Path $v2Root 'src\VrcTranslate.Core\Speech\QwenAsrSettings.cs')
 if ($guideMarkup -notmatch 'guide-asr' -or
     $guideMarkup -notmatch '语音识别' -or
-    $guideMarkup -notmatch '腾讯云实时' -or
+    $guideMarkup -notmatch '阿里云实时' -or
     $guideMarkup -notmatch '腾讯云按句' -or
-    $guideMarkup -notmatch '5 小时/月' -or
-    $guideMarkup -notmatch '5000 次/月' -or
-    $guideMarkup -notmatch '3\.2 元/小时' -or
-    $guideMarkup -notmatch '3\.2 元/千次' -or
-    $guideMarkup -notmatch '4\.8 元/小时' -or
-    $guideMarkup -notmatch '后付费默认关闭' -or
+    $guideMarkup -notmatch 'Qwen3\.8' -or
+    $guideMarkup -notmatch '2\.5~3\.5 元/小时' -or
+    $guideMarkup -notmatch '100 万 Token' -or
+    $guideMarkup -notmatch '90 天' -or
     $guideMarkup -notmatch 'guide-asr-pricing' -or
+    $guideMarkup -notmatch 'guide-asr-tencent-console' -or
+    $guideMarkup -notmatch 'guide-asr-tencent-keys' -or
+    $guideMarkup -notmatch 'guide-asr-tencent-pricing' -or
     $guideMarkup -match 'AKID|LTAI|sk-[A-Za-z0-9]{10,}') {
-    throw 'Guide page must carry the short speech-recognition card with local/real-time/sentence modes, free quotas, overage prices and no key material.'
+    throw 'Guide page must carry the short speech-recognition card for local + Alibaba Qwen, its price estimate and free-token note, without key material.'
 }
-if ($tencentAsrSource -notmatch '16k_zh-PY' -or
-    $tencentAsrSource -notmatch 'IsSentenceRecognitionEngine' -or
-    $tencentAsrSource -notmatch 'IsRealtimeEngine' -or
-    $tencentAsrSource -notmatch 'TencentAsrMode' -or
-    $tencentRealtimeSource -notmatch 'wss://' -or
-    $tencentRealtimeSource -notmatch 'type.*end' -or
-    $voiceMarkup -notmatch 'asr-realtime-radio' -or
-    $voiceMarkup -match 'Tag="16k_zh_en"' -or
-    $voiceMarkup -match 'Tag="16k_multi_lang"') {
-    throw 'The voice UI must expose local, real-time and sentence engines; the real-time client must use the WebSocket protocol and the one-sentence UI must not expose real-time-only engines.'
+if ($qwenSettingsSource -notmatch 'qwen3\.8-livetranslate-flash-realtime' -or
+    $qwenSource -notmatch 'wss://' -or
+    $qwenSource -notmatch 'speaker_detection' -or
+    $qwenSource -notmatch 'input_audio_buffer\.append' -or
+    $qwenSource -notmatch 'response\.text\.delta' -or
+    $qwenSource -notmatch 'session\.finish' -or
+    $voiceMarkup -notmatch 'speech-local-card' -or
+    $voiceMarkup -notmatch 'speech-qwen-card' -or
+    $voiceMarkup -notmatch 'speech-qwen-configure' -or
+    $voiceMarkup -notmatch 'speech-tencent-card' -or
+    $voiceMarkup -notmatch 'speech-tencent-configure' -or
+    $voiceMarkup -match 'asr-realtime-radio') {
+    throw 'The voice UI must expose local and Alibaba Qwen cards only; the Qwen client must use speaker_detection, stream text and finish the session.'
 }
 # 字幕按 VAD 段分块：不得再把同说话人的连续消息合并成一大段，也不显示顶部临时行。
 $overlayCode = Get-Content -Raw $overlayPage.Replace('.xaml', '.xaml.cs')

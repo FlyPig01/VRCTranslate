@@ -4,19 +4,19 @@ Windows 原生 VRChat 翻译工具，采用 C#、.NET 10 和 WinUI 3。不包含
 
 > **使用声明**：[MIT 许可证](LICENSE) · 免费开源、无付费功能 · **非官方**，与 VRChat 及各家翻译服务商无隶属关系 ·
 > **不修改游戏**（他人语音经系统回环采集，字幕只在本地浮窗显示；自身消息可经官方 OSC Chatbox 发送）· 识别与翻译**都可能出错** ·
-> 第三方服务**费用自理** · **默认不外发数据**（语音识别在本机完成；只有主动启用腾讯云时，其他玩家的音频才会上传）。全文见 [DISCLAIMER.md](DISCLAIMER.md)。
+> 第三方服务**费用自理** · **默认不外发数据**（语音识别在本机完成；只有主动启用阿里云实时翻译或腾讯云按句识别时，其他玩家的音频才会分别上传）。全文见 [DISCLAIMER.md](DISCLAIMER.md)。
 
 > `v1.0.0` 起采用原生 C#、.NET 与 WinUI 架构，旧 Python/Qt 实现已移除。
 
 功能包含：
 
-- 统一翻译路由：文字输入和语音识别文本共用同一翻译服务；字幕输出固定为简体中文；
+- 统一翻译路由：文字输入、本地识别和腾讯云按句识别共用同一翻译服务；阿里云实时翻译自带译文，不走翻译路由；字幕输出固定为简体中文；
 - 翻译模型配置与连接测试（DeepSeek、腾讯云、阿里云等；另含本地回显档案用于离线自检）；
 - 输入浮窗与 OSC Chatbox 契约。输入内容固定按简体中文处理；第一语言和可选第二语言在“输入”页面配置，并同时预览、发送；
 - 使用系统标题栏、原生拖动和八方向缩放的输入/字幕窗口；两者默认宽度分别为 1240px 和 1400px，位置与大小会在退出后恢复；
 - 输入与字幕透明度可分别在对应页面调节为 60%～100%，默认 90%，整窗（包括标题栏）实时生效并自动记忆；
 - 内置的 SenseVoiceSmall INT8 本地识别模型（sherpa-onnx），覆盖中文、英语、日语、韩语并兼容粤语口音，随发布包自带、无需下载；识别会话在应用层托管，切换页面不会中断；
-- 字幕可区分说话人：本地声纹识别给每句打上「说话人A/B/C」标签，用户命名一次（例如「小明」）后跨会话自动沿用；声纹库只保存在程序目录内、可随时删除。默认关闭，开启后每句约多 50 ms。
+- 字幕可区分说话人：本地模式和腾讯云按句模式用本地声纹给每句打「说话人A/B/C」标签，用户命名一次（例如「小明」）后跨会话自动沿用；阿里云实时翻译模式由云端返回 A/B，不写入本地声纹库。声纹库只保存在程序目录内、可随时删除。
 - WinUI 3 页面骨架。
 
 页面职责保持单一：运行页负责查看状态和进入功能，翻译页负责服务档案、模型、地址、密钥和路由，语音页不提供进程选择，正式音频目标固定为 VRChat。翻译页保存的当前方案会同时供手动文字和语音识别文本使用。
@@ -25,7 +25,7 @@ Windows 原生 VRChat 翻译工具，采用 C#、.NET 10 和 WinUI 3。不包含
 
 语音识别默认使用内置的 SenseVoiceSmall INT8 本地模型（sherpa-onnx + ONNX Runtime），随正式包放在 `app\Models\sensevoice\` 下（`model.int8.onnx` 与 `tokens.txt`），运行时优先加载该副本，不会回退到系统识别；模型缺失时仍可回退为从语音页按需下载到 `data\models\sensevoice`。说话人区分（字幕说话人标签）所需的分割与声纹嵌入模型同样内置在 `app\Models\speaker\`，开箱即用。模型文件本身不进入源码库，构建前用 `tests\Import-BundledSpeechModel.ps1` 一次性下载校验并导入到 `assets\models\speech\`。切句用的 Silero VAD 模型内置在 `app\Models\vad\`。他人语音回环会在检测到 VRChat 进程时自动跟随采集该进程的音频，进程退出后切回系统输出混音（语音页不提供手动进程选择）。
 
-语音页可选腾讯云识别，仅对其他玩家生效：实时流式（5 小时/月免费，超出 3.2 元/小时）或按句（5000 次/月免费，超出 3.2 元/千次）。默认本地；自己的麦克风始终本地；云端失败自动回退。密钥自填，SecretKey 用 Windows DPAPI 加密保存在 `data\v2-tencent-asr.json`。价格以官网为准。
+语音页可选云端识别，仅对其他玩家生效：阿里云 Qwen3.8 实时返回原文、简体中文译文和说话人分离（中/英/日/韩，约 2.3 秒）；腾讯云按句识别保留为可选的非流式备用（5000 次/月免费，超出 3.2 元/千次）。默认本地；自己的麦克风始终本地；云端失败自动回退。阿里云 API Key 用 DPAPI 加密保存在 `data\v2-qwen-asr.json`，腾讯云 SecretKey 保存在 `data\v2-tencent-asr.json`。价格以官网为准。
 
 ## 数据目录（便携式）
 
@@ -35,7 +35,8 @@ Windows 原生 VRChat 翻译工具，采用 C#、.NET 10 和 WinUI 3。不包含
 |---|---|
 | 设置（翻译路由、快捷键、浮窗外观与位置、术语表等） | `data\v2-*.json` |
 | 说话人声纹库（仅用户命名后有内容） | `data\v2-speakers.json` |
-| 腾讯云识别配置（SecretKey 为 DPAPI 密文） | `data\v2-tencent-asr.json` |
+| 阿里云实时翻译配置（API Key 为 DPAPI 密文） | `data\v2-qwen-asr.json` |
+| 腾讯云按句识别配置（SecretKey 为 DPAPI 密文） | `data\v2-tencent-asr.json` |
 | 按需下载的模型（内置模型缺失时才使用） | `data\models\` |
 | 启动崩溃日志 | `data\startup-error.log` |
 
@@ -69,3 +70,5 @@ Release 手测包目录：`artifacts\manual-test\`。可直接双击：
 WinUI 3 项目需要 Windows App SDK NuGet 包。API 密钥和语音模型文件都不会写入源码：密钥只存在于用户配置，模型由 `tests\Import-BundledSpeechModel.ps1` 下载校验后放入 `assets\`（已被 git 忽略），构建时打入包内。
 
 正式分发包由项目根目录执行 `pwsh -NoProfile -ExecutionPolicy Bypass -File scripts\Build-Distribution.ps1` 生成到 `dist\`。脚本会先运行全量验证，再从空目录发布并执行目录版与 ZIP 解压版冒烟测试；正式包不会包含 `data\`、API 密钥或本机设置。
+
+测试包由 `pwsh -NoProfile -ExecutionPolicy Bypass -File scripts\Build-TestPackage.ps1` 生成到 `dist\VRCTranslate-v<版本>-test\`。它自动沿用最近测试包或 `artifacts\test-data\` 中的 `data\`，不会清掉已填的 API Key、腾讯云配置和浮窗设置；测试包含 DPAPI 密文，只能在同一 Windows 用户下使用，不能对外分享。

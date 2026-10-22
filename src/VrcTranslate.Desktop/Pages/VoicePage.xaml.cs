@@ -5,6 +5,7 @@ using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Input;
 using VrcTranslate.Infrastructure.Storage;
 using VrcTranslate.Application.Abstractions;
 using VrcTranslate.Application.Speech;
@@ -39,7 +40,6 @@ public sealed partial class VoicePage : Page
     private bool _speakerEventsAttached;
     private bool _fallbackNoticeActive;
     private bool _selfTestAttached;
-    private bool _suppressTencentLanguageChange;
 
     private AppState State => _state;
 
@@ -620,7 +620,7 @@ public sealed partial class VoicePage : Page
         ApplySubtitleContentSetting();
         SpeechModelBox.SelectedIndex = 0;
         HotkeyDisplay.Apply(VoiceHotkeyValue, ReadGlobalVoiceHotkey());
-        LoadTencentAsrSettings();
+        LoadSpeechEngines();
         UpdateSpeakerPanel();
     }
 
@@ -829,251 +829,294 @@ public sealed partial class VoicePage : Page
     }
 
 
-    private void LoadTencentAsrSettings()
+    private enum SpeechEngine
     {
-        var settings = State.TencentAsr;
-        var mode = settings.Mode == TencentAsrMode.Realtime ? TencentAsrMode.Realtime : TencentAsrMode.Sentence;
-        var engine = TencentAsrEngines.Normalize(settings.Engine, mode);
-        if (settings.Mode != mode || !string.Equals(engine, settings.Engine, StringComparison.Ordinal))
-        {
-            // Older files have no Mode and may contain a sentence-only engine.
-            settings = settings.Clone();
-            settings.Mode = mode;
-            settings.Engine = engine;
-            try { State.SaveTencentAsr(settings); }
-            catch { /* the page still shows the normalized value */ }
-        }
-
-        LocalAsrRadio.IsChecked = !settings.Enabled;
-        RealtimeAsrRadio.IsChecked = settings.Enabled && mode == TencentAsrMode.Realtime;
-        TencentAsrRadio.IsChecked = settings.Enabled && mode == TencentAsrMode.Sentence;
-        TencentAppIdBox.Text = settings.AppId;
-        TencentSecretIdBox.Text = settings.SecretId;
-        TencentSecretKeyBox.Password = string.Empty;
-        PopulateTencentLanguages(mode, engine);
-        UpdateTencentAsrPanel();
-        TencentAsrStatus.Text = settings.Enabled
-            ? settings.IsConfigured ? StatusText(mode) : "未配置"
-            : "未启用";
+        Local,
+        Qwen,
+        TencentSentence
     }
 
-    private TencentAsrMode SelectedMode =>
-        RealtimeAsrRadio.IsChecked == true ? TencentAsrMode.Realtime : TencentAsrMode.Sentence;
-
-    private bool TencentSelected =>
-        RealtimeAsrRadio.IsChecked == true || TencentAsrRadio.IsChecked == true;
-
-    private static string StatusText(TencentAsrMode mode) =>
-        mode == TencentAsrMode.Realtime ? "已配置 · 腾讯云实时" : "已配置 · 腾讯云按句";
-
-    private void PopulateTencentLanguages(TencentAsrMode mode, string selected)
+    private SpeechEngine ActiveSpeechEngine()
     {
-        _suppressTencentLanguageChange = true;
-        try
-        {
-            TencentLanguageBox.Items.Clear();
-            foreach (var engine in TencentAsrEngines.Selectable(mode))
-            {
-                var paid = mode == TencentAsrMode.Realtime && TencentAsrEngines.IsPaidRealtimeEngine(engine);
-                TencentLanguageBox.Items.Add(new ComboBoxItem
-                {
-                    Tag = engine,
-                    Content = TencentAsrEngines.DisplayName(engine) + (paid ? " · 付费" : " · 免费"),
-                });
-            }
-
-            var normalized = TencentAsrEngines.Normalize(selected, mode);
-            foreach (var item in TencentLanguageBox.Items.OfType<ComboBoxItem>())
-            {
-                if (string.Equals(item.Tag as string, normalized, StringComparison.Ordinal))
-                {
-                    TencentLanguageBox.SelectedItem = item;
-                    break;
-                }
-            }
-
-            if (TencentLanguageBox.SelectedItem is null) TencentLanguageBox.SelectedIndex = 2;
-        }
-        finally
-        {
-            _suppressTencentLanguageChange = false;
-        }
+        var qwen = State.QwenAsr;
+        if (qwen.Enabled && qwen.IsConfigured) return SpeechEngine.Qwen;
+        var tencent = State.TencentAsr;
+        if (tencent.Enabled && tencent.Mode == TencentAsrMode.Sentence && tencent.IsConfigured)
+            return SpeechEngine.TencentSentence;
+        return SpeechEngine.Local;
     }
 
-    private void UpdateTencentAsrPanel()
+    private void LoadSpeechEngines()
     {
-        if (TencentAsrPanel is null) return;
-        TencentAsrPanel.Visibility = TencentSelected ? Visibility.Visible : Visibility.Collapsed;
+        var qwen = State.QwenAsr;
+        var tencent = State.TencentAsr;
+        var active = ActiveSpeechEngine();
+        SetSpeechCard(LocalSpeechCard, active == SpeechEngine.Local, LocalSpeechState);
+        SetSpeechCard(QwenSpeechCard, active == SpeechEngine.Qwen, QwenSpeechState);
+        SetSpeechCard(TencentSpeechCard, active == SpeechEngine.TencentSentence, TencentSpeechState);
+        QwenSpeechState.Text = active == SpeechEngine.Qwen
+            ? "当前使用"
+            : qwen.IsConfigured ? "已配置" : "未配置";
+        TencentSpeechState.Text = active == SpeechEngine.TencentSentence
+            ? "当前使用"
+            : tencent.IsConfigured ? "已配置" : "未配置";
     }
 
-    private void OnAsrProviderChanged(object sender, RoutedEventArgs e)
+    private static void SetSpeechCard(Border card, bool current, TextBlock state)
     {
-        if (!_loaded) return;
-        var mode = TencentSelected ? SelectedMode : State.TencentAsr.Mode;
-        UpdateTencentAsrPanel();
-        var settings = State.TencentAsr.Clone();
-        settings.Enabled = TencentSelected;
-        settings.Mode = mode;
-        settings.Engine = TencentAsrEngines.Normalize(settings.Engine, mode);
-        try
-        {
-            State.SaveTencentAsr(settings);
-            PopulateTencentLanguages(mode, settings.Engine);
-            TencentAsrStatus.Text = settings.Enabled
-                ? settings.IsConfigured ? StatusText(mode) : "未配置"
-                : "未启用";
-        }
-        catch (Exception exception)
-        {
-            ShowTencentAsrInfo("保存识别引擎失败：" + exception.Message, InfoBarSeverity.Error);
-        }
+        card.BorderThickness = new Thickness(current ? 2 : 1);
+        card.BorderBrush = new SolidColorBrush(current
+            ? Microsoft.UI.ColorHelper.FromArgb(255, 72, 132, 224)
+            : Microsoft.UI.ColorHelper.FromArgb(255, 215, 226, 240));
+        card.Background = new SolidColorBrush(current
+            ? Microsoft.UI.ColorHelper.FromArgb(255, 234, 242, 255)
+            : Microsoft.UI.ColorHelper.FromArgb(255, 245, 248, 252));
+        state.Text = current ? "当前使用" : string.Empty;
     }
 
-    private void OnTencentLanguageChanged(object sender, SelectionChangedEventArgs e)
+    private void OnLocalSpeechCardTapped(object sender, TappedRoutedEventArgs e)
     {
-        if (!_loaded || _suppressTencentLanguageChange) return;
-        if (TencentLanguageBox.SelectedItem is not ComboBoxItem item) return;
-        if (item.Tag is not string engine) return;
-        var settings = State.TencentAsr.Clone();
-        settings.Mode = SelectedMode;
-        settings.Engine = TencentAsrEngines.Normalize(engine, settings.Mode);
-        try
-        {
-            State.SaveTencentAsr(settings);
-        }
-        catch (Exception exception)
-        {
-            ShowTencentAsrInfo("保存识别语言失败：" + exception.Message, InfoBarSeverity.Error);
-        }
+        var qwen = State.QwenAsr.Clone();
+        qwen.Enabled = false;
+        State.SaveQwenAsr(qwen);
+        var tencent = State.TencentAsr.Clone();
+        tencent.Enabled = false;
+        State.SaveTencentAsr(tencent);
+        LoadSpeechEngines();
     }
 
-    private async void OnSaveTencentAsrClicked(object sender, RoutedEventArgs e)
+    private void OnQwenSpeechCardTapped(object sender, TappedRoutedEventArgs e)
     {
-        if (TencentLanguageBox.SelectedItem is not ComboBoxItem languageItem ||
-            languageItem.Tag is not string engine)
+        if (!State.QwenAsr.IsConfigured)
         {
-            ShowTencentAsrInfo("请选择识别语言。", InfoBarSeverity.Warning);
+            _ = ShowQwenConfigAsync();
             return;
         }
 
-        var mode = TencentSelected ? SelectedMode : State.TencentAsr.Mode;
-        var settings = State.TencentAsr.Clone();
-        settings.Enabled = TencentSelected;
-        settings.Mode = mode;
-        settings.Engine = TencentAsrEngines.Normalize(engine, mode);
-        settings.AppId = TencentAppIdBox.Text.Trim();
-        settings.SecretId = TencentSecretIdBox.Text.Trim();
-        settings.FallbackToLocal = true;
-        var typedSecret = TencentSecretKeyBox.Password.Trim();
-        if (typedSecret.Length > 0) settings.SecretKey = typedSecret;
-
-        if (settings.Enabled && !settings.IsConfigured)
-        {
-            ShowTencentAsrInfo("请填写 AppID、SecretId、SecretKey；AppID 是纯数字，不是 SecretId。", InfoBarSeverity.Warning);
-            return;
-        }
-        if (settings.Enabled && (!settings.AppId.All(char.IsDigit) || settings.AppId.Length < 5))
-        {
-            ShowTencentAsrInfo("AppID 应为纯数字账号 ID，不是 AKID 开头的 SecretId。", InfoBarSeverity.Warning);
-            return;
-        }
-        if (settings.Enabled && !settings.SecretId.StartsWith("AKID", StringComparison.OrdinalIgnoreCase))
-        {
-            ShowTencentAsrInfo("SecretId 通常以 AKID 开头，请检查是否复制完整。", InfoBarSeverity.Warning);
-            return;
-        }
-
-        SaveTencentAsrButton.IsEnabled = false;
-        try
-        {
-            State.SaveTencentAsr(settings);
-            TencentSecretKeyBox.Password = string.Empty;
-            TencentAsrStatus.Text = settings.Enabled
-                ? settings.IsConfigured ? "已保存 · 正在测试" : "未配置"
-                : "未启用";
-            if (!settings.Enabled)
-            {
-                ShowTencentAsrInfo("已切换为本地识别。", InfoBarSeverity.Success);
-                return;
-            }
-
-            await State.TestTencentAsrAsync(settings);
-            TencentAsrStatus.Text = mode == TencentAsrMode.Realtime
-                ? "连接成功 · 腾讯云实时"
-                : "连接成功 · 腾讯云按句";
-        }
-        catch (Exception exception)
-        {
-            TencentAsrStatus.Text = "配置已保存 · 连接失败";
-            ShowTencentAsrInfo("腾讯云连接失败：" + DescribeTencentFailure(exception), InfoBarSeverity.Error);
-        }
-        finally
-        {
-            SaveTencentAsrButton.IsEnabled = true;
-        }
+        var qwen = State.QwenAsr.Clone();
+        qwen.Enabled = true;
+        State.SaveQwenAsr(qwen);
+        var tencent = State.TencentAsr.Clone();
+        tencent.Enabled = false;
+        State.SaveTencentAsr(tencent);
+        LoadSpeechEngines();
     }
 
-    private void OnClearTencentAsrClicked(object sender, RoutedEventArgs e)
+    private void OnTencentSpeechCardTapped(object sender, TappedRoutedEventArgs e)
     {
-        var settings = State.TencentAsr.Clone();
+        if (!State.TencentAsr.IsConfigured)
+        {
+            _ = ShowTencentConfigAsync();
+            return;
+        }
+
+        var tencent = State.TencentAsr.Clone();
+        tencent.Mode = TencentAsrMode.Sentence;
+        tencent.Enabled = true;
+        State.SaveTencentAsr(tencent);
+        var qwen = State.QwenAsr.Clone();
+        qwen.Enabled = false;
+        State.SaveQwenAsr(qwen);
+        LoadSpeechEngines();
+    }
+    private async void OnConfigureQwenClicked(object sender, RoutedEventArgs e) =>
+        await ShowQwenConfigAsync();
+
+    private async Task ShowQwenConfigAsync()
+    {
+        var existing = State.QwenAsr;
+        var apiKey = new PasswordBox
+        {
+            Header = "DashScope API Key",
+            PlaceholderText = string.IsNullOrWhiteSpace(existing.ApiKey) ? "sk-..." : "留空保留已保存密钥",
+            PasswordRevealMode = PasswordRevealMode.Peek,
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+        };
+        var workspace = new TextBox
+        {
+            Header = "Workspace ID",
+            Text = existing.WorkspaceId,
+            PlaceholderText = "百炼业务空间 ID",
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+        };
+        var region = new ComboBox { Header = "地域", HorizontalAlignment = HorizontalAlignment.Stretch };
+        region.Items.Add(new ComboBoxItem { Content = "华北 2（北京）", Tag = "cn-beijing" });
+        region.Items.Add(new ComboBoxItem { Content = "新加坡", Tag = "ap-southeast-1" });
+        region.SelectedItem = region.Items.OfType<ComboBoxItem>()
+            .FirstOrDefault(item => Equals(item.Tag?.ToString(), existing.Region)) ?? region.Items[0];
+
+        var panel = new StackPanel { Spacing = 10, MinWidth = 420 };
+        panel.Children.Add(apiKey);
+        panel.Children.Add(workspace);
+        panel.Children.Add(region);
+        panel.Children.Add(new TextBlock
+        {
+            Text = "模型：qwen3.8-livetranslate-flash-realtime · 输出简体中文字幕\n" +
+                   "此模型自带翻译，不需要在翻译页配置翻译模型。\n" +
+                   "北京地域新人 100 万 token（90 天，输入/输出共用），超出按 token 计费。",
+            FontSize = 12,
+            Foreground = new SolidColorBrush(Microsoft.UI.ColorHelper.FromArgb(255, 96, 112, 131)),
+            TextWrapping = TextWrapping.Wrap,
+        });
+
+        var dialog = new ContentDialog
+        {
+            Title = "阿里云实时翻译",
+            Content = panel,
+            PrimaryButtonText = "保存并测试",
+            CloseButtonText = "取消",
+            DefaultButton = ContentDialogButton.Primary,
+            XamlRoot = XamlRoot,
+        };
+        if (await dialog.ShowAsync() != ContentDialogResult.Primary) return;
+
+        var settings = State.QwenAsr.Clone();
+        if (!string.IsNullOrWhiteSpace(apiKey.Password)) settings.ApiKey = apiKey.Password.Trim();
+        settings.WorkspaceId = workspace.Text.Trim();
+        settings.Region = (region.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "cn-beijing";
         settings.Enabled = false;
-        settings.AppId = string.Empty;
-        settings.SecretId = string.Empty;
-        settings.SecretKey = string.Empty;
+        if (!settings.IsConfigured)
+        {
+            ShowSpeechInfo("请填写 API Key 和 Workspace ID。", InfoBarSeverity.Warning);
+            return;
+        }
+
         try
         {
-            State.SaveTencentAsr(settings);
-            TencentAppIdBox.Text = string.Empty;
-            TencentSecretIdBox.Text = string.Empty;
-            TencentSecretKeyBox.Password = string.Empty;
-            LocalAsrRadio.IsChecked = true;
-            UpdateTencentAsrPanel();
-            TencentAsrStatus.Text = "已清除";
-            ShowTencentAsrInfo("腾讯云配置已清除，已切回本地识别。", InfoBarSeverity.Success);
+            // Persist credentials, but route audio only after the handshake
+            // succeeds; a failed test leaves the cloud card disabled.
+            State.SaveQwenAsr(settings);
+            QwenSpeechState.Text = "测试中…";
+            await State.TestQwenAsrAsync(settings);
+            settings.Enabled = true;
+            State.SaveQwenAsr(settings);
+            var tencent = State.TencentAsr.Clone();
+            tencent.Enabled = false;
+            State.SaveTencentAsr(tencent);
+            ShowSpeechInfo("阿里云实时翻译连接成功。", InfoBarSeverity.Success);
         }
         catch (Exception exception)
         {
-            ShowTencentAsrInfo("清除配置失败：" + exception.Message, InfoBarSeverity.Error);
+            settings.Enabled = false;
+            State.SaveQwenAsr(settings);
+            ShowSpeechInfo("阿里云连接失败：" + exception.Message, InfoBarSeverity.Error);
         }
+
+        LoadSpeechEngines();
     }
 
-    private static string DescribeTencentFailure(Exception exception)
+    private async void OnConfigureTencentClicked(object sender, RoutedEventArgs e) =>
+        await ShowTencentConfigAsync();
+
+    private async Task ShowTencentConfigAsync()
     {
-        if (exception is TencentAsrException tencent)
+        var existing = State.TencentAsr;
+        var appId = new TextBox
         {
-            if (tencent.Code.StartsWith("AuthFailure", StringComparison.OrdinalIgnoreCase) ||
-                tencent.Code is "Realtime4002" or "HTTP401" or "HTTP403")
-                return "鉴权失败：请检查 SecretId/SecretKey 是否正确、是否已禁用，以及本机时间是否准确。";
-            if (tencent.Code.Contains("Engine", StringComparison.OrdinalIgnoreCase))
-                return "识别语言不受支持，请重新选择语言。";
-            if (tencent.Code is "Realtime4003" or "FailedOperation.UserNotRegistered" or "FailedOperation.ServiceIsolate")
-                return "腾讯云语音识别尚未开通或服务不可用，请先到控制台开通并确认没有欠费。";
-            if (tencent.Code is "Realtime4004" or "FailedOperation.UserHasNoFreeAmount")
-                return "腾讯云免费额度已用完；请购买资源包或在控制台确认后付费是否开启。";
-            if (tencent.Code is "Realtime4005")
-                return "腾讯云账户欠费，服务已停止，请充值后重试。";
-            if (tencent.Code is "Realtime4006" or "RequestLimitExceeded" or "ResourceUnavailable")
-                return "腾讯云额度或并发受限，请到控制台检查资源包和调用量。";
-            if (tencent.Code is "Realtime4007")
-                return "腾讯云无法解码音频，请确认使用 16 kHz 单声道 PCM。";
-            if (tencent.Code is "Realtime4008")
-                return "实时连接超过 15 秒没有音频，已断开；请重新开始识别。";
-            if (tencent.Code is "Realtime5000" or "Realtime5001" or "Realtime5002")
-                return "腾讯云服务暂时不可用，请稍后重新开始识别。";
-            if (tencent.Code.StartsWith("FailedOperation", StringComparison.OrdinalIgnoreCase))
-                return "腾讯云未能识别这段音频（可能是静音或音频格式问题）：" + tencent.Message;
+            Header = "AppID（纯数字）",
+            Text = existing.AppId,
+            PlaceholderText = "例如 1250000000",
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+        };
+        var secretId = new TextBox
+        {
+            Header = "SecretId",
+            Text = existing.SecretId,
+            PlaceholderText = "AKID 开头",
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+        };
+        var secretKey = new PasswordBox
+        {
+            Header = "SecretKey",
+            PlaceholderText = string.IsNullOrWhiteSpace(existing.SecretKey) ? "填写 SecretKey" : "留空保留已保存密钥",
+            PasswordRevealMode = PasswordRevealMode.Peek,
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+        };
+        var language = new ComboBox { Header = "识别语言", HorizontalAlignment = HorizontalAlignment.Stretch };
+        foreach (var engine in TencentAsrEngines.Selectable(TencentAsrMode.Sentence))
+        {
+            language.Items.Add(new ComboBoxItem
+            {
+                Content = TencentAsrEngines.DisplayName(engine),
+                Tag = engine,
+            });
         }
-        return exception.Message;
+        language.SelectedItem = language.Items.OfType<ComboBoxItem>()
+            .FirstOrDefault(item => Equals(item.Tag?.ToString(),
+                TencentAsrEngines.Normalize(existing.Engine, TencentAsrMode.Sentence))) ?? language.Items[0];
+
+        var panel = new StackPanel { Spacing = 10, MinWidth = 420 };
+        panel.Children.Add(appId);
+        panel.Children.Add(secretId);
+        panel.Children.Add(secretKey);
+        panel.Children.Add(language);
+        panel.Children.Add(new TextBlock
+        {
+            Text = "一句话识别按句上传，非流式；字幕仍走翻译页配置的翻译服务。",
+            FontSize = 12,
+            Foreground = new SolidColorBrush(Microsoft.UI.ColorHelper.FromArgb(255, 96, 112, 131)),
+            TextWrapping = TextWrapping.Wrap,
+        });
+
+        var dialog = new ContentDialog
+        {
+            Title = "腾讯云按句识别",
+            Content = panel,
+            PrimaryButtonText = "保存并测试",
+            CloseButtonText = "取消",
+            DefaultButton = ContentDialogButton.Primary,
+            XamlRoot = XamlRoot,
+        };
+        if (await dialog.ShowAsync() != ContentDialogResult.Primary) return;
+
+        var settings = State.TencentAsr.Clone();
+        settings.Mode = TencentAsrMode.Sentence;
+        settings.Enabled = false;
+        settings.AppId = appId.Text.Trim();
+        settings.SecretId = secretId.Text.Trim();
+        if (!string.IsNullOrWhiteSpace(secretKey.Password)) settings.SecretKey = secretKey.Password.Trim();
+        settings.Engine = (language.SelectedItem as ComboBoxItem)?.Tag?.ToString()
+            ?? TencentAsrEngines.Japanese;
+        if (!settings.IsConfigured)
+        {
+            ShowSpeechInfo("请填写 AppID、SecretId 和 SecretKey。", InfoBarSeverity.Warning);
+            return;
+        }
+        if (!settings.AppId.All(char.IsDigit))
+        {
+            ShowSpeechInfo("AppID 应为纯数字，不是 SecretId。", InfoBarSeverity.Warning);
+            return;
+        }
+
+        try
+        {
+            State.SaveTencentAsr(settings);
+            TencentSpeechState.Text = "测试中…";
+            await State.TestTencentAsrAsync(settings);
+            settings.Enabled = true;
+            State.SaveTencentAsr(settings);
+            var qwen = State.QwenAsr.Clone();
+            qwen.Enabled = false;
+            State.SaveQwenAsr(qwen);
+            ShowSpeechInfo("腾讯云按句识别连接成功。", InfoBarSeverity.Success);
+        }
+        catch (Exception exception)
+        {
+            settings.Enabled = false;
+            State.SaveTencentAsr(settings);
+            ShowSpeechInfo("腾讯云连接失败：" + exception.Message, InfoBarSeverity.Error);
+        }
+
+        LoadSpeechEngines();
     }
 
-    private void ShowTencentAsrInfo(string message, InfoBarSeverity severity)
+    private void ShowSpeechInfo(string message, InfoBarSeverity severity)
     {
-        TencentAsrInfo.Title = severity == InfoBarSeverity.Success ? "腾讯云识别" : "请检查";
-        TencentAsrInfo.Message = message;
-        TencentAsrInfo.Severity = severity;
-        TencentAsrInfo.IsOpen = true;
+        SpeechEngineInfo.Title = "语音识别";
+        SpeechEngineInfo.Message = message;
+        SpeechEngineInfo.Severity = severity;
+        SpeechEngineInfo.IsOpen = true;
     }
-
     private sealed class VoiceSettings
     {
         public string Provider { get; set; } = "local";

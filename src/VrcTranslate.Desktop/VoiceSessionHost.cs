@@ -63,6 +63,9 @@ public abstract class VoiceSessionHost
     /// <summary>Raised with a toast-worthy pipeline outcome; may arrive from a worker thread.</summary>
     public event EventHandler<SpeechNotificationEventArgs>? Notified;
 
+    /// <summary>Streaming caption from a cloud engine that already translated it.</summary>
+    public event EventHandler<QwenCaptionUpdate>? CaptionUpdated;
+
     /// <summary>Derives raise the shared notification from their own pipeline events.</summary>
     protected void RaiseNotified(SpeechNotificationEventArgs args)
     {
@@ -191,6 +194,9 @@ public abstract class VoiceSessionHost
     /// </summary>
     protected virtual ISpeechSegmenter CreateSegmenter() => LocalSpeechSegmenterFactory.CreateDefault();
 
+    /// <summary>Optional cloud session that owns segmentation and translation.</summary>
+    protected virtual ISpeechCaptureSession? CreateQwenSession(IAudioCapture capture) => null;
+
     public async Task StartAsync()
     {
         await _lifecycleGate.WaitAsync().ConfigureAwait(false);
@@ -202,14 +208,10 @@ public abstract class VoiceSessionHost
             var plan = CreateCapturePlan();
             ISpeechSegmenter? segmenter = null;
             ISpeechCaptureSession session;
-            if (UseCloudAsr && _speech.UseRealtimeTencent)
+            var qwen = CreateQwenSession(plan.Capture);
+            if (qwen is not null)
             {
-                segmenter = CreateSegmenter();
-                session = new RealtimeSpeechCaptureSession(
-                    plan.Capture,
-                    _speech,
-                    TencentAsrEngines.SourceLanguage(_speech.TencentSettings?.Engine),
-                    segmenter);
+                session = qwen;
             }
             else
             {
@@ -226,6 +228,7 @@ public abstract class VoiceSessionHost
             }
 
             session.ResultReady += OnResultReady;
+            session.CaptionUpdated += OnSessionCaptionUpdated;
             session.Faulted += OnSessionFaulted;
             session.LevelChanged += OnLevelChanged;
             session.SourceChanged += OnSessionSourceChanged;
@@ -254,6 +257,7 @@ public abstract class VoiceSessionHost
             catch
             {
                 session.ResultReady -= OnResultReady;
+                session.CaptionUpdated -= OnSessionCaptionUpdated;
                 session.Faulted -= OnSessionFaulted;
                 session.LevelChanged -= OnLevelChanged;
                 session.SourceChanged -= OnSessionSourceChanged;
@@ -289,6 +293,7 @@ public abstract class VoiceSessionHost
             if (session is not null)
             {
                 session.ResultReady -= OnResultReady;
+                session.CaptionUpdated -= OnSessionCaptionUpdated;
                 session.Faulted -= OnSessionFaulted;
                 session.LevelChanged -= OnLevelChanged;
                 session.SourceChanged -= OnSessionSourceChanged;
@@ -319,6 +324,9 @@ public abstract class VoiceSessionHost
         var recognizedId = PublishRecognized(result);
         await DispatchRecognizedAsync(result, recognizedId).ConfigureAwait(false);
     }
+
+    private void OnSessionCaptionUpdated(object? sender, QwenCaptionUpdate update) =>
+        CaptionUpdated?.Invoke(this, update);
 
     private void OnResultReady(object? sender, SpeechRecognitionResult result)
     {
@@ -352,7 +360,7 @@ public abstract class VoiceSessionHost
 
     protected abstract SpeechNotificationEventArgs DescribeFailure(Exception exception);
 
-    private void OnSessionFaulted(object? sender, Exception exception)
+    protected virtual void OnSessionFaulted(object? sender, Exception exception)
     {
         if (!_running) return;
         CaptionDiagnostics.WriteException("speech fault", exception);
@@ -412,13 +420,66 @@ public sealed class SubtitleSpeechSession : VoiceSessionHost
     private readonly AppState _state;
     private OtherPlayerCaptionPipeline? _pipeline;
     private bool _cloudFallbackNotified;
+    private bool _qwenActive;
+    private bool _qwenFallback;
+    private bool _recovering;
 
     public SubtitleSpeechSession(AppState state) : base(state.LocalSpeech, state.AudioCapture)
     {
         _state = state;
         SourceLanguage = "auto";
         _state.LocalSpeech.CloudFallback += OnCloudFallback;
+        CaptionUpdated += OnCaptionUpdated;
     }
+
+    protected override ISpeechCaptureSession? CreateQwenSession(IAudioCapture capture)
+    {
+        var settings = _state.QwenAsr;
+        if (_qwenFallback || !settings.Enabled || !settings.IsConfigured) return null;
+        _qwenActive = true;
+        return new QwenSpeechCaptureSession(capture, new QwenLiveTranslateClient(settings));
+    }
+
+    protected override void OnSessionFaulted(object? sender, Exception exception)
+    {
+        if (!_qwenActive || _recovering)
+        {
+            base.OnSessionFaulted(sender, exception);
+            return;
+        }
+
+        _qwenActive = false;
+        _qwenFallback = true;
+        _recovering = true;
+        RaiseNotified(new SpeechNotificationEventArgs(
+            SpeechNotificationKind.Warning,
+            "阿里云实时翻译",
+            "连接失败，已回退本地识别。"));
+        _ = RecoverLocallyAsync();
+    }
+
+    private async Task RecoverLocallyAsync()
+    {
+        try
+        {
+            await StopAsync().ConfigureAwait(false);
+            await StartAsync().ConfigureAwait(false);
+        }
+        catch (Exception exception)
+        {
+            RaiseNotified(new SpeechNotificationEventArgs(
+                SpeechNotificationKind.Error,
+                "语音识别",
+                "云端失败后本地回退也未启动：" + exception.Message));
+        }
+        finally
+        {
+            _recovering = false;
+        }
+    }
+
+    private static void OnCaptionUpdated(object? sender, QwenCaptionUpdate update) =>
+        OverlayWindowHost.ShowStreamingCaptionFromAnyThread(update);
 
     private void OnCloudFallback(object? sender, string message)
     {
@@ -461,11 +522,17 @@ public sealed class SubtitleSpeechSession : VoiceSessionHost
     // 回环族：具体采系统混音还是 VRChat 进程音频由自适应协调器决定。
     protected override AudioCaptureMode CaptureMode => AudioCaptureMode.SystemLoopback;
 
-    protected override bool UseCloudAsr => _state.TencentAsr.Enabled;
+    // Tencent real-time is gone; the one-sentence REST path remains optional.
+    protected override bool UseCloudAsr =>
+        _state.TencentAsr.Enabled && _state.TencentAsr.Mode == TencentAsrMode.Sentence;
 
     protected override async Task PrepareSessionAsync()
     {
         await _state.EnsureGlossaryLoadedAsync().ConfigureAwait(false);
+        // Qwen owns recognition and translation; a missing local model must not
+        // block the cloud path. A later fallback re-enters this method after
+        // _qwenFallback is set and then self-tests the local model.
+        if (_state.QwenAsr.Enabled && _state.QwenAsr.IsConfigured) return;
         await _state.EnsureSpeechSelfTestAsync().ConfigureAwait(false);
     }
 

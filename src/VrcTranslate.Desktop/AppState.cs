@@ -28,6 +28,7 @@ public sealed class AppState : ITranslationGlossaryProvider
     private readonly object _glossaryLoadSync = new();
     private readonly object _tencentAsrSync = new();
     private readonly TencentAsrSettingsStore _tencentAsrStore;
+    private readonly QwenAsrSettingsStore _qwenAsrStore;
     private int _routeRevision;
     private Task<LocalSpeechSelfTestResult>? _speechSelfTestTask;
     private LocalSpeechSelfTestResult? _speechSelfTest;
@@ -44,6 +45,8 @@ public sealed class AppState : ITranslationGlossaryProvider
         _tencentAsrStore = new TencentAsrSettingsStore(PortableStorage.GetPath(AppDataFiles.TencentAsr));
         TencentAsr = _tencentAsrStore.Load();
         ApplyTencentAsr(TencentAsr);
+        _qwenAsrStore = new QwenAsrSettingsStore(PortableStorage.GetPath(AppDataFiles.QwenAsr));
+        QwenAsr = _qwenAsrStore.Load();
         AudioCapture = new WindowsAudioCaptureFactory();
         AudioDevices = new WindowsAudioDeviceEnumerator();
         // Recognition sessions live at application scope: switching pages must
@@ -94,6 +97,23 @@ public sealed class AppState : ITranslationGlossaryProvider
 
     /// <summary>Current Tencent Cloud ASR preference (the secret is DPAPI-backed).</summary>
     public TencentAsrSettings TencentAsr { get; private set; }
+
+    /// <summary>Alibaba Cloud Qwen LiveTranslate preference (the API key is DPAPI-backed).</summary>
+    public QwenAsrSettings QwenAsr { get; private set; }
+
+    public void SaveQwenAsr(QwenAsrSettings settings)
+    {
+        ArgumentNullException.ThrowIfNull(settings);
+        _qwenAsrStore.Save(settings);
+        QwenAsr = settings.Clone();
+    }
+
+    public async Task TestQwenAsrAsync(QwenAsrSettings settings, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(settings);
+        await using var probe = new QwenLiveTranslateClient(settings);
+        await probe.TestAsync(cancellationToken).ConfigureAwait(false);
+    }
 
     public void SaveTencentAsr(TencentAsrSettings settings)
     {

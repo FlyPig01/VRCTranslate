@@ -83,6 +83,18 @@ public sealed record SubtitleCaption
     public static SubtitleCaption Pending(string? original, string? speakerLabel = null, long id = 0) =>
         new(Normalize(original), string.Empty, NormalizeSpeaker(speakerLabel), id, SubtitleTranslationState.Pending);
 
+    /// <summary>A cloud caption that may be updated while its translation streams in.</summary>
+    public static SubtitleCaption Live(string? original, string? translated, string? speakerLabel, long id) =>
+        new(
+            Normalize(original),
+            Normalize(translated),
+            NormalizeSpeaker(speakerLabel),
+            id,
+            Normalize(translated).Length > 0 ? SubtitleTranslationState.Ready : SubtitleTranslationState.Pending);
+
+    public SubtitleCaption WithLiveText(string? original, string? translated, string? speakerLabel) =>
+        Live(original, translated, speakerLabel, Id);
+
     /// <summary>Recognized text without the speaker prefix.</summary>
     public string Original { get; }
 
@@ -277,6 +289,25 @@ public sealed class SubtitleCaptionBuffer
     }
 
     /// <summary>Reads one retained message by its correlation id.</summary>
+    /// <summary>Replaces a caption in place, or appends it when the id is new.</summary>
+    public bool TryUpsert(SubtitleCaption caption)
+    {
+        lock (_sync)
+        {
+            var index = _captions.FindIndex(item => item.Id == caption.Id);
+            if (index >= 0)
+            {
+                _captions[index] = caption;
+                return true;
+            }
+
+            if (IsPaused || caption.IsEmpty) return false;
+            _captions.Add(caption);
+            while (_captions.Count > Capacity) _captions.RemoveAt(0);
+            return true;
+        }
+    }
+
     public bool TryGetCaption(long id, out SubtitleCaption caption)
     {
         lock (_sync)

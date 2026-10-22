@@ -15,6 +15,9 @@ public interface ISpeechCaptureSession : IAsyncDisposable
     /// <summary>Non-stable original text for the live line; empty text clears it.</summary>
     event EventHandler<TencentRealtimePartial>? PartialReady;
 
+    /// <summary>Qwen LiveTranslate caption with source text, translation and speaker.</summary>
+    event EventHandler<QwenCaptionUpdate>? CaptionUpdated;
+
     event EventHandler<Exception>? Faulted;
 
     event EventHandler<AudioSourceChangedEventArgs>? SourceChanged;

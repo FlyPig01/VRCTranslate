@@ -4,6 +4,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Input;
+using VrcTranslate.Application.Abstractions;
 using VrcTranslate.Application.Subtitles;
 using VrcTranslate.Core.Settings;
 using VrcTranslate.Core.Speech;
@@ -98,6 +99,8 @@ public sealed partial class SubtitleOverlayWindow : Window
 
     private readonly SubtitleCaptionBuffer _captions;
     private readonly List<CaptionBubble> _bubbles = [];
+    private readonly Dictionary<string, long> _streamingIds = new(StringComparer.Ordinal);
+    private long _nextStreamingId;
     private readonly Dictionary<string, SolidColorBrush> _speakerBrushes = new(StringComparer.Ordinal);
     private int _nextSpeakerBrush;
     private double _lastScrollableHeight;
@@ -329,6 +332,42 @@ public sealed partial class SubtitleOverlayWindow : Window
     {
         if (captionId <= 0) return false;
         return AddCaption(SubtitleCaption.Pending(original, speakerLabel, captionId));
+    }
+
+    /// <summary>
+    /// Creates or updates one cloud caption while Qwen streams its source text,
+    /// translation and speaker id. The same message id is reused, so text grows
+    /// in place instead of producing a new caption per delta.
+    /// </summary>
+    public void ShowStreamingCaption(QwenCaptionUpdate update)
+    {
+        if (!_streamingIds.TryGetValue(update.Id, out var captionId))
+        {
+            captionId = ++_nextStreamingId;
+            _streamingIds[update.Id] = captionId;
+        }
+
+        var caption = SubtitleCaption.Live(
+            update.Original, update.Translation, update.SpeakerLabel, captionId);
+        if (!_captions.TryGetCaption(captionId, out _))
+        {
+            AddCaption(caption);
+            return;
+        }
+
+        _captions.TryUpsert(caption);
+        var index = _bubbles.FindIndex(bubble => bubble.Caption.Id == captionId);
+        if (index < 0) return;
+        var bubble = _bubbles[index] with
+        {
+            Caption = caption,
+            SpeakerBrush = SpeakerBrushFor(caption.SpeakerLabel),
+        };
+        _bubbles[index] = bubble;
+        RenderBody(bubble);
+        RefreshSeparators();
+        FitSurfaceHeight();
+        if (_followLatest) ScrollToLatest();
     }
 
     /// <summary>

@@ -79,6 +79,12 @@ public sealed class LocalSpeechCaptureSession : ISpeechCaptureSession
         remove { }
     }
 
+    public event EventHandler<QwenCaptionUpdate>? CaptionUpdated
+    {
+        add { }
+        remove { }
+    }
+
     public event EventHandler<Exception>? Faulted;
 
     /// <summary>Forwards capture source changes so the shell can label the input.</summary>

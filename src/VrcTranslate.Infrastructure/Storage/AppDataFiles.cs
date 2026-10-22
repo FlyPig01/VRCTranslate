@@ -16,6 +16,9 @@ public static class AppDataFiles
     /// <summary>Tencent Cloud ASR preferences; its secret is DPAPI-encrypted.</summary>
     public const string TencentAsr = "v2-tencent-asr.json";
 
+    /// <summary>Alibaba Cloud Qwen LiveTranslate preferences; its API key is DPAPI-encrypted.</summary>
+    public const string QwenAsr = "v2-qwen-asr.json";
+
     /// <summary>Stage-2 voiceprint library.</summary>
     public const string Speakers = "v2-speakers.json";
 

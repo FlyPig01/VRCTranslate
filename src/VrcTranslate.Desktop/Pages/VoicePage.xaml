@@ -218,76 +218,113 @@
 
           <Border Style="{StaticResource SurfaceBorderStyle}" Padding="18,16">
             <StackPanel Spacing="12">
-              <TextBlock Text="识别引擎"
+              <TextBlock Text="语音识别"
                          FontSize="17"
                          FontWeight="SemiBold"
                          Foreground="#16202E" />
 
-              <StackPanel Spacing="6">
-                <RadioButton x:Name="LocalAsrRadio"
-                             GroupName="AsrProvider"
-                             Content="本地识别 · 离线免费"
-                             Checked="OnAsrProviderChanged"
-                             AutomationProperties.AutomationId="asr-local-radio" />
-                <RadioButton x:Name="RealtimeAsrRadio"
-                             GroupName="AsrProvider"
-                             Content="腾讯云实时识别（流式） · 5 小时/月免费"
-                             Checked="OnAsrProviderChanged"
-                             AutomationProperties.AutomationId="asr-realtime-radio" />
-                <RadioButton x:Name="TencentAsrRadio"
-                             GroupName="AsrProvider"
-                             Content="腾讯云按句识别（非流式） · 5000 次/月免费"
-                             Checked="OnAsrProviderChanged"
-                             AutomationProperties.AutomationId="asr-tencent-radio" />
+              <StackPanel Spacing="8">
+                <Border x:Name="LocalSpeechCard"
+                        Tag="local"
+                        IsTapEnabled="True"
+                        Tapped="OnLocalSpeechCardTapped"
+                        CornerRadius="8"
+                        BorderThickness="1"
+                        BorderBrush="#D7E2F0"
+                        Background="#F5F8FC"
+                        Padding="14,10"
+                        AutomationProperties.AutomationId="speech-local-card">
+                  <Grid ColumnSpacing="12">
+                    <Grid.ColumnDefinitions>
+                      <ColumnDefinition Width="*" />
+                      <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Spacing="2">
+                      <TextBlock Text="本地识别" FontWeight="SemiBold" FontSize="16" Foreground="#16202E" />
+                      <TextBlock Text="内置 SenseVoice · 离线免费 · 中/英/日/韩"
+                                 FontSize="12" Foreground="#607083" TextWrapping="Wrap" />
+                    </StackPanel>
+                    <TextBlock x:Name="LocalSpeechState"
+                               Grid.Column="1"
+                               VerticalAlignment="Center"
+                               FontSize="12"
+                               Foreground="#2D73D5"
+                               Text="当前使用" />
+                  </Grid>
+                </Border>
+
+                <Border x:Name="QwenSpeechCard"
+                        Tag="qwen"
+                        IsTapEnabled="True"
+                        Tapped="OnQwenSpeechCardTapped"
+                        CornerRadius="8"
+                        BorderThickness="1"
+                        BorderBrush="#D7E2F0"
+                        Background="#F5F8FC"
+                        Padding="14,10"
+                        AutomationProperties.AutomationId="speech-qwen-card">
+                  <Grid ColumnSpacing="12">
+                    <Grid.ColumnDefinitions>
+                      <ColumnDefinition Width="*" />
+                      <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Spacing="2">
+                      <TextBlock Text="阿里云实时翻译" FontWeight="SemiBold" FontSize="16" Foreground="#16202E" />
+                      <TextBlock Text="Qwen3.8 · 中/英/日/韩 · 说话人分离 · 自带翻译"
+                                 FontSize="12" Foreground="#607083" TextWrapping="Wrap" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                      <TextBlock x:Name="QwenSpeechState"
+                                 VerticalAlignment="Center"
+                                 FontSize="12"
+                                 Foreground="#607083"
+                                 Text="未配置" />
+                      <Button Content="配置"
+                              Click="OnConfigureQwenClicked"
+                              AutomationProperties.AutomationId="speech-qwen-configure" />
+                    </StackPanel>
+                  </Grid>
+                </Border>
+
+                <Border x:Name="TencentSpeechCard"
+                        Tag="tencent-sentence"
+                        IsTapEnabled="True"
+                        Tapped="OnTencentSpeechCardTapped"
+                        CornerRadius="8"
+                        BorderThickness="1"
+                        BorderBrush="#D7E2F0"
+                        Background="#F5F8FC"
+                        Padding="14,10"
+                        AutomationProperties.AutomationId="speech-tencent-card">
+                  <Grid ColumnSpacing="12">
+                    <Grid.ColumnDefinitions>
+                      <ColumnDefinition Width="*" />
+                      <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Spacing="2">
+                      <TextBlock Text="腾讯云按句识别" FontWeight="SemiBold" FontSize="16" Foreground="#16202E" />
+                      <TextBlock Text="一句话识别 · 中/英/日/韩/粤 · 5000 次/月 · 非流式"
+                                 FontSize="12" Foreground="#607083" TextWrapping="Wrap" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                      <TextBlock x:Name="TencentSpeechState"
+                                 VerticalAlignment="Center"
+                                 FontSize="12"
+                                 Foreground="#607083"
+                                 Text="未配置" />
+                      <Button Content="配置"
+                              Click="OnConfigureTencentClicked"
+                              AutomationProperties.AutomationId="speech-tencent-configure" />
+                    </StackPanel>
+                  </Grid>
+                </Border>
               </StackPanel>
 
-              <StackPanel x:Name="TencentAsrPanel" Spacing="10">
-                <ComboBox x:Name="TencentLanguageBox"
-                          Header="语言模式"
-                          MinWidth="280"
-                          HorizontalAlignment="Stretch"
-                          SelectionChanged="OnTencentLanguageChanged"
-                          AutomationProperties.AutomationId="asr-tencent-language" />
-
-                <TextBox x:Name="TencentAppIdBox"
-                         Header="AppID（纯数字，不是 SecretId）"
-                         PlaceholderText="例如 1250000000"
-                         AutomationProperties.AutomationId="asr-tencent-appid" />
-                <TextBox x:Name="TencentSecretIdBox"
-                         Header="SecretId"
-                         PlaceholderText="AKID 开头"
-                         AutomationProperties.AutomationId="asr-tencent-secretid" />
-                <PasswordBox x:Name="TencentSecretKeyBox"
-                             Header="SecretKey（留空保留已保存密钥）"
-                             PasswordRevealMode="Peek"
-                             AutomationProperties.AutomationId="asr-tencent-secretkey" />
-                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                  <Button x:Name="SaveTencentAsrButton"
-                          Content="保存并测试"
-                          Click="OnSaveTencentAsrClicked"
-                          AutomationProperties.AutomationId="asr-tencent-save" />
-                  <Button x:Name="ClearTencentAsrButton"
-                          Content="清除配置"
-                          Click="OnClearTencentAsrClicked"
-                          AutomationProperties.AutomationId="asr-tencent-clear" />
-                  <TextBlock x:Name="TencentAsrStatus"
-                             VerticalAlignment="Center"
-                             FontSize="12"
-                             Foreground="#607083"
-                             Text="未配置" />
-                  <HyperlinkButton Content="计费说明"
-                                   NavigateUri="https://cloud.tencent.com/document/product/1093/35686"
-                                   Padding="0"
-                                   VerticalAlignment="Center"
-                                   AutomationProperties.AutomationId="asr-tencent-pricing" />
-                </StackPanel>
-
-                <InfoBar x:Name="TencentAsrInfo"
-                         IsOpen="False"
-                         IsClosable="True"
-                         Severity="Informational"
-                         AutomationProperties.AutomationId="asr-tencent-info" />
-              </StackPanel>
+              <InfoBar x:Name="SpeechEngineInfo"
+                       IsOpen="False"
+                       IsClosable="True"
+                       Severity="Informational"
+                       AutomationProperties.AutomationId="speech-engine-info" />
             </StackPanel>
           </Border>
           <Border Style="{StaticResource SurfaceBorderStyle}" Padding="18,16">

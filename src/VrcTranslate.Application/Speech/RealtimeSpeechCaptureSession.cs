@@ -74,6 +74,12 @@ public sealed class RealtimeSpeechCaptureSession : ISpeechCaptureSession
 
     public event EventHandler<TencentRealtimePartial>? PartialReady;
 
+    public event EventHandler<QwenCaptionUpdate>? CaptionUpdated
+    {
+        add { }
+        remove { }
+    }
+
     public event EventHandler<Exception>? Faulted;
 
     public event EventHandler<AudioSourceChangedEventArgs>? SourceChanged;

@@ -84,7 +84,7 @@
         </StackPanel>
       </Border>
 
-      <!-- 语音识别：只给用户需要知道的选择、额度和价格；不写实现过程。 -->
+      <!-- 语音识别：本地默认；云端提供阿里云实时翻译和腾讯云按句识别，说明额度、价格与是否自带翻译。 -->
       <Border Style="{StaticResource SurfaceBorderStyle}" Padding="18"
               AutomationProperties.AutomationId="guide-asr">
         <StackPanel Spacing="10">
@@ -95,7 +95,7 @@
             <TextBlock Text="语音识别" Style="{StaticResource SectionTitleTextStyle}" />
           </StackPanel>
           <TextBlock Style="{StaticResource SecondaryTextStyle}" TextWrapping="Wrap"
-                     Text="默认本地：离线、免费、不限时长，中/英/日/韩。云端只处理其他玩家，自己的麦克风始终本地。" />
+                     Text="默认本地：离线、免费、不限时长，中/英/日/韩。云端可选阿里云实时翻译，或腾讯云按句识别；都只影响其他玩家。阿里云实时翻译自带翻译，不需要翻译页的翻译模型；腾讯云按句只做识别，译文仍走翻译页。" />
           <Grid ColumnSpacing="12" RowSpacing="6">
             <Grid.ColumnDefinitions>
               <ColumnDefinition Width="Auto" />
@@ -110,40 +110,50 @@
               <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
             <TextBlock Text="方式" Style="{StaticResource SecondaryTextStyle}" />
-            <TextBlock Grid.Column="1" Text="免费额度" Style="{StaticResource SecondaryTextStyle}" />
-            <TextBlock Grid.Column="2" Text="超出后" Style="{StaticResource SecondaryTextStyle}" />
-            <TextBlock Grid.Column="3" Text="特点" Style="{StaticResource SecondaryTextStyle}" />
+            <TextBlock Grid.Column="1" Text="费用" Style="{StaticResource SecondaryTextStyle}" />
+            <TextBlock Grid.Column="2" Text="特点" Style="{StaticResource SecondaryTextStyle}" />
+            <TextBlock Grid.Column="3" Text="说明" Style="{StaticResource SecondaryTextStyle}" />
 
             <TextBlock Grid.Row="1" Text="本地" FontWeight="SemiBold" VerticalAlignment="Center" />
-            <TextBlock Grid.Row="1" Grid.Column="1" Text="无限" VerticalAlignment="Center" />
-            <TextBlock Grid.Row="1" Grid.Column="2" Text="0 元" VerticalAlignment="Center" />
-            <TextBlock Grid.Row="1" Grid.Column="3" Text="离线；延迟最低；默认" Style="{StaticResource SecondaryTextStyle}" TextWrapping="Wrap" VerticalAlignment="Center" />
+            <TextBlock Grid.Row="1" Grid.Column="1" Text="免费" VerticalAlignment="Center" />
+            <TextBlock Grid.Row="1" Grid.Column="2" Text="离线" VerticalAlignment="Center" />
+            <TextBlock Grid.Row="1" Grid.Column="3" Text="中/英/日/韩；默认" Style="{StaticResource SecondaryTextStyle}" TextWrapping="Wrap" VerticalAlignment="Center" />
 
-            <TextBlock Grid.Row="2" Text="腾讯云实时" FontWeight="SemiBold" VerticalAlignment="Center" />
-            <TextBlock Grid.Row="2" Grid.Column="1" Text="5 小时/月" VerticalAlignment="Center" />
-            <TextBlock Grid.Row="2" Grid.Column="2" Text="3.2 元/小时" VerticalAlignment="Center" />
-            <TextBlock Grid.Row="2" Grid.Column="3" Text="流式；中/英/日/韩/粤；延迟低" Style="{StaticResource SecondaryTextStyle}" TextWrapping="Wrap" VerticalAlignment="Center" />
+            <TextBlock Grid.Row="2" Text="阿里云实时" FontWeight="SemiBold" VerticalAlignment="Center" />
+            <TextBlock Grid.Row="2" Grid.Column="1" Text="约 2.5~3.5 元/小时" VerticalAlignment="Center" />
+            <TextBlock Grid.Row="2" Grid.Column="2" Text="流式 + 自带翻译" VerticalAlignment="Center" />
+            <TextBlock Grid.Row="2" Grid.Column="3" Text="Qwen3.8；说话人分离；2.3 秒；中/英/日/韩；不需要翻译模型" Style="{StaticResource SecondaryTextStyle}" TextWrapping="Wrap" VerticalAlignment="Center" />
 
             <TextBlock Grid.Row="3" Text="腾讯云按句" FontWeight="SemiBold" VerticalAlignment="Center" />
             <TextBlock Grid.Row="3" Grid.Column="1" Text="5000 次/月" VerticalAlignment="Center" />
-            <TextBlock Grid.Row="3" Grid.Column="2" Text="3.2 元/千次" VerticalAlignment="Center" />
-            <TextBlock Grid.Row="3" Grid.Column="3" Text="非流式；中/英/日/韩/粤/中英粤" Style="{StaticResource SecondaryTextStyle}" TextWrapping="Wrap" VerticalAlignment="Center" />
+            <TextBlock Grid.Row="3" Grid.Column="2" Text="非流式" VerticalAlignment="Center" />
+            <TextBlock Grid.Row="3" Grid.Column="3" Text="一句话识别；中/英/日/韩/粤；超出 3.2 元/千次" Style="{StaticResource SecondaryTextStyle}" TextWrapping="Wrap" VerticalAlignment="Center" />
           </Grid>
           <TextBlock Style="{StaticResource SecondaryTextStyle}" TextWrapping="Wrap"
-                     Text="推荐：默认本地；英/日/韩不够准时用实时；按句只适合临时验证。" />
+                     Text="推荐：默认本地；需要云端说话人分离和一体翻译时用阿里云；只需要非流式识别时可用腾讯云按句。" />
           <TextBlock Style="{StaticResource SecondaryTextStyle}" TextWrapping="Wrap"
-                     Text="云端都要选语言；多语种自动仅实时支持，4.8 元/小时。后付费默认关闭，额度用完停服。价格以官网为准。" />
+                     Text="阿里云北京地域有 100 万 Token 新人额度，90 天内有效，输入和输出共用；用完后按量计费。价格以官网为准。" />
           <StackPanel Orientation="Horizontal" Spacing="10">
-            <HyperlinkButton Content="① 开通语音识别" NavigateUri="https://console.cloud.tencent.com/asr"
+            <HyperlinkButton Content="① 开通百炼" NavigateUri="https://bailian.console.aliyun.com/"
                              Padding="0" AutomationProperties.AutomationId="guide-asr-console" />
-            <HyperlinkButton Content="② 创建 API 密钥" NavigateUri="https://console.cloud.tencent.com/cam/capi"
+            <HyperlinkButton Content="② 创建 API Key" NavigateUri="https://bailian.console.aliyun.com/?apiKey=1"
                              Padding="0" AutomationProperties.AutomationId="guide-asr-keys" />
-            <HyperlinkButton Content="计费说明" NavigateUri="https://cloud.tencent.com/document/product/1093/35686"
+            <HyperlinkButton Content="模型与价格" NavigateUri="https://help.aliyun.com/zh/model-studio/model-pricing"
                              Padding="0" AutomationProperties.AutomationId="guide-asr-pricing" />
           </StackPanel>
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <TextBlock Text="腾讯云按句：" Style="{StaticResource SecondaryTextStyle}" VerticalAlignment="Center" />
+            <HyperlinkButton Content="① 开通语音识别" NavigateUri="https://console.cloud.tencent.com/asr"
+                             Padding="0" AutomationProperties.AutomationId="guide-asr-tencent-console" />
+            <HyperlinkButton Content="② 创建 API 密钥" NavigateUri="https://console.cloud.tencent.com/cam/capi"
+                             Padding="0" AutomationProperties.AutomationId="guide-asr-tencent-keys" />
+            <HyperlinkButton Content="计费说明" NavigateUri="https://cloud.tencent.com/document/product/1093/35686"
+                             Padding="0" AutomationProperties.AutomationId="guide-asr-tencent-pricing" />
+          </StackPanel>
+          <TextBlock Style="{StaticResource SecondaryTextStyle}" TextWrapping="Wrap"
+                     Text="腾讯云 AppID 是纯数字账号 ID，不是 SecretId；SecretId / SecretKey 在 CAM 密钥页创建。" />
         </StackPanel>
       </Border>
-
       <!-- 各家模型对比（实验记录-识别与翻译.md 的实测结论）：
            价格是用户 2026-09-16 从官网/控制台核对的，会变动；延迟是本机 108 次调用中位数。
            这里是纯静态文案：不绑数据、不新增 x:Name，代码后置文件不需要改。 -->
@@ -212,7 +222,7 @@
           <TextBlock Style="{StaticResource SecondaryTextStyle}" TextWrapping="Wrap"
                      Text="费用自理：翻译服务由你自行开通并填入密钥（密钥只保存在本机），调用产生的费用由你承担。" />
           <TextBlock Style="{StaticResource SecondaryTextStyle}" TextWrapping="Wrap"
-                     Text="不外发数据：不上报任何使用数据；默认语音识别在本机完成。主动启用腾讯云按句识别时，其他玩家的音频会发送到腾讯云，声纹仍只保存在本机。" />
+                     Text="不外发数据：不上报任何使用数据；默认语音识别在本机完成。主动启用阿里云实时翻译时，其他玩家的音频会发送到阿里云；启用腾讯云按句识别时，音频会发送到腾讯云。声纹仍只保存在本机。" />
           <TextBlock Style="{StaticResource SecondaryTextStyle}" TextWrapping="Wrap"
                      Text="完整声明见仓库根目录的 DISCLAIMER.md。" />
         </StackPanel>

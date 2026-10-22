@@ -44,6 +44,8 @@ public sealed class TencentRealtimeAsrClient : ITencentRealtimeRecognizer
     private int _faulted;
     private int _finalReceived;
     private int _lastFinalIndex = -1;
+    private int _lastPartialIndex = -1;
+    private string _lastPartialText = string.Empty;
 
     public TencentRealtimeAsrClient(TencentAsrSettings settings)
     {
@@ -51,6 +53,8 @@ public sealed class TencentRealtimeAsrClient : ITencentRealtimeRecognizer
     }
 
     public event EventHandler<TencentRealtimeResult>? ResultReady;
+
+    public event EventHandler<TencentRealtimePartial>? PartialReady;
 
     public event EventHandler<Exception>? Faulted;
 
@@ -272,21 +276,50 @@ public sealed class TencentRealtimeAsrClient : ITencentRealtimeRecognizer
         }
 
         _handshake.TrySetResult();
-        if (root.TryGetProperty("result", out var result) &&
-            result.TryGetProperty("slice_type", out var sliceElement) &&
-            sliceElement.GetInt32() == 2)
+        if (!root.TryGetProperty("result", out var result) ||
+            !result.TryGetProperty("slice_type", out var sliceElement))
         {
-            var text = result.TryGetProperty("voice_text_str", out var textElement)
-                ? textElement.GetString() ?? string.Empty
-                : string.Empty;
-            var index = result.TryGetProperty("index", out var indexElement)
-                ? indexElement.GetInt32()
-                : -1;
-            if (index >= 0 && index <= Volatile.Read(ref _lastFinalIndex))
+            if (root.TryGetProperty("final", out var onlyFinal) && onlyFinal.GetInt32() == 1)
             {
-                return;
+                Interlocked.Exchange(ref _finalReceived, 1);
+                _completed.TrySetResult();
             }
 
+            return;
+        }
+
+        var text = result.TryGetProperty("voice_text_str", out var textElement)
+            ? textElement.GetString() ?? string.Empty
+            : string.Empty;
+        var index = result.TryGetProperty("index", out var indexElement)
+            ? indexElement.GetInt32()
+            : -1;
+        var messageId = root.TryGetProperty("message_id", out var idElement)
+            ? idElement.GetString()
+            : null;
+        var sliceType = sliceElement.GetInt32();
+
+        if (sliceType == 1 && !string.IsNullOrWhiteSpace(text))
+        {
+            if (index < 0 ||
+                index > _lastPartialIndex ||
+                (index == _lastPartialIndex && !string.Equals(text, _lastPartialText, StringComparison.Ordinal)))
+            {
+                _lastPartialIndex = index < 0 ? _lastPartialIndex : index;
+                _lastPartialText = text;
+                try
+                {
+                    PartialReady?.Invoke(this, new TencentRealtimePartial(text, index, messageId));
+                }
+                catch
+                {
+                    // A presentation subscriber must never break the socket loop.
+                }
+            }
+        }
+        else if (sliceType == 2)
+        {
+            if (index >= 0 && index <= Volatile.Read(ref _lastFinalIndex)) return;
             if (index >= 0) Volatile.Write(ref _lastFinalIndex, index);
             if (!string.IsNullOrWhiteSpace(text))
             {
@@ -296,9 +329,6 @@ public sealed class TencentRealtimeAsrClient : ITencentRealtimeRecognizer
                 var endMs = result.TryGetProperty("end_time", out var endElement)
                     ? endElement.GetInt32()
                     : startMs;
-                var messageId = root.TryGetProperty("message_id", out var idElement)
-                    ? idElement.GetString()
-                    : null;
                 var audio = ExtractAudio(startMs, endMs);
                 var words = ReadWords(result);
                 try

@@ -328,7 +328,28 @@ public sealed partial class SubtitleOverlayWindow : Window
     public bool AppendRecognizedCaption(long captionId, string original, string? speakerLabel = null)
     {
         if (captionId <= 0) return false;
+        ShowPartial(null);
         return AddCaption(SubtitleCaption.Pending(original, speakerLabel, captionId));
+    }
+
+    /// <summary>
+    /// Shows the non-stable original above the message list. An empty/null value
+    /// clears it. It is never added to the scrollback and never translated.
+    /// </summary>
+    public void ShowPartial(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            if (PartialCaptionHost.Visibility == Visibility.Collapsed) return;
+            PartialCaptionText.Text = string.Empty;
+            PartialCaptionHost.Visibility = Visibility.Collapsed;
+            FitSurfaceHeight();
+            return;
+        }
+
+        PartialCaptionText.Text = text.Trim();
+        PartialCaptionHost.Visibility = Visibility.Visible;
+        FitSurfaceHeight();
     }
 
     /// <summary>
@@ -717,7 +738,10 @@ public sealed partial class SubtitleOverlayWindow : Window
         var messages = CaptionMessages.ActualHeight;
         if (messages <= 0d && _bubbles.Count > 0) return -1d;
 
-        return messages
+        var partial = PartialCaptionHost.Visibility == Visibility.Visible
+            ? PartialCaptionHost.ActualHeight
+            : 0d;
+        return messages + partial
             + CaptionScroll.Padding.Top + CaptionScroll.Padding.Bottom
             + CaptionScroll.BorderThickness.Top + CaptionScroll.BorderThickness.Bottom
             + CaptionLayout.Margin.Top + CaptionLayout.Margin.Bottom;

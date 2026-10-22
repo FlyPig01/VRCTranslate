@@ -9,6 +9,9 @@ namespace VrcTranslate.Application.Abstractions;
 /// </summary>
 public sealed record TencentRealtimeWord(string Text, TimeSpan Start, TimeSpan End);
 
+/// <summary>One non-stable interim result; it is shown as the live original line only.</summary>
+public sealed record TencentRealtimePartial(string Text, int Index, string? MessageId);
+
 public sealed record TencentRealtimeResult(
     string Text,
     string? MessageId,
@@ -24,6 +27,8 @@ public sealed record TencentRealtimeResult(
 public interface ITencentRealtimeRecognizer : IAsyncDisposable
 {
     event EventHandler<TencentRealtimeResult>? ResultReady;
+
+    event EventHandler<TencentRealtimePartial>? PartialReady;
 
     event EventHandler<Exception>? Faulted;
 

@@ -35,6 +35,34 @@ public sealed class RealtimeSpeechCaptureSessionTests
     }
 
     [Fact]
+    public async Task Interim_text_is_forwarded_and_cleared_before_the_final_caption()
+    {
+        var capture = new FakeAudioCapture(AudioCaptureRequest.SystemLoopback());
+        var realtime = new FakeRealtimeRecognizer();
+        var service = CreateService();
+        service.ConfigureTencent(null, CreateSettings(), new FakeRealtimeFactory(realtime));
+        await using var session = new RealtimeSpeechCaptureSession(capture, service, "ja");
+        var shown = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var cleared = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var final = new TaskCompletionSource<SpeechRecognitionResult>(TaskCreationOptions.RunContinuationsAsynchronously);
+        session.PartialReady += (_, partial) =>
+        {
+            if (string.IsNullOrEmpty(partial.Text)) cleared.TrySetResult();
+            else shown.TrySetResult(partial.Text);
+        };
+        session.ResultReady += (_, result) => final.TrySetResult(result);
+
+        await session.StartAsync();
+        realtime.EmitPartial(new TencentRealtimePartial("こんにちは", 0, "m1"));
+        Assert.Equal("こんにちは", await shown.Task.WaitAsync(TimeSpan.FromSeconds(2)));
+
+        realtime.Emit(new TencentRealtimeResult(
+            "こんにちは", "m1", TimeSpan.Zero, TimeSpan.FromSeconds(1), ReadOnlyMemory<float>.Empty));
+        await cleared.Task.WaitAsync(TimeSpan.FromSeconds(2));
+        Assert.Equal("こんにちは", (await final.Task.WaitAsync(TimeSpan.FromSeconds(2))).Text);
+    }
+
+    [Fact]
     public async Task Word_timestamps_split_a_sentence_at_a_speaker_change()
     {
         var capture = new FakeAudioCapture(AudioCaptureRequest.SystemLoopback());
@@ -42,7 +70,8 @@ public sealed class RealtimeSpeechCaptureSessionTests
         var speakers = new SplitSpeakerIdentifier();
         var service = new LocalSpeechService(new FakeModelManager(), new FakeLocalRecognizer(), speakers);
         service.ConfigureTencent(null, CreateSettings(), new FakeRealtimeFactory(realtime));
-        await using var session = new RealtimeSpeechCaptureSession(capture, service, "en");
+        await using var session = new RealtimeSpeechCaptureSession(
+            capture, service, "en", new SingleSegmentSegmenter());
         var results = new List<SpeechRecognitionResult>();
         var done = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         session.ResultReady += (_, value) =>
@@ -52,6 +81,8 @@ public sealed class RealtimeSpeechCaptureSessionTests
         };
 
         await session.StartAsync();
+        capture.Emit(new float[64_000]);
+        await Task.Delay(300);
         realtime.Emit(new TencentRealtimeResult(
             "hello world",
             "msg-2",
@@ -139,6 +170,23 @@ public sealed class RealtimeSpeechCaptureSessionTests
         SecretKey = "test",
     };
 
+    private sealed class SingleSegmentSegmenter : ISpeechSegmenter
+    {
+        private bool _emitted;
+
+        public int SampleRate => 16_000;
+
+        public IReadOnlyList<ReadOnlyMemory<float>> Append(ReadOnlyMemory<float> chunk)
+        {
+            if (_emitted || chunk.Length == 0) return [];
+            _emitted = true;
+            return [new float[chunk.Length]];
+        }
+
+        public IReadOnlyList<ReadOnlyMemory<float>> Flush() => [];
+        public void Reset() => _emitted = false;
+    }
+
     private sealed class SplitSpeakerIdentifier : ISpeakerIdentifier
     {
         private int _identifyCalls;
@@ -187,6 +235,8 @@ public sealed class RealtimeSpeechCaptureSessionTests
     {
         public event EventHandler<TencentRealtimeResult>? ResultReady;
 
+        public event EventHandler<TencentRealtimePartial>? PartialReady;
+
         public event EventHandler<Exception>? Faulted
         {
             add { }
@@ -216,6 +266,8 @@ public sealed class RealtimeSpeechCaptureSessionTests
         public Task TestAsync(CancellationToken cancellationToken = default) => StartAsync(cancellationToken);
 
         public void Emit(TencentRealtimeResult result) => ResultReady?.Invoke(this, result);
+
+        public void EmitPartial(TencentRealtimePartial partial) => PartialReady?.Invoke(this, partial);
 
         public ValueTask DisposeAsync() => ValueTask.CompletedTask;
     }

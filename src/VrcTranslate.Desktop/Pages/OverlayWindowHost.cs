@@ -57,6 +57,25 @@ internal static class OverlayWindowHost
     }
 
     /// <summary>
+    /// Shows or clears the non-stable original line above the message list. This
+    /// is intentionally not a caption: it is never translated and never becomes
+    /// part of the scrollback.
+    /// </summary>
+    public static void ShowPartialFromAnyThread(string? text)
+    {
+        var window = _subtitle;
+        if (window is null) return;
+        if (_dispatcherQueue is { } queue)
+        {
+            queue.TryEnqueue(() => window.ShowPartial(text));
+        }
+        else
+        {
+            window.ShowPartial(text);
+        }
+    }
+
+    /// <summary>
     /// Fills one message's translation from any thread. The message keeps its
     /// place in the list; this never appends a second caption.
     /// </summary>

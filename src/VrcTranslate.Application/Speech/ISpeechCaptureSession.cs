@@ -12,6 +12,9 @@ public interface ISpeechCaptureSession : IAsyncDisposable
 {
     event EventHandler<SpeechRecognitionResult>? ResultReady;
 
+    /// <summary>Non-stable original text for the live line; empty text clears it.</summary>
+    event EventHandler<TencentRealtimePartial>? PartialReady;
+
     event EventHandler<Exception>? Faulted;
 
     event EventHandler<AudioSourceChangedEventArgs>? SourceChanged;

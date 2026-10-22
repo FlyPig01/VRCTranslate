@@ -72,6 +72,13 @@ public sealed class LocalSpeechCaptureSession : ISpeechCaptureSession
 
     public event EventHandler<SpeechRecognitionResult>? ResultReady;
 
+    /// <summary>The local path is sentence-based; it has no interim text.</summary>
+    public event EventHandler<TencentRealtimePartial>? PartialReady
+    {
+        add { }
+        remove { }
+    }
+
     public event EventHandler<Exception>? Faulted;
 
     /// <summary>Forwards capture source changes so the shell can label the input.</summary>

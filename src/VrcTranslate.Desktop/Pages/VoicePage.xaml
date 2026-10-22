@@ -223,7 +223,7 @@
                            FontSize="17"
                            FontWeight="SemiBold"
                            Foreground="#16202E" />
-                <TextBlock Text="本地离线免费；腾讯云在线识别适合英语、日语、韩语。"
+                <TextBlock Text="本地离线免费；腾讯云按句识别适合英语、日语、韩语。仅用于其他玩家，自己的麦克风始终本地。"
                            FontSize="12"
                            Foreground="#607083"
                            TextWrapping="Wrap" />
@@ -232,12 +232,12 @@
               <StackPanel Orientation="Horizontal" Spacing="20">
                 <RadioButton x:Name="LocalAsrRadio"
                              GroupName="AsrProvider"
-                             Content="本地 SenseVoice · 离线免费"
+                             Content="本地识别 · 离线免费"
                              Checked="OnAsrProviderChanged"
                              AutomationProperties.AutomationId="asr-local-radio" />
                 <RadioButton x:Name="TencentAsrRadio"
                              GroupName="AsrProvider"
-                             Content="腾讯云在线识别（按句）· 每月 5000 次免费"
+                             Content="腾讯云按句识别 · 每月 5000 次免费"
                              Checked="OnAsrProviderChanged"
                              AutomationProperties.AutomationId="asr-tencent-radio" />
               </StackPanel>
@@ -302,11 +302,10 @@
                          Severity="Informational"
                          AutomationProperties.AutomationId="asr-tencent-info" />
 
-                <ToggleSwitch x:Name="TencentFallbackToggle"
-                              Header="云端失败时自动回退本地"
-                              IsOn="True"
-                              AutomationProperties.AutomationId="asr-tencent-fallback" />
-
+                <TextBlock Text="云端失败会自动回退本地，无需设置。"
+                           FontSize="12"
+                           Foreground="#607083"
+                           TextWrapping="Wrap" />
                 <TextBlock Text="音频会上传到腾讯云；声纹和说话人标签仍只保存在本机。"
                            FontSize="12"
                            Foreground="#607083"
@@ -325,7 +324,7 @@
                 <ColumnDefinition Width="Auto" />
               </Grid.ColumnDefinitions>
               <StackPanel Spacing="3">
-                <TextBlock Text="本地语音模型"
+                <TextBlock Text="本地语音模型（离线 / 云端回退）"
                            FontSize="17"
                            FontWeight="SemiBold"
                            Foreground="#16202E" />

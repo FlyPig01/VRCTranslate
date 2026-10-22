@@ -23,7 +23,9 @@ Windows 原生 VRChat 翻译工具，采用 C#、.NET 10 和 WinUI 3。不包含
 
 代码按 `Core -> Application -> Infrastructure -> Desktop` 分层，测试按相同边界放在 `tests/` 下。
 
-语音识别使用内置的 SenseVoiceSmall INT8 本地模型（sherpa-onnx + ONNX Runtime），随正式包放在 `app\Models\sensevoice\` 下（`model.int8.onnx` 与 `tokens.txt`），运行时优先加载该副本，不会回退到系统识别；模型缺失时仍可回退为从语音页按需下载到 `data\models\sensevoice`。说话人区分（字幕说话人标签）所需的分割与声纹嵌入模型同样内置在 `app\Models\speaker\`，开箱即用。模型文件本身不进入源码库，构建前用 `tests\Import-BundledSpeechModel.ps1` 一次性下载校验并导入到 `assets\models\speech\`。切句用的 Silero VAD 模型内置在 `app\Models\vad\`。他人语音回环会在检测到 VRChat 进程时自动跟随采集该进程的音频，进程退出后切回系统输出混音（语音页不提供手动进程选择）。
+语音识别默认使用内置的 SenseVoiceSmall INT8 本地模型（sherpa-onnx + ONNX Runtime），随正式包放在 `app\Models\sensevoice\` 下（`model.int8.onnx` 与 `tokens.txt`），运行时优先加载该副本，不会回退到系统识别；模型缺失时仍可回退为从语音页按需下载到 `data\models\sensevoice`。说话人区分（字幕说话人标签）所需的分割与声纹嵌入模型同样内置在 `app\Models\speaker\`，开箱即用。模型文件本身不进入源码库，构建前用 `tests\Import-BundledSpeechModel.ps1` 一次性下载校验并导入到 `assets\models\speech\`。切句用的 Silero VAD 模型内置在 `app\Models\vad\`。他人语音回环会在检测到 VRChat 进程时自动跟随采集该进程的音频，进程退出后切回系统输出混音（语音页不提供手动进程选择）。
+
+语音页另有可选的腾讯云“按句识别”：只对系统回环（其他玩家）生效，自己的麦克风始终本地；默认关闭，用户自填 AppID/SecretId/SecretKey，SecretKey 用 Windows DPAPI 加密保存在 `data\v2-tencent-asr.json`。它使用一句话识别（5000 次/月免费），不是实时 WebSocket；固定语言走免费额度，多语种自动使用付费引擎；云端失败自动回退本地。实时 SDK 尚未接入。
 
 ## 数据目录（便携式）
 
@@ -33,6 +35,7 @@ Windows 原生 VRChat 翻译工具，采用 C#、.NET 10 和 WinUI 3。不包含
 |---|---|
 | 设置（翻译路由、快捷键、浮窗外观与位置、术语表等） | `data\v2-*.json` |
 | 说话人声纹库（仅用户命名后有内容） | `data\v2-speakers.json` |
+| 腾讯云按句识别配置（SecretKey 为 DPAPI 密文） | `data\v2-tencent-asr.json` |
 | 按需下载的模型（内置模型缺失时才使用） | `data\models\` |
 | 启动崩溃日志 | `data\startup-error.log` |
 

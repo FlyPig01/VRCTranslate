@@ -223,7 +223,7 @@
                            FontSize="17"
                            FontWeight="SemiBold"
                            Foreground="#16202E" />
-                <TextBlock Text="默认本地离线免费；云端只处理其他玩家的系统声音，自己的麦克风始终本地。实时流式版尚未接入，当前云端为按句识别。"
+                <TextBlock Text="默认本地离线免费；云端只处理其他玩家，自己的麦克风始终本地。"
                            FontSize="12"
                            Foreground="#607083"
                            TextWrapping="Wrap" />
@@ -235,6 +235,11 @@
                              Content="本地识别 · 离线免费"
                              Checked="OnAsrProviderChanged"
                              AutomationProperties.AutomationId="asr-local-radio" />
+                <RadioButton x:Name="RealtimeAsrRadio"
+                             GroupName="AsrProvider"
+                             Content="腾讯云实时识别（流式） · 5 小时/月免费"
+                             Checked="OnAsrProviderChanged"
+                             AutomationProperties.AutomationId="asr-realtime-radio" />
                 <RadioButton x:Name="TencentAsrRadio"
                              GroupName="AsrProvider"
                              Content="腾讯云按句识别（非流式） · 5000 次/月免费"
@@ -242,13 +247,8 @@
                              AutomationProperties.AutomationId="asr-tencent-radio" />
               </StackPanel>
 
-              <TextBlock Text="云端首选实时（流式、延迟低、5 小时/月免费），将在下一版接入；当前版本先用按句识别验证英/日/韩效果。"
-                         FontSize="12"
-                         Foreground="#607083"
-                         TextWrapping="Wrap" />
-
               <StackPanel x:Name="TencentAsrPanel" Spacing="10">
-                <TextBlock Text="仅用于其他玩家（系统声音）；自己的麦克风仍使用本地 SenseVoice。"
+                <TextBlock Text="仅用于其他玩家；自己的麦克风始终本地。"
                            FontSize="12"
                            Foreground="#607083"
                            TextWrapping="Wrap" />
@@ -258,20 +258,13 @@
                           MinWidth="280"
                           HorizontalAlignment="Stretch"
                           SelectionChanged="OnTencentLanguageChanged"
-                          AutomationProperties.AutomationId="asr-tencent-language">
-                  <ComboBoxItem Tag="16k_zh" Content="中文（普通话 / 方言） · 免费" />
-                  <ComboBoxItem Tag="16k_en" Content="英语 · 免费" />
-                  <ComboBoxItem Tag="16k_ja" Content="日语 · 免费" />
-                  <ComboBoxItem Tag="16k_ko" Content="韩语 · 免费" />
-                  <ComboBoxItem Tag="16k_zh-PY" Content="中英粤混合 · 免费" />
-                  <ComboBoxItem Tag="16k_yue" Content="粤语 · 免费" />
-                </ComboBox>
-                <TextBlock Text="两种接口都必须先选语言，没有免费的自动语种识别。按句版不支持多语种自动；多语种自动只在实时版提供（16k_multi_lang，4.8 元/小时，无免费额度）。"
+                          AutomationProperties.AutomationId="asr-tencent-language" />
+                <TextBlock x:Name="TencentLanguageHint"
                            FontSize="12"
                            Foreground="#607083"
                            TextWrapping="Wrap" />
 
-                <TextBlock Text="按句识别每次成功调用计 1 次，短句也算 1 次；5000 次/月免费，超出后 3.2 元/千次（以官网为准）。后付费默认关闭，额度用尽会停服。"
+                <TextBlock x:Name="TencentBillingHint"
                            FontSize="12"
                            Foreground="#607083"
                            TextWrapping="Wrap" />
@@ -320,11 +313,7 @@
                          Severity="Informational"
                          AutomationProperties.AutomationId="asr-tencent-info" />
 
-                <TextBlock Text="云端失败会自动回退本地，无需设置。"
-                           FontSize="12"
-                           Foreground="#607083"
-                           TextWrapping="Wrap" />
-                <TextBlock Text="音频会上传到腾讯云；声纹和说话人标签仍只保存在本机。"
+                <TextBlock Text="失败自动回退本地。音频会上传腾讯云；声纹只保存在本机。"
                            FontSize="12"
                            Foreground="#607083"
                            TextWrapping="Wrap" />

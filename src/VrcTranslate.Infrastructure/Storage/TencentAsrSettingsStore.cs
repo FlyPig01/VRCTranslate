@@ -40,6 +40,7 @@ public sealed class TencentAsrSettingsStore
                 return new TencentAsrSettings
                 {
                     Enabled = document.Enabled,
+                    Mode = document.Mode,
                     Engine = string.IsNullOrWhiteSpace(document.Engine) ? "16k_ja" : document.Engine,
                     FallbackToLocal = document.FallbackToLocal,
                     AppId = document.AppId ?? string.Empty,
@@ -67,6 +68,7 @@ public sealed class TencentAsrSettingsStore
             var document = new Document
             {
                 Enabled = settings.Enabled,
+                Mode = settings.Mode,
                 Engine = settings.Engine,
                 FallbackToLocal = settings.FallbackToLocal,
                 AppId = settings.AppId?.Trim() ?? string.Empty,
@@ -99,6 +101,7 @@ public sealed class TencentAsrSettingsStore
     private sealed class Document
     {
         public bool Enabled { get; set; }
+        public TencentAsrMode Mode { get; set; } = TencentAsrMode.Sentence;
         public string? Engine { get; set; }
         public bool FallbackToLocal { get; set; } = true;
         public string? AppId { get; set; }

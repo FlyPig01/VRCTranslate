@@ -42,7 +42,7 @@ public abstract class VoiceSessionHost
     private readonly IAudioCaptureFactory _captures;
     private readonly SemaphoreSlim _lifecycleGate = new(1, 1);
     private readonly SemaphoreSlim _processingGate = new(1, 1);
-    private LocalSpeechCaptureSession? _session;
+    private ISpeechCaptureSession? _session;
     private VrchatProcessWatcher? _monitor;
     private volatile bool _running;
 
@@ -200,16 +200,29 @@ public abstract class VoiceSessionHost
 
             await PrepareSessionAsync().ConfigureAwait(false);
             var plan = CreateCapturePlan();
-            var segmenter = CreateSegmenter();
-            var session = new LocalSpeechCaptureSession(
-                plan.Capture,
-                _speech,
-                SourceLanguage,
-                // Silero VAD when its bundled model is present, adaptive
-                // energy gate otherwise.
-                segmenter,
-                CaptureProcessing,
-                useCloudAsr: UseCloudAsr);
+            ISpeechSegmenter? segmenter = null;
+            ISpeechCaptureSession session;
+            if (UseCloudAsr && _speech.UseRealtimeTencent)
+            {
+                session = new RealtimeSpeechCaptureSession(
+                    plan.Capture,
+                    _speech,
+                    TencentAsrEngines.SourceLanguage(_speech.TencentSettings?.Engine));
+            }
+            else
+            {
+                segmenter = CreateSegmenter();
+                session = new LocalSpeechCaptureSession(
+                    plan.Capture,
+                    _speech,
+                    SourceLanguage,
+                    // Silero VAD when its bundled model is present, adaptive
+                    // energy gate otherwise.
+                    segmenter,
+                    CaptureProcessing,
+                    useCloudAsr: UseCloudAsr);
+            }
+
             session.ResultReady += OnResultReady;
             session.Faulted += OnSessionFaulted;
             session.LevelChanged += OnLevelChanged;
@@ -230,7 +243,8 @@ public abstract class VoiceSessionHost
                 _running = true;
                 CaptionDiagnostics.Write(
                     $"session started source={SourceState.Kind} lang={SourceLanguage} " +
-                    $"segmenter={segmenter.GetType().Name} split={CaptureProcessing.SplitAtSpeakerChanges}");
+                    $"segmenter={segmenter?.GetType().Name ?? "tencent-realtime"} " +
+                    $"split={CaptureProcessing.SplitAtSpeakerChanges}");
                 // 监视器在采集就绪后才开始推送目标，切换请求不会落在未启动的协调器上。
                 plan.Monitor?.Start();
                 RunningChanged?.Invoke(this, EventArgs.Empty);
@@ -406,7 +420,9 @@ public sealed class SubtitleSpeechSession : VoiceSessionHost
 
     private void OnCloudFallback(object? sender, string message)
     {
-        if (!IsRunning || _cloudFallbackNotified) return;
+        // The first real-time connection is established while the host is still
+        // starting, so requiring IsRunning here would drop the one useful notice.
+        if (_cloudFallbackNotified) return;
         _cloudFallbackNotified = true;
         RaiseNotified(new SpeechNotificationEventArgs(
             SpeechNotificationKind.Warning,
@@ -471,11 +487,14 @@ public sealed class SubtitleSpeechSession : VoiceSessionHost
 
     protected override async Task OnSessionStartedAsync()
     {
-        _cloudFallbackNotified = false;
         await Pipeline.BeginSessionAsync().ConfigureAwait(false);
     }
 
-    protected override Task OnSessionStoppingAsync() => Pipeline.EndSessionAsync();
+    protected override Task OnSessionStoppingAsync()
+    {
+        _cloudFallbackNotified = false;
+        return Pipeline.EndSessionAsync();
+    }
 
     protected override async Task OnCaptureSourceBoundaryAsync()
     {

@@ -9,7 +9,7 @@ namespace VrcTranslate.Application.Speech;
 /// callbacks only perform segmentation; model inference runs asynchronously
 /// behind a single gate so a slow sentence cannot reorder captions.
 /// </summary>
-public sealed class LocalSpeechCaptureSession : IAsyncDisposable
+public sealed class LocalSpeechCaptureSession : ISpeechCaptureSession
 {
     private const float AudibleRms = 0.01f;
 

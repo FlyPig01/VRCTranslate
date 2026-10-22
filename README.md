@@ -25,7 +25,7 @@ Windows 原生 VRChat 翻译工具，采用 C#、.NET 10 和 WinUI 3。不包含
 
 语音识别默认使用内置的 SenseVoiceSmall INT8 本地模型（sherpa-onnx + ONNX Runtime），随正式包放在 `app\Models\sensevoice\` 下（`model.int8.onnx` 与 `tokens.txt`），运行时优先加载该副本，不会回退到系统识别；模型缺失时仍可回退为从语音页按需下载到 `data\models\sensevoice`。说话人区分（字幕说话人标签）所需的分割与声纹嵌入模型同样内置在 `app\Models\speaker\`，开箱即用。模型文件本身不进入源码库，构建前用 `tests\Import-BundledSpeechModel.ps1` 一次性下载校验并导入到 `assets\models\speech\`。切句用的 Silero VAD 模型内置在 `app\Models\vad\`。他人语音回环会在检测到 VRChat 进程时自动跟随采集该进程的音频，进程退出后切回系统输出混音（语音页不提供手动进程选择）。
 
-语音页另有可选的腾讯云“按句识别”：只对系统回环（其他玩家）生效，自己的麦克风始终本地；默认关闭，用户自填 AppID/SecretId/SecretKey，SecretKey 用 Windows DPAPI 加密保存在 `data\v2-tencent-asr.json`。它使用一句话识别 REST（5000 次/月免费，单次音频不超过 60 秒），不是实时 WebSocket；支持中文、英语、日语、韩语、粤语和中英粤（`16k_zh-PY`），但按句接口不支持多语种自动。超出免费额度后标准价 3.2 元/千次（以官网为准），后付费默认关闭，云端失败自动回退本地。实时语音识别（流式 WebSocket，5 小时/月免费，超出 3.2 元/小时）尚未接入。
+语音页可选腾讯云识别，仅对其他玩家生效：实时流式（5 小时/月免费，超出 3.2 元/小时）或按句（5000 次/月免费，超出 3.2 元/千次）。默认本地；自己的麦克风始终本地；云端失败自动回退。密钥自填，SecretKey 用 Windows DPAPI 加密保存在 `data\v2-tencent-asr.json`。价格以官网为准。
 
 ## 数据目录（便携式）
 
@@ -35,7 +35,7 @@ Windows 原生 VRChat 翻译工具，采用 C#、.NET 10 和 WinUI 3。不包含
 |---|---|
 | 设置（翻译路由、快捷键、浮窗外观与位置、术语表等） | `data\v2-*.json` |
 | 说话人声纹库（仅用户命名后有内容） | `data\v2-speakers.json` |
-| 腾讯云按句识别配置（SecretKey 为 DPAPI 密文） | `data\v2-tencent-asr.json` |
+| 腾讯云识别配置（SecretKey 为 DPAPI 密文） | `data\v2-tencent-asr.json` |
 | 按需下载的模型（内置模型缺失时才使用） | `data\models\` |
 | 启动崩溃日志 | `data\startup-error.log` |
 

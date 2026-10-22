@@ -906,30 +906,34 @@ if ($guideMarkup -notmatch '翻译服务配置' -or
     throw 'Guide page must carry the translation-service card: 开通 + 创建密钥 links with AutomationIds for every shipped provider, quota hints marked 以官网为准, and no key or example key material.'
 }
 
-# 语音识别配置卡片（D43/D44/D45）：必须回答两套接口的免费额度、超出价格、
-# 是否流式、语言限制和推荐顺序；实时版尚未接入，不能写成已完成。
+# 语音识别卡片：用户只需要看到三种方式、免费额度、超出价格和推荐顺序。
+# 实时与按句都是可用选项；页面必须短，不写实现过程。
 $tencentAsrSource = Get-Content -Raw (Join-Path $v2Root 'src\VrcTranslate.Core\Speech\TencentAsrSettings.cs')
+$tencentRealtimeSource = Get-Content -Raw (Join-Path $v2Root 'src\VrcTranslate.Infrastructure\Speech\TencentRealtimeAsrClient.cs')
 if ($guideMarkup -notmatch 'guide-asr' -or
-    $guideMarkup -notmatch '语音识别配置' -or
-    $guideMarkup -notmatch '腾讯云实时（流式）' -or
-    $guideMarkup -notmatch '腾讯云按句（当前）' -or
+    $guideMarkup -notmatch '语音识别' -or
+    $guideMarkup -notmatch '腾讯云实时' -or
+    $guideMarkup -notmatch '腾讯云按句' -or
     $guideMarkup -notmatch '5 小时/月' -or
     $guideMarkup -notmatch '5000 次/月' -or
     $guideMarkup -notmatch '3\.2 元/小时' -or
     $guideMarkup -notmatch '3\.2 元/千次' -or
     $guideMarkup -notmatch '4\.8 元/小时' -or
     $guideMarkup -notmatch '后付费默认关闭' -or
-    $guideMarkup -notmatch '下一版接入' -or
     $guideMarkup -notmatch 'guide-asr-pricing' -or
     $guideMarkup -match 'AKID|LTAI|sk-[A-Za-z0-9]{10,}') {
-    throw 'Guide page must carry the speech-recognition card with both Tencent modes, free quotas, overage prices, streaming status, the 下一版接入 caveat and no key material.'
+    throw 'Guide page must carry the short speech-recognition card with local/real-time/sentence modes, free quotas, overage prices and no key material.'
 }
 if ($tencentAsrSource -notmatch '16k_zh-PY' -or
     $tencentAsrSource -notmatch 'IsSentenceRecognitionEngine' -or
-    $tencentAsrSource -notmatch 'NormalizeForSentenceRecognition' -or
+    $tencentAsrSource -notmatch 'IsRealtimeEngine' -or
+    $tencentAsrSource -notmatch 'TencentAsrMode' -or
+    $tencentRealtimeSource -notmatch 'wss://' -or
+    $tencentRealtimeSource -notmatch 'type.*end' -or
+    $voiceMarkup -notmatch 'asr-realtime-radio' -or
     $voiceMarkup -match 'Tag="16k_zh_en"' -or
     $voiceMarkup -match 'Tag="16k_multi_lang"') {
-    throw 'The one-sentence UI and settings must use the engines SentenceRecognition actually accepts (16k_zh-PY for Chinese/English/Cantonese) and must not expose real-time-only engines.'
+    throw 'The voice UI must expose local, real-time and sentence engines; the real-time client must use the WebSocket protocol and the one-sentence UI must not expose real-time-only engines.'
 }
 # 配置简化 A：档案对话框提供自愿的「测试连接」（含错误码中文映射），
 # 保存永远不被测试结果门禁（对话框不得出现“测试通过才能保存”类逻辑）。

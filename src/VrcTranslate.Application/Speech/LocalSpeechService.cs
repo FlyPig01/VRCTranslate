@@ -14,6 +14,7 @@ public sealed class LocalSpeechService : IAsyncDisposable
     private readonly ILocalSpeechRecognizer _recognizer;
     private readonly ISpeakerIdentifier? _speakers;
     private ITencentSpeechRecognizer? _tencent;
+    private ITencentRealtimeRecognizerFactory? _tencentRealtimeFactory;
     private TencentAsrSettings? _tencentSettings;
     private readonly object _tencentSync = new();
 
@@ -36,20 +37,47 @@ public sealed class LocalSpeechService : IAsyncDisposable
     /// <summary>Raised when a cloud failure falls back to the local recognizer.</summary>
     public event EventHandler<string>? CloudFallback;
 
+    /// <summary>Lets the real-time session report a connection failure once.</summary>
+    public void NotifyCloudFallback(string message)
+    {
+        LastCloudError = message;
+        CloudFallback?.Invoke(this, message);
+    }
+
     public TencentAsrSettings? TencentSettings => _tencentSettings;
 
-    public void ConfigureTencent(ITencentSpeechRecognizer? recognizer, TencentAsrSettings? settings)
+    public void ConfigureTencent(
+        ITencentSpeechRecognizer? recognizer,
+        TencentAsrSettings? settings,
+        ITencentRealtimeRecognizerFactory? realtimeFactory = null)
     {
         lock (_tencentSync)
         {
             _tencent?.Dispose();
             _tencent = recognizer;
+            _tencentRealtimeFactory = realtimeFactory;
             _tencentSettings = settings;
             LastCloudError = null;
         }
     }
 
-    public bool HasTencent => _tencent is not null && _tencentSettings?.IsConfigured == true;
+    public bool HasTencent => _tencentSettings?.IsConfigured == true &&
+        (_tencent is not null || _tencentRealtimeFactory is not null);
+
+    /// <summary>True when the selected cloud product is the WebSocket stream.</summary>
+    public bool UseRealtimeTencent => _tencentSettings is { Mode: TencentAsrMode.Realtime, IsConfigured: true } &&
+        _tencentRealtimeFactory is not null;
+
+    /// <summary>Creates one connection for the current real-time settings.</summary>
+    public ITencentRealtimeRecognizer? CreateTencentRealtime()
+    {
+        lock (_tencentSync)
+        {
+            return _tencentSettings is null
+                ? null
+                : _tencentRealtimeFactory?.Create(_tencentSettings.Clone());
+        }
+    }
 
     /// <summary>
     /// Whether captions carry speaker labels. On by default: other-player captions

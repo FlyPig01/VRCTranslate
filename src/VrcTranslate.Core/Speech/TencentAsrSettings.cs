@@ -2,6 +2,16 @@ using System.Text.Json.Serialization;
 
 namespace VrcTranslate.Core.Speech;
 
+/// <summary>Which Tencent Cloud ASR product the user selected.</summary>
+public enum TencentAsrMode
+{
+    /// <summary>Short WAV clips through the one-sentence REST API.</summary>
+    Sentence,
+
+    /// <summary>A continuous WebSocket stream with stable sentence results.</summary>
+    Realtime
+}
+
 /// <summary>
 /// User-facing Tencent Cloud ASR configuration. The secret is intentionally
 /// excluded from JSON serialization; the desktop/infrastructure layer stores it
@@ -10,6 +20,9 @@ namespace VrcTranslate.Core.Speech;
 public sealed class TencentAsrSettings
 {
     public bool Enabled { get; set; }
+
+    /// <summary>Sentence or real-time. Older files without this property mean sentence.</summary>
+    public TencentAsrMode Mode { get; set; } = TencentAsrMode.Sentence;
 
     /// <summary>Tencent engine id, for example 16k_ja. Kept internal; the UI maps friendly names.</summary>
     public string Engine { get; set; } = "16k_ja";
@@ -31,6 +44,7 @@ public sealed class TencentAsrSettings
     public TencentAsrSettings Clone() => new()
     {
         Enabled = Enabled,
+        Mode = Mode,
         Engine = Engine,
         FallbackToLocal = FallbackToLocal,
         AppId = AppId,
@@ -55,28 +69,64 @@ public static class TencentAsrEngines
 
     public const string Cantonese = "16k_yue";
 
-    // Real-time-only engines, kept here for the next phase. They are never
-    // offered by the one-sentence UI because SentenceRecognition rejects them.
+    /// <summary>Real-time-only Chinese/English engine (large-model 1.0, paid).</summary>
     public const string RealtimeChineseEnglish = "16k_zh_en";
+
+    /// <summary>Real-time-only English game engine (standard, free tier).</summary>
     public const string EnglishGame = "16k_en_game";
+
+    /// <summary>Real-time-only 15-language auto engine (large-model 1.0, paid).</summary>
     public const string MultiLanguage = "16k_multi_lang";
 
     /// <summary>Engines accepted by the one-sentence (SentenceRecognition) REST API.</summary>
     public static bool IsSentenceRecognitionEngine(string? engine) => engine is
         Chinese or English or Japanese or Korean or ChineseEnglish or Cantonese;
 
-    /// <summary>
-    /// Maps values written by older builds to an engine the current one-sentence
-    /// API accepts. Unknown/empty values fall back to Japanese, the historical
-    /// default.
-    /// </summary>
-    public static string NormalizeForSentenceRecognition(string? engine) => engine switch
+    /// <summary>Engines accepted by the real-time WebSocket API.</summary>
+    public static bool IsRealtimeEngine(string? engine) => engine is
+        Chinese or English or Japanese or Korean or Cantonese or
+        RealtimeChineseEnglish or EnglishGame or MultiLanguage;
+
+    /// <summary>Real-time engines billed as large-model 1.0; they have no free quota.</summary>
+    public static bool IsPaidRealtimeEngine(string? engine) =>
+        engine is RealtimeChineseEnglish or MultiLanguage;
+
+    /// <summary>Maps any saved value to an engine the selected API accepts.</summary>
+    public static string Normalize(string? engine, TencentAsrMode mode)
     {
-        _ when IsSentenceRecognitionEngine(engine) => engine!,
-        RealtimeChineseEnglish => ChineseEnglish,
-        MultiLanguage => ChineseEnglish,
-        EnglishGame => English,
-        _ => Japanese,
+        if (mode == TencentAsrMode.Realtime)
+        {
+            return engine switch
+            {
+                _ when IsRealtimeEngine(engine) => engine!,
+                ChineseEnglish => Chinese,
+                _ => Japanese,
+            };
+        }
+
+        return engine switch
+        {
+            _ when IsSentenceRecognitionEngine(engine) => engine!,
+            RealtimeChineseEnglish => ChineseEnglish,
+            MultiLanguage => ChineseEnglish,
+            EnglishGame => English,
+            _ => Japanese,
+        };
+    }
+
+    /// <summary>Engines offered by the UI for one mode, in display order.</summary>
+    public static IReadOnlyList<string> Selectable(TencentAsrMode mode) => mode == TencentAsrMode.Realtime
+        ? [Chinese, English, Japanese, Korean, Cantonese, RealtimeChineseEnglish, MultiLanguage]
+        : [Chinese, English, Japanese, Korean, ChineseEnglish, Cantonese];
+
+    /// <summary>Caption source language for a fixed engine; auto for mixed-language engines.</summary>
+    public static string SourceLanguage(string? engine) => engine switch
+    {
+        Japanese => "ja",
+        Korean => "ko",
+        English or EnglishGame => "en",
+        Chinese => "zh",
+        _ => "auto",
     };
 
     public static string DisplayName(string? engine) => engine switch
@@ -87,9 +137,9 @@ public static class TencentAsrEngines
         Korean => "韩语",
         ChineseEnglish => "中英粤混合",
         Cantonese => "粤语",
-        RealtimeChineseEnglish => "中英混合（仅实时）",
-        EnglishGame => "英语（游戏语音，仅实时）",
-        MultiLanguage => "多语种自动（仅实时，付费）",
+        RealtimeChineseEnglish => "中英混合",
+        EnglishGame => "英语（游戏语音）",
+        MultiLanguage => "多语种自动",
         _ => "日语",
     };
 }

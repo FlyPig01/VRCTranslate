@@ -108,6 +108,13 @@ public sealed class AppState : ITranslationGlossaryProvider
     public async Task TestTencentAsrAsync(TencentAsrSettings settings, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(settings);
+        if (settings.Mode == TencentAsrMode.Realtime)
+        {
+            await using var realtime = new TencentRealtimeAsrClient(settings);
+            await realtime.TestAsync(cancellationToken).ConfigureAwait(false);
+            return;
+        }
+
         using var probe = new TencentAsrClient(settings);
         await LocalSpeech.TestTencentAsync(probe, cancellationToken).ConfigureAwait(false);
     }
@@ -115,10 +122,14 @@ public sealed class AppState : ITranslationGlossaryProvider
     private void ApplyTencentAsr(TencentAsrSettings settings)
     {
         TencentAsr = settings;
-        var client = settings.Enabled && settings.IsConfigured
+        var enabled = settings.Enabled && settings.IsConfigured;
+        var client = enabled && settings.Mode == TencentAsrMode.Sentence
             ? new TencentAsrClient(settings)
             : null;
-        LocalSpeech.ConfigureTencent(client, settings.Clone());
+        var realtimeFactory = enabled && settings.Mode == TencentAsrMode.Realtime
+            ? new TencentRealtimeAsrClientFactory()
+            : null;
+        LocalSpeech.ConfigureTencent(client, settings.Clone(), realtimeFactory);
     }
 
     /// <summary>Platform audio factory exposed through the application boundary.</summary>

@@ -84,8 +84,7 @@
         </StackPanel>
       </Border>
 
-      <!-- 语音识别配置：默认本地离线；腾讯云按句是当前可用版本，实时流式下一版接入。
-           价格来自腾讯云 2026-10-16 更新的计费页，会变动；不写密钥示例。 -->
+      <!-- 语音识别：只给用户需要知道的选择、额度和价格；不写实现过程。 -->
       <Border Style="{StaticResource SurfaceBorderStyle}" Padding="18"
               AutomationProperties.AutomationId="guide-asr">
         <StackPanel Spacing="10">
@@ -93,10 +92,10 @@
             <Border Width="32" Height="32" CornerRadius="8" Background="#E8F0FF">
               <FontIcon Glyph="&#xE720;" FontSize="17" Foreground="#2774C7" HorizontalAlignment="Center" VerticalAlignment="Center" />
             </Border>
-            <TextBlock Text="语音识别配置" Style="{StaticResource SectionTitleTextStyle}" />
+            <TextBlock Text="语音识别" Style="{StaticResource SectionTitleTextStyle}" />
           </StackPanel>
           <TextBlock Style="{StaticResource SecondaryTextStyle}" TextWrapping="Wrap"
-                     Text="默认用本地 SenseVoice：离线、免费、不限时长，中/英/日/韩够用。只有其他玩家的系统声音可以走腾讯云；自己的麦克风始终本地。" />
+                     Text="默认本地：离线、免费、不限时长，中/英/日/韩。云端只处理其他玩家，自己的麦克风始终本地。" />
           <Grid ColumnSpacing="12" RowSpacing="6">
             <Grid.ColumnDefinitions>
               <ColumnDefinition Width="Auto" />
@@ -113,40 +112,34 @@
             <TextBlock Text="方式" Style="{StaticResource SecondaryTextStyle}" />
             <TextBlock Grid.Column="1" Text="免费额度" Style="{StaticResource SecondaryTextStyle}" />
             <TextBlock Grid.Column="2" Text="超出后" Style="{StaticResource SecondaryTextStyle}" />
-            <TextBlock Grid.Column="3" Text="说明" Style="{StaticResource SecondaryTextStyle}" />
+            <TextBlock Grid.Column="3" Text="特点" Style="{StaticResource SecondaryTextStyle}" />
 
-            <TextBlock Grid.Row="1" Text="本地 SenseVoice" FontWeight="SemiBold" VerticalAlignment="Center" />
+            <TextBlock Grid.Row="1" Text="本地" FontWeight="SemiBold" VerticalAlignment="Center" />
             <TextBlock Grid.Row="1" Grid.Column="1" Text="无限" VerticalAlignment="Center" />
             <TextBlock Grid.Row="1" Grid.Column="2" Text="0 元" VerticalAlignment="Center" />
-            <TextBlock Grid.Row="1" Grid.Column="3" Text="离线；中/英/日/韩；默认" Style="{StaticResource SecondaryTextStyle}" TextWrapping="Wrap" VerticalAlignment="Center" />
+            <TextBlock Grid.Row="1" Grid.Column="3" Text="离线；延迟最低；默认" Style="{StaticResource SecondaryTextStyle}" TextWrapping="Wrap" VerticalAlignment="Center" />
 
-            <TextBlock Grid.Row="2" Text="腾讯云实时（流式）" FontWeight="SemiBold" VerticalAlignment="Center" />
+            <TextBlock Grid.Row="2" Text="腾讯云实时" FontWeight="SemiBold" VerticalAlignment="Center" />
             <TextBlock Grid.Row="2" Grid.Column="1" Text="5 小时/月" VerticalAlignment="Center" />
             <TextBlock Grid.Row="2" Grid.Column="2" Text="3.2 元/小时" VerticalAlignment="Center" />
-            <TextBlock Grid.Row="2" Grid.Column="3" Text="英/日/韩/中/粤；延迟最低；下一版接入" Style="{StaticResource SecondaryTextStyle}" TextWrapping="Wrap" VerticalAlignment="Center" />
+            <TextBlock Grid.Row="2" Grid.Column="3" Text="流式；中/英/日/韩/粤；延迟低" Style="{StaticResource SecondaryTextStyle}" TextWrapping="Wrap" VerticalAlignment="Center" />
 
-            <TextBlock Grid.Row="3" Text="腾讯云按句（当前）" FontWeight="SemiBold" VerticalAlignment="Center" />
+            <TextBlock Grid.Row="3" Text="腾讯云按句" FontWeight="SemiBold" VerticalAlignment="Center" />
             <TextBlock Grid.Row="3" Grid.Column="1" Text="5000 次/月" VerticalAlignment="Center" />
             <TextBlock Grid.Row="3" Grid.Column="2" Text="3.2 元/千次" VerticalAlignment="Center" />
-            <TextBlock Grid.Row="3" Grid.Column="3" Text="英/日/韩/中/粤/中英粤；非流式；先验证" Style="{StaticResource SecondaryTextStyle}" TextWrapping="Wrap" VerticalAlignment="Center" />
+            <TextBlock Grid.Row="3" Grid.Column="3" Text="非流式；中/英/日/韩/粤/中英粤" Style="{StaticResource SecondaryTextStyle}" TextWrapping="Wrap" VerticalAlignment="Center" />
           </Grid>
           <TextBlock Style="{StaticResource SecondaryTextStyle}" TextWrapping="Wrap"
-                     Text="推荐：默认本地。英/日/韩识别不满意时，云端首选实时（流式、延迟低）；实时版接入前，可先用按句验证效果。按句适合轻度/临时，不建议长期重度使用。" />
+                     Text="推荐：默认本地；英/日/韩不够准时用实时；按句只适合临时验证。" />
           <TextBlock Style="{StaticResource SecondaryTextStyle}" TextWrapping="Wrap"
-                     Text="按句为什么消耗快：按“成功调用次数”计费，1 秒的短句也扣 1 次。按实测 25 秒 6 句（平均 3.6 秒/句）估算，5000 次≈5.8 小时；实时 5 小时≈5.7 小时（只传人声）。两者免费额度接近，都不够每天长时间使用。" />
-          <TextBlock Style="{StaticResource SecondaryTextStyle}" TextWrapping="Wrap"
-                     Text="费用：免费额度当月有效，先扣免费额度，再扣资源包；后付费默认关闭，未开启时额度用尽会停服，不会自动扣费；失败调用不计费。实时 3.2 元/小时、按句 3.2 元/千次为超出后的标准价，价格以官网为准。" />
-          <TextBlock Style="{StaticResource SecondaryTextStyle}" TextWrapping="Wrap"
-                     Text="语言：两种接口都要先选语言，没有免费的自动语种识别。多语种自动只有实时大模型 16k_multi_lang，4.8 元/小时、无免费额度；按句版不支持。" />
+                     Text="云端都要选语言；多语种自动仅实时支持，4.8 元/小时。后付费默认关闭，额度用完停服。价格以官网为准。" />
           <StackPanel Orientation="Horizontal" Spacing="10">
             <HyperlinkButton Content="① 开通语音识别" NavigateUri="https://console.cloud.tencent.com/asr"
                              Padding="0" AutomationProperties.AutomationId="guide-asr-console" />
             <HyperlinkButton Content="② 创建 API 密钥" NavigateUri="https://console.cloud.tencent.com/cam/capi"
                              Padding="0" AutomationProperties.AutomationId="guide-asr-keys" />
-            <HyperlinkButton Content="计费概述" NavigateUri="https://cloud.tencent.com/document/product/1093/35686"
+            <HyperlinkButton Content="计费说明" NavigateUri="https://cloud.tencent.com/document/product/1093/35686"
                              Padding="0" AutomationProperties.AutomationId="guide-asr-pricing" />
-            <HyperlinkButton Content="实时识别文档" NavigateUri="https://cloud.tencent.com/document/product/1093/48982"
-                             Padding="0" AutomationProperties.AutomationId="guide-asr-realtime-doc" />
           </StackPanel>
         </StackPanel>
       </Border>

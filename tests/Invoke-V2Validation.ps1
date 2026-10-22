@@ -548,8 +548,10 @@ if ($voiceSource -notmatch 'SourceChanged' -or
     $voiceSource -notmatch 'VoiceInfo\.IsOpen = false') {
     throw 'The badge must follow the session source events on the UI thread, hint once on the first fallback, and withdraw the hint after recovery.'
 }
-if ([regex]::Matches($voiceMarkup, '<ComboBox[\s>]').Count -ne 1) {
-    throw 'VoicePage must keep exactly one selector (the local model box); no capture-source or process picker may be added.'
+if ([regex]::Matches($voiceMarkup, '<ComboBox[\s>]').Count -ne 2 -or
+    $voiceMarkup -notmatch 'SpeechModelBox' -or
+    $voiceMarkup -notmatch 'TencentLanguageBox') {
+    throw 'VoicePage must keep exactly the local model and Tencent language selectors; no capture-source or process picker may be added.'
 }
 if ($voiceMarkup -match 'Windows 系统识别 · 无需密钥') { throw 'VoicePage must keep the recognition status label concise.' }
 if ([regex]::Matches($voiceMarkup, 'AutomationProperties.Name="打开字幕"').Count -ne 0) { throw 'The window-only subtitle entry must stay deleted so the caption surface cannot be toggled apart from recognition.' }

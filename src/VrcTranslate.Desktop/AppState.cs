@@ -26,6 +26,8 @@ public sealed class AppState : ITranslationGlossaryProvider
     private readonly object _routeSync = new();
     private readonly object _selfTestSync = new();
     private readonly object _glossaryLoadSync = new();
+    private readonly object _tencentAsrSync = new();
+    private readonly TencentAsrSettingsStore _tencentAsrStore;
     private int _routeRevision;
     private Task<LocalSpeechSelfTestResult>? _speechSelfTestTask;
     private LocalSpeechSelfTestResult? _speechSelfTest;
@@ -39,6 +41,9 @@ public sealed class AppState : ITranslationGlossaryProvider
         // Local speech is an optional component. Creating the service is cheap
         // and does not load a model until the user installs and starts it.
         LocalSpeech = LocalSpeechServiceFactory.CreateDefault();
+        _tencentAsrStore = new TencentAsrSettingsStore(PortableStorage.GetPath(AppDataFiles.TencentAsr));
+        TencentAsr = _tencentAsrStore.Load();
+        ApplyTencentAsr(TencentAsr);
         AudioCapture = new WindowsAudioCaptureFactory();
         AudioDevices = new WindowsAudioDeviceEnumerator();
         // Recognition sessions live at application scope: switching pages must
@@ -86,6 +91,35 @@ public sealed class AppState : ITranslationGlossaryProvider
 
     /// <summary>Application boundary for the bundled local speech model.</summary>
     public LocalSpeechService LocalSpeech { get; }
+
+    /// <summary>Current Tencent Cloud ASR preference (the secret is DPAPI-backed).</summary>
+    public TencentAsrSettings TencentAsr { get; private set; }
+
+    public void SaveTencentAsr(TencentAsrSettings settings)
+    {
+        ArgumentNullException.ThrowIfNull(settings);
+        lock (_tencentAsrSync)
+        {
+            _tencentAsrStore.Save(settings);
+            ApplyTencentAsr(settings.Clone());
+        }
+    }
+
+    public async Task TestTencentAsrAsync(TencentAsrSettings settings, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(settings);
+        using var probe = new TencentAsrClient(settings);
+        await LocalSpeech.TestTencentAsync(probe, cancellationToken).ConfigureAwait(false);
+    }
+
+    private void ApplyTencentAsr(TencentAsrSettings settings)
+    {
+        TencentAsr = settings;
+        var client = settings.Enabled && settings.IsConfigured
+            ? new TencentAsrClient(settings)
+            : null;
+        LocalSpeech.ConfigureTencent(client, settings.Clone());
+    }
 
     /// <summary>Platform audio factory exposed through the application boundary.</summary>
     public IAudioCaptureFactory AudioCapture { get; }

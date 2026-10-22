@@ -103,6 +103,12 @@ public abstract class VoiceSessionHost
     protected virtual SpeechCaptureProcessingOptions CaptureProcessing => SpeechCaptureProcessingOptions.None;
 
     /// <summary>
+    /// Whether this session may use the configured Tencent Cloud recognizer.
+    /// Own-voice sessions keep this false; other-player captions opt in.
+    /// </summary>
+    protected virtual bool UseCloudAsr => false;
+
+    /// <summary>
     /// Capture for the next start together with the monitor that must run with
     /// it. 自身语音直接向平台工厂要麦克风，来源类型是 Microphone；他人语音交给
     /// 自适应回环协调器，由 VRChat 进程监视器把当前目标推给它。
@@ -202,7 +208,8 @@ public abstract class VoiceSessionHost
                 // Silero VAD when its bundled model is present, adaptive
                 // energy gate otherwise.
                 segmenter,
-                CaptureProcessing);
+                CaptureProcessing,
+                useCloudAsr: UseCloudAsr);
             session.ResultReady += OnResultReady;
             session.Faulted += OnSessionFaulted;
             session.LevelChanged += OnLevelChanged;
@@ -388,11 +395,23 @@ public sealed class SubtitleSpeechSession : VoiceSessionHost
 {
     private readonly AppState _state;
     private OtherPlayerCaptionPipeline? _pipeline;
+    private bool _cloudFallbackNotified;
 
     public SubtitleSpeechSession(AppState state) : base(state.LocalSpeech, state.AudioCapture)
     {
         _state = state;
         SourceLanguage = "auto";
+        _state.LocalSpeech.CloudFallback += OnCloudFallback;
+    }
+
+    private void OnCloudFallback(object? sender, string message)
+    {
+        if (!IsRunning || _cloudFallbackNotified) return;
+        _cloudFallbackNotified = true;
+        RaiseNotified(new SpeechNotificationEventArgs(
+            SpeechNotificationKind.Warning,
+            "腾讯云识别",
+            "云端连接失败，已自动回退本地识别。"));
     }
 
     /// <summary>
@@ -424,6 +443,8 @@ public sealed class SubtitleSpeechSession : VoiceSessionHost
     // 回环族：具体采系统混音还是 VRChat 进程音频由自适应协调器决定。
     protected override AudioCaptureMode CaptureMode => AudioCaptureMode.SystemLoopback;
 
+    protected override bool UseCloudAsr => _state.TencentAsr.Enabled;
+
     protected override async Task PrepareSessionAsync()
     {
         await _state.EnsureGlossaryLoadedAsync().ConfigureAwait(false);
@@ -448,7 +469,11 @@ public sealed class SubtitleSpeechSession : VoiceSessionHost
     protected override SpeechNotificationEventArgs DescribeFailure(Exception exception) =>
         new(SpeechNotificationKind.Error, "翻译失败", exception.Message);
 
-    protected override Task OnSessionStartedAsync() => Pipeline.BeginSessionAsync();
+    protected override async Task OnSessionStartedAsync()
+    {
+        _cloudFallbackNotified = false;
+        await Pipeline.BeginSessionAsync().ConfigureAwait(false);
+    }
 
     protected override Task OnSessionStoppingAsync() => Pipeline.EndSessionAsync();
 

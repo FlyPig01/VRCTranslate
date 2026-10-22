@@ -215,6 +215,105 @@
             </StackPanel>
           </Border>
 
+
+          <Border Style="{StaticResource SurfaceBorderStyle}" Padding="18,16">
+            <StackPanel Spacing="12">
+              <StackPanel Spacing="3">
+                <TextBlock Text="识别引擎"
+                           FontSize="17"
+                           FontWeight="SemiBold"
+                           Foreground="#16202E" />
+                <TextBlock Text="本地离线免费；腾讯云在线识别适合英语、日语、韩语。"
+                           FontSize="12"
+                           Foreground="#607083"
+                           TextWrapping="Wrap" />
+              </StackPanel>
+
+              <StackPanel Orientation="Horizontal" Spacing="20">
+                <RadioButton x:Name="LocalAsrRadio"
+                             GroupName="AsrProvider"
+                             Content="本地 SenseVoice · 离线免费"
+                             Checked="OnAsrProviderChanged"
+                             AutomationProperties.AutomationId="asr-local-radio" />
+                <RadioButton x:Name="TencentAsrRadio"
+                             GroupName="AsrProvider"
+                             Content="腾讯云在线识别（按句）· 每月 5000 次免费"
+                             Checked="OnAsrProviderChanged"
+                             AutomationProperties.AutomationId="asr-tencent-radio" />
+              </StackPanel>
+
+              <StackPanel x:Name="TencentAsrPanel" Spacing="10">
+                <TextBlock Text="仅用于其他玩家（系统声音）；自己的麦克风仍使用本地 SenseVoice。"
+                           FontSize="12"
+                           Foreground="#607083"
+                           TextWrapping="Wrap" />
+
+                <ComboBox x:Name="TencentLanguageBox"
+                          Header="语言模式"
+                          MinWidth="280"
+                          HorizontalAlignment="Stretch"
+                          SelectionChanged="OnTencentLanguageChanged"
+                          AutomationProperties.AutomationId="asr-tencent-language">
+                  <ComboBoxItem Tag="16k_zh" Content="中文（普通话 / 方言） · 免费" />
+                  <ComboBoxItem Tag="16k_en" Content="英语 · 免费" />
+                  <ComboBoxItem Tag="16k_ja" Content="日语 · 免费" />
+                  <ComboBoxItem Tag="16k_ko" Content="韩语 · 免费" />
+                  <ComboBoxItem Tag="16k_zh_en" Content="中英混合 · 免费" />
+                  <ComboBoxItem Tag="16k_yue" Content="粤语 · 免费" />
+                  <ComboBoxItem Tag="16k_multi_lang" Content="多语种自动（英 / 日 / 韩等） · 付费" />
+                </ComboBox>
+
+                <TextBox x:Name="TencentAppIdBox"
+                         Header="AppID（纯数字，不是 SecretId）"
+                         PlaceholderText="例如 1250000000"
+                         AutomationProperties.AutomationId="asr-tencent-appid" />
+                <TextBox x:Name="TencentSecretIdBox"
+                         Header="SecretId"
+                         PlaceholderText="AKID 开头"
+                         AutomationProperties.AutomationId="asr-tencent-secretid" />
+                <PasswordBox x:Name="TencentSecretKeyBox"
+                             Header="SecretKey（留空保留已保存密钥）"
+                             PasswordRevealMode="Peek"
+                             AutomationProperties.AutomationId="asr-tencent-secretkey" />
+                <TextBlock Text="AppID 是腾讯云账号的纯数字 ID；SecretId/SecretKey 在 API 密钥管理中创建。"
+                           FontSize="12"
+                           Foreground="#607083"
+                           TextWrapping="Wrap" />
+
+                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                  <Button x:Name="SaveTencentAsrButton"
+                          Content="保存并测试"
+                          Click="OnSaveTencentAsrClicked"
+                          AutomationProperties.AutomationId="asr-tencent-save" />
+                  <Button x:Name="ClearTencentAsrButton"
+                          Content="清除配置"
+                          Click="OnClearTencentAsrClicked"
+                          AutomationProperties.AutomationId="asr-tencent-clear" />
+                  <TextBlock x:Name="TencentAsrStatus"
+                             VerticalAlignment="Center"
+                             FontSize="12"
+                             Foreground="#607083"
+                             Text="未配置" />
+                </StackPanel>
+
+                <InfoBar x:Name="TencentAsrInfo"
+                         IsOpen="False"
+                         IsClosable="True"
+                         Severity="Informational"
+                         AutomationProperties.AutomationId="asr-tencent-info" />
+
+                <ToggleSwitch x:Name="TencentFallbackToggle"
+                              Header="云端失败时自动回退本地"
+                              IsOn="True"
+                              AutomationProperties.AutomationId="asr-tencent-fallback" />
+
+                <TextBlock Text="音频会上传到腾讯云；声纹和说话人标签仍只保存在本机。"
+                           FontSize="12"
+                           Foreground="#607083"
+                           TextWrapping="Wrap" />
+              </StackPanel>
+            </StackPanel>
+          </Border>
           <Border Style="{StaticResource SurfaceBorderStyle}" Padding="18,16">
             <Grid ColumnSpacing="14" RowSpacing="10">
               <Grid.RowDefinitions>

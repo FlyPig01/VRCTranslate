@@ -18,6 +18,7 @@ public sealed class LocalSpeechCaptureSession : IAsyncDisposable
     private readonly SpeechCaptureProcessingOptions _processing;
     private readonly SemaphoreSlim _recognitionGate = new(1, 1);
     private readonly string _sourceLanguage;
+    private readonly bool _useCloudAsr;
     private readonly object _sync = new();
     private readonly object _segmenterSync = new();
     private readonly object _diagnosticsSync = new();
@@ -47,10 +48,12 @@ public sealed class LocalSpeechCaptureSession : IAsyncDisposable
         LocalSpeechService speech,
         string sourceLanguage = "auto",
         ISpeechSegmenter? segmenter = null,
-        SpeechCaptureProcessingOptions? processing = null)
+        SpeechCaptureProcessingOptions? processing = null,
+        bool useCloudAsr = false)
     {
         _capture = capture ?? throw new ArgumentNullException(nameof(capture));
         _speech = speech ?? throw new ArgumentNullException(nameof(speech));
+        _useCloudAsr = useCloudAsr;
         if (!LocalSpeechLanguages.TryNormalize(sourceLanguage, out _sourceLanguage))
         {
             throw new ArgumentException("本地语音只接受自动检测、简体中文、英语、日语或韩语。", nameof(sourceLanguage));
@@ -189,7 +192,7 @@ public sealed class LocalSpeechCaptureSession : IAsyncDisposable
     {
         try
         {
-            await _speech.PrepareAsync(_sourceLanguage, CancellationToken.None).ConfigureAwait(false);
+            await _speech.PrepareAsync(_sourceLanguage, _useCloudAsr, CancellationToken.None).ConfigureAwait(false);
         }
         catch (Exception exception)
         {
@@ -518,6 +521,7 @@ public sealed class LocalSpeechCaptureSession : IAsyncDisposable
                     var part = samples.Slice(start, end - start);
                     var result = await _speech.RecognizeAsync(
                         new SpeechRecognitionRequest(part, _segmenterSampleRate, _sourceLanguage),
+                        _useCloudAsr,
                         cancellationToken).ConfigureAwait(false);
                     if (string.IsNullOrWhiteSpace(result.Text))
                     {

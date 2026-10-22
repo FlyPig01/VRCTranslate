@@ -13,6 +13,9 @@ public static class AppDataFiles
     public const string OverlayLayout = "v2-overlay-layout.json";
     public const string Glossary = "glossary.json";
 
+    /// <summary>Tencent Cloud ASR preferences; its secret is DPAPI-encrypted.</summary>
+    public const string TencentAsr = "v2-tencent-asr.json";
+
     /// <summary>Stage-2 voiceprint library.</summary>
     public const string Speakers = "v2-speakers.json";
 

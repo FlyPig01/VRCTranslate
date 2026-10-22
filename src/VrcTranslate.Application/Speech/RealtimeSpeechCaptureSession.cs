@@ -249,14 +249,74 @@ public sealed class RealtimeSpeechCaptureSession : ISpeechCaptureSession
     {
         if (Volatile.Read(ref _fallback) == 1) return;
         if (!IsStarted || string.IsNullOrWhiteSpace(result.Text)) return;
-        var recognized = new SpeechRecognitionResult(
+        foreach (var recognized in BuildResults(result))
+        {
+            try { ResultReady?.Invoke(this, recognized); }
+            catch (Exception exception) { RaiseFaulted(exception); }
+        }
+    }
+
+    private IReadOnlyList<SpeechRecognitionResult> BuildResults(TencentRealtimeResult result)
+    {
+        var whole = new SpeechRecognitionResult(
             result.MessageId ?? Guid.NewGuid().ToString("N"),
             result.Text.Trim(),
             _sourceLanguage,
             result.End > result.Start ? result.End - result.Start : TimeSpan.Zero);
-        var withSpeaker = AttachSpeaker(recognized, result.Audio);
-        try { ResultReady?.Invoke(this, withSpeaker); }
-        catch (Exception exception) { RaiseFaulted(exception); }
+
+        if (result.Audio.IsEmpty ||
+            result.Words is not { Count: > 0 } words ||
+            _speech.Speakers is not { IsAvailable: true } speakers)
+        {
+            return [AttachSpeaker(whole, result.Audio)];
+        }
+
+        IReadOnlyList<SpeechSpan> spans;
+        try
+        {
+            spans = speakers.SplitAtSpeakerChanges(result.Audio, SampleRate);
+        }
+        catch (Exception exception)
+        {
+            RaiseDiagnostic($"realtime speaker split failed: {exception.GetType().Name}: {exception.Message}");
+            return [AttachSpeaker(whole, result.Audio)];
+        }
+
+        if (spans.Count <= 1) return [AttachSpeaker(whole, result.Audio)];
+
+        var results = new List<SpeechRecognitionResult>();
+        foreach (var span in spans)
+        {
+            var start = Math.Clamp(span.StartSample, 0, result.Audio.Length);
+            var end = Math.Clamp(span.EndSample, start, result.Audio.Length);
+            if (end <= start) continue;
+
+            var spanStartMs = result.Start.TotalMilliseconds + start * 1000d / SampleRate;
+            var spanEndMs = result.Start.TotalMilliseconds + end * 1000d / SampleRate;
+            var text = JoinWords(words.Where(word =>
+            {
+                var midpoint = (word.Start + word.End).TotalMilliseconds / 2d;
+                return midpoint >= spanStartMs && midpoint < spanEndMs;
+            }));
+            if (string.IsNullOrWhiteSpace(text)) continue;
+
+            var part = result.Audio.Slice(start, end - start);
+            var recognized = whole with
+            {
+                RequestId = result.MessageId is null ? Guid.NewGuid().ToString("N") : result.MessageId + "-" + span.StartSample,
+                Text = text,
+                Elapsed = TimeSpan.FromMilliseconds(spanEndMs - spanStartMs),
+            };
+            results.Add(AttachSpeaker(recognized, part));
+        }
+
+        return results.Count > 0 ? results : [AttachSpeaker(whole, result.Audio)];
+    }
+
+    private string JoinWords(IEnumerable<TencentRealtimeWord> words)
+    {
+        var text = string.Join(_sourceLanguage == "en" ? " " : string.Empty, words.Select(word => word.Text.Trim()));
+        return text.Trim();
     }
 
     private SpeechRecognitionResult AttachSpeaker(SpeechRecognitionResult result, ReadOnlyMemory<float> audio)
@@ -271,9 +331,12 @@ public sealed class RealtimeSpeechCaptureSession : ISpeechCaptureSession
             {
                 if (duration < 1.5 && _lastSpeakerId is not null)
                 {
+                    RaiseDiagnostic(
+                        $"realtime speaker duration={duration:0.00} decision=hold speaker={_lastSpeakerId}");
                     return result with { SpeakerId = _lastSpeakerId, SpeakerLabel = _lastSpeakerLabel };
                 }
 
+                RaiseDiagnostic($"realtime speaker duration={duration:0.00} decision=unknown");
                 return result with
                 {
                     SpeakerId = SpeakerRegistry.UnknownSpeaker.Id,
@@ -307,6 +370,9 @@ public sealed class RealtimeSpeechCaptureSession : ISpeechCaptureSession
                 _lastSpeakerLabel = match.Speaker.DisplayName;
             }
 
+            RaiseDiagnostic(
+                $"realtime speaker duration={duration:0.00} best={match.Similarity:0.000} " +
+                $"decision={match.Kind} speaker={match.Speaker.Id}/{match.Speaker.DisplayName}");
             return result with
             {
                 SpeakerId = match.Speaker.Id,

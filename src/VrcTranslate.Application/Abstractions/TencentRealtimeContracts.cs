@@ -7,12 +7,15 @@ namespace VrcTranslate.Application.Abstractions;
 /// to the stream start; <see cref="Audio"/> is a copy of the same interval so
 /// the caller can attach a local speaker label without keeping the whole stream.
 /// </summary>
+public sealed record TencentRealtimeWord(string Text, TimeSpan Start, TimeSpan End);
+
 public sealed record TencentRealtimeResult(
     string Text,
     string? MessageId,
     TimeSpan Start,
     TimeSpan End,
-    ReadOnlyMemory<float> Audio);
+    ReadOnlyMemory<float> Audio,
+    IReadOnlyList<TencentRealtimeWord>? Words = null);
 
 /// <summary>
 /// A single real-time ASR connection. One instance owns one voice_id and one

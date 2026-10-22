@@ -35,6 +35,43 @@ public sealed class RealtimeSpeechCaptureSessionTests
     }
 
     [Fact]
+    public async Task Word_timestamps_split_a_sentence_at_a_speaker_change()
+    {
+        var capture = new FakeAudioCapture(AudioCaptureRequest.SystemLoopback());
+        var realtime = new FakeRealtimeRecognizer();
+        var speakers = new SplitSpeakerIdentifier();
+        var service = new LocalSpeechService(new FakeModelManager(), new FakeLocalRecognizer(), speakers);
+        service.ConfigureTencent(null, CreateSettings(), new FakeRealtimeFactory(realtime));
+        await using var session = new RealtimeSpeechCaptureSession(capture, service, "en");
+        var results = new List<SpeechRecognitionResult>();
+        var done = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        session.ResultReady += (_, value) =>
+        {
+            lock (results) results.Add(value);
+            if (results.Count >= 2) done.TrySetResult();
+        };
+
+        await session.StartAsync();
+        realtime.Emit(new TencentRealtimeResult(
+            "hello world",
+            "msg-2",
+            TimeSpan.Zero,
+            TimeSpan.FromSeconds(4),
+            Enumerable.Repeat(0.2f, 64_000).ToArray(),
+            [
+                new TencentRealtimeWord("hello", TimeSpan.Zero, TimeSpan.FromSeconds(1)),
+                new TencentRealtimeWord("world", TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(3)),
+            ]));
+
+        await done.Task.WaitAsync(TimeSpan.FromSeconds(2));
+        Assert.Equal(2, results.Count);
+        Assert.Equal("hello", results[0].Text);
+        Assert.Equal("world", results[1].Text);
+        Assert.Equal("spk-A", results[0].SpeakerId);
+        Assert.Equal("spk-B", results[1].SpeakerId);
+    }
+
+    [Fact]
     public async Task Wrong_sample_rate_faults_without_throwing_from_the_capture_callback()
     {
         var capture = new FakeAudioCapture(AudioCaptureRequest.SystemLoopback());
@@ -101,6 +138,45 @@ public sealed class RealtimeSpeechCaptureSessionTests
         SecretId = "AKIDtest",
         SecretKey = "test",
     };
+
+    private sealed class SplitSpeakerIdentifier : ISpeakerIdentifier
+    {
+        private int _identifyCalls;
+
+        public bool IsAvailable => true;
+        public IReadOnlyList<SpeakerIdentity> Speakers => [];
+
+        public event EventHandler? SpeakersChanged
+        {
+            add { }
+            remove { }
+        }
+
+        public SpeakerMatch? Identify(
+            ReadOnlyMemory<float> samples,
+            int sampleRate,
+            string? previousSpeakerId = null,
+            bool allowCreate = true)
+        {
+            var index = Interlocked.Increment(ref _identifyCalls) - 1;
+            var speaker = index % 2 == 0
+                ? new SpeakerIdentity("spk-A", "A", null)
+                : new SpeakerIdentity("spk-B", "B", null);
+            return new SpeakerMatch(speaker, 0.9f, SpeakerMatchKind.Session);
+        }
+
+        public IReadOnlyList<SpeechSpan> SplitAtSpeakerChanges(ReadOnlyMemory<float> samples, int sampleRate) =>
+        [
+            new SpeechSpan(0, samples.Length / 2, 0),
+            new SpeechSpan(samples.Length / 2, samples.Length, 1),
+        ];
+
+        public bool Rename(string speakerId, string? name) => false;
+        public bool Reject(string speakerId) => false;
+        public bool Merge(string sourceId, string targetId) => false;
+        public bool Forget(string speakerId) => false;
+        public void Clear() { }
+    }
 
     private sealed class FakeRealtimeFactory(ITencentRealtimeRecognizer recognizer) : ITencentRealtimeRecognizerFactory
     {

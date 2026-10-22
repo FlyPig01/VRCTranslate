@@ -893,22 +893,11 @@ public sealed partial class VoicePage : Page
             }
 
             if (TencentLanguageBox.SelectedItem is null) TencentLanguageBox.SelectedIndex = 2;
-            UpdateTencentCopy(mode);
         }
         finally
         {
             _suppressTencentLanguageChange = false;
         }
-    }
-
-    private void UpdateTencentCopy(TencentAsrMode mode)
-    {
-        TencentLanguageHint.Text = mode == TencentAsrMode.Realtime
-            ? "实时必须选语言；中英混合和多语种自动是付费引擎，4.8 元/小时，无免费额度。"
-            : "按句必须选语言；不支持多语种自动。";
-        TencentBillingHint.Text = mode == TencentAsrMode.Realtime
-            ? "实时按音频时长计费：5 小时/月免费，超出 3.2 元/小时；静音也会计时。后付费默认关闭。"
-            : "按句每次成功调用计 1 次：5000 次/月免费，超出 3.2 元/千次。后付费默认关闭。";
     }
 
     private void UpdateTencentAsrPanel()
@@ -922,7 +911,6 @@ public sealed partial class VoicePage : Page
         if (!_loaded) return;
         var mode = TencentSelected ? SelectedMode : State.TencentAsr.Mode;
         UpdateTencentAsrPanel();
-        UpdateTencentCopy(mode);
         var settings = State.TencentAsr.Clone();
         settings.Enabled = TencentSelected;
         settings.Mode = mode;
@@ -1013,11 +1001,6 @@ public sealed partial class VoicePage : Page
             TencentAsrStatus.Text = mode == TencentAsrMode.Realtime
                 ? "连接成功 · 腾讯云实时"
                 : "连接成功 · 腾讯云按句";
-            ShowTencentAsrInfo(
-                mode == TencentAsrMode.Realtime
-                    ? "腾讯云实时识别连接成功。5 小时/月免费，超出 3.2 元/小时（以官网为准）。"
-                    : "腾讯云按句识别连接成功。5000 次/月免费，超出 3.2 元/千次（以官网为准）。",
-                InfoBarSeverity.Success);
         }
         catch (Exception exception)
         {

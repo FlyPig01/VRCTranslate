@@ -218,16 +218,10 @@
 
           <Border Style="{StaticResource SurfaceBorderStyle}" Padding="18,16">
             <StackPanel Spacing="12">
-              <StackPanel Spacing="3">
-                <TextBlock Text="识别引擎"
-                           FontSize="17"
-                           FontWeight="SemiBold"
-                           Foreground="#16202E" />
-                <TextBlock Text="默认本地离线免费；云端只处理其他玩家，自己的麦克风始终本地。"
-                           FontSize="12"
-                           Foreground="#607083"
-                           TextWrapping="Wrap" />
-              </StackPanel>
+              <TextBlock Text="识别引擎"
+                         FontSize="17"
+                         FontWeight="SemiBold"
+                         Foreground="#16202E" />
 
               <StackPanel Spacing="6">
                 <RadioButton x:Name="LocalAsrRadio"
@@ -248,26 +242,12 @@
               </StackPanel>
 
               <StackPanel x:Name="TencentAsrPanel" Spacing="10">
-                <TextBlock Text="仅用于其他玩家；自己的麦克风始终本地。"
-                           FontSize="12"
-                           Foreground="#607083"
-                           TextWrapping="Wrap" />
-
                 <ComboBox x:Name="TencentLanguageBox"
                           Header="语言模式"
                           MinWidth="280"
                           HorizontalAlignment="Stretch"
                           SelectionChanged="OnTencentLanguageChanged"
                           AutomationProperties.AutomationId="asr-tencent-language" />
-                <TextBlock x:Name="TencentLanguageHint"
-                           FontSize="12"
-                           Foreground="#607083"
-                           TextWrapping="Wrap" />
-
-                <TextBlock x:Name="TencentBillingHint"
-                           FontSize="12"
-                           Foreground="#607083"
-                           TextWrapping="Wrap" />
 
                 <TextBox x:Name="TencentAppIdBox"
                          Header="AppID（纯数字，不是 SecretId）"
@@ -281,11 +261,6 @@
                              Header="SecretKey（留空保留已保存密钥）"
                              PasswordRevealMode="Peek"
                              AutomationProperties.AutomationId="asr-tencent-secretkey" />
-                <TextBlock Text="AppID 是腾讯云账号的纯数字 ID；SecretId/SecretKey 在 API 密钥管理中创建。"
-                           FontSize="12"
-                           Foreground="#607083"
-                           TextWrapping="Wrap" />
-
                 <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                   <Button x:Name="SaveTencentAsrButton"
                           Content="保存并测试"
@@ -312,11 +287,6 @@
                          IsClosable="True"
                          Severity="Informational"
                          AutomationProperties.AutomationId="asr-tencent-info" />
-
-                <TextBlock Text="失败自动回退本地。音频会上传腾讯云；声纹只保存在本机。"
-                           FontSize="12"
-                           Foreground="#607083"
-                           TextWrapping="Wrap" />
               </StackPanel>
             </StackPanel>
           </Border>

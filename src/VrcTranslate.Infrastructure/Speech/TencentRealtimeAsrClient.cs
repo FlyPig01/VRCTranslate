@@ -171,6 +171,11 @@ public sealed class TencentRealtimeAsrClient : ITencentRealtimeRecognizer
             ["voice_format"] = "1",
             ["voice_id"] = voiceId,
         };
+        if (SupportsWordTimestamps(_settings.Engine))
+        {
+            // Needed to split one stable sentence at a local speaker change.
+            parameters["word_info"] = "1";
+        }
 
         var canonical = string.Join("&", parameters.Select(pair => $"{pair.Key}={pair.Value}"));
         var signText = $"{Host}/asr/v2/{_settings.AppId}?{canonical}";
@@ -295,6 +300,7 @@ public sealed class TencentRealtimeAsrClient : ITencentRealtimeRecognizer
                     ? idElement.GetString()
                     : null;
                 var audio = ExtractAudio(startMs, endMs);
+                var words = ReadWords(result);
                 try
                 {
                     ResultReady?.Invoke(
@@ -304,7 +310,8 @@ public sealed class TencentRealtimeAsrClient : ITencentRealtimeRecognizer
                             messageId,
                             TimeSpan.FromMilliseconds(startMs),
                             TimeSpan.FromMilliseconds(endMs),
-                            audio));
+                            audio,
+                            words));
                 }
                 catch
                 {
@@ -328,6 +335,33 @@ public sealed class TencentRealtimeAsrClient : ITencentRealtimeRecognizer
         _completed.TrySetException(exception);
         try { Faulted?.Invoke(this, exception); }
         catch { /* diagnostics must not break the socket loop */ }
+    }
+
+    private static bool SupportsWordTimestamps(string? engine) => engine is
+        TencentAsrEngines.Chinese or TencentAsrEngines.English or
+        TencentAsrEngines.Japanese or TencentAsrEngines.RealtimeChineseEnglish;
+
+    private static IReadOnlyList<TencentRealtimeWord> ReadWords(JsonElement result)
+    {
+        if (!result.TryGetProperty("word_list", out var list) || list.ValueKind != JsonValueKind.Array)
+        {
+            return [];
+        }
+
+        var words = new List<TencentRealtimeWord>();
+        foreach (var item in list.EnumerateArray())
+        {
+            var text = item.TryGetProperty("word", out var word) ? word.GetString() : null;
+            if (string.IsNullOrWhiteSpace(text)) continue;
+            var start = item.TryGetProperty("start_time", out var startElement) ? startElement.GetInt32() : 0;
+            var end = item.TryGetProperty("end_time", out var endElement) ? endElement.GetInt32() : start;
+            words.Add(new TencentRealtimeWord(
+                text,
+                TimeSpan.FromMilliseconds(start),
+                TimeSpan.FromMilliseconds(end)));
+        }
+
+        return words;
     }
 
     private void AppendRing(ReadOnlySpan<float> samples)

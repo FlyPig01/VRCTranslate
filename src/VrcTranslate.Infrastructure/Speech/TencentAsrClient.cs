@@ -147,10 +147,8 @@ public sealed class TencentAsrClient : ITencentSpeechRecognizer
         return result.TryGetProperty("Result", out var text) ? text.GetString() ?? string.Empty : string.Empty;
     }
 
-    private static bool IsSupportedEngine(string? engine) => engine is
-        TencentAsrEngines.Chinese or TencentAsrEngines.English or TencentAsrEngines.Japanese or
-        TencentAsrEngines.Korean or TencentAsrEngines.ChineseEnglish or TencentAsrEngines.Cantonese or
-        TencentAsrEngines.EnglishGame or TencentAsrEngines.MultiLanguage;
+    private static bool IsSupportedEngine(string? engine) =>
+        TencentAsrEngines.IsSentenceRecognitionEngine(engine);
 
     private static byte[] ToWav(ReadOnlySpan<float> samples, int sampleRate)
     {

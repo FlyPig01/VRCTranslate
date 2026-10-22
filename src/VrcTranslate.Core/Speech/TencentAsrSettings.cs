@@ -45,14 +45,39 @@ public static class TencentAsrEngines
     public const string English = "16k_en";
     public const string Japanese = "16k_ja";
     public const string Korean = "16k_ko";
-    public const string ChineseEnglish = "16k_zh_en";
+
+    /// <summary>
+    /// One-sentence recognition's Chinese/English/Cantonese engine. The real-time
+    /// API uses 16k_zh_en for a similar role, but that engine is billed as a
+    /// large-model engine and is not accepted by SentenceRecognition.
+    /// </summary>
+    public const string ChineseEnglish = "16k_zh-PY";
+
     public const string Cantonese = "16k_yue";
+
+    // Real-time-only engines, kept here for the next phase. They are never
+    // offered by the one-sentence UI because SentenceRecognition rejects them.
+    public const string RealtimeChineseEnglish = "16k_zh_en";
     public const string EnglishGame = "16k_en_game";
     public const string MultiLanguage = "16k_multi_lang";
 
-    /// <summary>Engines covered by the monthly 5-hour standard real-time package.</summary>
-    public static bool IsFreeTier(string? engine) => engine is
-        Chinese or English or Japanese or Korean or ChineseEnglish or Cantonese or EnglishGame;
+    /// <summary>Engines accepted by the one-sentence (SentenceRecognition) REST API.</summary>
+    public static bool IsSentenceRecognitionEngine(string? engine) => engine is
+        Chinese or English or Japanese or Korean or ChineseEnglish or Cantonese;
+
+    /// <summary>
+    /// Maps values written by older builds to an engine the current one-sentence
+    /// API accepts. Unknown/empty values fall back to Japanese, the historical
+    /// default.
+    /// </summary>
+    public static string NormalizeForSentenceRecognition(string? engine) => engine switch
+    {
+        _ when IsSentenceRecognitionEngine(engine) => engine!,
+        RealtimeChineseEnglish => ChineseEnglish,
+        MultiLanguage => ChineseEnglish,
+        EnglishGame => English,
+        _ => Japanese,
+    };
 
     public static string DisplayName(string? engine) => engine switch
     {
@@ -60,10 +85,11 @@ public static class TencentAsrEngines
         English => "英语",
         Japanese => "日语",
         Korean => "韩语",
-        ChineseEnglish => "中英混合",
+        ChineseEnglish => "中英粤混合",
         Cantonese => "粤语",
-        EnglishGame => "英语（游戏语音）",
-        MultiLanguage => "多语种自动（英/日/韩等）",
+        RealtimeChineseEnglish => "中英混合（仅实时）",
+        EnglishGame => "英语（游戏语音，仅实时）",
+        MultiLanguage => "多语种自动（仅实时，付费）",
         _ => "日语",
     };
 }

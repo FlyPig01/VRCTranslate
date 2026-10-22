@@ -831,12 +831,24 @@ public sealed partial class VoicePage : Page
     private void LoadTencentAsrSettings()
     {
         var settings = State.TencentAsr;
+        var engine = TencentAsrEngines.NormalizeForSentenceRecognition(settings.Engine);
+        if (!string.Equals(engine, settings.Engine, StringComparison.Ordinal))
+        {
+            // Older builds exposed real-time-only engines (16k_zh_en,
+            // 16k_multi_lang) in the one-sentence selector. Persist the nearest
+            // engine the REST API actually accepts instead of failing at runtime.
+            settings = settings.Clone();
+            settings.Engine = engine;
+            try { State.SaveTencentAsr(settings); }
+            catch { /* the page still shows the normalized value */ }
+        }
+
         LocalAsrRadio.IsChecked = !settings.Enabled;
         TencentAsrRadio.IsChecked = settings.Enabled;
         TencentAppIdBox.Text = settings.AppId;
         TencentSecretIdBox.Text = settings.SecretId;
         TencentSecretKeyBox.Password = string.Empty;
-        SelectTencentLanguage(settings.Engine);
+        SelectTencentLanguage(engine);
         UpdateTencentAsrPanel();
         TencentAsrStatus.Text = settings.Enabled
             ? settings.IsConfigured ? "已配置 · 腾讯云按句" : "未配置"
@@ -845,6 +857,7 @@ public sealed partial class VoicePage : Page
 
     private void SelectTencentLanguage(string engine)
     {
+        engine = TencentAsrEngines.NormalizeForSentenceRecognition(engine);
         foreach (var item in TencentLanguageBox.Items.OfType<ComboBoxItem>())
         {
             if (string.Equals(item.Tag as string, engine, StringComparison.Ordinal))
@@ -892,12 +905,6 @@ public sealed partial class VoicePage : Page
         try
         {
             State.SaveTencentAsr(settings);
-            if (engine == TencentAsrEngines.MultiLanguage)
-            {
-                ShowTencentAsrInfo(
-                    "多语种自动识别使用付费引擎，不属于按句 5000 次免费包；固定语言仍免费。",
-                    InfoBarSeverity.Warning);
-            }
         }
         catch (Exception exception)
         {
@@ -955,7 +962,8 @@ public sealed partial class VoicePage : Page
 
             await State.TestTencentAsrAsync(settings);
             TencentAsrStatus.Text = "连接成功 · 腾讯云按句";
-            ShowTencentAsrInfo("腾讯云连接成功。固定语言使用按句 5000 次/月免费包。",
+            ShowTencentAsrInfo(
+                "腾讯云连接成功。按句识别每次成功调用计 1 次，5000 次/月免费；超出后 3.2 元/千次（以官网为准）。",
                 InfoBarSeverity.Success);
         }
         catch (Exception exception)
@@ -999,8 +1007,14 @@ public sealed partial class VoicePage : Page
         {
             if (tencent.Code.StartsWith("AuthFailure", StringComparison.OrdinalIgnoreCase))
                 return "鉴权失败：请检查 SecretId/SecretKey 是否正确、是否已禁用，以及本机时间是否准确。";
+            if (tencent.Code.Contains("Engine", StringComparison.OrdinalIgnoreCase))
+                return "按句识别不支持这个语言引擎，请改选日语、英语、韩语、中文、粤语或中英粤。";
             if (tencent.Code is "RequestLimitExceeded" or "ResourceUnavailable")
                 return "腾讯云额度或频率受限，请到控制台检查资源包和调用量。";
+            if (tencent.Code is "FailedOperation.UserNotRegistered" or "FailedOperation.ServiceIsolate")
+                return "腾讯云语音识别尚未开通或服务不可用，请先到控制台开通并确认没有欠费。";
+            if (tencent.Code is "FailedOperation.UserHasNoFreeAmount")
+                return "腾讯云免费额度已用完；请购买资源包或在控制台确认后付费是否开启。";
             if (tencent.Code.StartsWith("FailedOperation", StringComparison.OrdinalIgnoreCase))
                 return "腾讯云未能识别这段音频（可能是静音或音频格式问题）：" + tencent.Message;
             if (tencent.Code is "HTTP401" or "HTTP403")

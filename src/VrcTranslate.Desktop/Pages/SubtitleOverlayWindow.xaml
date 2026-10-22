@@ -15,35 +15,6 @@
           HorizontalAlignment="Stretch"
           VerticalAlignment="Stretch"
           AutomationProperties.AutomationId="subtitle-caption-frame">
-      <Grid.RowDefinitions>
-        <RowDefinition Height="Auto" />
-        <RowDefinition Height="*" />
-      </Grid.RowDefinitions>
-      <Border x:Name="PartialCaptionHost"
-              Grid.Row="0"
-              Visibility="Collapsed"
-              Padding="4,3,4,6"
-              Margin="0,0,0,2">
-        <Grid ColumnSpacing="8">
-          <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="Auto" />
-            <ColumnDefinition Width="*" />
-          </Grid.ColumnDefinitions>
-          <TextBlock Text="识别中"
-                     FontSize="12"
-                     Foreground="#7EA6D8"
-                     VerticalAlignment="Top"
-                     Margin="0,2,0,0" />
-          <TextBlock x:Name="PartialCaptionText"
-                     Grid.Column="1"
-                     FontSize="16"
-                     Foreground="#D8E6F5"
-                     Opacity="0.85"
-                     TextWrapping="Wrap"
-                     MaxLines="3"
-                     TextTrimming="CharacterEllipsis" />
-        </Grid>
-      </Border>
       <!-- Player-style message list: one message per recognized sentence,
            newest at the bottom, on one dark surface with a hairline between
            messages. The whole client area belongs to the messages - there is no
@@ -57,7 +28,6 @@
            the messages are taller than the surface, the newest one is reached by
            scrolling, exactly as before. -->
       <ScrollViewer x:Name="CaptionScroll"
-                    Grid.Row="1"
                     AutomationProperties.AutomationId="subtitle-text"
                     Margin="4,0"
                     Padding="0,2"
@@ -76,7 +46,6 @@
       <!-- Offered only after the reader scrolled back; nothing moves the view
            away from an older message. -->
       <Button x:Name="NewCaptionHint"
-              Grid.Row="1"
               Content="最新消息"
               Visibility="Collapsed"
               HorizontalAlignment="Right"

@@ -935,14 +935,14 @@ if ($tencentAsrSource -notmatch '16k_zh-PY' -or
     $voiceMarkup -match 'Tag="16k_multi_lang"') {
     throw 'The voice UI must expose local, real-time and sentence engines; the real-time client must use the WebSocket protocol and the one-sentence UI must not expose real-time-only engines.'
 }
-# 流式原文：实时 partial 只更新浮窗顶部的临时行，不进入消息历史、不触发翻译。
+# 字幕按 VAD 段分块：不得再把同说话人的连续消息合并成一大段，也不显示顶部临时行。
 $overlayCode = Get-Content -Raw $overlayPage.Replace('.xaml', '.xaml.cs')
-if ($overlayHostSource -notmatch 'ShowPartialFromAnyThread' -or
-    $overlayMarkup -notmatch 'PartialCaptionHost' -or
-    $overlayMarkup -notmatch 'PartialCaptionText' -or
-    $overlayCode -notmatch 'ShowPartial' -or
+if ($overlayMarkup -match 'PartialCaptionHost|PartialCaptionText' -or
+    $overlayCode -match 'ShowPartial|SameSpeaker' -or
+    $overlayHostSource -match 'ShowPartialFromAnyThread' -or
+    $overlayCode -notmatch 'SeparatorThickness' -or
     $guideMarkup -match 'D45|slice_type|word_info') {
-    throw 'Real-time partial text must use the dedicated overlay live line (not the caption history), and user-facing guide text must not expose implementation terms.'
+    throw 'Every VAD segment must be a separate caption block (no same-speaker merging), with no separate live-partial line, and user-facing guide text must not expose implementation terms.'
 }
 # 配置简化 A：档案对话框提供自愿的「测试连接」（含错误码中文映射），
 # 保存永远不被测试结果门禁（对话框不得出现“测试通过才能保存”类逻辑）。

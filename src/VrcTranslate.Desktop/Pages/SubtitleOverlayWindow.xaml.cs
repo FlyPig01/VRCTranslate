@@ -328,28 +328,7 @@ public sealed partial class SubtitleOverlayWindow : Window
     public bool AppendRecognizedCaption(long captionId, string original, string? speakerLabel = null)
     {
         if (captionId <= 0) return false;
-        ShowPartial(null);
         return AddCaption(SubtitleCaption.Pending(original, speakerLabel, captionId));
-    }
-
-    /// <summary>
-    /// Shows the non-stable original above the message list. An empty/null value
-    /// clears it. It is never added to the scrollback and never translated.
-    /// </summary>
-    public void ShowPartial(string? text)
-    {
-        if (string.IsNullOrWhiteSpace(text))
-        {
-            if (PartialCaptionHost.Visibility == Visibility.Collapsed) return;
-            PartialCaptionText.Text = string.Empty;
-            PartialCaptionHost.Visibility = Visibility.Collapsed;
-            FitSurfaceHeight();
-            return;
-        }
-
-        PartialCaptionText.Text = text.Trim();
-        PartialCaptionHost.Visibility = Visibility.Visible;
-        FitSurfaceHeight();
     }
 
     /// <summary>
@@ -482,8 +461,8 @@ public sealed partial class SubtitleOverlayWindow : Window
             Margin = new Thickness(MessagePadding, MessagePaddingTop, MessagePadding, 0),
         };
         // A 3px colour rail is the only speaker-specific chrome; the message
-        // itself stays on the same dark surface. Consecutive messages by the
-        // same speaker share the rail and drop the separator (see RefreshSeparators).
+        // itself stays on the same dark surface. Every message is its own
+        // paragraph, including consecutive lines by the same speaker.
         var content = new Grid();
         content.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(3) });
         content.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
@@ -585,31 +564,25 @@ public sealed partial class SubtitleOverlayWindow : Window
     private static double LineHeightFor(double fontSize) => Math.Round(fontSize * LineHeightRatio, 2);
 
     /// <summary>
-    /// Draws the hairline only between messages: the oldest visible message starts
-    /// the block instead of being underlined by a rule of its own.
+    /// Draws the hairline between every message. A run by the same speaker is
+    /// still several paragraphs; merging them made long speech look like one
+    /// giant caption.
     /// </summary>
     private void RefreshSeparators()
     {
         for (var index = 0; index < _bubbles.Count; index++)
         {
-            var sameSpeaker = index > 0 && SameSpeaker(_bubbles[index - 1].Caption, _bubbles[index].Caption);
-            _bubbles[index].Container.BorderThickness = index == 0 || sameSpeaker
+            _bubbles[index].Container.BorderThickness = index == 0
                 ? new Thickness(0)
                 : new Thickness(0, SeparatorThickness, 0, 0);
 
-            var showLabel = index == 0 || !sameSpeaker;
-            if (_bubbles[index].ShowSpeakerLabel != showLabel)
+            if (!_bubbles[index].ShowSpeakerLabel)
             {
-                _bubbles[index].ShowSpeakerLabel = showLabel;
+                _bubbles[index].ShowSpeakerLabel = true;
                 RenderBody(_bubbles[index]);
             }
         }
     }
-
-    private static bool SameSpeaker(SubtitleCaption previous, SubtitleCaption current) =>
-        previous.HasSpeaker &&
-        current.HasSpeaker &&
-        string.Equals(previous.SpeakerLabel, current.SpeakerLabel, StringComparison.Ordinal);
 
     private SolidColorBrush SpeakerBrushFor(string? speakerLabel)
     {
@@ -738,10 +711,7 @@ public sealed partial class SubtitleOverlayWindow : Window
         var messages = CaptionMessages.ActualHeight;
         if (messages <= 0d && _bubbles.Count > 0) return -1d;
 
-        var partial = PartialCaptionHost.Visibility == Visibility.Visible
-            ? PartialCaptionHost.ActualHeight
-            : 0d;
-        return messages + partial
+        return messages
             + CaptionScroll.Padding.Top + CaptionScroll.Padding.Bottom
             + CaptionScroll.BorderThickness.Top + CaptionScroll.BorderThickness.Bottom
             + CaptionLayout.Margin.Top + CaptionLayout.Margin.Bottom;

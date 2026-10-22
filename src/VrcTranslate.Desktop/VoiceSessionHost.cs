@@ -63,9 +63,6 @@ public abstract class VoiceSessionHost
     /// <summary>Raised with a toast-worthy pipeline outcome; may arrive from a worker thread.</summary>
     public event EventHandler<SpeechNotificationEventArgs>? Notified;
 
-    /// <summary>Non-stable original text for the live subtitle line; empty clears it.</summary>
-    public event EventHandler<TencentRealtimePartial>? PartialReady;
-
     /// <summary>Derives raise the shared notification from their own pipeline events.</summary>
     protected void RaiseNotified(SpeechNotificationEventArgs args)
     {
@@ -229,7 +226,6 @@ public abstract class VoiceSessionHost
             }
 
             session.ResultReady += OnResultReady;
-            session.PartialReady += OnSessionPartialReady;
             session.Faulted += OnSessionFaulted;
             session.LevelChanged += OnLevelChanged;
             session.SourceChanged += OnSessionSourceChanged;
@@ -258,7 +254,6 @@ public abstract class VoiceSessionHost
             catch
             {
                 session.ResultReady -= OnResultReady;
-                session.PartialReady -= OnSessionPartialReady;
                 session.Faulted -= OnSessionFaulted;
                 session.LevelChanged -= OnLevelChanged;
                 session.SourceChanged -= OnSessionSourceChanged;
@@ -294,7 +289,6 @@ public abstract class VoiceSessionHost
             if (session is not null)
             {
                 session.ResultReady -= OnResultReady;
-                session.PartialReady -= OnSessionPartialReady;
                 session.Faulted -= OnSessionFaulted;
                 session.LevelChanged -= OnLevelChanged;
                 session.SourceChanged -= OnSessionSourceChanged;
@@ -325,9 +319,6 @@ public abstract class VoiceSessionHost
         var recognizedId = PublishRecognized(result);
         await DispatchRecognizedAsync(result, recognizedId).ConfigureAwait(false);
     }
-
-    private void OnSessionPartialReady(object? sender, TencentRealtimePartial partial) =>
-        PartialReady?.Invoke(this, partial);
 
     private void OnResultReady(object? sender, SpeechRecognitionResult result)
     {
@@ -427,11 +418,7 @@ public sealed class SubtitleSpeechSession : VoiceSessionHost
         _state = state;
         SourceLanguage = "auto";
         _state.LocalSpeech.CloudFallback += OnCloudFallback;
-        PartialReady += OnPartialReady;
     }
-
-    private static void OnPartialReady(object? sender, TencentRealtimePartial partial) =>
-        OverlayWindowHost.ShowPartialFromAnyThread(partial.Text);
 
     private void OnCloudFallback(object? sender, string message)
     {
@@ -502,13 +489,11 @@ public sealed class SubtitleSpeechSession : VoiceSessionHost
 
     protected override async Task OnSessionStartedAsync()
     {
-        OverlayWindowHost.ShowPartialFromAnyThread(null);
         await Pipeline.BeginSessionAsync().ConfigureAwait(false);
     }
 
     protected override Task OnSessionStoppingAsync()
     {
-        OverlayWindowHost.ShowPartialFromAnyThread(null);
         _cloudFallbackNotified = false;
         return Pipeline.EndSessionAsync();
     }
